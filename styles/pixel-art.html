@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXEL QUEST // 8-BIT DESIGN SYSTEM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           PIXEL QUEST - 8-BIT/PIXEL ART DESIGN SYSTEM
+           A design system inspired by NES, Game Boy, SNES, and arcade
+           cabinets from the golden age of gaming (1985-1995)
+        ================================================================ */
+
+        /* --- CSS VARIABLES / DESIGN TOKENS --------------------------- */
+        :root {
+            /* NES-INSPIRED COLOR PALETTE */
+            --pixel-black: #0f0f0f;
+            --pixel-dark: #1a1a2e;
+            --pixel-navy: #16213e;
+            --pixel-blue: #0077c0;
+            --pixel-cyan: #00d4ff;
+            --pixel-green: #00a854;
+            --pixel-lime: #7cfc00;
+            --pixel-yellow: #fcbf00;
+            --pixel-orange: #ff7700;
+            --pixel-red: #e4002b;
+            --pixel-pink: #ff6b9d;
+            --pixel-magenta: #c800c8;
+            --pixel-purple: #6b2d9e;
+            --pixel-white: #fcfcfc;
+            --pixel-gray-light: #bcbcbc;
+            --pixel-gray: #7c7c7c;
+            --pixel-gray-dark: #3c3c3c;
+
+            /* SEMANTIC COLORS */
+            --bg-primary: var(--pixel-dark);
+            --bg-secondary: var(--pixel-navy);
+            --bg-surface: #0d0d1a;
+            --text-primary: var(--pixel-white);
+            --text-secondary: var(--pixel-gray-light);
+            --text-muted: var(--pixel-gray);
+            --accent-primary: var(--pixel-cyan);
+            --accent-secondary: var(--pixel-yellow);
+            --accent-success: var(--pixel-lime);
+            --accent-warning: var(--pixel-orange);
+            --accent-danger: var(--pixel-red);
+
+            /* SPACING SCALE (4px base - pixel perfect) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* TYPOGRAPHY */
+            --font-display: 'Press Start 2P', monospace;
+            --font-body: 'VT323', monospace;
+            --text-xs: 0.625rem;
+            --text-sm: 0.75rem;
+            --text-base: 1rem;
+            --text-lg: 1.25rem;
+            --text-xl: 1.5rem;
+            --text-2xl: 2rem;
+            --text-3xl: 2.5rem;
+            --text-4xl: 3rem;
+            --text-5xl: 4rem;
+
+            /* PIXEL BORDERS (stacked box-shadows for chunky effect) */
+            --pixel-border:
+                0 4px 0 0 var(--pixel-gray-dark),
+                0 -4px 0 0 var(--pixel-white),
+                4px 0 0 0 var(--pixel-gray-dark),
+                -4px 0 0 0 var(--pixel-white),
+                4px 4px 0 0 var(--pixel-black),
+                -4px -4px 0 0 var(--pixel-gray-light),
+                4px -4px 0 0 var(--pixel-gray),
+                -4px 4px 0 0 var(--pixel-gray);
+
+            --pixel-border-inset:
+                inset 0 4px 0 0 var(--pixel-gray-dark),
+                inset 0 -4px 0 0 var(--pixel-white),
+                inset 4px 0 0 0 var(--pixel-gray-dark),
+                inset -4px 0 0 0 var(--pixel-white);
+
+            /* TRANSITIONS */
+            --transition-instant: 0s;
+            --transition-fast: 0.1s;
+
+            /* SCANLINE INTENSITY */
+            --scanline-opacity: 0.04;
+        }
+
+        /* --- BASE RESET & GLOBAL STYLES ------------------------------ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: auto; /* No smooth scroll - keep it snappy like old games */
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: var(--text-lg);
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-surface);
+            min-height: 100vh;
+            overflow-x: hidden;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+        }
+
+        /* --- SCANLINE OVERLAY (CRT EFFECT) --------------------------- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, var(--scanline-opacity)) 2px,
+                rgba(0, 0, 0, var(--scanline-opacity)) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* --- PIXEL ART DECORATIONS (using box-shadow) ---------------- */
+
+        /* 8-bit Heart */
+        .pixel-heart {
+            width: 4px;
+            height: 4px;
+            background: var(--pixel-red);
+            box-shadow:
+                4px 0 var(--pixel-red),
+                8px 0 var(--pixel-red),
+                16px 0 var(--pixel-red),
+                20px 0 var(--pixel-red),
+                24px 0 var(--pixel-red),
+                -4px 4px var(--pixel-red),
+                0 4px var(--pixel-red),
+                4px 4px var(--pixel-red),
+                8px 4px var(--pixel-red),
+                12px 4px var(--pixel-red),
+                16px 4px var(--pixel-red),
+                20px 4px var(--pixel-red),
+                24px 4px var(--pixel-red),
+                28px 4px var(--pixel-red),
+                -4px 8px var(--pixel-red),
+                0 8px var(--pixel-red),
+                4px 8px var(--pixel-red),
+                8px 8px var(--pixel-red),
+                12px 8px var(--pixel-red),
+                16px 8px var(--pixel-red),
+                20px 8px var(--pixel-red),
+                24px 8px var(--pixel-red),
+                28px 8px var(--pixel-red),
+                0 12px var(--pixel-red),
+                4px 12px var(--pixel-red),
+                8px 12px var(--pixel-red),
+                12px 12px var(--pixel-red),
+                16px 12px var(--pixel-red),
+                20px 12px var(--pixel-red),
+                24px 12px var(--pixel-red),
+                4px 16px var(--pixel-red),
+                8px 16px var(--pixel-red),
+                12px 16px var(--pixel-red),
+                16px 16px var(--pixel-red),
+                20px 16px var(--pixel-red),
+                8px 20px var(--pixel-red),
+                12px 20px var(--pixel-red),
+                16px 20px var(--pixel-red),
+                12px 24px var(--pixel-red);
+            display: inline-block;
+            margin-right: 36px;
+        }
+
+        /* 8-bit Star */
+        .pixel-star {
+            width: 4px;
+            height: 4px;
+            background: var(--pixel-yellow);
+            box-shadow:
+                8px 0 var(--pixel-yellow),
+                4px 4px var(--pixel-yellow),
+                0 8px var(--pixel-yellow),
+                4px 8px var(--pixel-yellow),
+                8px 8px var(--pixel-yellow),
+                12px 8px var(--pixel-yellow),
+                16px 8px var(--pixel-yellow),
+                -4px 12px var(--pixel-yellow),
+                0 12px var(--pixel-yellow),
+                4px 12px var(--pixel-yellow),
+                8px 12px var(--pixel-yellow),
+                12px 12px var(--pixel-yellow),
+                16px 12px var(--pixel-yellow),
+                20px 12px var(--pixel-yellow),
+                0 16px var(--pixel-yellow),
+                4px 16px var(--pixel-yellow),
+                8px 16px var(--pixel-yellow),
+                12px 16px var(--pixel-yellow),
+                16px 16px var(--pixel-yellow),
+                4px 20px var(--pixel-yellow),
+                12px 20px var(--pixel-yellow),
+                0 24px var(--pixel-yellow),
+                16px 24px var(--pixel-yellow);
+            display: inline-block;
+            margin-right: 28px;
+        }
+
+        /* 8-bit Coin */
+        .pixel-coin {
+            width: 4px;
+            height: 4px;
+            background: var(--pixel-yellow);
+            box-shadow:
+                4px 0 var(--pixel-yellow),
+                8px 0 var(--pixel-yellow),
+                0 4px var(--pixel-orange),
+                4px 4px var(--pixel-yellow),
+                8px 4px var(--pixel-yellow),
+                12px 4px var(--pixel-yellow),
+                0 8px var(--pixel-orange),
+                4px 8px var(--pixel-yellow),
+                8px 8px var(--pixel-orange),
+                12px 8px var(--pixel-yellow),
+                0 12px var(--pixel-orange),
+                4px 12px var(--pixel-yellow),
+                8px 12px var(--pixel-orange),
+                12px 12px var(--pixel-yellow),
+                0 16px var(--pixel-orange),
+                4px 16px var(--pixel-yellow),
+                8px 16px var(--pixel-yellow),
+                12px 16px var(--pixel-yellow),
+                4px 20px var(--pixel-yellow),
+                8px 20px var(--pixel-yellow);
+            display: inline-block;
+            margin-right: 24px;
+        }
+
+        /* --- BLINKING CURSOR ANIMATION ------------------------------- */
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .blink {
+            animation: blink 1s steps(1) infinite;
+        }
+
+        /* --- LAYOUT CONTAINER ---------------------------------------- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+
+        /* --- HEADER -------------------------------------------------- */
+        .game-header {
+            background: var(--bg-primary);
+            padding: var(--space-7) var(--space-6);
+            margin-bottom: var(--space-8);
+            text-align: center;
+            position: relative;
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                inset 0 0 0 8px var(--bg-secondary),
+                8px 8px 0 0 var(--pixel-black);
+        }
+
+        .game-header::before {
+            content: '- PRESS START -';
+            display: block;
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--pixel-gray);
+            margin-bottom: var(--space-4);
+            animation: blink 1.5s steps(1) infinite;
+        }
+
+        .game-title {
+            font-family: var(--font-display);
+            font-size: var(--text-3xl);
+            color: var(--accent-primary);
+            text-shadow:
+                4px 4px 0 var(--pixel-blue),
+                8px 8px 0 var(--pixel-navy);
+            margin-bottom: var(--space-4);
+            letter-spacing: 4px;
+        }
+
+        .game-subtitle {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        .lives-display {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-top: var(--space-5);
+            padding-top: var(--space-4);
+            border-top: 4px dashed var(--pixel-gray-dark);
+        }
+
+        .score-display {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            color: var(--accent-secondary);
+            margin-top: var(--space-4);
+        }
+
+        /* --- SECTION STYLES ------------------------------------------ */
+        .section {
+            margin-bottom: var(--space-8);
+            padding: var(--space-5);
+            background: var(--bg-primary);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                8px 8px 0 0 var(--pixel-black);
+            position: relative;
+        }
+
+        .section::before {
+            content: attr(data-section);
+            position: absolute;
+            top: -14px;
+            left: var(--space-4);
+            background: var(--bg-primary);
+            padding: 0 var(--space-2);
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--pixel-gray);
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: var(--text-base);
+            color: var(--accent-secondary);
+            margin-bottom: var(--space-5);
+            padding-bottom: var(--space-3);
+            border-bottom: 4px solid var(--pixel-gray-dark);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-title::before {
+            content: '>';
+            color: var(--accent-primary);
+            animation: blink 1s steps(1) infinite;
+        }
+
+        /* --- COLOR PALETTE ------------------------------------------- */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            border: 4px solid var(--pixel-black);
+            background: var(--bg-secondary);
+            box-shadow:
+                inset -4px -4px 0 0 var(--pixel-gray-dark),
+                inset 4px 4px 0 0 var(--pixel-gray);
+        }
+
+        .color-preview {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            image-rendering: pixelated;
+        }
+
+        .color-info {
+            padding: var(--space-2);
+            background: var(--pixel-black);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .color-hex {
+            font-family: var(--font-body);
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+        }
+
+        /* --- TYPOGRAPHY ---------------------------------------------- */
+        .type-specimen {
+            margin-bottom: var(--space-5);
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .type-label {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-gray);
+            margin-bottom: var(--space-2);
+            letter-spacing: 1px;
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            line-height: 1.6;
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+        }
+
+        .text-5xl { font-size: var(--text-5xl); }
+        .text-4xl { font-size: var(--text-4xl); }
+        .text-3xl { font-size: var(--text-3xl); }
+        .text-2xl { font-size: var(--text-2xl); }
+        .text-xl { font-size: var(--text-xl); }
+        .text-lg { font-size: var(--text-lg); }
+        .text-base { font-size: var(--text-base); }
+        .text-sm { font-size: var(--text-sm); }
+        .text-xs { font-size: var(--text-xs); }
+
+        /* --- SPACING SCALE ------------------------------------------- */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            width: 100px;
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--text-muted);
+        }
+
+        .spacing-bar {
+            height: 16px;
+            background: linear-gradient(90deg, var(--pixel-green), var(--pixel-lime));
+            border: 2px solid var(--pixel-black);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: var(--space-2);
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-black);
+        }
+
+        /* --- BUTTONS ------------------------------------------------- */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .btn {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            padding: var(--space-3) var(--space-5);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition-instant);
+            image-rendering: pixelated;
+
+            /* 3D button effect using box-shadow */
+            background: var(--pixel-blue);
+            color: var(--pixel-white);
+            box-shadow:
+                inset -4px -4px 0 0 #004a7a,
+                inset 4px 4px 0 0 #00a0e9,
+                0 4px 0 0 #003050,
+                0 8px 0 0 var(--pixel-black);
+        }
+
+        .btn:hover {
+            background: #0088dd;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow:
+                inset -4px -4px 0 0 #00a0e9,
+                inset 4px 4px 0 0 #004a7a,
+                0 0 0 0 #003050,
+                0 4px 0 0 var(--pixel-black);
+        }
+
+        .btn--primary {
+            background: var(--pixel-green);
+            box-shadow:
+                inset -4px -4px 0 0 #006633,
+                inset 4px 4px 0 0 #00cc66,
+                0 4px 0 0 #003318,
+                0 8px 0 0 var(--pixel-black);
+        }
+
+        .btn--primary:hover {
+            background: #00bb55;
+        }
+
+        .btn--primary:active {
+            transform: translateY(4px);
+            box-shadow:
+                inset -4px -4px 0 0 #00cc66,
+                inset 4px 4px 0 0 #006633,
+                0 0 0 0 #003318,
+                0 4px 0 0 var(--pixel-black);
+        }
+
+        .btn--danger {
+            background: var(--pixel-red);
+            box-shadow:
+                inset -4px -4px 0 0 #990020,
+                inset 4px 4px 0 0 #ff4060,
+                0 4px 0 0 #600015,
+                0 8px 0 0 var(--pixel-black);
+        }
+
+        .btn--danger:hover {
+            background: #ff2040;
+        }
+
+        .btn--danger:active {
+            transform: translateY(4px);
+            box-shadow:
+                inset -4px -4px 0 0 #ff4060,
+                inset 4px 4px 0 0 #990020,
+                0 0 0 0 #600015,
+                0 4px 0 0 var(--pixel-black);
+        }
+
+        .btn--warning {
+            background: var(--pixel-yellow);
+            color: var(--pixel-black);
+            box-shadow:
+                inset -4px -4px 0 0 #b38800,
+                inset 4px 4px 0 0 #ffe44d,
+                0 4px 0 0 #665000,
+                0 8px 0 0 var(--pixel-black);
+        }
+
+        .btn--warning:hover {
+            background: #ffc700;
+        }
+
+        .btn--warning:active {
+            transform: translateY(4px);
+            box-shadow:
+                inset -4px -4px 0 0 #ffe44d,
+                inset 4px 4px 0 0 #b38800,
+                0 0 0 0 #665000,
+                0 4px 0 0 var(--pixel-black);
+        }
+
+        .btn--sm {
+            font-size: 8px;
+            padding: var(--space-2) var(--space-3);
+        }
+
+        .btn--lg {
+            font-size: var(--text-sm);
+            padding: var(--space-4) var(--space-7);
+        }
+
+        .btn:disabled {
+            background: var(--pixel-gray);
+            color: var(--pixel-gray-dark);
+            box-shadow:
+                inset -4px -4px 0 0 var(--pixel-gray-dark),
+                inset 4px 4px 0 0 var(--pixel-gray-light),
+                0 4px 0 0 #2a2a2a,
+                0 8px 0 0 var(--pixel-black);
+            cursor: not-allowed;
+        }
+
+        /* --- FORM ELEMENTS ------------------------------------------- */
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: var(--text-lg);
+            padding: var(--space-3) var(--space-4);
+            background: var(--pixel-black);
+            color: var(--pixel-lime);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 4px 4px 0 0 #000,
+                inset -4px -4px 0 0 var(--pixel-gray);
+            caret-color: var(--pixel-lime);
+            image-rendering: pixelated;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow:
+                inset 4px 4px 0 0 #000,
+                inset -4px -4px 0 0 var(--pixel-gray),
+                0 0 0 4px rgba(0, 212, 255, 0.3);
+        }
+
+        .form-input::placeholder {
+            color: var(--pixel-gray);
+        }
+
+        .form-input--error {
+            border-color: var(--pixel-red);
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-gray);
+            margin-top: var(--space-1);
+        }
+
+        .form-error {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-red);
+            margin-top: var(--space-1);
+        }
+
+        /* Pixel Checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+        }
+
+        .checkbox-pixel {
+            width: 24px;
+            height: 24px;
+            background: var(--pixel-black);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 4px 4px 0 0 #000,
+                inset -4px -4px 0 0 var(--pixel-gray);
+            position: relative;
+        }
+
+        .checkbox-wrapper input {
+            display: none;
+        }
+
+        .checkbox-wrapper input:checked + .checkbox-pixel {
+            background: var(--pixel-lime);
+            border-color: var(--pixel-green);
+        }
+
+        .checkbox-wrapper input:checked + .checkbox-pixel::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 6px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--pixel-black);
+            border-width: 0 4px 4px 0;
+            transform: rotate(45deg);
+        }
+
+        /* --- CARDS --------------------------------------------------- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                8px 8px 0 0 var(--pixel-black);
+            padding: var(--space-4);
+            position: relative;
+            transition: var(--transition-fast);
+        }
+
+        .card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                12px 12px 0 0 var(--pixel-black);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-3);
+            padding-bottom: var(--space-3);
+            border-bottom: 4px dashed var(--pixel-gray-dark);
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--accent-secondary);
+        }
+
+        .card-icon {
+            font-size: var(--text-xl);
+        }
+
+        .card-content {
+            color: var(--text-secondary);
+            font-size: var(--text-base);
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            margin-top: var(--space-4);
+            padding-top: var(--space-3);
+            border-top: 4px dashed var(--pixel-gray-dark);
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        /* Item Card (like game inventory) */
+        .item-card {
+            background: var(--pixel-black);
+            border: 4px solid var(--pixel-gray-dark);
+            padding: var(--space-3);
+            text-align: center;
+            box-shadow:
+                inset 4px 4px 0 0 var(--pixel-gray),
+                inset -4px -4px 0 0 #000;
+        }
+
+        .item-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto var(--space-2);
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-2xl);
+        }
+
+        .item-name {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--text-primary);
+        }
+
+        .item-count {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--accent-secondary);
+        }
+
+        /* --- BADGES -------------------------------------------------- */
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .badge {
+            font-family: var(--font-display);
+            font-size: 8px;
+            padding: var(--space-1) var(--space-3);
+            background: var(--pixel-blue);
+            color: var(--pixel-white);
+            border: 2px solid var(--pixel-black);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+
+        .badge--success {
+            background: var(--pixel-green);
+        }
+
+        .badge--warning {
+            background: var(--pixel-yellow);
+            color: var(--pixel-black);
+        }
+
+        .badge--danger {
+            background: var(--pixel-red);
+        }
+
+        .badge--purple {
+            background: var(--pixel-purple);
+        }
+
+        .badge--pink {
+            background: var(--pixel-pink);
+            color: var(--pixel-black);
+        }
+
+        .badge--outline {
+            background: transparent;
+            border: 2px solid var(--pixel-cyan);
+            color: var(--pixel-cyan);
+        }
+
+        /* --- HEALTH BAR / PROGRESS BAR ------------------------------- */
+        .health-container {
+            margin-bottom: var(--space-4);
+        }
+
+        .health-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-2);
+            font-family: var(--font-display);
+            font-size: 8px;
+        }
+
+        .health-bar {
+            height: 24px;
+            background: var(--pixel-black);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 4px 4px 0 0 #000,
+                inset -4px -4px 0 0 var(--pixel-gray);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: var(--pixel-lime);
+            position: relative;
+            transition: width 0.3s steps(10);
+        }
+
+        /* Dithering pattern for health bar */
+        .health-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 4px,
+                rgba(0, 0, 0, 0.2) 4px,
+                rgba(0, 0, 0, 0.2) 8px
+            );
+        }
+
+        .health-fill--warning {
+            background: var(--pixel-yellow);
+        }
+
+        .health-fill--danger {
+            background: var(--pixel-red);
+            animation: health-blink 0.5s steps(1) infinite;
+        }
+
+        @keyframes health-blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+
+        /* XP Bar */
+        .xp-bar {
+            height: 16px;
+            background: var(--pixel-black);
+            border: 4px solid var(--pixel-gray-dark);
+            position: relative;
+            box-shadow:
+                inset 4px 4px 0 0 #000;
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pixel-purple), var(--pixel-magenta));
+            position: relative;
+        }
+
+        /* --- DATA DISPLAY (SCORE, STATS) ----------------------------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .stat-box {
+            background: var(--pixel-black);
+            border: 4px solid var(--pixel-gray-dark);
+            padding: var(--space-3);
+            text-align: center;
+            box-shadow:
+                inset 4px 4px 0 0 #000;
+        }
+
+        .stat-label {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-gray);
+            margin-bottom: var(--space-2);
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--accent-secondary);
+        }
+
+        /* --- MESSAGE BOX (Dialog) ------------------------------------ */
+        .message-box {
+            background: var(--pixel-white);
+            color: var(--pixel-black);
+            border: 4px solid var(--pixel-black);
+            padding: var(--space-4);
+            position: relative;
+            margin-bottom: var(--space-5);
+            box-shadow:
+                inset -4px -4px 0 0 var(--pixel-gray-light),
+                inset 4px 4px 0 0 var(--pixel-white),
+                8px 8px 0 0 var(--pixel-black);
+        }
+
+        .message-box::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 24px;
+            width: 0;
+            height: 0;
+            border: 16px solid transparent;
+            border-top-color: var(--pixel-black);
+            border-bottom: 0;
+        }
+
+        .message-text {
+            font-family: var(--font-body);
+            font-size: var(--text-xl);
+            line-height: 1.4;
+        }
+
+        .message-continue {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-gray);
+            margin-top: var(--space-3);
+            text-align: right;
+            animation: blink 1s steps(1) infinite;
+        }
+
+        /* --- GAME UI ELEMENTS ---------------------------------------- */
+        .game-ui-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+            padding: var(--space-3);
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--pixel-gray-dark);
+        }
+
+        .level-indicator {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .coin-counter {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--accent-secondary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        /* --- DITHERING PATTERNS -------------------------------------- */
+        .dither-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: var(--space-3);
+        }
+
+        .dither-box {
+            height: 64px;
+            border: 2px solid var(--pixel-black);
+        }
+
+        .dither-25 {
+            background-image:
+                linear-gradient(45deg, var(--pixel-cyan) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--pixel-cyan) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, var(--pixel-cyan) 75%),
+                linear-gradient(-45deg, transparent 75%, var(--pixel-cyan) 75%);
+            background-size: 4px 4px;
+            background-color: var(--pixel-navy);
+        }
+
+        .dither-50 {
+            background-image:
+                linear-gradient(45deg, var(--pixel-cyan) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--pixel-cyan) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, var(--pixel-cyan) 75%),
+                linear-gradient(-45deg, transparent 75%, var(--pixel-cyan) 75%);
+            background-size: 2px 2px;
+            background-color: var(--pixel-navy);
+        }
+
+        .dither-checker {
+            background: repeating-conic-gradient(
+                var(--pixel-purple) 0% 25%,
+                var(--pixel-magenta) 0% 50%
+            ) 50% / 8px 8px;
+        }
+
+        .dither-stripe {
+            background: repeating-linear-gradient(
+                90deg,
+                var(--pixel-green),
+                var(--pixel-green) 4px,
+                var(--pixel-lime) 4px,
+                var(--pixel-lime) 8px
+            );
+        }
+
+        /* --- FOOTER -------------------------------------------------- */
+        .game-footer {
+            background: var(--bg-primary);
+            border: 4px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                8px 8px 0 0 var(--pixel-black);
+            padding: var(--space-5);
+            text-align: center;
+            margin-top: var(--space-8);
+        }
+
+        .footer-text {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--pixel-gray);
+            line-height: 2;
+        }
+
+        .footer-logo {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-top: var(--space-4);
+        }
+
+        .footer-links a {
+            font-family: var(--font-display);
+            font-size: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            transition: var(--transition-fast);
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-secondary);
+        }
+
+        /* --- PIXEL BORDER DECORATION --------------------------------- */
+        .pixel-divider {
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--pixel-cyan) 0px,
+                var(--pixel-cyan) 8px,
+                transparent 8px,
+                transparent 16px,
+                var(--pixel-yellow) 16px,
+                var(--pixel-yellow) 24px,
+                transparent 24px,
+                transparent 32px
+            );
+            margin: var(--space-6) 0;
+        }
+
+        /* --- GAME OVER / TITLE SCREENS ------------------------------- */
+        .screen-overlay {
+            padding: var(--space-7);
+            text-align: center;
+            background: var(--pixel-black);
+            border: 8px solid var(--pixel-gray-dark);
+            box-shadow:
+                inset 0 0 0 4px var(--pixel-gray),
+                inset 0 0 0 8px var(--pixel-black);
+        }
+
+        .game-over-text {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            color: var(--pixel-red);
+            text-shadow: 4px 4px 0 #600015;
+            margin-bottom: var(--space-4);
+            animation: game-over-shake 0.5s ease-in-out;
+        }
+
+        @keyframes game-over-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .high-score-text {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--accent-secondary);
+            margin-bottom: var(--space-5);
+        }
+
+        /* --- RESPONSIVE ---------------------------------------------- */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-4);
+            }
+
+            .game-title {
+                font-size: var(--text-xl);
+                letter-spacing: 2px;
+            }
+
+            .game-subtitle {
+                font-size: 8px;
+            }
+
+            .section {
+                padding: var(--space-4);
+            }
+
+            .section-title {
+                font-size: var(--text-xs);
+            }
+
+            .button-grid {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .lives-display {
+                transform: scale(0.8);
+            }
+        }
+
+        /* --- ANIMATIONS ---------------------------------------------- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .float-animation {
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes coin-spin {
+            0% { transform: scaleX(1); }
+            50% { transform: scaleX(0.1); }
+            100% { transform: scaleX(1); }
+        }
+
+        .coin-animation {
+            animation: coin-spin 0.6s ease-in-out infinite;
+        }
+
+        /* Power-up glow */
+        @keyframes power-glow {
+            0%, 100% {
+                box-shadow: 0 0 0 0 var(--pixel-yellow);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(252, 191, 0, 0.4);
+            }
+        }
+
+        .power-glow {
+            animation: power-glow 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="game-header">
+            <h1 class="game-title">PIXEL QUEST</h1>
+            <p class="game-subtitle">8-BIT DESIGN SYSTEM v1.0</p>
+            <div class="lives-display">
+                <div class="pixel-heart"></div>
+                <div class="pixel-heart"></div>
+                <div class="pixel-heart"></div>
+            </div>
+            <div class="score-display">
+                HI-SCORE: 999,999 &nbsp;&nbsp; SCORE: 012,450
+            </div>
+        </header>
+
+        <!-- I. COLORS -->
+        <section class="section" data-section="I. COLORS">
+            <h2 class="section-title">COLOR PALETTE</h2>
+            <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                NES-inspired palette with 16 core colors for authentic 8-bit aesthetics.
+            </p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #0077c0; color: #fcfcfc;">BLU</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL BLUE</div>
+                        <div class="color-hex">#0077C0</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #00d4ff; color: #0f0f0f;">CYN</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL CYAN</div>
+                        <div class="color-hex">#00D4FF</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #00a854; color: #fcfcfc;">GRN</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL GREEN</div>
+                        <div class="color-hex">#00A854</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #7cfc00; color: #0f0f0f;">LIM</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL LIME</div>
+                        <div class="color-hex">#7CFC00</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #fcbf00; color: #0f0f0f;">YLW</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL YELLOW</div>
+                        <div class="color-hex">#FCBF00</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ff7700; color: #0f0f0f;">ORG</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL ORANGE</div>
+                        <div class="color-hex">#FF7700</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #e4002b; color: #fcfcfc;">RED</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL RED</div>
+                        <div class="color-hex">#E4002B</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ff6b9d; color: #0f0f0f;">PNK</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL PINK</div>
+                        <div class="color-hex">#FF6B9D</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #c800c8; color: #fcfcfc;">MAG</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL MAGENTA</div>
+                        <div class="color-hex">#C800C8</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #6b2d9e; color: #fcfcfc;">PUR</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL PURPLE</div>
+                        <div class="color-hex">#6B2D9E</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #fcfcfc; color: #0f0f0f;">WHT</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL WHITE</div>
+                        <div class="color-hex">#FCFCFC</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #0f0f0f; color: #fcfcfc; border: 2px solid #3c3c3c;">BLK</div>
+                    <div class="color-info">
+                        <div class="color-name">PIXEL BLACK</div>
+                        <div class="color-hex">#0F0F0F</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- II. TYPOGRAPHY -->
+        <section class="section" data-section="II. TYPOGRAPHY">
+            <h2 class="section-title">TYPOGRAPHY SYSTEM</h2>
+
+            <div class="type-specimen">
+                <div class="type-label">DISPLAY // PRESS START 2P</div>
+                <div class="type-display text-3xl" style="color: var(--accent-primary);">GAME START!</div>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">DISPLAY // SCALE</div>
+                <div class="type-display text-2xl" style="color: var(--accent-secondary);">LEVEL UP</div>
+                <div class="type-display text-xl" style="color: var(--text-primary);">HIGH SCORE</div>
+                <div class="type-display text-base" style="color: var(--text-secondary);">PLAYER ONE</div>
+                <div class="type-display text-xs" style="color: var(--text-muted);">PRESS ANY KEY</div>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">BODY // VT323</div>
+                <div class="type-body text-2xl">Welcome to the adventure!</div>
+                <div class="type-body text-xl">The princess is in another castle.</div>
+                <div class="type-body text-lg">You have collected 99 coins. Your inventory is full of rare items and powerful weapons.</div>
+                <div class="type-body text-base">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789</div>
+            </div>
+        </section>
+
+        <!-- III. SPACING -->
+        <section class="section" data-section="III. SPACING">
+            <h2 class="section-title">SPACING SCALE</h2>
+            <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                4px base unit for pixel-perfect alignment on retro displays.
+            </p>
+            <div class="spacing-demo">
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-1</span>
+                    <div class="spacing-bar" style="width: 4px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">4px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-2</span>
+                    <div class="spacing-bar" style="width: 8px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">8px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-3</span>
+                    <div class="spacing-bar" style="width: 12px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">12px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-4</span>
+                    <div class="spacing-bar" style="width: 16px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">16px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-5</span>
+                    <div class="spacing-bar" style="width: 24px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">24px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-6</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">32px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-7</span>
+                    <div class="spacing-bar" style="width: 48px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">48px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-8</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">64px</span>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-9</span>
+                    <div class="spacing-bar" style="width: 96px;"></div>
+                    <span style="font-family: var(--font-display); font-size: 8px;">96px</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- IV. BUTTONS -->
+        <section class="section" data-section="IV. BUTTONS">
+            <h2 class="section-title">BUTTON COMPONENTS</h2>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// VARIANTS</h3>
+            <div class="button-grid">
+                <button class="btn">DEFAULT</button>
+                <button class="btn btn--primary">START GAME</button>
+                <button class="btn btn--warning">CONTINUE</button>
+                <button class="btn btn--danger">GAME OVER</button>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// SIZES</h3>
+            <div class="button-grid">
+                <button class="btn btn--sm btn--primary">SMALL</button>
+                <button class="btn btn--primary">DEFAULT</button>
+                <button class="btn btn--lg btn--primary">LARGE</button>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// STATES</h3>
+            <div class="button-grid">
+                <button class="btn" disabled>DISABLED</button>
+                <button class="btn btn--primary power-glow">POWER UP!</button>
+            </div>
+        </section>
+
+        <!-- V. FORM ELEMENTS -->
+        <section class="section" data-section="V. FORMS">
+            <h2 class="section-title">FORM ELEMENTS</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5);">
+                <div class="form-group">
+                    <label class="form-label">PLAYER NAME</label>
+                    <input type="text" class="form-input" placeholder="ENTER NAME...">
+                    <div class="form-hint">// 3-8 CHARACTERS</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">PASSWORD</label>
+                    <input type="password" class="form-input" value="PASSWORD123">
+                    <div class="form-hint">// LEVEL SELECT CODE</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ERROR STATE</label>
+                    <input type="text" class="form-input form-input--error" value="INVALID">
+                    <div class="form-error">ERROR: NAME ALREADY TAKEN!</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">MESSAGE</label>
+                    <textarea class="form-input" placeholder="WRITE YOUR MESSAGE..."></textarea>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin: var(--space-5) 0 var(--space-3);">// CHECKBOXES</h3>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" checked>
+                    <span class="checkbox-pixel"></span>
+                    <span style="font-family: var(--font-display); font-size: 8px;">SOUND EFFECTS</span>
+                </label>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" checked>
+                    <span class="checkbox-pixel"></span>
+                    <span style="font-family: var(--font-display); font-size: 8px;">MUSIC</span>
+                </label>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox">
+                    <span class="checkbox-pixel"></span>
+                    <span style="font-family: var(--font-display); font-size: 8px;">HARD MODE</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- VI. CARDS -->
+        <section class="section" data-section="VI. CARDS">
+            <h2 class="section-title">CARD COMPONENTS</h2>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">QUEST LOG</div>
+                        <div class="card-icon">&#x1F4DC;</div>
+                    </div>
+                    <div class="card-content">
+                        Defeat the dragon in the Northern Cave. Collect 10 magic crystals to unlock the secret passage.
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn--sm btn--primary">ACCEPT</button>
+                        <button class="btn btn--sm">DECLINE</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">INVENTORY</div>
+                        <div class="card-icon">&#x1F392;</div>
+                    </div>
+                    <div class="card-content">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2);">
+                            <div class="item-card">
+                                <div class="item-icon">&#x2694;</div>
+                                <div class="item-name">SWORD</div>
+                            </div>
+                            <div class="item-card">
+                                <div class="item-icon">&#x1F6E1;</div>
+                                <div class="item-name">SHIELD</div>
+                            </div>
+                            <div class="item-card">
+                                <div class="item-icon">&#x2764;</div>
+                                <div class="item-name">POTION</div>
+                                <div class="item-count">x5</div>
+                            </div>
+                            <div class="item-card">
+                                <div class="item-icon">&#x1F511;</div>
+                                <div class="item-name">KEY</div>
+                                <div class="item-count">x3</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">PLAYER STATS</div>
+                        <div class="card-icon">&#x1F464;</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="health-container">
+                            <div class="health-label">
+                                <span>HP</span>
+                                <span>85/100</span>
+                            </div>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                        <div class="health-container">
+                            <div class="health-label">
+                                <span>MP</span>
+                                <span>42/60</span>
+                            </div>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 70%; background: var(--pixel-cyan);"></div>
+                            </div>
+                        </div>
+                        <div class="health-container">
+                            <div class="health-label">
+                                <span>XP</span>
+                                <span>2,450/3,000</span>
+                            </div>
+                            <div class="xp-bar">
+                                <div class="xp-fill" style="width: 82%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VII. BADGES -->
+        <section class="section" data-section="VII. BADGES">
+            <h2 class="section-title">BADGE LABELS</h2>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// STANDARD</h3>
+            <div class="badge-container">
+                <span class="badge">NEW</span>
+                <span class="badge badge--success">COMPLETED</span>
+                <span class="badge badge--warning">IN PROGRESS</span>
+                <span class="badge badge--danger">FAILED</span>
+                <span class="badge badge--purple">RARE</span>
+                <span class="badge badge--pink">LEGENDARY</span>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// OUTLINE</h3>
+            <div class="badge-container">
+                <span class="badge badge--outline">LVL 99</span>
+                <span class="badge badge--outline">+1 ATK</span>
+                <span class="badge badge--outline">BOSS</span>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// ACHIEVEMENT BADGES</h3>
+            <div class="badge-container">
+                <span class="badge badge--success">&#x2605; FIRST BLOOD</span>
+                <span class="badge badge--purple">&#x2605; DRAGON SLAYER</span>
+                <span class="badge badge--pink">&#x2605; SPEEDRUNNER</span>
+            </div>
+        </section>
+
+        <!-- VIII. GAME UI ELEMENTS -->
+        <section class="section" data-section="VIII. GAME UI">
+            <h2 class="section-title">GAME UI ELEMENTS</h2>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// HUD DISPLAY</h3>
+            <div class="game-ui-row">
+                <div class="level-indicator">
+                    <span>WORLD</span>
+                    <span style="color: var(--accent-secondary);">1-4</span>
+                </div>
+                <div style="display: flex; gap: var(--space-4);">
+                    <div class="pixel-heart"></div>
+                    <div class="pixel-heart"></div>
+                    <div class="pixel-heart" style="opacity: 0.3;"></div>
+                </div>
+                <div class="coin-counter">
+                    <div class="pixel-coin coin-animation"></div>
+                    <span style="margin-left: 20px;">x 073</span>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin-bottom: var(--space-3);">// HEALTH BARS</h3>
+            <div class="health-container">
+                <div class="health-label">
+                    <span style="color: var(--accent-success);">PLAYER</span>
+                    <span>100%</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="health-container">
+                <div class="health-label">
+                    <span style="color: var(--accent-warning);">PLAYER</span>
+                    <span>45%</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill health-fill--warning" style="width: 45%;"></div>
+                </div>
+            </div>
+            <div class="health-container">
+                <div class="health-label">
+                    <span style="color: var(--accent-danger);">PLAYER</span>
+                    <span>15%</span>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill health-fill--danger" style="width: 15%;"></div>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin: var(--space-5) 0 var(--space-3);">// STATS DISPLAY</h3>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">HIGH SCORE</div>
+                    <div class="stat-value">999,999</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">TIME</div>
+                    <div class="stat-value">03:42</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">LEVEL</div>
+                    <div class="stat-value">24</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">COINS</div>
+                    <div class="stat-value">1,337</div>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin: var(--space-5) 0 var(--space-3);">// MESSAGE BOX</h3>
+            <div class="message-box">
+                <div class="message-text">
+                    Thank you for playing! Your adventure has only just begun. The fate of the kingdom rests in your hands...
+                </div>
+                <div class="message-continue">PRESS A TO CONTINUE<span class="blink">_</span></div>
+            </div>
+        </section>
+
+        <!-- IX. DITHERING PATTERNS -->
+        <section class="section" data-section="IX. PATTERNS">
+            <h2 class="section-title">DITHERING PATTERNS</h2>
+            <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                Classic dithering techniques for creating gradients with limited colors.
+            </p>
+            <div class="dither-demo">
+                <div>
+                    <div class="dither-box dither-25"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: var(--space-2); text-align: center;">25% DITHER</div>
+                </div>
+                <div>
+                    <div class="dither-box dither-50"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: var(--space-2); text-align: center;">50% DITHER</div>
+                </div>
+                <div>
+                    <div class="dither-box dither-checker"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: var(--space-2); text-align: center;">CHECKER</div>
+                </div>
+                <div>
+                    <div class="dither-box dither-stripe"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: var(--space-2); text-align: center;">STRIPE</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- X. SPECIAL SCREENS -->
+        <section class="section" data-section="X. SCREENS">
+            <h2 class="section-title">SPECIAL SCREENS</h2>
+
+            <div class="screen-overlay" style="margin-bottom: var(--space-5);">
+                <div class="game-over-text">GAME OVER</div>
+                <div class="high-score-text">YOUR SCORE: 087,650</div>
+                <div style="display: flex; justify-content: center; gap: var(--space-4);">
+                    <button class="btn btn--primary">CONTINUE?</button>
+                    <button class="btn btn--danger">QUIT</button>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 8px; color: var(--pixel-gray); margin-top: var(--space-4);">
+                    INSERT COIN <span class="blink">_</span>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-size: 8px; color: var(--text-muted); margin: var(--space-5) 0 var(--space-3);">// PIXEL ART DECORATIONS</h3>
+            <div style="display: flex; gap: var(--space-6); align-items: center; padding: var(--space-4); background: var(--bg-secondary);">
+                <div>
+                    <div class="pixel-heart float-animation"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: 32px;">HEART</div>
+                </div>
+                <div>
+                    <div class="pixel-star float-animation" style="animation-delay: 0.3s;"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: 32px;">STAR</div>
+                </div>
+                <div>
+                    <div class="pixel-coin coin-animation"></div>
+                    <div style="font-family: var(--font-display); font-size: 8px; margin-top: 28px;">COIN</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="pixel-divider"></div>
+
+        <!-- FOOTER -->
+        <footer class="game-footer">
+            <div class="footer-logo">
+                <div class="pixel-star"></div>
+                <div class="pixel-heart"></div>
+                <div class="pixel-star"></div>
+            </div>
+            <div class="footer-text">
+                PIXEL QUEST DESIGN SYSTEM v1.0<br>
+                MADE WITH 8-BIT LOVE<br>
+                &copy; 2024 RETRO STUDIOS
+            </div>
+            <div class="footer-links">
+                <a href="#">[DOCUMENTATION]</a>
+                <a href="#">[SOURCE CODE]</a>
+                <a href="#">[CREDITS]</a>
+            </div>
+            <div style="font-family: var(--font-display); font-size: 8px; color: var(--pixel-gray); margin-top: var(--space-4);">
+                THANK YOU FOR PLAYING!
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ================================================================
+        // KONAMI CODE EASTER EGG
+        // ================================================================
+        let konamiCode = [];
+        const konamiSequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
+
+        document.addEventListener('keydown', (e) => {
+            konamiCode.push(e.keyCode);
+            konamiCode = konamiCode.slice(-10);
+
+            if (konamiCode.join(',') === konamiSequence.join(',')) {
+                // Power-up effect!
+                document.body.style.filter = 'hue-rotate(180deg)';
+                setTimeout(() => {
+                    document.body.style.filter = '';
+                }, 3000);
+
+                // Flash effect
+                const flash = document.createElement('div');
+                flash.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: white;
+                    z-index: 99999;
+                    animation: flash-out 0.5s forwards;
+                `;
+                document.body.appendChild(flash);
+
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes flash-out {
+                        0% { opacity: 1; }
+                        100% { opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+
+                setTimeout(() => flash.remove(), 500);
+
+                console.log('%c+30 LIVES!', 'color: #7cfc00; background: #0f0f0f; padding: 10px; font-family: "Press Start 2P", monospace; font-size: 20px;');
+            }
+        });
+
+        // ================================================================
+        // TYPEWRITER EFFECT FOR MESSAGE BOX
+        // ================================================================
+        const messageBoxes = document.querySelectorAll('.message-text');
+        messageBoxes.forEach(box => {
+            const text = box.textContent;
+            box.textContent = '';
+            let i = 0;
+
+            function typeWriter() {
+                if (i < text.length) {
+                    box.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 30);
+                }
+            }
+
+            // Start typing when element is visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        typeWriter();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+            observer.observe(box);
+        });
+
+        // ================================================================
+        // COIN COLLECTION SOUND SIMULATION (visual feedback)
+        // ================================================================
+        const coins = document.querySelectorAll('.pixel-coin');
+        coins.forEach(coin => {
+            coin.style.cursor = 'pointer';
+            coin.addEventListener('click', () => {
+                coin.style.transform = 'scale(1.5)';
+                coin.style.opacity = '0';
+                setTimeout(() => {
+                    coin.style.transform = '';
+                    coin.style.opacity = '1';
+                }, 300);
+            });
+        });
+
+        // ================================================================
+        // BUTTON PRESS SOUND SIMULATION (visual feedback)
+        // ================================================================
+        const buttons = document.querySelectorAll('.btn:not(:disabled)');
+        buttons.forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.filter = 'brightness(0.8)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.filter = '';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.filter = '';
+            });
+        });
+    </script>
+</body>
+</html>
