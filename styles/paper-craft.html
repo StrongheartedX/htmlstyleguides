@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Craft Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Paper Colors */
+            --paper-cream: #faf8f5;
+            --paper-white: #ffffff;
+            --paper-kraft: #c4a77d;
+            --paper-kraft-light: #dbc8a9;
+            --paper-kraft-dark: #a08060;
+            --paper-rose: #f5e1e1;
+            --paper-mint: #e1f0e8;
+            --paper-sky: #e1ebf5;
+            --paper-lavender: #ebe1f5;
+            --paper-peach: #f5ebe1;
+            --paper-yellow: #f5f0d0;
+
+            /* Accent Colors */
+            --accent-coral: #e07a5f;
+            --accent-sage: #7d9a78;
+            --accent-navy: #3d5a80;
+            --accent-plum: #6d4c7d;
+            --accent-rust: #bc6c25;
+
+            /* Neutrals */
+            --ink-dark: #2c2c2c;
+            --ink-medium: #5c5c5c;
+            --ink-light: #8c8c8c;
+            --pencil-gray: #a0a0a0;
+
+            /* Tape Colors */
+            --tape-cream: rgba(255, 248, 220, 0.85);
+            --tape-mint: rgba(200, 230, 210, 0.75);
+            --tape-pink: rgba(255, 220, 220, 0.75);
+
+            /* Fonts */
+            --font-display: 'Caveat', cursive;
+            --font-handwritten: 'Patrick Hand', cursive;
+            --font-body: 'Nunito', sans-serif;
+
+            /* Spacing */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* Shadows - Paper Layers */
+            --shadow-paper-subtle:
+                0 1px 1px rgba(0,0,0,0.04),
+                0 2px 4px rgba(0,0,0,0.04);
+            --shadow-paper-light:
+                0 1px 2px rgba(0,0,0,0.06),
+                0 2px 4px rgba(0,0,0,0.06),
+                0 4px 8px rgba(0,0,0,0.04);
+            --shadow-paper-medium:
+                0 2px 4px rgba(0,0,0,0.08),
+                0 4px 8px rgba(0,0,0,0.08),
+                0 8px 16px rgba(0,0,0,0.06);
+            --shadow-paper-heavy:
+                0 4px 8px rgba(0,0,0,0.1),
+                0 8px 16px rgba(0,0,0,0.08),
+                0 16px 32px rgba(0,0,0,0.06);
+            --shadow-paper-lifted:
+                0 8px 16px rgba(0,0,0,0.12),
+                0 16px 32px rgba(0,0,0,0.1),
+                0 24px 48px rgba(0,0,0,0.08);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease-out;
+            --transition-base: 0.25s ease-out;
+            --transition-slow: 0.4s ease-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--ink-dark);
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 50px,
+                    rgba(0,0,0,0.01) 50px,
+                    rgba(0,0,0,0.01) 51px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 50px,
+                    rgba(0,0,0,0.01) 50px,
+                    rgba(0,0,0,0.01) 51px
+                ),
+                linear-gradient(135deg, var(--paper-cream) 0%, #f0ebe3 100%);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* ========================================
+           PAPER EFFECTS & TEXTURES
+           ======================================== */
+
+        /* Base Paper Layer */
+        .paper-layer {
+            background: var(--paper-white);
+            box-shadow: var(--shadow-paper-light);
+            position: relative;
+        }
+
+        /* Torn Paper Edge - Top */
+        .torn-edge-top::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 0;
+            right: 0;
+            height: 16px;
+            background: inherit;
+            clip-path: polygon(
+                0% 50%, 2% 60%, 4% 45%, 6% 55%, 8% 48%, 10% 58%,
+                12% 52%, 14% 45%, 16% 55%, 18% 50%, 20% 58%, 22% 48%,
+                24% 55%, 26% 45%, 28% 52%, 30% 48%, 32% 55%, 34% 50%,
+                36% 58%, 38% 45%, 40% 52%, 42% 55%, 44% 48%, 46% 55%,
+                48% 50%, 50% 58%, 52% 45%, 54% 52%, 56% 48%, 58% 55%,
+                60% 50%, 62% 58%, 64% 48%, 66% 55%, 68% 45%, 70% 52%,
+                72% 55%, 74% 48%, 76% 58%, 78% 50%, 80% 55%, 82% 45%,
+                84% 52%, 86% 55%, 88% 48%, 90% 58%, 92% 50%, 94% 55%,
+                96% 48%, 98% 52%, 100% 50%, 100% 100%, 0% 100%
+            );
+        }
+
+        /* Torn Paper Edge - Bottom */
+        .torn-edge-bottom::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 16px;
+            background: inherit;
+            clip-path: polygon(
+                0% 0%, 100% 0%, 100% 50%, 98% 40%, 96% 55%, 94% 45%,
+                92% 52%, 90% 42%, 88% 55%, 86% 48%, 84% 52%, 82% 45%,
+                80% 55%, 78% 50%, 76% 42%, 74% 52%, 72% 45%, 70% 55%,
+                68% 48%, 66% 52%, 64% 42%, 62% 55%, 60% 50%, 58% 45%,
+                56% 52%, 54% 42%, 52% 55%, 50% 50%, 48% 42%, 46% 52%,
+                44% 45%, 42% 55%, 40% 48%, 38% 52%, 36% 42%, 34% 55%,
+                32% 50%, 30% 45%, 28% 52%, 26% 42%, 24% 55%, 22% 48%,
+                20% 52%, 18% 42%, 16% 55%, 14% 50%, 12% 45%, 10% 52%,
+                8% 42%, 6% 55%, 4% 48%, 2% 52%, 0% 50%
+            );
+        }
+
+        /* Fold/Crease Effect */
+        .paper-fold {
+            position: relative;
+        }
+
+        .paper-fold::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(0,0,0,0.06) 20%,
+                rgba(0,0,0,0.08) 50%,
+                rgba(0,0,0,0.06) 80%,
+                transparent 100%
+            );
+            box-shadow:
+                -1px 0 0 rgba(255,255,255,0.5),
+                1px 0 0 rgba(0,0,0,0.03);
+        }
+
+        /* Corner Fold */
+        .corner-fold {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .corner-fold::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(
+                225deg,
+                var(--paper-cream) 0%,
+                var(--paper-cream) 50%,
+                transparent 50%
+            );
+            box-shadow:
+                -2px 2px 3px rgba(0,0,0,0.1),
+                inset 1px -1px 1px rgba(0,0,0,0.05);
+        }
+
+        /* Tape Decoration */
+        .tape {
+            position: absolute;
+            width: 80px;
+            height: 24px;
+            background: var(--tape-cream);
+            transform: rotate(-3deg);
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.1),
+                inset 0 0 0 1px rgba(255,255,255,0.3);
+            z-index: 10;
+        }
+
+        .tape::before,
+        .tape::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.08) 2px,
+                rgba(0,0,0,0.08) 4px
+            );
+        }
+
+        .tape::before { left: 0; }
+        .tape::after { right: 0; }
+
+        .tape-top-left {
+            top: -8px;
+            left: 20px;
+            transform: rotate(-12deg);
+        }
+
+        .tape-top-right {
+            top: -8px;
+            right: 20px;
+            transform: rotate(8deg);
+        }
+
+        .tape-mint {
+            background: var(--tape-mint);
+        }
+
+        .tape-pink {
+            background: var(--tape-pink);
+        }
+
+        /* Staple Effect */
+        .staple {
+            position: absolute;
+            width: 12px;
+            height: 4px;
+            background: linear-gradient(
+                to bottom,
+                #c0c0c0 0%,
+                #909090 50%,
+                #a0a0a0 100%
+            );
+            border-radius: 1px;
+            box-shadow:
+                0 1px 1px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+
+        /* Emboss Effect */
+        .embossed {
+            text-shadow:
+                1px 1px 0 rgba(255,255,255,0.8),
+                -1px -1px 0 rgba(0,0,0,0.05);
+        }
+
+        /* Deboss Effect */
+        .debossed {
+            text-shadow:
+                -1px -1px 0 rgba(255,255,255,0.5),
+                1px 1px 0 rgba(0,0,0,0.1);
+            color: rgba(0,0,0,0.6);
+        }
+
+        /* ========================================
+           HEADER
+           ======================================== */
+
+        .header {
+            padding: var(--space-9) 0 var(--space-8);
+            position: relative;
+        }
+
+        .header-paper {
+            background: var(--paper-white);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-paper-heavy);
+            position: relative;
+            transform: rotate(-0.5deg);
+        }
+
+        .header-paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 28px,
+                    rgba(100, 149, 237, 0.1) 28px,
+                    rgba(100, 149, 237, 0.1) 29px
+                );
+            pointer-events: none;
+        }
+
+        .header-paper .tape {
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            width: 100px;
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 10vw, 7rem);
+            font-weight: 700;
+            color: var(--ink-dark);
+            line-height: 1;
+            margin-bottom: var(--space-4);
+            position: relative;
+        }
+
+        .header-subtitle {
+            font-family: var(--font-handwritten);
+            font-size: 1.5rem;
+            color: var(--ink-medium);
+            transform: rotate(-1deg);
+            display: inline-block;
+        }
+
+        .origami-crane {
+            position: absolute;
+            top: var(--space-6);
+            right: var(--space-6);
+            width: 80px;
+            height: 80px;
+            opacity: 0.9;
+        }
+
+        .origami-crane svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.15));
+        }
+
+        /* ========================================
+           SECTIONS
+           ======================================== */
+
+        .section {
+            padding: var(--space-8) 0;
+            position: relative;
+        }
+
+        .section-paper {
+            background: var(--paper-white);
+            padding: var(--space-7);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+            margin-bottom: var(--space-6);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-6);
+            position: relative;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: var(--accent-coral);
+            opacity: 0.8;
+            line-height: 1;
+            margin-bottom: var(--space-2);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-3);
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(
+                90deg,
+                var(--accent-coral) 0%,
+                var(--accent-coral) 60%,
+                transparent 100%
+            );
+            opacity: 0.6;
+        }
+
+        .section-lead {
+            font-family: var(--font-handwritten);
+            font-size: 1.25rem;
+            color: var(--ink-medium);
+            max-width: 60ch;
+        }
+
+        /* ========================================
+           01 - COLORS
+           ======================================== */
+
+        .color-swatches {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            position: relative;
+            transition: transform var(--transition-base);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px) rotate(1deg);
+        }
+
+        .color-chip {
+            aspect-ratio: 1;
+            background: var(--paper-white);
+            box-shadow: var(--shadow-paper-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-chip-inner {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 30%;
+            border-radius: 2px;
+        }
+
+        .color-chip::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0.1) 0%,
+                transparent 50%,
+                rgba(0,0,0,0.03) 100%
+            );
+            pointer-events: none;
+        }
+
+        .color-info {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+        }
+
+        .color-name {
+            font-family: var(--font-handwritten);
+            font-size: 0.95rem;
+            color: var(--ink-dark);
+            display: block;
+        }
+
+        .color-value {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Paper texture color blocks */
+        .color-paper-stack {
+            display: flex;
+            gap: var(--space-5);
+            flex-wrap: wrap;
+            margin-top: var(--space-6);
+        }
+
+        .paper-color-card {
+            width: 180px;
+            height: 120px;
+            position: relative;
+            cursor: pointer;
+            transition: transform var(--transition-base);
+        }
+
+        .paper-color-card:hover {
+            transform: rotate(-2deg) translateY(-5px);
+        }
+
+        .paper-color-card .layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        .paper-color-card .layer-1 {
+            transform: rotate(3deg);
+            opacity: 0.6;
+        }
+
+        .paper-color-card .layer-2 {
+            transform: rotate(1.5deg);
+            opacity: 0.8;
+        }
+
+        .paper-color-card .layer-3 {
+            transform: rotate(0deg);
+            box-shadow: var(--shadow-paper-medium);
+        }
+
+        .paper-color-card .label {
+            position: absolute;
+            bottom: var(--space-3);
+            left: var(--space-3);
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            z-index: 5;
+        }
+
+        /* ========================================
+           02 - TYPOGRAPHY
+           ======================================== */
+
+        .type-specimen {
+            background: var(--paper-white);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-paper-light);
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .type-specimen::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent-sage);
+        }
+
+        .type-sample {
+            border-bottom: 1px dashed var(--pencil-gray);
+            padding: var(--space-5) 0;
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-6);
+        }
+
+        .type-sample:last-child {
+            border-bottom: none;
+        }
+
+        .type-meta {
+            flex-shrink: 0;
+            width: 140px;
+        }
+
+        .type-name {
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--ink-dark);
+            display: block;
+        }
+
+        .type-specs {
+            font-size: 0.75rem;
+            color: var(--ink-light);
+        }
+
+        .type-preview {
+            flex-grow: 1;
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--ink-dark);
+            line-height: 1.1;
+        }
+
+        .type-h1 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--ink-dark);
+        }
+
+        .type-h2 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 600;
+            color: var(--ink-dark);
+        }
+
+        .type-h3 {
+            font-family: var(--font-handwritten);
+            font-size: 1.5rem;
+            color: var(--ink-dark);
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ink-dark);
+            line-height: 1.6;
+        }
+
+        .type-small {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            color: var(--ink-medium);
+        }
+
+        .font-showcase {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-5);
+            margin-top: var(--space-6);
+        }
+
+        .font-card {
+            background: var(--paper-white);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-paper-light);
+            text-align: center;
+            position: relative;
+            transition: transform var(--transition-base);
+        }
+
+        .font-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-paper-medium);
+        }
+
+        .font-card .staple {
+            top: var(--space-3);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .font-preview {
+            font-size: 2.5rem;
+            margin: var(--space-5) 0 var(--space-3);
+            color: var(--ink-dark);
+        }
+
+        .font-name {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            color: var(--ink-medium);
+            font-weight: 600;
+        }
+
+        /* ========================================
+           03 - SPACING
+           ======================================== */
+
+        .spacing-ruler {
+            background: var(--paper-kraft-light);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+        }
+
+        .spacing-ruler::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--paper-kraft-dark) 0px,
+                    var(--paper-kraft-dark) 1px,
+                    transparent 1px,
+                    transparent 10px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    var(--paper-kraft-dark) 0px,
+                    var(--paper-kraft-dark) 2px,
+                    transparent 2px,
+                    transparent 50px
+                );
+            opacity: 0.3;
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-4);
+            padding: var(--space-2) 0;
+        }
+
+        .spacing-label {
+            width: 60px;
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--ink-dark);
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(
+                to bottom,
+                var(--accent-coral) 0%,
+                #c4644d 100%
+            );
+            border-radius: 2px;
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 8px;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.3),
+                transparent
+            );
+            border-radius: 1px;
+        }
+
+        .spacing-value {
+            font-size: 0.8rem;
+            color: var(--ink-light);
+            font-family: monospace;
+            width: 50px;
+        }
+
+        /* ========================================
+           04 - BUTTONS
+           ======================================== */
+
+        .button-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-5);
+            margin-bottom: var(--space-6);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+            background: var(--paper-white);
+            color: var(--ink-dark);
+            box-shadow: var(--shadow-paper-light);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid var(--ink-dark);
+            opacity: 0.2;
+            transition: opacity var(--transition-fast);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px) rotate(-1deg);
+            box-shadow: var(--shadow-paper-medium);
+        }
+
+        .btn:hover::before {
+            opacity: 0.4;
+        }
+
+        .btn:active {
+            transform: translateY(0) rotate(0deg);
+            box-shadow: var(--shadow-paper-subtle);
+        }
+
+        /* Button with tape */
+        .btn-taped {
+            background: var(--paper-white);
+            padding: var(--space-4) var(--space-7);
+        }
+
+        .btn-taped::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 16px;
+            background: var(--tape-cream);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Kraft paper button */
+        .btn-kraft {
+            background: var(--paper-kraft);
+            color: var(--paper-white);
+        }
+
+        .btn-kraft::before {
+            border-color: var(--paper-kraft-dark);
+            opacity: 0.3;
+        }
+
+        /* Colored paper buttons */
+        .btn-coral {
+            background: var(--accent-coral);
+            color: var(--paper-white);
+        }
+
+        .btn-coral::before {
+            border-color: #c4644d;
+        }
+
+        .btn-sage {
+            background: var(--accent-sage);
+            color: var(--paper-white);
+        }
+
+        .btn-sage::before {
+            border-color: #5d7a58;
+        }
+
+        /* Cut-out button */
+        .btn-cutout {
+            background: transparent;
+            border: 2px dashed var(--ink-dark);
+            box-shadow: none;
+        }
+
+        .btn-cutout::before {
+            display: none;
+        }
+
+        .btn-cutout:hover {
+            background: var(--paper-cream);
+            border-style: solid;
+        }
+
+        /* Folded corner button */
+        .btn-folded {
+            overflow: hidden;
+        }
+
+        .btn-folded::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(
+                225deg,
+                var(--paper-cream) 0%,
+                var(--paper-cream) 50%,
+                transparent 50%
+            );
+            box-shadow: -1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Size variants */
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.95rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-5) var(--space-8);
+            font-size: 1.25rem;
+        }
+
+        /* ========================================
+           05 - FORMS
+           ======================================== */
+
+        .form-paper {
+            background: var(--paper-white);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+        }
+
+        .form-paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 40px;
+            bottom: 0;
+            width: 1px;
+            background: rgba(255, 100, 100, 0.3);
+        }
+
+        .form-paper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 27px,
+                    rgba(100, 149, 237, 0.15) 27px,
+                    rgba(100, 149, 237, 0.15) 28px
+                );
+            pointer-events: none;
+        }
+
+        .input-group {
+            margin-bottom: var(--space-5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--ink-medium);
+            margin-bottom: var(--space-2);
+            padding-left: 50px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            padding-left: 50px;
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            color: var(--ink-dark);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--pencil-gray);
+            transition: border-color var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-bottom-color: var(--accent-coral);
+        }
+
+        .input-field::placeholder {
+            color: var(--pencil-gray);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            min-height: 120px;
+            resize: vertical;
+            border: 2px solid var(--pencil-gray);
+            border-radius: 2px;
+            padding: var(--space-4);
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* Checkbox styled as paper clip */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+            padding-left: 50px;
+        }
+
+        .checkbox-paper {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--paper-white);
+            border: 2px solid var(--ink-light);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .checkbox-paper:checked {
+            background: var(--accent-sage);
+            border-color: var(--accent-sage);
+        }
+
+        .checkbox-paper:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 6px;
+            width: 5px;
+            height: 10px;
+            border: 2px solid white;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-label {
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--ink-dark);
+        }
+
+        /* ========================================
+           06 - CARDS
+           ======================================== */
+
+        .card-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .card {
+            background: var(--paper-white);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+            transition: all var(--transition-base);
+            overflow: visible;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) rotate(-0.5deg);
+            box-shadow: var(--shadow-paper-lifted);
+        }
+
+        /* Card with tape */
+        .card-taped {
+            padding: var(--space-6);
+            padding-top: var(--space-7);
+        }
+
+        .card-taped .tape {
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+        }
+
+        /* Card with corner fold */
+        .card-folded {
+            padding: var(--space-6);
+        }
+
+        .card-folded::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(
+                315deg,
+                var(--paper-cream) 0%,
+                var(--paper-cream) 50%,
+                transparent 50%
+            );
+            box-shadow: -3px -3px 5px rgba(0,0,0,0.08);
+        }
+
+        /* Layered card */
+        .card-layered {
+            padding: var(--space-6);
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+
+        .card-layered::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: 5px;
+            bottom: 5px;
+            background: var(--paper-rose);
+            z-index: -1;
+            box-shadow: var(--shadow-paper-subtle);
+            transform: rotate(1deg);
+        }
+
+        .card-layered::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: 10px;
+            bottom: 10px;
+            background: var(--paper-mint);
+            z-index: -2;
+            box-shadow: var(--shadow-paper-subtle);
+            transform: rotate(-1deg);
+        }
+
+        /* Kraft paper card */
+        .card-kraft {
+            background: var(--paper-kraft);
+            color: var(--paper-white);
+            padding: var(--space-6);
+        }
+
+        .card-kraft h3 {
+            color: var(--paper-white);
+        }
+
+        .card-kraft p {
+            color: rgba(255,255,255,0.85);
+        }
+
+        /* Torn edge card */
+        .card-torn {
+            padding: var(--space-6);
+            padding-bottom: var(--space-7);
+        }
+
+        .card h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--ink-medium);
+            line-height: 1.6;
+        }
+
+        .card-number {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            color: var(--accent-coral);
+            opacity: 0.7;
+            line-height: 1;
+            margin-bottom: var(--space-3);
+        }
+
+        /* ========================================
+           07 - DATA TABLE
+           ======================================== */
+
+        .table-paper {
+            background: var(--paper-white);
+            padding: var(--space-4);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-paper .staple {
+            top: var(--space-3);
+            left: var(--space-4);
+        }
+
+        .table-paper .staple:nth-of-type(2) {
+            left: auto;
+            right: var(--space-4);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-body);
+        }
+
+        .table thead {
+            background: var(--paper-kraft-light);
+        }
+
+        .table th {
+            text-align: left;
+            padding: var(--space-4);
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink-dark);
+            border-bottom: 2px solid var(--paper-kraft);
+        }
+
+        .table td {
+            padding: var(--space-4);
+            border-bottom: 1px dashed var(--pencil-gray);
+            font-size: 0.95rem;
+            color: var(--ink-dark);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table tbody tr {
+            transition: background var(--transition-fast);
+        }
+
+        .table tbody tr:hover {
+            background: var(--paper-yellow);
+        }
+
+        .table .text-right {
+            text-align: right;
+        }
+
+        /* ========================================
+           08 - BADGES
+           ======================================== */
+
+        .badge-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-handwritten);
+            font-size: 0.95rem;
+            position: relative;
+            background: var(--paper-white);
+            color: var(--ink-dark);
+            box-shadow: var(--shadow-paper-subtle);
+        }
+
+        /* Tape badge */
+        .badge-tape {
+            background: var(--tape-cream);
+            padding: var(--space-2) var(--space-5);
+            transform: rotate(-2deg);
+        }
+
+        .badge-tape::before,
+        .badge-tape::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.08) 2px,
+                rgba(0,0,0,0.08) 4px
+            );
+        }
+
+        .badge-tape::before { left: 0; }
+        .badge-tape::after { right: 0; }
+
+        /* Stamp badge */
+        .badge-stamp {
+            border: 3px solid var(--accent-coral);
+            background: transparent;
+            color: var(--accent-coral);
+            border-radius: 4px;
+            transform: rotate(-5deg);
+            padding: var(--space-1) var(--space-3);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.8rem;
+        }
+
+        .badge-stamp::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(224, 122, 95, 0.1) 2px,
+                    rgba(224, 122, 95, 0.1) 4px
+                );
+        }
+
+        /* Colored paper badges */
+        .badge-rose {
+            background: var(--paper-rose);
+        }
+
+        .badge-mint {
+            background: var(--paper-mint);
+        }
+
+        .badge-sky {
+            background: var(--paper-sky);
+        }
+
+        .badge-lavender {
+            background: var(--paper-lavender);
+        }
+
+        .badge-peach {
+            background: var(--paper-peach);
+        }
+
+        /* Kraft badge */
+        .badge-kraft {
+            background: var(--paper-kraft);
+            color: var(--paper-white);
+        }
+
+        /* Sticker badge */
+        .badge-sticker {
+            border-radius: 50px;
+            padding: var(--space-2) var(--space-5);
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.1),
+                inset 0 -2px 0 rgba(0,0,0,0.05);
+        }
+
+        .badge-sticker.sage {
+            background: var(--accent-sage);
+            color: var(--paper-white);
+        }
+
+        .badge-sticker.coral {
+            background: var(--accent-coral);
+            color: var(--paper-white);
+        }
+
+        /* ========================================
+           09 - DESIGN PRINCIPLES
+           ======================================== */
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-6);
+        }
+
+        @media (max-width: 768px) {
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .principle-card {
+            background: var(--paper-white);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-paper-medium);
+            position: relative;
+        }
+
+        .principle-icon {
+            width: 60px;
+            height: 60px;
+            margin-bottom: var(--space-4);
+            position: relative;
+        }
+
+        /* Origami icons */
+        .icon-layers {
+            background:
+                linear-gradient(135deg, var(--paper-rose) 50%, transparent 50%);
+            box-shadow:
+                8px 8px 0 var(--paper-mint),
+                16px 16px 0 var(--paper-sky);
+            width: 40px;
+            height: 40px;
+        }
+
+        .icon-fold {
+            width: 50px;
+            height: 50px;
+            background: var(--paper-kraft-light);
+            position: relative;
+            clip-path: polygon(
+                0% 0%, 70% 0%, 100% 30%, 100% 100%, 0% 100%
+            );
+        }
+
+        .icon-fold::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 30%;
+            height: 30%;
+            background: linear-gradient(
+                225deg,
+                var(--paper-kraft) 50%,
+                transparent 50%
+            );
+        }
+
+        .icon-texture {
+            width: 50px;
+            height: 50px;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    var(--paper-cream),
+                    var(--paper-cream) 5px,
+                    var(--paper-kraft-light) 5px,
+                    var(--paper-kraft-light) 10px
+                );
+            border: 2px solid var(--paper-kraft);
+        }
+
+        .icon-handmade {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--accent-coral);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .icon-handmade::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: var(--accent-coral);
+            border-radius: 50%;
+        }
+
+        .principle-title {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-3);
+        }
+
+        .principle-description {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ink-medium);
+            line-height: 1.7;
+        }
+
+        /* ========================================
+           FOOTER
+           ======================================== */
+
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-paper {
+            background: var(--paper-kraft-light);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-paper-light);
+            display: inline-block;
+            position: relative;
+            transform: rotate(-1deg);
+        }
+
+        .footer-paper .tape {
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .footer-text {
+            font-family: var(--font-handwritten);
+            font-size: 1.25rem;
+            color: var(--ink-dark);
+            margin: 0;
+        }
+
+        .footer-note {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            color: var(--ink-light);
+            margin-top: var(--space-2);
+        }
+
+        /* ========================================
+           DECORATIVE ELEMENTS
+           ======================================== */
+
+        /* Paper clip decoration */
+        .paperclip {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            border: 3px solid #a0a0a0;
+            border-radius: 15px 15px 0 0;
+            border-bottom: none;
+        }
+
+        .paperclip::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 5px;
+            width: 14px;
+            height: 40px;
+            border: 3px solid #a0a0a0;
+            border-radius: 10px 10px 0 0;
+            border-bottom: none;
+        }
+
+        /* Washi tape strips */
+        .washi-strip {
+            position: absolute;
+            height: 20px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--accent-coral),
+                var(--accent-coral) 10px,
+                var(--paper-white) 10px,
+                var(--paper-white) 20px
+            );
+            opacity: 0.7;
+        }
+
+        /* Pencil line decoration */
+        .pencil-line {
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                var(--pencil-gray) 0%,
+                var(--pencil-gray) 80%,
+                transparent 100%
+            );
+            opacity: 0.5;
+            margin: var(--space-4) 0;
+        }
+
+        /* ========================================
+           UTILITIES
+           ======================================== */
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+
+        .rotate-left { transform: rotate(-2deg); }
+        .rotate-right { transform: rotate(2deg); }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .font-showcase {
+                grid-template-columns: 1fr;
+            }
+
+            .type-sample {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+
+            .type-meta {
+                width: 100%;
+            }
+
+            .header-paper {
+                padding: var(--space-6);
+            }
+
+            .section-paper {
+                padding: var(--space-5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-paper">
+                <div class="tape tape-mint"></div>
+                <p class="section-number" style="margin-bottom: var(--space-2);">Design System</p>
+                <h1 class="header-title">Paper Craft</h1>
+                <p class="header-subtitle">Handmade textures. Layered depth. Tactile warmth.</p>
+
+                <!-- Origami Crane SVG -->
+                <div class="origami-crane">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 10 L90 50 L50 90 L10 50 Z" fill="#f5e1e1" stroke="#e07a5f" stroke-width="1"/>
+                        <path d="M50 10 L50 50 L10 50 Z" fill="#e1f0e8" stroke="#7d9a78" stroke-width="1"/>
+                        <path d="M50 50 L90 50 L50 90 Z" fill="#e1ebf5" stroke="#3d5a80" stroke-width="1"/>
+                        <path d="M30 35 L10 50 L30 45 Z" fill="#c4a77d" stroke="#a08060" stroke-width="1"/>
+                        <path d="M50 10 L55 25 L45 25 Z" fill="#faf8f5" stroke="#8c8c8c" stroke-width="0.5"/>
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- 01 - Colors -->
+        <section class="section">
+            <div class="section-paper corner-fold">
+                <div class="section-header">
+                    <p class="section-number">01</p>
+                    <h2 class="section-title">Colors</h2>
+                    <p class="section-lead">A warm palette inspired by paper stocks, craft materials, and natural pigments.</p>
+                </div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Paper Tones</h3>
+                <div class="color-swatches">
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-cream);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Cream</span>
+                                <span class="color-value">#faf8f5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-kraft);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Kraft</span>
+                                <span class="color-value">#c4a77d</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-rose);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Rose</span>
+                                <span class="color-value">#f5e1e1</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-mint);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Mint</span>
+                                <span class="color-value">#e1f0e8</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-sky);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Sky</span>
+                                <span class="color-value">#e1ebf5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-chip">
+                            <div class="color-chip-inner" style="background: var(--paper-lavender);"></div>
+                            <div class="color-info">
+                                <span class="color-name">Lavender</span>
+                                <span class="color-value">#ebe1f5</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pencil-line" style="margin: var(--space-6) 0;"></div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Accent Colors</h3>
+                <div class="color-paper-stack">
+                    <div class="paper-color-card">
+                        <div class="layer layer-1" style="background: var(--accent-coral);"></div>
+                        <div class="layer layer-2" style="background: var(--accent-coral);"></div>
+                        <div class="layer layer-3" style="background: var(--accent-coral);"></div>
+                        <span class="label" style="color: white;">Coral #e07a5f</span>
+                    </div>
+                    <div class="paper-color-card">
+                        <div class="layer layer-1" style="background: var(--accent-sage);"></div>
+                        <div class="layer layer-2" style="background: var(--accent-sage);"></div>
+                        <div class="layer layer-3" style="background: var(--accent-sage);"></div>
+                        <span class="label" style="color: white;">Sage #7d9a78</span>
+                    </div>
+                    <div class="paper-color-card">
+                        <div class="layer layer-1" style="background: var(--accent-navy);"></div>
+                        <div class="layer layer-2" style="background: var(--accent-navy);"></div>
+                        <div class="layer layer-3" style="background: var(--accent-navy);"></div>
+                        <span class="label" style="color: white;">Navy #3d5a80</span>
+                    </div>
+                    <div class="paper-color-card">
+                        <div class="layer layer-1" style="background: var(--accent-plum);"></div>
+                        <div class="layer layer-2" style="background: var(--accent-plum);"></div>
+                        <div class="layer layer-3" style="background: var(--accent-plum);"></div>
+                        <span class="label" style="color: white;">Plum #6d4c7d</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 02 - Typography -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="tape tape-top-left tape-pink"></div>
+                <div class="tape tape-top-right"></div>
+
+                <div class="section-header">
+                    <p class="section-number">02</p>
+                    <h2 class="section-title">Typography</h2>
+                    <p class="section-lead">Handwritten charm meets readable body text. Personal yet professional.</p>
+                </div>
+
+                <div class="font-showcase">
+                    <div class="font-card">
+                        <div class="staple"></div>
+                        <div class="font-preview" style="font-family: var(--font-display);">Aa Bb Cc</div>
+                        <p class="font-name">Caveat - Display</p>
+                    </div>
+                    <div class="font-card">
+                        <div class="staple"></div>
+                        <div class="font-preview" style="font-family: var(--font-handwritten);">Aa Bb Cc</div>
+                        <p class="font-name">Patrick Hand - Headings</p>
+                    </div>
+                    <div class="font-card">
+                        <div class="staple"></div>
+                        <div class="font-preview" style="font-family: var(--font-body);">Aa Bb Cc</div>
+                        <p class="font-name">Nunito - Body</p>
+                    </div>
+                </div>
+
+                <div class="type-specimen" style="margin-top: var(--space-6);">
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Display</span>
+                            <span class="type-specs">Caveat 64px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-display">Paper Dreams</span>
+                        </div>
+                    </div>
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Heading 1</span>
+                            <span class="type-specs">Caveat 48px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-h1">Folded Memories</span>
+                        </div>
+                    </div>
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Heading 2</span>
+                            <span class="type-specs">Caveat 36px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-h2">Craft Collection</span>
+                        </div>
+                    </div>
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Heading 3</span>
+                            <span class="type-specs">Patrick Hand 24px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-h3">Handwritten Notes</span>
+                        </div>
+                    </div>
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Body</span>
+                            <span class="type-specs">Nunito 16px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-body">The art of paper crafting brings warmth and personality to every design. Each fold, cut, and layer tells a story of careful attention.</span>
+                        </div>
+                    </div>
+                    <div class="type-sample">
+                        <div class="type-meta">
+                            <span class="type-name">Small</span>
+                            <span class="type-specs">Nunito 14px</span>
+                        </div>
+                        <div class="type-preview">
+                            <span class="type-small">Captions, notes, and fine print appear in this smaller, softer style.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 03 - Spacing -->
+        <section class="section">
+            <div class="section-paper torn-edge-bottom">
+                <div class="section-header">
+                    <p class="section-number">03</p>
+                    <h2 class="section-title">Spacing</h2>
+                    <p class="section-lead">Generous whitespace lets elements breathe, like margins on a handwritten letter.</p>
+                </div>
+
+                <div class="spacing-ruler">
+                    <div class="spacing-row">
+                        <span class="spacing-label">4px</span>
+                        <div class="spacing-bar" style="width: 16px;"></div>
+                        <span class="spacing-value">xs</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">8px</span>
+                        <div class="spacing-bar" style="width: 32px;"></div>
+                        <span class="spacing-value">sm</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">12px</span>
+                        <div class="spacing-bar" style="width: 48px;"></div>
+                        <span class="spacing-value">md</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">16px</span>
+                        <div class="spacing-bar" style="width: 64px;"></div>
+                        <span class="spacing-value">base</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">24px</span>
+                        <div class="spacing-bar" style="width: 96px;"></div>
+                        <span class="spacing-value">lg</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">32px</span>
+                        <div class="spacing-bar" style="width: 128px;"></div>
+                        <span class="spacing-value">xl</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">48px</span>
+                        <div class="spacing-bar" style="width: 192px;"></div>
+                        <span class="spacing-value">2xl</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">64px</span>
+                        <div class="spacing-bar" style="width: 256px;"></div>
+                        <span class="spacing-value">3xl</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">96px</span>
+                        <div class="spacing-bar" style="width: 320px;"></div>
+                        <span class="spacing-value">4xl</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 04 - Buttons -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="section-header">
+                    <p class="section-number">04</p>
+                    <h2 class="section-title">Buttons</h2>
+                    <p class="section-lead">Paper-like buttons with subtle shadows and tactile hover effects.</p>
+                </div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Standard Buttons</h3>
+                <div class="button-showcase">
+                    <button class="btn">Default Button</button>
+                    <button class="btn btn-kraft">Kraft Paper</button>
+                    <button class="btn btn-coral">Coral</button>
+                    <button class="btn btn-sage">Sage</button>
+                </div>
+
+                <div class="pencil-line"></div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Special Styles</h3>
+                <div class="button-showcase">
+                    <button class="btn btn-taped">With Tape</button>
+                    <button class="btn btn-cutout">Cut Out</button>
+                    <button class="btn btn-folded">Folded Corner</button>
+                </div>
+
+                <div class="pencil-line"></div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Sizes</h3>
+                <div class="button-showcase">
+                    <button class="btn btn-sm">Small</button>
+                    <button class="btn">Medium</button>
+                    <button class="btn btn-lg">Large</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 05 - Forms -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="tape tape-top-left"></div>
+
+                <div class="section-header">
+                    <p class="section-number">05</p>
+                    <h2 class="section-title">Forms</h2>
+                    <p class="section-lead">Inputs styled like lined notebook paper. Write naturally.</p>
+                </div>
+
+                <div class="grid">
+                    <div class="col-6">
+                        <div class="form-paper">
+                            <div class="input-group">
+                                <label class="input-label">Your Name</label>
+                                <input type="text" class="input-field" placeholder="Write here...">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Email Address</label>
+                                <input type="email" class="input-field" placeholder="you@example.com">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Phone Number</label>
+                                <input type="tel" class="input-field" placeholder="(555) 123-4567">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-paper">
+                            <div class="input-group">
+                                <label class="input-label">Your Message</label>
+                                <textarea class="input-field" placeholder="Tell us your thoughts..."></textarea>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" class="checkbox-paper" id="check1">
+                                <label class="checkbox-label" for="check1">I agree to the terms</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" class="checkbox-paper" id="check2" checked>
+                                <label class="checkbox-label" for="check2">Send me updates</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 06 - Cards -->
+        <section class="section">
+            <div class="section-paper corner-fold">
+                <div class="section-header">
+                    <p class="section-number">06</p>
+                    <h2 class="section-title">Cards</h2>
+                    <p class="section-lead">Layered paper cards with tape, folds, and torn edges for depth.</p>
+                </div>
+
+                <div class="card-gallery">
+                    <div class="card card-taped">
+                        <div class="tape"></div>
+                        <div class="card-number">01</div>
+                        <h3>Taped Card</h3>
+                        <p>A simple card held in place with decorative tape. Perfect for notes and announcements.</p>
+                    </div>
+
+                    <div class="card card-folded">
+                        <div class="card-number">02</div>
+                        <h3>Folded Corner</h3>
+                        <p>A dog-eared corner adds a casual, bookmarked feeling to important content.</p>
+                    </div>
+
+                    <div class="card card-layered">
+                        <div class="card-number">03</div>
+                        <h3>Layered Stack</h3>
+                        <p>Multiple paper layers create depth and visual interest. Great for featured items.</p>
+                    </div>
+
+                    <div class="card card-kraft">
+                        <div class="card-number" style="color: rgba(255,255,255,0.6);">04</div>
+                        <h3>Kraft Paper</h3>
+                        <p>Natural kraft paper brings organic, eco-friendly warmth to your designs.</p>
+                    </div>
+
+                    <div class="card card-torn torn-edge-bottom">
+                        <div class="card-number">05</div>
+                        <h3>Torn Edge</h3>
+                        <p>Rough, torn edges give an authentic handmade feel to your content cards.</p>
+                    </div>
+
+                    <div class="card card-taped" style="background: var(--paper-yellow);">
+                        <div class="tape tape-mint"></div>
+                        <div class="card-number">06</div>
+                        <h3>Sticky Note</h3>
+                        <p>Yellow paper reminiscent of sticky notes. Ideal for tips and reminders.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 07 - Data Table -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="section-header">
+                    <p class="section-number">07</p>
+                    <h2 class="section-title">Data Table</h2>
+                    <p class="section-lead">Organized information on paper-textured surfaces with kraft headers.</p>
+                </div>
+
+                <div class="table-paper">
+                    <div class="staple"></div>
+                    <div class="staple"></div>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Paper Type</th>
+                                <th>Weight</th>
+                                <th>Texture</th>
+                                <th class="text-right">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cream Cotton</td>
+                                <td>120gsm</td>
+                                <td><span class="badge badge-rose">Smooth</span></td>
+                                <td class="text-right">$12.99</td>
+                            </tr>
+                            <tr>
+                                <td>Kraft Brown</td>
+                                <td>150gsm</td>
+                                <td><span class="badge badge-kraft">Textured</span></td>
+                                <td class="text-right">$8.99</td>
+                            </tr>
+                            <tr>
+                                <td>Japanese Washi</td>
+                                <td>80gsm</td>
+                                <td><span class="badge badge-mint">Fibrous</span></td>
+                                <td class="text-right">$24.99</td>
+                            </tr>
+                            <tr>
+                                <td>Recycled Gray</td>
+                                <td>100gsm</td>
+                                <td><span class="badge badge-sky">Speckled</span></td>
+                                <td class="text-right">$6.99</td>
+                            </tr>
+                            <tr>
+                                <td>Vellum</td>
+                                <td>90gsm</td>
+                                <td><span class="badge badge-lavender">Translucent</span></td>
+                                <td class="text-right">$15.99</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 08 - Badges -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="tape tape-top-right tape-pink"></div>
+
+                <div class="section-header">
+                    <p class="section-number">08</p>
+                    <h2 class="section-title">Badges</h2>
+                    <p class="section-lead">Labels, tags, and markers inspired by tape, stamps, and stickers.</p>
+                </div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Tape Labels</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge-tape">New Arrival</span>
+                    <span class="badge badge-tape" style="background: var(--tape-mint);">In Stock</span>
+                    <span class="badge badge-tape" style="background: var(--tape-pink);">Sale</span>
+                </div>
+
+                <div class="pencil-line"></div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Paper Colors</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge-rose">Rose</span>
+                    <span class="badge badge-mint">Mint</span>
+                    <span class="badge badge-sky">Sky</span>
+                    <span class="badge badge-lavender">Lavender</span>
+                    <span class="badge badge-peach">Peach</span>
+                    <span class="badge badge-kraft">Kraft</span>
+                </div>
+
+                <div class="pencil-line"></div>
+
+                <h3 style="font-family: var(--font-handwritten); margin-bottom: var(--space-4); color: var(--ink-medium);">Stamps & Stickers</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge-stamp">Approved</span>
+                    <span class="badge badge-stamp" style="border-color: var(--accent-sage); color: var(--accent-sage);">Verified</span>
+                    <span class="badge badge-sticker sage">Complete</span>
+                    <span class="badge badge-sticker coral">Urgent</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 09 - Design Principles -->
+        <section class="section">
+            <div class="section-paper">
+                <div class="section-header">
+                    <p class="section-number">09</p>
+                    <h2 class="section-title">Design Principles</h2>
+                    <p class="section-lead">The philosophy behind paper craft aesthetics.</p>
+                </div>
+
+                <div class="principles-grid">
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="icon-layers"></div>
+                        </div>
+                        <h3 class="principle-title">Layered Depth</h3>
+                        <p class="principle-description">Stack elements like sheets of paper to create natural depth. Use shadows to show elevation and relationship between components.</p>
+                    </div>
+
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="icon-fold"></div>
+                        </div>
+                        <h3 class="principle-title">Embrace Imperfection</h3>
+                        <p class="principle-description">Slight rotations, torn edges, and dog-eared corners add character. Perfect alignment can feel cold; intentional imperfection feels human.</p>
+                    </div>
+
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="icon-texture"></div>
+                        </div>
+                        <h3 class="principle-title">Tactile Textures</h3>
+                        <p class="principle-description">Simulate the feel of different paper stocks through subtle gradients, patterns, and shadows. Users should almost feel the texture.</p>
+                    </div>
+
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="icon-handmade"></div>
+                        </div>
+                        <h3 class="principle-title">Handmade Warmth</h3>
+                        <p class="principle-description">Combine handwritten fonts with crafted decorations. The goal is to evoke the care and attention of something made by hand.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-paper">
+                <div class="tape tape-mint"></div>
+                <p class="footer-text">Paper Craft Design System</p>
+                <p class="footer-note">Crafted with care, one fold at a time</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

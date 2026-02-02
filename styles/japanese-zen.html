@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Zen Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-serif: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+            --font-sans: 'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
+
+            /* Spacing - based on tatami proportions */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+            --space-11: 192px;
+
+            /* Core Colors - Natural, Muted Palette */
+            --ink: #1a1a1a;
+            --ink-light: #3d3d3d;
+            --ink-faded: #5c5c5c;
+
+            --stone: #6b6b6b;
+            --stone-light: #8a8a8a;
+            --stone-muted: #a3a3a3;
+
+            --sand: #e8e4de;
+            --sand-light: #f2efe9;
+            --sand-warm: #f7f4ee;
+
+            --washi: #faf8f5;
+            --washi-cream: #fdfcfa;
+
+            --bamboo: #7a8b6e;
+            --bamboo-light: #96a78a;
+            --bamboo-muted: #b8c4ad;
+
+            --rust: #8b5a4a;
+            --rust-light: #a67563;
+            --rust-muted: #c49a8a;
+
+            --indigo: #3d4f6f;
+            --indigo-light: #5a6d8a;
+            --indigo-muted: #8a9bb5;
+
+            /* Semantic Colors */
+            --text-primary: var(--ink);
+            --text-secondary: var(--ink-light);
+            --text-muted: var(--stone);
+            --bg-primary: var(--washi);
+            --bg-secondary: var(--sand-light);
+            --bg-accent: var(--sand);
+            --border-color: var(--sand);
+            --border-subtle: #e0dcd6;
+            --accent: var(--rust);
+            --accent-secondary: var(--bamboo);
+
+            /* Transitions - Slow, contemplative */
+            --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: 0.15s ease;
+
+            /* Border radius - subtle imperfection */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-lg: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* Washi paper texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Container with asymmetrical margins (Ma - negative space) */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-7);
+            padding-left: var(--space-9);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-5);
+            }
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-6);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-7 { grid-column: span 7; }
+        .col-6 { grid-column: span 6; }
+        .col-5 { grid-column: span 5; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-7, .col-6, .col-5, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Typography - Calligraphy-inspired */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-serif);
+            font-weight: 400;
+            line-height: 1.3;
+            letter-spacing: 0.02em;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 300;
+            margin-bottom: var(--space-6);
+            letter-spacing: 0.05em;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: var(--space-5);
+            letter-spacing: 0.03em;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: var(--space-4);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 60ch;
+        }
+
+        .lead {
+            font-size: 1.125rem;
+            line-height: 1.9;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        .japanese-text {
+            font-family: var(--font-serif);
+            letter-spacing: 0.1em;
+        }
+
+        .label-text {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* Enso Circle - Brush stroke effect */
+        .enso {
+            position: relative;
+            display: inline-block;
+        }
+
+        .enso::before {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--ink);
+            border-radius: 50%;
+            opacity: 0.15;
+            top: -40px;
+            right: -60px;
+            /* Imperfect circle - wabi-sabi */
+            transform: rotate(-15deg) scale(1, 0.95);
+        }
+
+        /* Brush stroke accent */
+        .brush-stroke {
+            position: relative;
+            display: inline-block;
+        }
+
+        .brush-stroke::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                var(--ink) 0%,
+                var(--ink) 60%,
+                transparent 100%
+            );
+            opacity: 0.4;
+            transform: scaleX(1.1) translateX(-5%);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-11) 0 var(--space-9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: var(--space-8);
+            right: 10%;
+            width: 200px;
+            height: 200px;
+            border: 2px solid var(--sand);
+            border-radius: 50%;
+            opacity: 0.6;
+            transform: rotate(-10deg) scale(1, 0.92);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: var(--space-9);
+            right: 12%;
+            width: 160px;
+            height: 160px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 50%;
+            opacity: 0.4;
+            transform: rotate(5deg) scale(0.98, 1);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-label {
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--stone);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .header-label::before {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--stone-muted);
+        }
+
+        .header h1 {
+            margin-bottom: var(--space-5);
+        }
+
+        .header-meta {
+            max-width: 400px;
+        }
+
+        .header-meta p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.9;
+            margin-bottom: 0;
+        }
+
+        /* Decorative vertical line */
+        .vertical-accent {
+            position: absolute;
+            left: var(--space-6);
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg,
+                transparent 0%,
+                var(--border-subtle) 20%,
+                var(--border-subtle) 80%,
+                transparent 100%
+            );
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-9) 0;
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: var(--space-7);
+            right: var(--space-7);
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-8);
+            max-width: 600px;
+        }
+
+        .section-number {
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            color: var(--stone-light);
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-number::after {
+            content: '';
+            width: 32px;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        .section-title-jp {
+            font-family: var(--font-serif);
+            font-size: 0.875rem;
+            color: var(--stone);
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-2);
+            font-weight: 300;
+        }
+
+        /* Color Blocks */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            transition: transform var(--transition-slow), box-shadow var(--transition-slow);
+            border-radius: var(--radius-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .color-name {
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-jp {
+            font-family: var(--font-serif);
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 2px;
+            letter-spacing: 0.1em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-value {
+            font-family: monospace;
+            font-size: 0.65rem;
+            opacity: 0.6;
+            margin-top: var(--space-1);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            border: 1px solid var(--ink);
+            background: transparent;
+            color: var(--ink);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--ink);
+            transition: left var(--transition-base);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--washi);
+            border-color: var(--ink);
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: var(--washi);
+        }
+
+        .btn-primary::before {
+            background: var(--washi);
+        }
+
+        .btn-primary:hover {
+            color: var(--ink);
+        }
+
+        .btn-primary:hover::before {
+            left: 0;
+        }
+
+        .btn-subtle {
+            border-color: var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .btn-subtle::before {
+            background: var(--sand-light);
+        }
+
+        .btn-subtle:hover {
+            color: var(--ink);
+            border-color: var(--stone-muted);
+        }
+
+        .btn-accent {
+            border-color: var(--rust);
+            color: var(--rust);
+        }
+
+        .btn-accent::before {
+            background: var(--rust);
+        }
+
+        .btn-accent:hover {
+            color: var(--washi);
+            border-color: var(--rust);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: 0.875rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: var(--space-6);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--stone);
+            margin-bottom: var(--space-3);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-4);
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            line-height: 1.6;
+            border: 1px solid var(--border-subtle);
+            background: var(--washi-cream);
+            color: var(--text-primary);
+            transition: all var(--transition-base);
+            border-radius: var(--radius-sm);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--stone-muted);
+            box-shadow: 0 0 0 3px rgba(139, 90, 74, 0.08);
+        }
+
+        .input-field::placeholder {
+            color: var(--stone-muted);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 140px;
+        }
+
+        .input-underline {
+            border: none;
+            border-bottom: 1px solid var(--border-subtle);
+            border-radius: 0;
+            background: transparent;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .input-underline:focus {
+            border-color: var(--ink);
+            box-shadow: none;
+        }
+
+        /* Select */
+        .select-field {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b6b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            padding-right: var(--space-8);
+        }
+
+        /* Checkbox and Radio */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+        }
+
+        .checkbox-input {
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--border-subtle);
+            background: var(--washi-cream);
+            cursor: pointer;
+            appearance: none;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .checkbox-input:checked {
+            background: var(--ink);
+            border-color: var(--ink);
+        }
+
+        .checkbox-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 6px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--washi);
+            border-width: 0 1.5px 1.5px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-label {
+            font-family: var(--font-serif);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--washi-cream);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-6);
+            transition: all var(--transition-slow);
+            position: relative;
+            border-radius: var(--radius-sm);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        .card:hover {
+            border-color: var(--stone-muted);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: var(--space-5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Enso icon variation */
+        .card-icon.enso-icon::before {
+            content: '';
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--ink);
+            border-radius: 50%;
+            opacity: 0.3;
+            transform: rotate(-8deg) scale(1, 0.94);
+        }
+
+        .card-icon.bamboo-icon::before {
+            content: '';
+            width: 2px;
+            height: 32px;
+            background: var(--bamboo);
+            opacity: 0.6;
+        }
+
+        .card-icon.bamboo-icon::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 2px;
+            background: var(--bamboo);
+            opacity: 0.4;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-30deg);
+        }
+
+        .card-icon.stone-icon::before {
+            content: '';
+            width: 28px;
+            height: 20px;
+            background: var(--stone-muted);
+            border-radius: 50%;
+            opacity: 0.4;
+        }
+
+        .card-number {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: 300;
+            line-height: 1;
+            color: var(--rust-muted);
+            margin-bottom: var(--space-4);
+            letter-spacing: 0.05em;
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 0.95rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Featured card with accent */
+        .card-featured {
+            border-left: 3px solid var(--rust);
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .table th {
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--stone);
+            background: var(--sand-light);
+        }
+
+        .table td {
+            font-family: var(--font-serif);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .table tbody tr {
+            transition: background var(--transition-fast);
+        }
+
+        .table tbody tr:hover {
+            background: var(--sand-light);
+        }
+
+        .table tbody tr:hover td {
+            color: var(--text-primary);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-sans);
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-radius: var(--radius-sm);
+            background: var(--sand);
+            color: var(--stone);
+        }
+
+        .badge-ink {
+            background: var(--ink);
+            color: var(--washi);
+        }
+
+        .badge-rust {
+            background: var(--rust-muted);
+            color: var(--washi);
+        }
+
+        .badge-bamboo {
+            background: var(--bamboo-muted);
+            color: var(--ink);
+        }
+
+        .badge-outline {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--stone);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* Spacing Demo */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 70px;
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            color: var(--stone);
+            letter-spacing: 0.05em;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(90deg, var(--rust-muted), var(--rust-light));
+            border-radius: var(--radius-sm);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.1;
+            border-radius: inherit;
+        }
+
+        .spacing-value {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--stone-light);
+            width: 50px;
+        }
+
+        /* Type Scale */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: var(--space-5) 0;
+            gap: var(--space-6);
+        }
+
+        .type-meta {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .type-name {
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--stone);
+            margin-bottom: var(--space-1);
+        }
+
+        .type-specs {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: var(--stone-light);
+        }
+
+        .type-sample {
+            flex: 1;
+        }
+
+        /* Decorative elements */
+        .circle-accent {
+            position: absolute;
+            border: 1px solid var(--border-subtle);
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+
+        /* Divider with pattern */
+        .divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: var(--space-7) 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: var(--washi);
+            border: 1px solid var(--border-subtle);
+            border-radius: 50%;
+        }
+
+        /* Principles blocks */
+        .principle-block {
+            position: relative;
+            padding-left: var(--space-6);
+        }
+
+        .principle-block::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--rust-muted);
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        .principle-title {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: var(--space-2);
+            letter-spacing: 0.02em;
+        }
+
+        .principle-jp {
+            font-family: var(--font-serif);
+            font-size: 0.875rem;
+            color: var(--stone);
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-3);
+        }
+
+        .principle-block p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-9) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 50%;
+            opacity: 0.4;
+        }
+
+        .footer-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-jp {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            letter-spacing: 0.2em;
+            color: var(--stone);
+            margin-bottom: var(--space-3);
+        }
+
+        .footer p {
+            color: var(--stone-light);
+            font-size: 0.875rem;
+            margin: 0 auto;
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-4 { margin-bottom: var(--space-4); }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mt-8 { margin-top: var(--space-8); }
+
+        /* Quote block - for wabi-sabi philosophy */
+        .quote-block {
+            padding: var(--space-6) var(--space-7);
+            border-left: 2px solid var(--rust-muted);
+            background: var(--sand-light);
+            margin: var(--space-6) 0;
+            position: relative;
+        }
+
+        .quote-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+            pointer-events: none;
+        }
+
+        .quote-text {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            font-style: italic;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .quote-source {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            color: var(--stone);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Asymmetrical layout helper */
+        .offset-left {
+            margin-left: var(--space-8);
+        }
+
+        @media (max-width: 768px) {
+            .offset-left {
+                margin-left: 0;
+            }
+        }
+
+        /* Hover line animation */
+        .hover-line {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hover-line::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--ink);
+            transition: width var(--transition-base);
+        }
+
+        .hover-line:hover::after {
+            width: 100%;
+        }
+
+        /* Ma (negative space) demonstration */
+        .ma-demo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-9);
+            padding: var(--space-8) 0;
+            background: var(--sand-light);
+            border-radius: var(--radius-sm);
+        }
+
+        .ma-element {
+            width: 60px;
+            height: 60px;
+            background: var(--ink);
+            opacity: 0.15;
+        }
+
+        .ma-element:nth-child(2) {
+            width: 40px;
+            height: 80px;
+        }
+
+        .ma-element:nth-child(3) {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--rust-muted);
+            opacity: 0.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Decorative vertical line -->
+        <div class="vertical-accent"></div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <p class="header-label">Design System</p>
+                <h1 class="enso">Japanese Zen</h1>
+                <div class="header-meta">
+                    <p>Wabi-sabi. Finding beauty in imperfection, transience, and the natural cycle of growth and decay. Less is more, but not empty.</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">01</p>
+                <p class="section-title-jp">Iro - Colors</p>
+                <h2>Color Palette</h2>
+                <p class="lead">Natural, muted tones drawn from traditional Japanese aesthetics. Stone, bamboo, washi paper, and aged wood.</p>
+            </div>
+
+            <div class="color-grid">
+                <div class="color-block" style="background: var(--ink); color: var(--washi);">
+                    <span class="color-name">Ink</span>
+                    <span class="color-jp">Sumi</span>
+                    <span class="color-value">#1A1A1A</span>
+                </div>
+                <div class="color-block" style="background: var(--stone); color: var(--washi);">
+                    <span class="color-name">Stone</span>
+                    <span class="color-jp">Ishi</span>
+                    <span class="color-value">#6B6B6B</span>
+                </div>
+                <div class="color-block" style="background: var(--sand);">
+                    <span class="color-name">Sand</span>
+                    <span class="color-jp">Suna</span>
+                    <span class="color-value">#E8E4DE</span>
+                </div>
+                <div class="color-block" style="background: var(--washi); border: 1px solid var(--border-subtle);">
+                    <span class="color-name">Washi</span>
+                    <span class="color-jp">Washi</span>
+                    <span class="color-value">#FAF8F5</span>
+                </div>
+                <div class="color-block" style="background: var(--bamboo); color: var(--washi);">
+                    <span class="color-name">Bamboo</span>
+                    <span class="color-jp">Take</span>
+                    <span class="color-value">#7A8B6E</span>
+                </div>
+                <div class="color-block" style="background: var(--rust); color: var(--washi);">
+                    <span class="color-name">Rust</span>
+                    <span class="color-jp">Sabi</span>
+                    <span class="color-value">#8B5A4A</span>
+                </div>
+                <div class="color-block" style="background: var(--indigo); color: var(--washi);">
+                    <span class="color-name">Indigo</span>
+                    <span class="color-jp">Ai</span>
+                    <span class="color-value">#3D4F6F</span>
+                </div>
+                <div class="color-block" style="background: var(--rust-muted); color: var(--ink);">
+                    <span class="color-name">Faded Rust</span>
+                    <span class="color-jp">Usubi</span>
+                    <span class="color-value">#C49A8A</span>
+                </div>
+            </div>
+
+            <div class="quote-block mt-8">
+                <p class="quote-text">"The colors of nature are not bold but subtle, not permanent but ever-changing. True beauty lies in the gentle fading of things."</p>
+                <p class="quote-source">Traditional Wabi-sabi Philosophy</p>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">02</p>
+                <p class="section-title-jp">Moji - Typography</p>
+                <h2>Typography</h2>
+                <p class="lead">Noto Serif JP brings the elegance of Japanese calligraphy to digital type. Each stroke carries intention and breath.</p>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Display</p>
+                    <p class="type-specs">64px / Light / 5%</p>
+                </div>
+                <div class="type-sample" style="font-size: 3rem; font-weight: 300; letter-spacing: 0.05em; line-height: 1.2;">Aa</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Heading 1</p>
+                    <p class="type-specs">40px / Light / 5%</p>
+                </div>
+                <div class="type-sample" style="font-size: 2.5rem; font-weight: 300; letter-spacing: 0.05em;">Contemplation</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Heading 2</p>
+                    <p class="type-specs">32px / Regular / 3%</p>
+                </div>
+                <div class="type-sample" style="font-size: 2rem; font-weight: 400; letter-spacing: 0.03em;">Impermanence</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Heading 3</p>
+                    <p class="type-specs">20px / Medium / 2%</p>
+                </div>
+                <div class="type-sample" style="font-size: 1.25rem; font-weight: 500; letter-spacing: 0.02em;">Natural Simplicity</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Body</p>
+                    <p class="type-specs">16px / Regular / 0%</p>
+                </div>
+                <div class="type-sample">In the quiet moments between thoughts, clarity emerges. Typography serves the message, never overpowering it.</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-name">Small</p>
+                    <p class="type-specs">14px / Regular / 0%</p>
+                </div>
+                <div class="type-sample" style="font-size: 0.875rem;">Captions and annotations rest gently beneath the primary content.</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-name">Label</p>
+                    <p class="type-specs">12px / Medium / 15%</p>
+                </div>
+                <div class="type-sample" style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--stone);">Form Labels and Categories</div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">03</p>
+                <p class="section-title-jp">Ma - Spacing</p>
+                <h2>Spacing</h2>
+                <p class="lead">Ma is the Japanese concept of negative space. It is not emptiness, but the pause that gives meaning to what surrounds it.</p>
+            </div>
+
+            <div class="ma-demo mb-4">
+                <div class="ma-element"></div>
+                <div class="ma-element"></div>
+                <div class="ma-element"></div>
+            </div>
+            <p class="small text-center" style="color: var(--stone); margin-bottom: var(--space-8);">The space between elements is as important as the elements themselves</p>
+
+            <div class="offset-left">
+                <div class="spacing-row">
+                    <span class="spacing-label">4px</span>
+                    <div class="spacing-bar" style="width: 16px;"></div>
+                    <span class="spacing-value">hair</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">8px</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                    <span class="spacing-value">breath</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">16px</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                    <span class="spacing-value">pause</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">24px</span>
+                    <div class="spacing-bar" style="width: 96px;"></div>
+                    <span class="spacing-value">rest</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">32px</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                    <span class="spacing-value">moment</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">48px</span>
+                    <div class="spacing-bar" style="width: 160px;"></div>
+                    <span class="spacing-value">silence</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">64px</span>
+                    <div class="spacing-bar" style="width: 200px;"></div>
+                    <span class="spacing-value">stillness</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">96px</span>
+                    <div class="spacing-bar" style="width: 260px;"></div>
+                    <span class="spacing-value">emptiness</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">04</p>
+                <p class="section-title-jp">Botan - Buttons</p>
+                <h2>Buttons</h2>
+                <p class="lead">Subtle, refined interactions. Buttons invite action without demanding attention, like a path through a garden.</p>
+            </div>
+
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-subtle">Subtle</button>
+                <button class="btn btn-accent">Accent</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-sm">Small</button>
+                <button class="btn">Medium</button>
+                <button class="btn btn-lg">Large</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 class="mb-4">Button States</h3>
+            <div class="grid">
+                <div class="col-6">
+                    <p class="label-text mb-4">Rest State</p>
+                    <button class="btn" style="pointer-events: none;">Contemplative Rest</button>
+                </div>
+                <div class="col-6">
+                    <p class="label-text mb-4">Hover State</p>
+                    <button class="btn" style="background: var(--ink); color: var(--washi); pointer-events: none;">Gentle Response</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">05</p>
+                <p class="section-title-jp">Nyuryoku - Forms</p>
+                <h2>Forms</h2>
+                <p class="lead">Form elements should feel natural and unobtrusive. Like water, they take the shape of what is needed.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Name</label>
+                        <input type="text" class="input-field" placeholder="Your name">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Email</label>
+                        <input type="email" class="input-field" placeholder="your@email.com">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Subject</label>
+                        <input type="text" class="input-field input-underline" placeholder="What brings you here?">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Category</label>
+                        <select class="input-field select-field">
+                            <option>Select a path</option>
+                            <option>Meditation</option>
+                            <option>Tea Ceremony</option>
+                            <option>Calligraphy</option>
+                            <option>Garden Design</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Message</label>
+                        <textarea class="input-field" placeholder="Share your thoughts..."></textarea>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group" style="margin-bottom: var(--space-4);">
+                        <label class="checkbox-group">
+                            <input type="checkbox" class="checkbox-input" checked>
+                            <span class="checkbox-label">I seek simplicity in all things</span>
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" class="checkbox-input">
+                            <span class="checkbox-label">Send me seasonal reflections</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">06</p>
+                <p class="section-title-jp">Fuda - Cards</p>
+                <h2>Cards</h2>
+                <p class="lead">Content containers with the texture of handmade paper. Each card is a small meditation on its subject.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-icon enso-icon"></div>
+                        <h3>Enso</h3>
+                        <p>The circle of enlightenment. In its imperfection, we find authenticity and the acceptance of our true nature.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card card-featured">
+                        <div class="card-icon bamboo-icon"></div>
+                        <h3>Bamboo</h3>
+                        <p>Flexible yet strong. The bamboo bends with the wind but never breaks, teaching us resilience through adaptability.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-icon stone-icon"></div>
+                        <h3>Stone</h3>
+                        <p>Timeless and grounding. Stones in the garden represent permanence within the flow of impermanence.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 class="mb-4">Numbered Cards</h3>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">01</div>
+                        <h3>Simplicity</h3>
+                        <p>Kanso - eliminating the unnecessary to reveal the essential.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">02</div>
+                        <h3>Asymmetry</h3>
+                        <p>Fukinsei - finding balance through intentional irregularity.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">03</div>
+                        <h3>Naturalness</h3>
+                        <p>Shizen - avoiding pretense, embracing organic authenticity.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">07</p>
+                <p class="section-title-jp">Hyou - Data Table</p>
+                <h2>Data Table</h2>
+                <p class="lead">Information presented with clarity and calm. Rows flow like lines in a sand garden, each with purpose.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Element</th>
+                            <th>Japanese</th>
+                            <th>Meaning</th>
+                            <th>Status</th>
+                            <th class="text-right">Season</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cherry Blossom</td>
+                            <td style="letter-spacing: 0.1em;">Sakura</td>
+                            <td>Transience of life</td>
+                            <td><span class="badge badge-rust">Blooming</span></td>
+                            <td class="text-right">Spring</td>
+                        </tr>
+                        <tr>
+                            <td>Moon Viewing</td>
+                            <td style="letter-spacing: 0.1em;">Tsukimi</td>
+                            <td>Appreciation of beauty</td>
+                            <td><span class="badge badge-ink">Active</span></td>
+                            <td class="text-right">Autumn</td>
+                        </tr>
+                        <tr>
+                            <td>Snow Scene</td>
+                            <td style="letter-spacing: 0.1em;">Yukimi</td>
+                            <td>Quiet contemplation</td>
+                            <td><span class="badge badge-bamboo">Seasonal</span></td>
+                            <td class="text-right">Winter</td>
+                        </tr>
+                        <tr>
+                            <td>Firefly Viewing</td>
+                            <td style="letter-spacing: 0.1em;">Hotaru</td>
+                            <td>Fleeting wonder</td>
+                            <td><span class="badge">Waiting</span></td>
+                            <td class="text-right">Summer</td>
+                        </tr>
+                        <tr>
+                            <td>Tea Ceremony</td>
+                            <td style="letter-spacing: 0.1em;">Chado</td>
+                            <td>Way of tea</td>
+                            <td><span class="badge badge-ink">Eternal</span></td>
+                            <td class="text-right">All</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">08</p>
+                <p class="section-title-jp">Shirushi - Badges</p>
+                <h2>Badges</h2>
+                <p class="lead">Small marks of distinction. Like a personal seal on a scroll, they carry meaning in minimal form.</p>
+            </div>
+
+            <div class="badge-row mb-4">
+                <span class="badge">Default</span>
+                <span class="badge badge-ink">Ink</span>
+                <span class="badge badge-rust">Rust</span>
+                <span class="badge badge-bamboo">Bamboo</span>
+                <span class="badge badge-outline">Outline</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 class="mb-4">Contextual Usage</h3>
+            <div class="grid">
+                <div class="col-4">
+                    <p class="label-text mb-4">Status</p>
+                    <div class="badge-row">
+                        <span class="badge badge-ink">Complete</span>
+                        <span class="badge badge-rust">In Progress</span>
+                        <span class="badge">Pending</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <p class="label-text mb-4">Categories</p>
+                    <div class="badge-row">
+                        <span class="badge badge-bamboo">Garden</span>
+                        <span class="badge badge-outline">Tea</span>
+                        <span class="badge badge-outline">Calligraphy</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <p class="label-text mb-4">Seasons</p>
+                    <div class="badge-row">
+                        <span class="badge badge-rust">Spring</span>
+                        <span class="badge badge-bamboo">Summer</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">09</p>
+                <p class="section-title-jp">Wabi-Sabi - Design Principles</p>
+                <h2>Design Principles</h2>
+                <p class="lead">Seven aesthetic principles from Japanese Zen that guide this design system.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Kanso</h3>
+                        <p class="principle-jp">Simplicity</p>
+                        <p>Eliminate what is unnecessary. The absence of clutter creates clarity of purpose. Each element must earn its place.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Fukinsei</h3>
+                        <p class="principle-jp">Asymmetry</p>
+                        <p>Perfect symmetry is lifeless. Controlled irregularity creates movement, interest, and a sense of natural growth.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Shibui</h3>
+                        <p class="principle-jp">Subtle Beauty</p>
+                        <p>Beauty that is understated rather than bold. It reveals itself slowly, rewarding patient observation.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Shizen</h3>
+                        <p class="principle-jp">Naturalness</p>
+                        <p>Avoid the artificial and contrived. Design should feel organic, as if it emerged naturally rather than being forced.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Yugen</h3>
+                        <p class="principle-jp">Subtle Profundity</p>
+                        <p>Suggest rather than reveal. Leave room for imagination and interpretation. The unseen is as important as the seen.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block mb-4" style="margin-bottom: var(--space-7);">
+                        <h3 class="principle-title">Datsuzoku</h3>
+                        <p class="principle-jp">Freedom</p>
+                        <p>Break from convention when necessary. Rules serve the design, not the other way around. Find freedom within constraints.</p>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="principle-block">
+                        <h3 class="principle-title">Seijaku</h3>
+                        <p class="principle-jp">Tranquility</p>
+                        <p>Create moments of stillness and calm. In the quiet spaces between interactions, users find clarity and peace. The design breathes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quote-block mt-8">
+                <p class="quote-text">"In the midst of movement and chaos, keep stillness inside of you. True beauty is found not in perfection, but in the embrace of impermanence."</p>
+                <p class="quote-source">Zen Teaching</p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-jp">Ichi-go ichi-e</p>
+                <p>One moment, one meeting. This design system embraces the transient beauty of each interaction.</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
