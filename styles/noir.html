@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noir Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-typewriter: 'Courier Prime', 'Courier New', monospace;
+            --font-headline: 'Playfair Display', Georgia, serif;
+            --font-condensed: 'Oswald', 'Arial Narrow', sans-serif;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Noir Color Palette */
+            --noir-black: #0a0a0a;
+            --noir-charcoal: #141414;
+            --noir-dark: #1a1a1a;
+            --noir-shadow: #222222;
+            --noir-gray: #333333;
+            --noir-mid: #4a4a4a;
+            --noir-light: #6a6a6a;
+            --noir-pale: #8a8a8a;
+            --noir-silver: #b0b0b0;
+            --noir-white: #e8e8e8;
+            --noir-pure-white: #f5f5f5;
+
+            /* Accent Colors */
+            --blood-red: #8b0000;
+            --blood-bright: #b22222;
+            --cigarette-ember: #ff4500;
+            --cigarette-glow: #ff6b35;
+            --whiskey-amber: #d4a574;
+            --gold-badge: #c9a227;
+            --lipstick-red: #c41e3a;
+            --neon-blue: #4a9eff;
+
+            /* Semantic Colors */
+            --text-primary: var(--noir-white);
+            --text-secondary: var(--noir-silver);
+            --text-muted: var(--noir-pale);
+            --text-faded: var(--noir-light);
+            --bg-primary: var(--noir-black);
+            --bg-secondary: var(--noir-charcoal);
+            --bg-elevated: var(--noir-dark);
+            --border-color: var(--noir-gray);
+            --border-subtle: var(--noir-shadow);
+            --accent: var(--blood-red);
+            --accent-bright: var(--blood-bright);
+
+            /* Effects */
+            --shadow-dramatic: 0 20px 60px rgba(0, 0, 0, 0.8);
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.6);
+            --shadow-glow-red: 0 0 30px rgba(139, 0, 0, 0.3);
+            --shadow-glow-ember: 0 0 20px rgba(255, 69, 0, 0.4);
+            --transition-slow: 0.4s ease;
+            --transition-base: 0.25s ease;
+            --transition-fast: 0.15s ease;
+
+            /* Venetian Blind Variables */
+            --blind-width: 100%;
+            --blind-slat-height: 8px;
+            --blind-gap: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Film Grain Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Dramatic Vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* ===========================================
+           VENETIAN BLIND SHADOW EFFECT
+        =========================================== */
+        .venetian-shadow {
+            position: relative;
+        }
+
+        .venetian-shadow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent var(--blind-slat-height),
+                rgba(0, 0, 0, 0.4) var(--blind-slat-height),
+                rgba(0, 0, 0, 0.4) calc(var(--blind-slat-height) + 3px),
+                transparent calc(var(--blind-slat-height) + 3px),
+                transparent var(--blind-gap)
+            );
+            pointer-events: none;
+            z-index: 10;
+            animation: blindsSway 8s ease-in-out infinite;
+        }
+
+        @keyframes blindsSway {
+            0%, 100% {
+                transform: skewY(0deg) translateY(0);
+                opacity: 0.6;
+            }
+            25% {
+                transform: skewY(0.3deg) translateY(2px);
+                opacity: 0.7;
+            }
+            50% {
+                transform: skewY(-0.2deg) translateY(-1px);
+                opacity: 0.5;
+            }
+            75% {
+                transform: skewY(0.2deg) translateY(1px);
+                opacity: 0.65;
+            }
+        }
+
+        /* Diagonal Venetian Variant */
+        .venetian-diagonal::before {
+            background: repeating-linear-gradient(
+                -30deg,
+                transparent 0px,
+                transparent 15px,
+                rgba(0, 0, 0, 0.35) 15px,
+                rgba(0, 0, 0, 0.35) 20px,
+                transparent 20px,
+                transparent 40px
+            );
+            animation: blindsDrift 12s ease-in-out infinite;
+        }
+
+        @keyframes blindsDrift {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+
+        /* ===========================================
+           CIGARETTE SMOKE EFFECT
+        =========================================== */
+        .smoke-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .smoke {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            height: 80px;
+            pointer-events: none;
+        }
+
+        .smoke::before,
+        .smoke::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(ellipse at center, rgba(180, 180, 180, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: smokeRise 4s ease-out infinite;
+            transform-origin: center bottom;
+        }
+
+        .smoke::after {
+            animation-delay: 2s;
+            width: 40px;
+            height: 40px;
+        }
+
+        @keyframes smokeRise {
+            0% {
+                opacity: 0.8;
+                transform: translateX(-50%) translateY(0) scale(0.5);
+            }
+            50% {
+                opacity: 0.4;
+                transform: translateX(calc(-50% + 20px)) translateY(-100px) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(calc(-50% - 30px)) translateY(-200px) scale(2);
+            }
+        }
+
+        /* Fog/Mist Effect */
+        .fog-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 80%, rgba(100, 100, 100, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(100, 100, 100, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(100, 100, 100, 0.1) 0%, transparent 40%);
+            pointer-events: none;
+            animation: fogDrift 20s ease-in-out infinite;
+        }
+
+        @keyframes fogDrift {
+            0%, 100% { opacity: 1; transform: translateX(0); }
+            50% { opacity: 0.7; transform: translateX(20px); }
+        }
+
+        /* ===========================================
+           SINGLE LIGHT SOURCE / SPOTLIGHT
+        =========================================== */
+        .spotlight {
+            position: relative;
+        }
+
+        .spotlight::after {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -50px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .interrogation-light {
+            position: relative;
+        }
+
+        .interrogation-light::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            height: 140%;
+            background: conic-gradient(
+                from 180deg at 50% -20%,
+                transparent 30%,
+                rgba(255, 255, 255, 0.03) 45%,
+                rgba(255, 255, 255, 0.06) 50%,
+                rgba(255, 255, 255, 0.03) 55%,
+                transparent 70%
+            );
+            pointer-events: none;
+        }
+
+        /* ===========================================
+           TYPOGRAPHY
+        =========================================== */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-headline);
+            font-weight: 500;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-6);
+            text-shadow:
+                4px 4px 0 var(--noir-shadow),
+                8px 8px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-5);
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: var(--space-4);
+        }
+
+        /* Newspaper Headline Style */
+        .headline-newspaper {
+            font-family: var(--font-condensed);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            line-height: 0.9;
+        }
+
+        .headline-extra {
+            font-size: clamp(2rem, 6vw, 4rem);
+            border-bottom: 4px solid var(--noir-white);
+            padding-bottom: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .subheadline {
+            font-family: var(--font-condensed);
+            font-size: 1rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--text-secondary);
+        }
+
+        /* Typewriter Text */
+        .typewriter {
+            font-family: var(--font-typewriter);
+            position: relative;
+        }
+
+        .typewriter-strike {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .typewriter-insert {
+            position: relative;
+            display: inline-block;
+        }
+
+        .typewriter-insert::before {
+            content: '^';
+            position: absolute;
+            bottom: -0.5em;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: var(--blood-red);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+        }
+
+        .lead {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.75rem;
+        }
+
+        /* Case File Number */
+        .case-number {
+            font-family: var(--font-typewriter);
+            font-size: 0.75rem;
+            color: var(--blood-red);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        /* ===========================================
+           HEADER
+        =========================================== */
+        .header {
+            padding: var(--space-10) 0 var(--space-9);
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 5;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-5);
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-elevated);
+            border: 1px solid var(--gold-badge);
+            color: var(--gold-badge);
+        }
+
+        .badge-star {
+            width: 16px;
+            height: 16px;
+            position: relative;
+        }
+
+        .badge-star::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid var(--gold-badge);
+        }
+
+        .badge-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(180deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid var(--gold-badge);
+            margin-top: -3px;
+        }
+
+        .header h1 {
+            margin-bottom: var(--space-4);
+        }
+
+        .header-tagline {
+            font-family: var(--font-typewriter);
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Cigarette decoration */
+        .header-cigarette {
+            position: absolute;
+            right: 0;
+            bottom: var(--space-8);
+            width: 80px;
+            height: 8px;
+            background: linear-gradient(90deg, var(--noir-pure-white) 0%, var(--noir-pure-white) 85%, var(--cigarette-ember) 85%, var(--cigarette-glow) 100%);
+            border-radius: 2px;
+            transform: rotate(-15deg);
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.5);
+        }
+
+        .header-cigarette::before {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: -2px;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, var(--cigarette-glow) 0%, transparent 70%);
+            animation: emberGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes emberGlow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* ===========================================
+           SECTION
+        =========================================== */
+        .section {
+            padding: var(--space-9) 0;
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-family: var(--font-typewriter);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-number::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-subtle), transparent);
+            max-width: 200px;
+        }
+
+        /* ===========================================
+           COLOR PALETTE
+        =========================================== */
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            transition: all var(--transition-base);
+            border: 1px solid var(--border-subtle);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-card);
+        }
+
+        .color-name {
+            font-family: var(--font-typewriter);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .color-value {
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: var(--space-1);
+        }
+
+        /* ===========================================
+           BUTTONS
+        =========================================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-typewriter);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: 2px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--noir-white);
+            transition: left var(--transition-base);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--noir-black);
+            border-color: var(--noir-white);
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn-blood {
+            border-color: var(--blood-red);
+            color: var(--blood-bright);
+        }
+
+        .btn-blood::before {
+            background: var(--blood-red);
+        }
+
+        .btn-blood:hover {
+            color: var(--noir-white);
+            border-color: var(--blood-bright);
+        }
+
+        .btn-gold {
+            border-color: var(--gold-badge);
+            color: var(--gold-badge);
+        }
+
+        .btn-gold::before {
+            background: var(--gold-badge);
+        }
+
+        .btn-gold:hover {
+            color: var(--noir-black);
+            border-color: var(--gold-badge);
+        }
+
+        .btn-ghost {
+            border-color: var(--border-subtle);
+            color: var(--text-muted);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        .btn-ghost::before {
+            background: var(--noir-gray);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.75rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: 1rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* ===========================================
+           FORMS
+        =========================================== */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-2);
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--noir-white);
+            box-shadow: 0 0 0 1px var(--noir-white);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.7;
+        }
+
+        .select-field {
+            appearance: none;
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e8e8e8' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: var(--noir-white);
+            box-shadow: 0 0 0 1px var(--noir-white);
+        }
+
+        /* ===========================================
+           CARDS
+        =========================================== */
+        .card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 0;
+            background: var(--blood-red);
+            transition: height var(--transition-base);
+        }
+
+        .card:hover {
+            border-color: var(--border-color);
+            box-shadow: var(--shadow-card);
+            transform: translateY(-2px);
+        }
+
+        .card:hover::before {
+            height: 100%;
+        }
+
+        .card-number {
+            font-family: var(--font-headline);
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--noir-shadow);
+            margin-bottom: var(--space-4);
+            text-shadow: 2px 2px 0 var(--noir-gray);
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Case File Card */
+        .card-case {
+            background: var(--bg-secondary);
+            border: none;
+            position: relative;
+            padding: var(--space-5);
+        }
+
+        .card-case::before {
+            content: 'CONFIDENTIAL';
+            position: absolute;
+            top: var(--space-4);
+            right: var(--space-4);
+            font-family: var(--font-typewriter);
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--blood-red);
+            padding: var(--space-1) var(--space-2);
+            border: 1px solid var(--blood-red);
+            transform: rotate(3deg);
+        }
+
+        .card-case::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--noir-gray) 0px,
+                var(--noir-gray) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+        .card-case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .card-case-id {
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        /* Photo Card (like evidence photos) */
+        .card-photo {
+            background: var(--noir-pure-white);
+            padding: var(--space-3);
+            border: none;
+        }
+
+        .card-photo-inner {
+            aspect-ratio: 4/3;
+            background: var(--noir-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--noir-light);
+            font-size: 0.8rem;
+        }
+
+        .card-photo-caption {
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            color: var(--noir-black);
+            margin-top: var(--space-2);
+            text-align: center;
+        }
+
+        /* ===========================================
+           TABLE - Dossier Style
+        =========================================== */
+        .table-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            overflow: hidden;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-subtle);
+            font-family: var(--font-typewriter);
+        }
+
+        .table th {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+        }
+
+        .table td {
+            font-size: 0.9rem;
+        }
+
+        .table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status indicators in table */
+        .status-active {
+            color: var(--blood-bright);
+        }
+
+        .status-closed {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .status-cold {
+            color: var(--neon-blue);
+        }
+
+        /* ===========================================
+           BADGES
+        =========================================== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-typewriter);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .badge-blood {
+            border-color: var(--blood-red);
+            color: var(--blood-bright);
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .badge-gold {
+            border-color: var(--gold-badge);
+            color: var(--gold-badge);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .badge-cold {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        .badge-filled {
+            background: var(--noir-white);
+            color: var(--noir-black);
+            border-color: var(--noir-white);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* ===========================================
+           NAVIGATION
+        =========================================== */
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: var(--space-6);
+            padding: var(--space-4) 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .nav-brand {
+            font-family: var(--font-headline);
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--space-5);
+            list-style: none;
+        }
+
+        .nav-link {
+            font-family: var(--font-typewriter);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--noir-white);
+            transition: width var(--transition-base);
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-link.active {
+            color: var(--text-primary);
+        }
+
+        .nav-link.active::after {
+            width: 100%;
+        }
+
+        /* ===========================================
+           SPECIAL ELEMENTS
+        =========================================== */
+
+        /* Newspaper Clipping */
+        .newspaper-clipping {
+            background: var(--noir-pale);
+            color: var(--noir-black);
+            padding: var(--space-5);
+            position: relative;
+            transform: rotate(-1deg);
+            box-shadow: var(--shadow-card);
+        }
+
+        .newspaper-clipping::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 1px,
+                    rgba(0, 0, 0, 0.03) 1px,
+                    rgba(0, 0, 0, 0.03) 2px
+                );
+            pointer-events: none;
+        }
+
+        .newspaper-clipping h3 {
+            font-family: var(--font-condensed);
+            font-size: 1.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--noir-black);
+            margin-bottom: var(--space-3);
+            line-height: 1.1;
+        }
+
+        .newspaper-clipping p {
+            font-family: var(--font-typewriter);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--noir-charcoal);
+            column-count: 2;
+            column-gap: var(--space-4);
+        }
+
+        .newspaper-date {
+            font-family: var(--font-typewriter);
+            font-size: 0.65rem;
+            color: var(--noir-mid);
+            margin-bottom: var(--space-2);
+        }
+
+        /* Typewriter Paper */
+        .typewriter-paper {
+            background: var(--noir-pure-white);
+            color: var(--noir-black);
+            padding: var(--space-6);
+            padding-left: var(--space-8);
+            position: relative;
+            font-family: var(--font-typewriter);
+            line-height: 2;
+            box-shadow: var(--shadow-card);
+        }
+
+        .typewriter-paper::before {
+            content: '';
+            position: absolute;
+            left: var(--space-6);
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--blood-bright);
+            opacity: 0.5;
+        }
+
+        .typewriter-paper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 31px,
+                rgba(74, 158, 255, 0.1) 31px,
+                rgba(74, 158, 255, 0.1) 32px
+            );
+            pointer-events: none;
+        }
+
+        /* Evidence Tag */
+        .evidence-tag {
+            display: inline-block;
+            background: var(--whiskey-amber);
+            color: var(--noir-black);
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            position: relative;
+        }
+
+        .evidence-tag::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: var(--whiskey-amber);
+            border-radius: 50%;
+            border: 2px solid var(--noir-black);
+        }
+
+        /* Redacted Text */
+        .redacted {
+            background: var(--noir-black);
+            color: var(--noir-black);
+            padding: 0 var(--space-2);
+            user-select: none;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            margin: var(--space-7) 0;
+        }
+
+        .divider-thick {
+            height: 3px;
+            background: var(--noir-white);
+            margin: var(--space-8) 0;
+        }
+
+        /* ===========================================
+           SPACING DEMO
+        =========================================== */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-size: 0.8rem;
+            font-family: var(--font-typewriter);
+            color: var(--text-muted);
+        }
+
+        .spacing-bar {
+            height: 20px;
+            background: linear-gradient(90deg, var(--noir-gray), var(--noir-white));
+        }
+
+        .spacing-value {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 50px;
+        }
+
+        /* ===========================================
+           TYPE SCALE
+        =========================================== */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: var(--space-5) 0;
+        }
+
+        .type-meta {
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .type-size {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+        }
+
+        .type-specs {
+            font-size: 0.7rem;
+            color: var(--text-faded);
+            margin-top: var(--space-1);
+        }
+
+        /* ===========================================
+           FOOTER
+        =========================================== */
+        .footer {
+            padding: var(--space-9) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+        }
+
+        .footer-brand {
+            font-family: var(--font-headline);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-4);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 0 auto;
+            font-style: italic;
+        }
+
+        .footer-end {
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            color: var(--text-faded);
+            margin-top: var(--space-6);
+        }
+
+        /* ===========================================
+           UTILITIES
+        =========================================== */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-blood { color: var(--blood-bright); }
+        .text-gold { color: var(--gold-badge); }
+        .text-faded { color: var(--text-faded); }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mt-8 { margin-top: var(--space-8); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--noir-gray);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--noir-mid);
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--blood-red);
+            color: var(--noir-white);
+        }
+
+        /* ===========================================
+           RESPONSIVE
+        =========================================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-8) 0 var(--space-7);
+            }
+
+            .header-cigarette {
+                display: none;
+            }
+
+            .section {
+                padding: var(--space-7) 0;
+            }
+
+            .nav {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-4);
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                gap: var(--space-3);
+            }
+
+            .type-row {
+                flex-direction: column;
+                gap: var(--space-3);
+            }
+
+            .type-meta {
+                width: 100%;
+            }
+
+            .newspaper-clipping p {
+                column-count: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav">
+            <a href="#" class="nav-brand">Noir</a>
+            <ul class="nav-links">
+                <li><a href="#colors" class="nav-link active">Colors</a></li>
+                <li><a href="#typography" class="nav-link">Type</a></li>
+                <li><a href="#buttons" class="nav-link">Buttons</a></li>
+                <li><a href="#forms" class="nav-link">Forms</a></li>
+                <li><a href="#cards" class="nav-link">Cards</a></li>
+                <li><a href="#elements" class="nav-link">Elements</a></li>
+            </ul>
+        </nav>
+
+        <!-- Header -->
+        <header class="header venetian-shadow spotlight">
+            <div class="fog-overlay"></div>
+            <div class="header-content">
+                <div class="header-badge">
+                    <div class="badge-star"></div>
+                    <span class="uppercase">Private Investigations</span>
+                </div>
+                <h1>Noir</h1>
+                <p class="header-tagline">"In this town, the shadows have secrets... and the secrets have teeth."</p>
+                <div class="header-cigarette">
+                    <div class="smoke"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section" id="colors">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 001 / PALETTE</p>
+                <h2>Color System</h2>
+                <p class="lead">High contrast black and white with strategic accents of blood red, whiskey amber, and cold blue. The palette of rain-soaked streets and smoky bars.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4); color: var(--text-secondary);">Noir Grays</h3>
+            <div class="grid" style="margin-bottom: var(--space-6);">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--noir-black); color: var(--text-primary);">
+                        <span class="color-name">Noir Black</span>
+                        <span class="color-value">#0A0A0A</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--noir-charcoal); color: var(--text-primary);">
+                        <span class="color-name">Charcoal</span>
+                        <span class="color-value">#141414</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--noir-gray); color: var(--text-primary);">
+                        <span class="color-name">Shadow Gray</span>
+                        <span class="color-value">#333333</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--noir-white); color: var(--noir-black);">
+                        <span class="color-name">Noir White</span>
+                        <span class="color-value">#E8E8E8</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4); color: var(--blood-bright);">Accent Colors</h3>
+            <div class="grid">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--blood-red); color: var(--noir-white); box-shadow: var(--shadow-glow-red);">
+                        <span class="color-name">Blood Red</span>
+                        <span class="color-value">#8B0000</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--cigarette-ember); color: var(--noir-white); box-shadow: var(--shadow-glow-ember);">
+                        <span class="color-name">Ember</span>
+                        <span class="color-value">#FF4500</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--gold-badge); color: var(--noir-black);">
+                        <span class="color-name">Badge Gold</span>
+                        <span class="color-value">#C9A227</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--neon-blue); color: var(--noir-black);">
+                        <span class="color-name">Cold Blue</span>
+                        <span class="color-value">#4A9EFF</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section" id="typography">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 002 / TYPOGRAPHY</p>
+                <h2>Type System</h2>
+                <p class="lead">Playfair Display for dramatic headlines, Oswald for newspaper-style condensed type, and Courier Prime for that authentic typewriter feel.</p>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Display</p>
+                    <p class="type-specs">Playfair Display / 72px</p>
+                </div>
+                <div style="font-family: var(--font-headline); font-size: 4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">MURDER</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Headline</p>
+                    <p class="type-specs">Oswald / 48px</p>
+                </div>
+                <div class="headline-newspaper" style="font-size: 2.5rem;">BODY FOUND IN ABANDONED WAREHOUSE</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H2</p>
+                    <p class="type-specs">Playfair Display / 40px</p>
+                </div>
+                <div style="font-family: var(--font-headline); font-size: 2.5rem;">The Case Unfolds</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H3</p>
+                    <p class="type-specs">Playfair Display / 24px</p>
+                </div>
+                <div style="font-family: var(--font-headline); font-size: 1.5rem;">Chapter Three: The Dame</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Body</p>
+                    <p class="type-specs">Courier Prime / 16px</p>
+                </div>
+                <div style="font-family: var(--font-typewriter);">She walked into my office like trouble on two legs. I could tell she had a story - they always do. The rain outside made patterns on the window that matched the tears she was trying not to shed.</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-size">Caption</p>
+                    <p class="type-specs">Courier Prime / 12px / Uppercase</p>
+                </div>
+                <div class="uppercase" style="color: var(--text-muted);">Evidence Tag A-127 / Confidential</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-5);">Typewriter Effects</h3>
+            <div class="typewriter-paper">
+                <p style="margin-bottom: 0; color: var(--noir-black);">
+                    CASE NOTES - NOVEMBER 14th, 1947<br><br>
+                    The <span class="typewriter-strike">suspect</span> witness claims she was at the <span class="typewriter-strike">murder scene</span> diner until midnight. Her alibi checks out, but something doesn't add up. Need to interview the <span class="redacted">REDACTED</span> before the trail goes cold.<br><br>
+                    - J.M.
+                </p>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 003 / SPACING</p>
+                <h2>Spacing Scale</h2>
+                <p class="lead">A 4px base unit creates consistent rhythm across components.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">4px</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">xs</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">8px</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">sm</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">16px</span>
+                <div class="spacing-bar" style="width: 64px;"></div>
+                <span class="spacing-value">md</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">24px</span>
+                <div class="spacing-bar" style="width: 96px;"></div>
+                <span class="spacing-value">lg</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">32px</span>
+                <div class="spacing-bar" style="width: 128px;"></div>
+                <span class="spacing-value">xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">48px</span>
+                <div class="spacing-bar" style="width: 192px;"></div>
+                <span class="spacing-value">2xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">64px</span>
+                <div class="spacing-bar" style="width: 256px;"></div>
+                <span class="spacing-value">3xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">96px</span>
+                <div class="spacing-bar" style="width: 320px;"></div>
+                <span class="spacing-value">4xl</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section" id="buttons">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 004 / BUTTONS</p>
+                <h2>Controls</h2>
+                <p class="lead">Sharp, decisive buttons with dramatic hover transitions. Black, white, and red dominate.</p>
+            </div>
+
+            <div class="button-row">
+                <button class="btn">Investigate</button>
+                <button class="btn btn-blood">Open Case</button>
+                <button class="btn btn-gold">Badge Access</button>
+                <button class="btn btn-ghost">Close File</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-sm">Small</button>
+                <button class="btn">Medium</button>
+                <button class="btn btn-lg">Large</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section" id="forms">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 005 / FORMS</p>
+                <h2>Input Fields</h2>
+                <p class="lead">Clean, functional inputs with high contrast focus states.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Suspect Name</label>
+                        <input type="text" class="input-field" placeholder="Enter full name...">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Case Number</label>
+                        <input type="text" class="input-field" placeholder="e.g., 1947-0892">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Crime Type</label>
+                        <select class="select-field">
+                            <option>Select category...</option>
+                            <option>Homicide</option>
+                            <option>Robbery</option>
+                            <option>Missing Person</option>
+                            <option>Fraud</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Last Known Location</label>
+                        <input type="text" class="input-field" placeholder="Address or area...">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Case Notes</label>
+                        <textarea class="input-field" placeholder="Enter detailed observations, witness statements, evidence notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section" id="cards">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 006 / CARDS</p>
+                <h2>Content Cards</h2>
+                <p class="lead">From case files to evidence photos, cards contain the pieces of the puzzle.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Standard Cards</h3>
+            <div class="grid" style="margin-bottom: var(--space-8);">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">01</div>
+                        <h3>The Scene</h3>
+                        <p>Rain-slicked alley behind the Starlight Lounge. No witnesses. No fingerprints. Just a body and questions.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">02</div>
+                        <h3>The Suspect</h3>
+                        <p>A dame with a past and an alibi that's shakier than a drunk on Sunday morning.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">03</div>
+                        <h3>The Motive</h3>
+                        <p>Money, jealousy, revenge - the holy trinity of murder. Take your pick.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Case File Cards</h3>
+            <div class="grid" style="margin-bottom: var(--space-8);">
+                <div class="col-6">
+                    <div class="card-case">
+                        <div class="card-case-header">
+                            <div>
+                                <h3 style="margin-bottom: var(--space-1);">The Morrison Case</h3>
+                                <span class="card-case-id">CASE #1947-0892</span>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Wealthy industrialist found dead in locked study. All signs point to suicide, but the family insists otherwise. Something doesn't smell right.</p>
+                        <div style="margin-top: var(--space-4);">
+                            <span class="badge badge-blood">Active</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card-case">
+                        <div class="card-case-header">
+                            <div>
+                                <h3 style="margin-bottom: var(--space-1);">The Silk Stocking Affair</h3>
+                                <span class="card-case-id">CASE #1947-0756</span>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Three society dames, three mysterious disappearances. The only connection? They all bought stockings from the same boutique on 5th Avenue.</p>
+                        <div style="margin-top: var(--space-4);">
+                            <span class="badge badge-cold">Cold Case</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Evidence Photos</h3>
+            <div class="grid">
+                <div class="col-3">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">[ CRIME SCENE ]</div>
+                        <p class="card-photo-caption">Exhibit A - Nov 14, 1947</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">[ WEAPON ]</div>
+                        <p class="card-photo-caption">Exhibit B - .38 Special</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">[ SUSPECT ]</div>
+                        <p class="card-photo-caption">Exhibit C - Mugshot</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">[ FINGERPRINT ]</div>
+                        <p class="card-photo-caption">Exhibit D - Latent Print</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 007 / DATA</p>
+                <h2>Case Registry</h2>
+                <p class="lead">A dossier of open and closed investigations.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Case #</th>
+                            <th>Description</th>
+                            <th>Lead</th>
+                            <th>Status</th>
+                            <th class="text-right">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1947-0892</td>
+                            <td>Morrison Homicide</td>
+                            <td>Det. Marlowe</td>
+                            <td><span class="status-active">ACTIVE</span></td>
+                            <td class="text-right">Nov 14</td>
+                        </tr>
+                        <tr>
+                            <td>1947-0756</td>
+                            <td>Silk Stocking Disappearances</td>
+                            <td>Det. Spade</td>
+                            <td><span class="status-cold">COLD</span></td>
+                            <td class="text-right">Sep 3</td>
+                        </tr>
+                        <tr>
+                            <td>1947-0634</td>
+                            <td>Chinatown Robbery</td>
+                            <td>Det. Gittes</td>
+                            <td><span class="status-closed">CLOSED</span></td>
+                            <td class="text-right">Aug 21</td>
+                        </tr>
+                        <tr>
+                            <td>1947-0512</td>
+                            <td>The Maltese Falcon</td>
+                            <td>Det. Spade</td>
+                            <td><span class="status-closed">CLOSED</span></td>
+                            <td class="text-right">Jul 8</td>
+                        </tr>
+                        <tr>
+                            <td>1947-0401</td>
+                            <td>Sunset Blvd Suspicious Death</td>
+                            <td>Det. Marlowe</td>
+                            <td><span class="status-active">ACTIVE</span></td>
+                            <td class="text-right">Jun 15</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 008 / BADGES</p>
+                <h2>Status Indicators</h2>
+                <p class="lead">Tags and labels for categorizing evidence and case status.</p>
+            </div>
+
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge">Default</span>
+                <span class="badge badge-blood">Active Case</span>
+                <span class="badge badge-cold">Cold Case</span>
+                <span class="badge badge-gold">Priority</span>
+                <span class="badge badge-filled">Classified</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Evidence Tags</h3>
+            <div style="display: flex; gap: var(--space-5); flex-wrap: wrap;">
+                <span class="evidence-tag">EXHIBIT A</span>
+                <span class="evidence-tag">EXHIBIT B</span>
+                <span class="evidence-tag">EXHIBIT C</span>
+            </div>
+        </section>
+
+        <!-- Special Elements -->
+        <section class="section" id="elements">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 009 / ELEMENTS</p>
+                <h2>Special Components</h2>
+                <p class="lead">Newspaper clippings, venetian shadows, and atmospheric effects.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Newspaper Clipping</h3>
+            <div class="newspaper-clipping" style="margin-bottom: var(--space-8);">
+                <p class="newspaper-date">THE DAILY CHRONICLE - NOVEMBER 15, 1947</p>
+                <h3>BODY DISCOVERED IN DOWNTOWN WAREHOUSE; POLICE BAFFLED</h3>
+                <p>Authorities are investigating the mysterious death of a local businessman whose body was discovered early Thursday morning by a night watchman in the abandoned Cromwell warehouse district. Police Commissioner O'Brien stated that foul play is suspected but declined to comment further on the ongoing investigation. The victim, identified as Harold Morrison, 52, was last seen leaving the Starlight Lounge at approximately 11 PM Wednesday evening.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Venetian Blind Effects</h3>
+            <div class="grid" style="margin-bottom: var(--space-8);">
+                <div class="col-6">
+                    <div class="venetian-shadow" style="background: var(--bg-elevated); padding: var(--space-6); min-height: 200px;">
+                        <h3 style="position: relative; z-index: 20;">Horizontal Blinds</h3>
+                        <p style="position: relative; z-index: 20; color: var(--text-secondary); margin-bottom: 0;">Light filtering through the slats, casting prison-bar shadows across the room.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="venetian-diagonal" style="background: var(--bg-elevated); padding: var(--space-6); min-height: 200px;">
+                        <h3 style="position: relative; z-index: 20;">Diagonal Variant</h3>
+                        <p style="position: relative; z-index: 20; color: var(--text-secondary); margin-bottom: 0;">The afternoon sun slanting through, painting everything in stripes of shadow and light.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Interrogation Light</h3>
+            <div class="interrogation-light" style="background: var(--bg-elevated); padding: var(--space-8); text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <h2 style="margin-bottom: var(--space-4);">Where Were You?</h2>
+                <p class="lead" style="margin-bottom: 0; max-width: 500px;">The harsh overhead light creates a cone of interrogation, leaving the rest of the room in menacing darkness.</p>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">CASE FILE 010 / PRINCIPLES</p>
+                <h2>Design Philosophy</h2>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <h3 class="text-blood" style="margin-bottom: var(--space-3);">Contrast</h3>
+                    <p>Like the moral landscape of noir, design lives in stark contrasts. Deep blacks against harsh whites. Moments of color bleeding through the monochrome. Every element either in shadow or spotlight.</p>
+                </div>
+                <div class="col-6">
+                    <h3 class="text-blood" style="margin-bottom: var(--space-3);">Atmosphere</h3>
+                    <p>The venetian blinds, the cigarette smoke, the single light source - these aren't decorations, they're the DNA of noir. Every shadow tells a story, every gradient suggests depth and danger.</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <h3 class="text-blood" style="margin-bottom: var(--space-3);">Typography</h3>
+                    <p>The typewriter tells no lies - its letters stamped permanent on the page. Headlines scream from newspapers, while body text whispers secrets. Every font choice evokes the era.</p>
+                </div>
+                <div class="col-6">
+                    <h3 class="text-blood" style="margin-bottom: var(--space-3);">Restraint</h3>
+                    <p>Noir isn't about excess - it's about what you don't show. The shadows matter as much as the light. Leave room for mystery. Let the viewer's imagination fill the darkness.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p class="footer-brand">Noir</p>
+            <p>"It was a dark and stormy night... but then again, in this town, they all are."</p>
+            <p class="footer-end">THE END</p>
+        </footer>
+    </div>
+</body>
+</html>
