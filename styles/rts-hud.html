@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTS HUD // Battle.net Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;500;600;700&family=Black+Ops+One&family=Saira+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           RTS HUD / BATTLE.NET DESIGN SYSTEM
+           ============================================
+           Late 90s / Early 2000s Blizzard Aesthetic
+           StarCraft, Warcraft III, Battle.net Launcher
+           Dark metallic panels, beveled buttons,
+           amber/orange glows, riveted metal frames
+           ============================================ */
+
+        :root {
+            /* METAL PALETTE */
+            --gunmetal-dark: #1a1c1e;
+            --gunmetal-mid: #2a2d31;
+            --gunmetal-light: #3a3f45;
+            --steel-highlight: #4a5159;
+            --steel-bright: #5a636d;
+
+            /* PANEL BACKGROUNDS */
+            --panel-bg: linear-gradient(180deg, #2a2d31 0%, #1a1c1e 100%);
+            --panel-recessed: linear-gradient(180deg, #101214 0%, #1a1c1e 50%, #0a0b0c 100%);
+            --panel-raised: linear-gradient(180deg, #3a3f45 0%, #2a2d31 50%, #1a1c1e 100%);
+
+            /* BLIZZARD ORANGE - THE ICONIC ACCENT */
+            --amber-glow: #ff8c00;
+            --amber-bright: #ffa500;
+            --amber-light: #ffb830;
+            --amber-dark: #cc6600;
+            --amber-deep: #995200;
+
+            /* TEAL/CYAN SECONDARY */
+            --teal-glow: #00b4b4;
+            --teal-bright: #00d4d4;
+            --teal-light: #40e0e0;
+            --teal-dark: #008080;
+
+            /* FUNCTIONAL COLORS */
+            --health-green: #00cc44;
+            --health-green-dark: #008830;
+            --mana-blue: #3366ff;
+            --mana-blue-dark: #2244aa;
+            --damage-red: #cc2222;
+            --damage-red-dark: #881818;
+            --resource-gold: #ffd700;
+            --resource-lumber: #8b6914;
+            --resource-supply: #aabbcc;
+
+            /* TEXT COLORS */
+            --text-primary: #d0d4d8;
+            --text-bright: #e8ecf0;
+            --text-muted: #808890;
+            --text-amber: #ffb830;
+            --text-teal: #40e0e0;
+
+            /* BORDERS & FRAMES */
+            --border-dark: #0a0b0c;
+            --border-light: #4a5159;
+            --border-highlight: #5a636d;
+            --rivet-color: #3a3f45;
+
+            /* SHADOWS & GLOWS */
+            --shadow-deep: 0 4px 12px rgba(0, 0, 0, 0.8);
+            --shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+            --glow-amber: 0 0 10px rgba(255, 140, 0, 0.6), 0 0 20px rgba(255, 140, 0, 0.3);
+            --glow-amber-strong: 0 0 15px rgba(255, 140, 0, 0.8), 0 0 30px rgba(255, 140, 0, 0.4);
+            --glow-teal: 0 0 10px rgba(0, 180, 180, 0.6), 0 0 20px rgba(0, 180, 180, 0.3);
+
+            /* TYPOGRAPHY */
+            --font-display: 'Black Ops One', cursive;
+            --font-heading: 'Teko', sans-serif;
+            --font-body: 'Saira Condensed', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+
+            /* SPACING */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+        }
+
+        /* BASE STYLES */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background: var(--gunmetal-dark);
+            min-height: 100vh;
+        }
+
+        /* BACKGROUND TEXTURE */
+        .bg-texture {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(255, 140, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(0, 180, 180, 0.02) 0%, transparent 50%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.1) 2px,
+                    rgba(0, 0, 0, 0.1) 4px
+                ),
+                var(--gunmetal-dark);
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+        }
+
+        /* ============================================
+           METAL FRAME BORDER
+           ============================================ */
+        .metal-frame {
+            position: relative;
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            box-shadow:
+                inset 0 1px 0 var(--border-highlight),
+                inset 0 -1px 0 var(--border-dark),
+                var(--shadow-deep);
+        }
+
+        .metal-frame::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border: 2px solid var(--border-light);
+            pointer-events: none;
+        }
+
+        /* RIVETS */
+        .riveted {
+            position: relative;
+        }
+
+        .riveted::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: none;
+            background-image:
+                radial-gradient(circle at center, var(--steel-highlight) 3px, transparent 3px),
+                radial-gradient(circle at center, var(--border-dark) 4px, transparent 4px);
+            background-size: 100% 100%;
+            background-position:
+                0 0,
+                0 0;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .corner-rivets {
+            position: relative;
+        }
+
+        .corner-rivets::before,
+        .corner-rivets::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--steel-bright) 0%, var(--steel-highlight) 50%, var(--gunmetal-mid) 100%);
+            box-shadow:
+                inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+                0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .corner-rivets::before {
+            top: 10px;
+            left: 10px;
+            box-shadow:
+                inset 0 -2px 3px rgba(0, 0, 0, 0.5),
+                0 1px 2px rgba(0, 0, 0, 0.5),
+                calc(100% - 30px) 0 0 0 var(--steel-highlight);
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .header {
+            padding: var(--space-8) 0 var(--space-7);
+            position: relative;
+        }
+
+        .header-panel {
+            background: var(--panel-bg);
+            border: 4px solid var(--border-dark);
+            padding: var(--space-6);
+            position: relative;
+            box-shadow:
+                inset 0 2px 0 var(--border-highlight),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+                inset 2px 0 0 var(--border-light),
+                inset -2px 0 0 rgba(0, 0, 0, 0.3),
+                var(--shadow-deep);
+        }
+
+        .header-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--amber-dark) 20%,
+                var(--amber-glow) 50%,
+                var(--amber-dark) 80%,
+                transparent 100%
+            );
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-6);
+        }
+
+        .logo-section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .logo-tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--amber-glow);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            text-shadow: var(--glow-amber);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--text-bright);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-shadow:
+                0 2px 0 var(--border-dark),
+                0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-sub {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        /* EMBLEM */
+        .emblem {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emblem-frame {
+            position: absolute;
+            inset: 0;
+            background: var(--panel-raised);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            border: 3px solid var(--border-dark);
+        }
+
+        .emblem-inner {
+            position: absolute;
+            inset: 8px;
+            background: var(--panel-recessed);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-inset);
+        }
+
+        .emblem-icon {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            color: var(--amber-glow);
+            text-shadow: var(--glow-amber);
+        }
+
+        /* ============================================
+           SECTIONS
+           ============================================ */
+        .section {
+            padding: var(--space-7) 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--gunmetal-light);
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--amber-glow);
+            box-shadow: var(--glow-amber);
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--amber-glow);
+            padding: var(--space-2) var(--space-3);
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            text-shadow: var(--glow-amber);
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: 600;
+            color: var(--text-bright);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .section-lead {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+            max-width: 60ch;
+        }
+
+        /* ============================================
+           COLOR PALETTE
+           ============================================ */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            overflow: hidden;
+            box-shadow: var(--shadow-deep);
+        }
+
+        .color-preview {
+            height: 80px;
+            position: relative;
+        }
+
+        .color-preview.with-glow::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 30px currentColor;
+            opacity: 0.3;
+        }
+
+        .color-info {
+            padding: var(--space-3);
+            background: var(--panel-recessed);
+            border-top: 2px solid var(--border-dark);
+        }
+
+        .color-name {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            letter-spacing: 0.05em;
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .type-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: var(--space-5);
+            align-items: baseline;
+            padding: var(--space-4);
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+        }
+
+        .type-meta {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .type-name {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--amber-glow);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .type-specs {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--text-bright);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .type-h1 {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .type-h2 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.08em;
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .type-mono {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--teal-bright);
+        }
+
+        .type-stats {
+            font-family: var(--font-heading);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--resource-gold);
+            letter-spacing: 0.05em;
+        }
+
+        /* ============================================
+           BATTLE.NET STYLE BUTTONS
+           ============================================ */
+        .button-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .btn {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: var(--space-3) var(--space-5);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        /* PRIMARY BATTLE.NET BUTTON */
+        .btn-primary {
+            color: var(--text-bright);
+            background: linear-gradient(180deg,
+                var(--gunmetal-light) 0%,
+                var(--gunmetal-mid) 40%,
+                var(--gunmetal-dark) 100%
+            );
+            border: 3px solid var(--border-dark);
+            box-shadow:
+                inset 0 1px 0 var(--steel-bright),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+                inset 1px 0 0 var(--border-light),
+                inset -1px 0 0 rgba(0, 0, 0, 0.3),
+                0 4px 0 var(--border-dark),
+                0 6px 12px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(180deg,
+                var(--steel-highlight) 0%,
+                var(--gunmetal-light) 40%,
+                var(--gunmetal-mid) 100%
+            );
+            box-shadow:
+                inset 0 1px 0 var(--steel-bright),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+                inset 1px 0 0 var(--border-light),
+                inset -1px 0 0 rgba(0, 0, 0, 0.3),
+                0 4px 0 var(--border-dark),
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(255, 140, 0, 0.3);
+            border-color: var(--amber-dark);
+        }
+
+        .btn-primary:active {
+            background: linear-gradient(180deg,
+                var(--gunmetal-dark) 0%,
+                var(--gunmetal-mid) 60%,
+                var(--gunmetal-light) 100%
+            );
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.8),
+                inset 0 -1px 0 var(--border-highlight),
+                0 1px 0 var(--border-dark);
+            transform: translateY(3px);
+        }
+
+        /* AMBER ACCENT BUTTON */
+        .btn-amber {
+            color: var(--gunmetal-dark);
+            background: linear-gradient(180deg,
+                var(--amber-light) 0%,
+                var(--amber-glow) 40%,
+                var(--amber-dark) 100%
+            );
+            border: 3px solid var(--amber-deep);
+            box-shadow:
+                inset 0 1px 0 var(--amber-bright),
+                inset 0 -2px 0 var(--amber-deep),
+                0 4px 0 #663300,
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                var(--glow-amber);
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-amber:hover {
+            background: linear-gradient(180deg,
+                var(--amber-bright) 0%,
+                var(--amber-light) 40%,
+                var(--amber-glow) 100%
+            );
+            box-shadow:
+                inset 0 1px 0 #fff,
+                inset 0 -2px 0 var(--amber-deep),
+                0 4px 0 #663300,
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                var(--glow-amber-strong);
+        }
+
+        .btn-amber:active {
+            background: linear-gradient(180deg,
+                var(--amber-dark) 0%,
+                var(--amber-glow) 60%,
+                var(--amber-light) 100%
+            );
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.4),
+                0 1px 0 #663300;
+            transform: translateY(3px);
+        }
+
+        /* TEAL SECONDARY BUTTON */
+        .btn-teal {
+            color: var(--gunmetal-dark);
+            background: linear-gradient(180deg,
+                var(--teal-light) 0%,
+                var(--teal-bright) 40%,
+                var(--teal-dark) 100%
+            );
+            border: 3px solid #006666;
+            box-shadow:
+                inset 0 1px 0 #60ffff,
+                inset 0 -2px 0 #004444,
+                0 4px 0 #003333,
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                var(--glow-teal);
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-teal:hover {
+            box-shadow:
+                inset 0 1px 0 #80ffff,
+                inset 0 -2px 0 #004444,
+                0 4px 0 #003333,
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 25px rgba(0, 212, 212, 0.5);
+        }
+
+        .btn-teal:active {
+            background: linear-gradient(180deg,
+                var(--teal-dark) 0%,
+                var(--teal-glow) 60%,
+                var(--teal-light) 100%
+            );
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.4),
+                0 1px 0 #003333;
+            transform: translateY(3px);
+        }
+
+        /* GHOST BUTTON */
+        .btn-ghost {
+            color: var(--text-primary);
+            background: transparent;
+            border: 2px solid var(--gunmetal-light);
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--amber-glow);
+            color: var(--amber-glow);
+            box-shadow: var(--glow-amber);
+        }
+
+        .btn-ghost:active {
+            background: rgba(255, 140, 0, 0.1);
+        }
+
+        /* BUTTON SIZES */
+        .btn-sm {
+            font-size: 0.85rem;
+            padding: var(--space-2) var(--space-4);
+        }
+
+        .btn-lg {
+            font-size: 1.2rem;
+            padding: var(--space-4) var(--space-7);
+        }
+
+        /* ============================================
+           RESOURCE BAR
+           ============================================ */
+        .resource-bar {
+            display: flex;
+            gap: var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            box-shadow: var(--shadow-deep);
+        }
+
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+        }
+
+        .resource-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .resource-icon.gold { color: var(--resource-gold); text-shadow: 0 0 8px var(--resource-gold); }
+        .resource-icon.lumber { color: var(--resource-lumber); }
+        .resource-icon.supply { color: var(--resource-supply); }
+
+        .resource-value {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .resource-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* ============================================
+           MINIMAP FRAME
+           ============================================ */
+        .minimap-container {
+            display: inline-block;
+        }
+
+        .minimap-frame {
+            width: 200px;
+            height: 200px;
+            background: var(--panel-raised);
+            border: 4px solid var(--border-dark);
+            padding: 6px;
+            position: relative;
+            box-shadow:
+                inset 0 2px 0 var(--border-highlight),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.8),
+                inset 2px 0 0 var(--border-light),
+                inset -2px 0 0 rgba(0, 0, 0, 0.5),
+                var(--shadow-deep);
+        }
+
+        .minimap-inner {
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 30% 40%, rgba(0, 100, 0, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 70% 60%, rgba(100, 60, 20, 0.3) 0%, transparent 30%),
+                linear-gradient(135deg, #1a2a1a 0%, #0d1a0d 100%);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .minimap-inner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 10px,
+                    rgba(0, 180, 180, 0.05) 10px,
+                    rgba(0, 180, 180, 0.05) 11px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 10px,
+                    rgba(0, 180, 180, 0.05) 10px,
+                    rgba(0, 180, 180, 0.05) 11px
+                );
+        }
+
+        .minimap-marker {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .minimap-marker.friendly { background: var(--teal-bright); color: var(--teal-bright); }
+        .minimap-marker.enemy { background: var(--damage-red); color: var(--damage-red); }
+        .minimap-marker.resource { background: var(--resource-gold); color: var(--resource-gold); }
+
+        .minimap-viewport {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ============================================
+           UNIT PORTRAIT PANEL
+           ============================================ */
+        .portrait-panel {
+            display: inline-flex;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--panel-bg);
+            border: 4px solid var(--border-dark);
+            box-shadow: var(--shadow-deep);
+        }
+
+        .portrait-frame {
+            width: 80px;
+            height: 80px;
+            background: var(--panel-raised);
+            border: 3px solid var(--border-dark);
+            padding: 4px;
+            box-shadow:
+                inset 0 1px 0 var(--border-highlight),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .portrait-inner {
+            width: 100%;
+            height: 100%;
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .portrait-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: var(--space-2);
+            min-width: 150px;
+        }
+
+        .portrait-name {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .portrait-type {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--teal-bright);
+            text-transform: uppercase;
+        }
+
+        .portrait-bars {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        /* HEALTH / MANA BARS */
+        .stat-bar {
+            height: 16px;
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-inset);
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            position: relative;
+            transition: width 0.3s ease;
+        }
+
+        .stat-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+        }
+
+        .stat-bar.health .stat-bar-fill {
+            background: linear-gradient(180deg, var(--health-green) 0%, var(--health-green-dark) 100%);
+        }
+
+        .stat-bar.mana .stat-bar-fill {
+            background: linear-gradient(180deg, var(--mana-blue) 0%, var(--mana-blue-dark) 100%);
+        }
+
+        .stat-bar-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-bright);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ============================================
+           COMMAND CARD (3x4 Grid)
+           ============================================ */
+        .command-card {
+            display: inline-block;
+            background: var(--panel-bg);
+            border: 4px solid var(--border-dark);
+            padding: var(--space-3);
+            box-shadow: var(--shadow-deep);
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+        }
+
+        .command-btn {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(180deg,
+                var(--gunmetal-light) 0%,
+                var(--gunmetal-mid) 50%,
+                var(--gunmetal-dark) 100%
+            );
+            border: 2px solid var(--border-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+            box-shadow:
+                inset 0 1px 0 var(--border-highlight),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+                0 2px 0 var(--border-dark);
+        }
+
+        .command-btn:hover {
+            background: linear-gradient(180deg,
+                var(--steel-highlight) 0%,
+                var(--gunmetal-light) 50%,
+                var(--gunmetal-mid) 100%
+            );
+            border-color: var(--amber-glow);
+            box-shadow:
+                inset 0 1px 0 var(--border-highlight),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+                0 2px 0 var(--border-dark),
+                0 0 10px rgba(255, 140, 0, 0.4);
+        }
+
+        .command-btn:active {
+            background: linear-gradient(180deg,
+                var(--gunmetal-dark) 0%,
+                var(--gunmetal-mid) 60%,
+                var(--gunmetal-light) 100%
+            );
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+            transform: translateY(2px);
+        }
+
+        .command-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .command-btn.disabled:hover {
+            background: linear-gradient(180deg,
+                var(--gunmetal-light) 0%,
+                var(--gunmetal-mid) 50%,
+                var(--gunmetal-dark) 100%
+            );
+            border-color: var(--border-dark);
+            box-shadow:
+                inset 0 1px 0 var(--border-highlight),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+                0 2px 0 var(--border-dark);
+        }
+
+        .command-icon {
+            font-size: 1.5rem;
+        }
+
+        .command-hotkey {
+            position: absolute;
+            bottom: 2px;
+            right: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--amber-glow);
+            text-shadow: 0 0 4px var(--amber-glow);
+        }
+
+        /* ============================================
+           CHAT / MESSAGE PANEL
+           ============================================ */
+        .chat-panel {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            box-shadow: var(--shadow-deep);
+            max-width: 400px;
+        }
+
+        .chat-header {
+            padding: var(--space-2) var(--space-3);
+            background: var(--panel-raised);
+            border-bottom: 2px solid var(--border-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .chat-status {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--health-green);
+        }
+
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: var(--space-3);
+            background: var(--panel-recessed);
+            border-bottom: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+        }
+
+        .chat-message {
+            padding: var(--space-1) 0;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .chat-timestamp {
+            color: var(--text-muted);
+            margin-right: var(--space-2);
+        }
+
+        .chat-username {
+            color: var(--teal-bright);
+            font-weight: 600;
+        }
+
+        .chat-username.system {
+            color: var(--amber-glow);
+        }
+
+        .chat-text {
+            color: var(--text-primary);
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: var(--space-2);
+        }
+
+        .chat-input {
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: var(--space-2) var(--space-3);
+            background: var(--gunmetal-dark);
+            border: 2px solid var(--border-dark);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--amber-dark);
+            box-shadow: 0 0 8px rgba(255, 140, 0, 0.3);
+        }
+
+        .chat-send {
+            padding: var(--space-2) var(--space-3);
+            background: var(--amber-glow);
+            border: 2px solid var(--amber-deep);
+            color: var(--gunmetal-dark);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .chat-send:hover {
+            background: var(--amber-bright);
+        }
+
+        /* ============================================
+           PROGRESS BARS (Segmented)
+           ============================================ */
+        .progress-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-5);
+        }
+
+        .progress-bar {
+            position: relative;
+            height: 24px;
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            position: relative;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.amber {
+            background: linear-gradient(180deg, var(--amber-light) 0%, var(--amber-glow) 50%, var(--amber-dark) 100%);
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+        }
+
+        .progress-fill.teal {
+            background: linear-gradient(180deg, var(--teal-light) 0%, var(--teal-bright) 50%, var(--teal-dark) 100%);
+            box-shadow: 0 0 10px rgba(0, 180, 180, 0.5);
+        }
+
+        .progress-fill.health {
+            background: linear-gradient(180deg, #40ff70 0%, var(--health-green) 50%, var(--health-green-dark) 100%);
+        }
+
+        .progress-segments {
+            position: absolute;
+            inset: 0;
+            display: flex;
+        }
+
+        .progress-segment {
+            flex: 1;
+            border-right: 1px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-segment:last-child {
+            border-right: none;
+        }
+
+        .progress-label {
+            position: absolute;
+            right: var(--space-3);
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .progress-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-1);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* ============================================
+           FORM ELEMENTS
+           ============================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .form-label {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .form-input {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            padding: var(--space-3) var(--space-4);
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            color: var(--text-primary);
+            outline: none;
+            box-shadow: var(--shadow-inset);
+            transition: all 0.15s ease;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            border-color: var(--amber-glow);
+            box-shadow: var(--shadow-inset), 0 0 10px rgba(255, 140, 0, 0.3);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff8c00' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            padding-right: var(--space-8);
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: var(--font-mono);
+        }
+
+        /* ============================================
+           TABS (Channel Style)
+           ============================================ */
+        .tab-bar {
+            display: flex;
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            border-bottom: none;
+        }
+
+        .tab {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-3) var(--space-5);
+            background: linear-gradient(180deg,
+                var(--gunmetal-mid) 0%,
+                var(--gunmetal-dark) 100%
+            );
+            border: none;
+            border-right: 2px solid var(--border-dark);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .tab:last-child {
+            border-right: none;
+        }
+
+        .tab:hover {
+            background: linear-gradient(180deg,
+                var(--gunmetal-light) 0%,
+                var(--gunmetal-mid) 100%
+            );
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: linear-gradient(180deg,
+                var(--steel-highlight) 0%,
+                var(--gunmetal-light) 100%
+            );
+            color: var(--amber-glow);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--amber-glow);
+            box-shadow: 0 0 8px var(--amber-glow);
+        }
+
+        .tab-content {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            border-top: none;
+            padding: var(--space-5);
+        }
+
+        /* ============================================
+           NEWS / INFO PANELS
+           ============================================ */
+        .news-panel {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            box-shadow: var(--shadow-deep);
+            overflow: hidden;
+        }
+
+        .news-header {
+            padding: var(--space-3) var(--space-4);
+            background: linear-gradient(180deg,
+                var(--gunmetal-light) 0%,
+                var(--gunmetal-mid) 100%
+            );
+            border-bottom: 2px solid var(--border-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .news-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--amber-glow);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .news-date {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .news-body {
+            padding: var(--space-4);
+        }
+
+        .news-item {
+            padding: var(--space-3);
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            margin-bottom: var(--space-3);
+            box-shadow: var(--shadow-inset);
+        }
+
+        .news-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .news-item-title {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: var(--space-2);
+        }
+
+        .news-item-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .news-item-meta {
+            display: flex;
+            gap: var(--space-3);
+            margin-top: var(--space-2);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--teal-glow);
+        }
+
+        /* ============================================
+           GRID LAYOUTS
+           ============================================ */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        /* ============================================
+           DEMO SECTION - RTS HUD LAYOUT
+           ============================================ */
+        .hud-demo {
+            background: var(--panel-bg);
+            border: 4px solid var(--border-dark);
+            padding: var(--space-4);
+            display: grid;
+            grid-template-columns: 220px 1fr 220px;
+            grid-template-rows: auto 1fr auto;
+            gap: var(--space-4);
+            min-height: 400px;
+        }
+
+        .hud-resources {
+            grid-column: 1 / -1;
+        }
+
+        .hud-left {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .hud-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-recessed);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-inset);
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .hud-right {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .hud-bottom {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+        }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+        .card {
+            background: var(--panel-bg);
+            border: 3px solid var(--border-dark);
+            box-shadow: var(--shadow-deep);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--amber-dark);
+            box-shadow: var(--shadow-deep), 0 0 15px rgba(255, 140, 0, 0.2);
+        }
+
+        .card-header {
+            padding: var(--space-3) var(--space-4);
+            background: var(--panel-raised);
+            border-bottom: 2px solid var(--border-dark);
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card-body {
+            padding: var(--space-4);
+        }
+
+        .card-footer {
+            padding: var(--space-3) var(--space-4);
+            background: var(--panel-recessed);
+            border-top: 2px solid var(--border-dark);
+        }
+
+        /* ============================================
+           BADGES
+           ============================================ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: var(--space-1) var(--space-2);
+            background: var(--panel-recessed);
+            border: 1px solid var(--border-dark);
+        }
+
+        .badge.amber {
+            color: var(--amber-glow);
+            border-color: var(--amber-dark);
+            box-shadow: 0 0 6px rgba(255, 140, 0, 0.3);
+        }
+
+        .badge.teal {
+            color: var(--teal-bright);
+            border-color: var(--teal-dark);
+            box-shadow: 0 0 6px rgba(0, 180, 180, 0.3);
+        }
+
+        .badge.health {
+            color: var(--health-green);
+            border-color: var(--health-green-dark);
+        }
+
+        .badge.danger {
+            color: var(--damage-red);
+            border-color: var(--damage-red-dark);
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            padding: var(--space-7) 0;
+            margin-top: var(--space-7);
+            border-top: 2px solid var(--gunmetal-light);
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--text-bright);
+            margin-bottom: var(--space-3);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto var(--space-4);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-5);
+        }
+
+        .footer-link {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.15s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--amber-glow);
+            text-shadow: 0 0 8px rgba(255, 140, 0, 0.5);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 900px) {
+            .hud-demo {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+
+            .hud-left, .hud-right {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .hud-center {
+                min-height: 150px;
+            }
+
+            .hud-bottom {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-4);
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .type-row {
+                grid-template-columns: 1fr;
+                gap: var(--space-2);
+            }
+
+            .resource-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px currentColor; }
+            50% { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .blink {
+            animation: blink 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-texture"></div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-panel">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <span class="logo-tag">// Design System</span>
+                        <h1 class="logo">RTS HUD</h1>
+                        <p class="logo-sub">Battle.net Aesthetic</p>
+                    </div>
+                    <div class="emblem">
+                        <div class="emblem-frame"></div>
+                        <div class="emblem-inner">
+                            <span class="emblem-icon">SC</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- I. COLORS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <div>
+                    <h2 class="section-title">Color Palette</h2>
+                    <p class="section-lead">Dark metallic bases with iconic Blizzard orange accents and teal secondary tones.</p>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-muted); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.1em;">Metal Tones</h3>
+            <div class="color-grid" style="margin-bottom: var(--space-6);">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--gunmetal-dark);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Gunmetal Dark</div>
+                        <div class="color-value">#1A1C1E</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--gunmetal-mid);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Gunmetal Mid</div>
+                        <div class="color-value">#2A2D31</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--gunmetal-light);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Gunmetal Light</div>
+                        <div class="color-value">#3A3F45</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--steel-bright);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Steel Bright</div>
+                        <div class="color-value">#5A636D</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-muted); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.1em;">Accent Colors</h3>
+            <div class="color-grid" style="margin-bottom: var(--space-6);">
+                <div class="color-swatch">
+                    <div class="color-preview with-glow" style="background: var(--amber-glow); color: var(--amber-glow);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Amber Glow</div>
+                        <div class="color-value">#FF8C00</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview with-glow" style="background: var(--amber-bright); color: var(--amber-bright);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Amber Bright</div>
+                        <div class="color-value">#FFA500</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview with-glow" style="background: var(--teal-bright); color: var(--teal-bright);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Teal Bright</div>
+                        <div class="color-value">#00D4D4</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview with-glow" style="background: var(--teal-glow); color: var(--teal-glow);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Teal Glow</div>
+                        <div class="color-value">#00B4B4</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-muted); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.1em;">Functional Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--health-green);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Health Green</div>
+                        <div class="color-value">#00CC44</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mana-blue);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Mana Blue</div>
+                        <div class="color-value">#3366FF</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--damage-red);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Damage Red</div>
+                        <div class="color-value">#CC2222</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--resource-gold);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Resource Gold</div>
+                        <div class="color-value">#FFD700</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- II. TYPOGRAPHY -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <div>
+                    <h2 class="section-title">Typography</h2>
+                    <p class="section-lead">Condensed military/tech fonts optimized for HUD readability and stat displays.</p>
+                </div>
+            </div>
+            <div class="type-scale">
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Display</span>
+                        <span class="type-specs">Black Ops One / 40px</span>
+                    </div>
+                    <div class="type-display">COMMAND</div>
+                </div>
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 1</span>
+                        <span class="type-specs">Teko / 32px / 700</span>
+                    </div>
+                    <div class="type-h1">Battle Stations</div>
+                </div>
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 2</span>
+                        <span class="type-specs">Teko / 24px / 600</span>
+                    </div>
+                    <div class="type-h2">Unit Production</div>
+                </div>
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Body</span>
+                        <span class="type-specs">Saira Condensed / 16px</span>
+                    </div>
+                    <div class="type-body">The quick brown zergling rushes over the lazy marine. Optimized for rapid comprehension during intense battles.</div>
+                </div>
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Mono</span>
+                        <span class="type-specs">Share Tech Mono / 14px</span>
+                    </div>
+                    <div class="type-mono">[SYSTEM] Connection established: GATEWAY_NEXUS_07</div>
+                </div>
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Stats</span>
+                        <span class="type-specs">Teko / 28px / 700</span>
+                    </div>
+                    <div class="type-stats">12,500 / 15,000</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- III. BUTTONS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <div>
+                    <h2 class="section-title">Buttons</h2>
+                    <p class="section-lead">Chunky beveled buttons with satisfying depth. Raised default states, pressed insets, orange glow hovers.</p>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-muted); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.1em;">Button Variants</h3>
+            <div class="button-showcase">
+                <button class="btn btn-primary">Play Game</button>
+                <button class="btn btn-amber">Join Battle</button>
+                <button class="btn btn-teal">Options</button>
+                <button class="btn btn-ghost">Cancel</button>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-muted); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.1em;">Button Sizes</h3>
+            <div class="button-showcase">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Medium</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+        </section>
+
+        <!-- IV. RESOURCE BAR -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <div>
+                    <h2 class="section-title">Resource Bar</h2>
+                    <p class="section-lead">Classic RTS resource display with gold, lumber, and supply counters.</p>
+                </div>
+            </div>
+
+            <div class="resource-bar">
+                <div class="resource-item">
+                    <div class="resource-icon gold">&#9679;</div>
+                    <div>
+                        <div class="resource-value">12,450</div>
+                        <div class="resource-label">Gold</div>
+                    </div>
+                </div>
+                <div class="resource-item">
+                    <div class="resource-icon lumber">&#9650;</div>
+                    <div>
+                        <div class="resource-value">8,230</div>
+                        <div class="resource-label">Lumber</div>
+                    </div>
+                </div>
+                <div class="resource-item">
+                    <div class="resource-icon supply">&#9632;</div>
+                    <div>
+                        <div class="resource-value">87 / 100</div>
+                        <div class="resource-label">Supply</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- V. MINIMAP & PORTRAIT -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <div>
+                    <h2 class="section-title">HUD Frames</h2>
+                    <p class="section-lead">Beveled metallic frames for minimap and unit portrait displays.</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start;">
+                <div>
+                    <h3 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-muted); margin-bottom: var(--space-3); text-transform: uppercase; letter-spacing: 0.1em;">Minimap Frame</h3>
+                    <div class="minimap-container">
+                        <div class="minimap-frame">
+                            <div class="minimap-inner">
+                                <div class="minimap-marker friendly" style="top: 30%; left: 25%;"></div>
+                                <div class="minimap-marker friendly" style="top: 35%; left: 30%;"></div>
+                                <div class="minimap-marker enemy" style="top: 60%; left: 70%;"></div>
+                                <div class="minimap-marker enemy" style="top: 65%; left: 75%;"></div>
+                                <div class="minimap-marker resource" style="top: 45%; left: 50%;"></div>
+                                <div class="minimap-viewport" style="top: 20%; left: 15%; width: 30%; height: 25%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-muted); margin-bottom: var(--space-3); text-transform: uppercase; letter-spacing: 0.1em;">Unit Portrait Panel</h3>
+                    <div class="portrait-panel">
+                        <div class="portrait-frame">
+                            <div class="portrait-inner">
+                                &#9876;
+                            </div>
+                        </div>
+                        <div class="portrait-info">
+                            <div class="portrait-name">Marine</div>
+                            <div class="portrait-type">Infantry Unit</div>
+                            <div class="portrait-bars">
+                                <div class="stat-bar health">
+                                    <div class="stat-bar-fill" style="width: 75%;"></div>
+                                    <div class="stat-bar-text">45 / 60</div>
+                                </div>
+                                <div class="stat-bar mana">
+                                    <div class="stat-bar-fill" style="width: 100%;"></div>
+                                    <div class="stat-bar-text">50 / 50</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VI. COMMAND CARD -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <div>
+                    <h2 class="section-title">Command Card</h2>
+                    <p class="section-lead">3x4 button grid with hotkey indicators for unit abilities and commands.</p>
+                </div>
+            </div>
+
+            <div class="command-card">
+                <div class="command-grid">
+                    <button class="command-btn">
+                        <span class="command-icon">&#9876;</span>
+                        <span class="command-hotkey">A</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9632;</span>
+                        <span class="command-hotkey">S</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9650;</span>
+                        <span class="command-hotkey">D</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9679;</span>
+                        <span class="command-hotkey">F</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#10006;</span>
+                        <span class="command-hotkey">Z</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#10004;</span>
+                        <span class="command-hotkey">X</span>
+                    </button>
+                    <button class="command-btn disabled">
+                        <span class="command-icon">-</span>
+                        <span class="command-hotkey">C</span>
+                    </button>
+                    <button class="command-btn disabled">
+                        <span class="command-icon">-</span>
+                        <span class="command-hotkey">V</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9733;</span>
+                        <span class="command-hotkey">Q</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9830;</span>
+                        <span class="command-hotkey">W</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9827;</span>
+                        <span class="command-hotkey">E</span>
+                    </button>
+                    <button class="command-btn">
+                        <span class="command-icon">&#9824;</span>
+                        <span class="command-hotkey">R</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VII. CHAT PANEL -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <div>
+                    <h2 class="section-title">Chat Panel</h2>
+                    <p class="section-lead">Terminal-style chat interface for Battle.net messaging.</p>
+                </div>
+            </div>
+
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <span class="chat-title">Channel: Brood War</span>
+                    <span class="chat-status">ONLINE</span>
+                </div>
+                <div class="chat-messages">
+                    <div class="chat-message">
+                        <span class="chat-timestamp">[14:23]</span>
+                        <span class="chat-username system">[SYSTEM]</span>
+                        <span class="chat-text">Welcome to Battle.net!</span>
+                    </div>
+                    <div class="chat-message">
+                        <span class="chat-timestamp">[14:24]</span>
+                        <span class="chat-username">Artosis</span>
+                        <span class="chat-text">: Anyone want to 1v1 on Fighting Spirit?</span>
+                    </div>
+                    <div class="chat-message">
+                        <span class="chat-timestamp">[14:24]</span>
+                        <span class="chat-username">Tasteless</span>
+                        <span class="chat-text">: GL HF!</span>
+                    </div>
+                    <div class="chat-message">
+                        <span class="chat-timestamp">[14:25]</span>
+                        <span class="chat-username">Flash</span>
+                        <span class="chat-text">: gg</span>
+                    </div>
+                    <div class="chat-message">
+                        <span class="chat-timestamp">[14:25]</span>
+                        <span class="chat-username system">[SYSTEM]</span>
+                        <span class="chat-text">Jaedong has joined the channel.</span>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="Type a message...">
+                    <button class="chat-send">Send</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIII. PROGRESS BARS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <div>
+                    <h2 class="section-title">Progress Bars</h2>
+                    <p class="section-lead">Segmented progress bars with glowing fills for build queues and loading states.</p>
+                </div>
+            </div>
+
+            <div class="progress-showcase">
+                <div>
+                    <div class="progress-title">Build Progress</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill amber" style="width: 65%;">
+                            <div class="progress-segments">
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                            </div>
+                        </div>
+                        <span class="progress-label">65%</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="progress-title">Energy Charge</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill teal" style="width: 80%;">
+                            <div class="progress-segments">
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                            </div>
+                        </div>
+                        <span class="progress-label">80%</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="progress-title">Health</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill health" style="width: 42%;">
+                            <div class="progress-segments">
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                            </div>
+                        </div>
+                        <span class="progress-label">42%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- IX. FORM ELEMENTS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <div>
+                    <h2 class="section-title">Form Elements</h2>
+                    <p class="section-lead">Tech panel styled inputs and selects for game options and settings.</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Player Name</label>
+                    <input type="text" class="form-input" placeholder="Enter your callsign">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gateway</label>
+                    <select class="form-input form-select">
+                        <option>US West</option>
+                        <option>US East</option>
+                        <option>Europe</option>
+                        <option>Asia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Game Type</label>
+                    <select class="form-input form-select">
+                        <option>Melee</option>
+                        <option>Team Melee</option>
+                        <option>Free For All</option>
+                        <option>Use Map Settings</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Race</label>
+                    <select class="form-input form-select">
+                        <option>Terran</option>
+                        <option>Zerg</option>
+                        <option>Protoss</option>
+                        <option>Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: var(--space-5);">
+                <label class="form-label">Map Description</label>
+                <textarea class="form-input form-textarea" placeholder="Enter map description or game notes..."></textarea>
+            </div>
+        </section>
+
+        <!-- X. TABS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <div>
+                    <h2 class="section-title">Tab Navigation</h2>
+                    <p class="section-lead">Channel-style tab navigation for Battle.net interface sections.</p>
+                </div>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab active">Channels</button>
+                <button class="tab">Games</button>
+                <button class="tab">Friends</button>
+                <button class="tab">Ladder</button>
+            </div>
+            <div class="tab-content">
+                <p style="color: var(--text-muted);">Tab content area. Select different tabs to navigate between Battle.net sections like channel browser, game list, friends list, and ladder rankings.</p>
+            </div>
+        </section>
+
+        <!-- XI. NEWS PANELS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">11</span>
+                <div>
+                    <h2 class="section-title">News Panels</h2>
+                    <p class="section-lead">Information panels for news, updates, and announcements.</p>
+                </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+                <div class="news-panel">
+                    <div class="news-header">
+                        <span class="news-title">Patch Notes</span>
+                        <span class="news-date">2024.03.15</span>
+                    </div>
+                    <div class="news-body">
+                        <div class="news-item">
+                            <div class="news-item-title">Balance Update 1.23.1</div>
+                            <div class="news-item-text">Minor adjustments to unit pathing and building construction times. Siege Tank splash damage radius reduced by 0.5.</div>
+                            <div class="news-item-meta">
+                                <span>Gameplay</span>
+                                <span>Balance</span>
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <div class="news-item-title">New Maps Added</div>
+                            <div class="news-item-text">Three new competitive maps have been added to the ladder map pool for the upcoming season.</div>
+                            <div class="news-item-meta">
+                                <span>Maps</span>
+                                <span>Ladder</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="news-panel">
+                    <div class="news-header">
+                        <span class="news-title">Server Status</span>
+                        <span class="news-date" style="color: var(--health-green);">ALL SYSTEMS ONLINE</span>
+                    </div>
+                    <div class="news-body">
+                        <div class="news-item">
+                            <div class="news-item-title">US West Gateway</div>
+                            <div class="news-item-text" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Active Players: 2,847</span>
+                                <span class="badge health">Online</span>
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <div class="news-item-title">US East Gateway</div>
+                            <div class="news-item-text" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Active Players: 3,521</span>
+                                <span class="badge health">Online</span>
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <div class="news-item-title">Europe Gateway</div>
+                            <div class="news-item-text" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Active Players: 4,103</span>
+                                <span class="badge health">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- XII. FULL HUD DEMO -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">12</span>
+                <div>
+                    <h2 class="section-title">HUD Layout Demo</h2>
+                    <p class="section-lead">Complete RTS HUD layout combining all interface elements.</p>
+                </div>
+            </div>
+
+            <div class="hud-demo">
+                <div class="hud-resources">
+                    <div class="resource-bar" style="justify-content: center;">
+                        <div class="resource-item">
+                            <div class="resource-icon gold">&#9679;</div>
+                            <div>
+                                <div class="resource-value">12,450</div>
+                                <div class="resource-label">Gold</div>
+                            </div>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon lumber">&#9650;</div>
+                            <div>
+                                <div class="resource-value">8,230</div>
+                                <div class="resource-label">Lumber</div>
+                            </div>
+                        </div>
+                        <div class="resource-item">
+                            <div class="resource-icon supply">&#9632;</div>
+                            <div>
+                                <div class="resource-value">87 / 100</div>
+                                <div class="resource-label">Supply</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hud-left">
+                    <div class="minimap-frame" style="width: 180px; height: 180px;">
+                        <div class="minimap-inner">
+                            <div class="minimap-marker friendly" style="top: 30%; left: 25%;"></div>
+                            <div class="minimap-marker friendly" style="top: 35%; left: 30%;"></div>
+                            <div class="minimap-marker enemy" style="top: 60%; left: 70%;"></div>
+                            <div class="minimap-viewport" style="top: 20%; left: 15%; width: 30%; height: 25%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hud-center">
+                    [GAME VIEWPORT]
+                </div>
+
+                <div class="hud-right">
+                    <div class="portrait-panel" style="flex-direction: column; padding: var(--space-3);">
+                        <div class="portrait-frame" style="width: 60px; height: 60px; margin: 0 auto;">
+                            <div class="portrait-inner" style="font-size: 1.5rem;">&#9876;</div>
+                        </div>
+                        <div class="portrait-info" style="min-width: auto; align-items: center; text-align: center;">
+                            <div class="portrait-name" style="font-size: 1rem;">Marine</div>
+                            <div class="portrait-bars" style="width: 100%;">
+                                <div class="stat-bar health" style="height: 12px;">
+                                    <div class="stat-bar-fill" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hud-bottom">
+                    <div class="command-card">
+                        <div class="command-grid">
+                            <button class="command-btn"><span class="command-icon">&#9876;</span><span class="command-hotkey">A</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9632;</span><span class="command-hotkey">S</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9650;</span><span class="command-hotkey">D</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9679;</span><span class="command-hotkey">F</span></button>
+                            <button class="command-btn"><span class="command-icon">&#10006;</span><span class="command-hotkey">Z</span></button>
+                            <button class="command-btn"><span class="command-icon">&#10004;</span><span class="command-hotkey">X</span></button>
+                            <button class="command-btn disabled"><span class="command-icon">-</span><span class="command-hotkey">C</span></button>
+                            <button class="command-btn disabled"><span class="command-icon">-</span><span class="command-hotkey">V</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9733;</span><span class="command-hotkey">Q</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9830;</span><span class="command-hotkey">W</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9827;</span><span class="command-hotkey">E</span></button>
+                            <button class="command-btn"><span class="command-icon">&#9824;</span><span class="command-hotkey">R</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-logo">RTS HUD // BATTLE.NET</div>
+            <p class="footer-tagline">A design system inspired by classic Blizzard RTS interfaces and the iconic late 90s/early 2000s Battle.net launcher aesthetic.</p>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Documentation</a>
+                <a href="#" class="footer-link">Components</a>
+                <a href="#" class="footer-link">Download</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
