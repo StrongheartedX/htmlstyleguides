@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darkroom Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+            --font-typewriter: 'Special Elite', 'Courier New', monospace;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Darkroom color palette */
+            --darkroom-black: #0d0a08;
+            --darkroom-near-black: #151110;
+            --darkroom-dark: #1a1513;
+            --darkroom-charcoal: #231d1a;
+            --darkroom-warm-gray: #2d2522;
+            --darkroom-medium-gray: #3d3330;
+            --darkroom-light-gray: #5a4d48;
+            --darkroom-pale: #8a7a72;
+
+            /* Safelight red - the signature element */
+            --safelight-deep: #4a0d0d;
+            --safelight-dark: #6b1515;
+            --safelight-red: #8b1e1e;
+            --safelight-medium: #a52a2a;
+            --safelight-bright: #c43c3c;
+            --safelight-glow: #d94545;
+
+            /* Amber/sepia secondary tones */
+            --amber-deep: #3d2810;
+            --amber-dark: #5c3d18;
+            --amber-medium: #7a5020;
+            --amber-light: #9a6830;
+            --sepia: #8b7355;
+            --cream: #c4b49a;
+
+            /* Film negative tones */
+            --negative-orange: #c97a4a;
+            --negative-cyan: #4a8a9a;
+            --film-edge: #2a2420;
+
+            /* Semantic colors */
+            --text-primary: #c4b8b0;
+            --text-secondary: #8a7a72;
+            --text-muted: #5a4d48;
+            --text-glow: var(--safelight-glow);
+            --bg-primary: var(--darkroom-black);
+            --bg-secondary: var(--darkroom-near-black);
+            --bg-elevated: var(--darkroom-dark);
+            --border-color: var(--darkroom-warm-gray);
+            --border-subtle: var(--darkroom-charcoal);
+            --accent: var(--safelight-red);
+            --accent-glow: var(--safelight-glow);
+
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --transition-slow: 0.4s ease;
+
+            /* Glow effects */
+            --glow-subtle: 0 0 10px rgba(139, 30, 30, 0.3);
+            --glow-medium: 0 0 20px rgba(139, 30, 30, 0.4), 0 0 40px rgba(139, 30, 30, 0.2);
+            --glow-strong: 0 0 30px rgba(139, 30, 30, 0.5), 0 0 60px rgba(139, 30, 30, 0.3), 0 0 90px rgba(139, 30, 30, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* Ambient darkroom atmosphere */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(139, 30, 30, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 30, 30, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 30, 30, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Grid System */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-typewriter);
+            font-weight: 400;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            margin-bottom: var(--space-6);
+            text-shadow: 0 0 30px rgba(139, 30, 30, 0.4);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: var(--space-5);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: var(--space-4);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+        }
+
+        .lead {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Film strip decoration */
+        .film-strip {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) 0;
+        }
+
+        .film-hole {
+            width: 8px;
+            height: 12px;
+            background: var(--darkroom-charcoal);
+            border-radius: 2px;
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-9) 0 var(--space-8);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--safelight-red), transparent);
+            opacity: 0.5;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header h1 {
+            margin-bottom: 0;
+            color: var(--safelight-glow);
+        }
+
+        .header-meta {
+            text-align: right;
+        }
+
+        /* Safelight indicator */
+        .safelight-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--safelight-glow);
+            margin-bottom: var(--space-3);
+        }
+
+        .safelight-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--safelight-red);
+            border-radius: 50%;
+            box-shadow: var(--glow-medium);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; box-shadow: var(--glow-subtle); }
+            50% { opacity: 1; box-shadow: var(--glow-medium); }
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-9) 0;
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-size: 0.75rem;
+            color: var(--safelight-red);
+            font-weight: 500;
+            margin-bottom: var(--space-2);
+            font-family: var(--font-mono);
+            letter-spacing: 0.2em;
+        }
+
+        /* Chemical tray styling for color blocks */
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            transition: all var(--transition-base);
+            border: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .color-name {
+            font-weight: 500;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .color-value {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            font-family: var(--font-mono);
+            margin-top: var(--space-1);
+        }
+
+        /* Contact sheet / photo strip styling */
+        .contact-sheet {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            background: var(--darkroom-charcoal);
+            padding: var(--space-3);
+            border: 3px solid var(--film-edge);
+        }
+
+        .contact-frame {
+            aspect-ratio: 3/2;
+            background: var(--darkroom-near-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-frame::after {
+            content: attr(data-frame);
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 0.6rem;
+            color: var(--negative-orange);
+            font-family: var(--font-mono);
+        }
+
+        /* Buttons - like darkroom timers/controls */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-5);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: 1px solid var(--border-color);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .btn:hover {
+            border-color: var(--safelight-red);
+            color: var(--safelight-glow);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .btn-primary {
+            background: var(--safelight-deep);
+            border-color: var(--safelight-dark);
+            color: var(--safelight-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--safelight-dark);
+            border-color: var(--safelight-red);
+            box-shadow: var(--glow-medium);
+        }
+
+        .btn-safelight {
+            background: transparent;
+            border-color: var(--safelight-red);
+            color: var(--safelight-glow);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .btn-safelight:hover {
+            background: var(--safelight-deep);
+            box-shadow: var(--glow-medium);
+        }
+
+        .btn-amber {
+            border-color: var(--amber-medium);
+            color: var(--amber-light);
+        }
+
+        .btn-amber:hover {
+            background: var(--amber-deep);
+            border-color: var(--amber-light);
+            box-shadow: 0 0 15px rgba(122, 80, 32, 0.4);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-7);
+            font-size: 0.9rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Timer display styling */
+        .timer-display {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            color: var(--safelight-glow);
+            text-shadow: var(--glow-medium);
+            letter-spacing: 0.1em;
+            padding: var(--space-4);
+            background: var(--darkroom-near-black);
+            border: 1px solid var(--safelight-dark);
+            display: inline-block;
+        }
+
+        /* Input - chemical tray inspired */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-2);
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--safelight-red);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Select styling */
+        .select-field {
+            appearance: none;
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a7a72' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: var(--safelight-red);
+            box-shadow: var(--glow-subtle);
+        }
+
+        /* Cards - like photo paper in developer tray */
+        .card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--safelight-red), transparent);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .card:hover {
+            border-color: var(--border-color);
+            transform: translateY(-2px);
+        }
+
+        .card:hover::before {
+            opacity: 0.6;
+        }
+
+        .card-number {
+            font-family: var(--font-typewriter);
+            font-size: 3rem;
+            line-height: 1;
+            color: var(--safelight-dark);
+            margin-bottom: var(--space-4);
+            text-shadow: 0 0 20px rgba(139, 30, 30, 0.3);
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Photo card variant */
+        .card-photo {
+            background: var(--darkroom-charcoal);
+            padding: var(--space-3);
+        }
+
+        .card-photo-inner {
+            background: var(--bg-secondary);
+            padding: var(--space-5);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .card-photo-meta {
+            margin-top: var(--space-3);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Table - like a chemical timing chart */
+        .table-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .table th {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--safelight-red);
+            background: var(--bg-elevated);
+        }
+
+        .table tr:hover td {
+            background: rgba(139, 30, 30, 0.05);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges - like film canister labels */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: var(--font-mono);
+            border: 1px solid var(--border-color);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+
+        .badge-safelight {
+            background: var(--safelight-deep);
+            border-color: var(--safelight-dark);
+            color: var(--safelight-glow);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .badge-amber {
+            background: var(--amber-deep);
+            border-color: var(--amber-dark);
+            color: var(--amber-light);
+        }
+
+        .badge-negative {
+            background: var(--film-edge);
+            border-color: var(--darkroom-medium-gray);
+            color: var(--negative-orange);
+        }
+
+        .badge-sepia {
+            background: transparent;
+            border-color: var(--sepia);
+            color: var(--sepia);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* Spacing Demo */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(90deg, var(--safelight-dark), var(--safelight-red));
+            box-shadow: var(--glow-subtle);
+        }
+
+        .spacing-value {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 50px;
+        }
+
+        /* Type Scale */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: var(--space-4) 0;
+        }
+
+        .type-meta {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .type-size {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--safelight-red);
+        }
+
+        .type-specs {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: var(--space-1);
+        }
+
+        /* Film negative reference */
+        .film-negative {
+            background: var(--film-edge);
+            padding: var(--space-4);
+            border: 2px solid var(--darkroom-medium-gray);
+            position: relative;
+        }
+
+        .film-negative::before,
+        .film-negative::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--darkroom-charcoal) 0px,
+                var(--darkroom-charcoal) 8px,
+                var(--film-edge) 8px,
+                var(--film-edge) 12px
+            );
+        }
+
+        .film-negative::before { left: 0; }
+        .film-negative::after { right: 0; }
+
+        .film-negative-content {
+            margin: 0 var(--space-6);
+            padding: var(--space-4);
+            background: var(--darkroom-near-black);
+            color: var(--negative-orange);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        /* Safelight glow accent element */
+        .glow-block {
+            width: 48px;
+            height: 48px;
+            background: var(--safelight-red);
+            box-shadow: var(--glow-strong);
+            margin-bottom: var(--space-5);
+        }
+
+        /* Divider with glow */
+        .divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: var(--space-7) 0;
+            position: relative;
+        }
+
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 25%;
+            right: 25%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--safelight-red), transparent);
+            opacity: 0.4;
+        }
+
+        /* Chemical formula styling */
+        .chemical-formula {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--amber-light);
+            background: var(--amber-deep);
+            padding: var(--space-2) var(--space-3);
+            display: inline-block;
+            border-left: 2px solid var(--amber-medium);
+        }
+
+        /* Exposure info */
+        .exposure-info {
+            display: flex;
+            gap: var(--space-6);
+            padding: var(--space-4);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .exposure-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .exposure-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
+        .exposure-value {
+            color: var(--safelight-glow);
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--safelight-dark), transparent);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin: 0 auto;
+        }
+
+        /* Developer tray styling */
+        .developer-tray {
+            background: var(--darkroom-charcoal);
+            border: 3px solid var(--darkroom-medium-gray);
+            padding: var(--space-5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .developer-tray::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(139, 30, 30, 0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Process steps indicator */
+        .process-steps {
+            display: flex;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .process-step {
+            flex: 1;
+            text-align: center;
+            padding: var(--space-3);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .process-step.active {
+            border-color: var(--safelight-red);
+            box-shadow: var(--glow-subtle);
+        }
+
+        .process-step-number {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-1);
+        }
+
+        .process-step-name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .process-step.active .process-step-name {
+            color: var(--safelight-glow);
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-glow { color: var(--safelight-glow); text-shadow: var(--glow-subtle); }
+        .text-amber { color: var(--amber-light); }
+        .text-sepia { color: var(--sepia); }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--darkroom-medium-gray);
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--safelight-dark);
+        }
+
+        /* Selection styling */
+        ::selection {
+            background: var(--safelight-dark);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div>
+                    <div class="safelight-indicator">
+                        <span class="safelight-dot"></span>
+                        <span class="uppercase">Safelight Active</span>
+                    </div>
+                    <h1>Darkroom</h1>
+                </div>
+                <div class="header-meta">
+                    <p class="small" style="color: var(--text-secondary); margin-bottom: var(--space-2);">Design System</p>
+                    <p class="small" style="color: var(--text-muted); margin-bottom: 0;">
+                        Red glow.<br>
+                        Chemical magic.<br>
+                        Slow reveal.
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">01 / COLOR</p>
+                <h2>Color Palette</h2>
+                <p class="lead">Deep, warm blacks punctuated by the distinctive red safelight glow. Amber and sepia tones evoke chemical processes and aged prints.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4); color: var(--text-secondary);">Darkroom Blacks</h3>
+            <div class="grid" style="margin-bottom: var(--space-6);">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--darkroom-black); color: var(--text-primary);">
+                        <span class="color-name">Deep Black</span>
+                        <span class="color-value">#0D0A08</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--darkroom-dark); color: var(--text-primary);">
+                        <span class="color-name">Dark</span>
+                        <span class="color-value">#1A1513</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--darkroom-charcoal); color: var(--text-primary);">
+                        <span class="color-name">Charcoal</span>
+                        <span class="color-value">#231D1A</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--darkroom-medium-gray); color: var(--text-primary);">
+                        <span class="color-name">Medium Gray</span>
+                        <span class="color-value">#3D3330</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4); color: var(--safelight-red);">Safelight Reds</h3>
+            <div class="grid" style="margin-bottom: var(--space-6);">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--safelight-deep); color: var(--safelight-glow); box-shadow: var(--glow-subtle);">
+                        <span class="color-name">Deep</span>
+                        <span class="color-value">#4A0D0D</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--safelight-red); color: #fff; box-shadow: var(--glow-medium);">
+                        <span class="color-name">Safelight Red</span>
+                        <span class="color-value">#8B1E1E</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--safelight-bright); color: #fff; box-shadow: var(--glow-medium);">
+                        <span class="color-name">Bright</span>
+                        <span class="color-value">#C43C3C</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--safelight-glow); color: #fff; box-shadow: var(--glow-strong);">
+                        <span class="color-name">Glow</span>
+                        <span class="color-value">#D94545</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4); color: var(--amber-light);">Amber &amp; Sepia</h3>
+            <div class="grid">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--amber-deep); color: var(--amber-light);">
+                        <span class="color-name">Amber Deep</span>
+                        <span class="color-value">#3D2810</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--amber-medium); color: var(--cream);">
+                        <span class="color-name">Amber Medium</span>
+                        <span class="color-value">#7A5020</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--sepia); color: var(--cream);">
+                        <span class="color-name">Sepia</span>
+                        <span class="color-value">#8B7355</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--cream); color: var(--darkroom-black);">
+                        <span class="color-name">Cream</span>
+                        <span class="color-value">#C4B49A</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">02 / TYPOGRAPHY</p>
+                <h2>Type System</h2>
+                <p class="lead">Special Elite for headlines evokes vintage photo annotations. IBM Plex Mono provides crisp readability in low light conditions.</p>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Display</p>
+                    <p class="type-specs">Special Elite / 72px</p>
+                </div>
+                <div style="font-family: var(--font-typewriter); font-size: 3.5rem; color: var(--safelight-glow); text-shadow: var(--glow-subtle);">Aa</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H1</p>
+                    <p class="type-specs">Special Elite / 48px</p>
+                </div>
+                <div style="font-family: var(--font-typewriter); font-size: 2.5rem;">Heading One</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H2</p>
+                    <p class="type-specs">Special Elite / 32px</p>
+                </div>
+                <div style="font-family: var(--font-typewriter); font-size: 2rem;">Heading Two</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H3</p>
+                    <p class="type-specs">Special Elite / 20px</p>
+                </div>
+                <div style="font-family: var(--font-typewriter); font-size: 1.25rem;">Heading Three</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Body</p>
+                    <p class="type-specs">IBM Plex Mono / 16px</p>
+                </div>
+                <div style="font-family: var(--font-mono);">The image slowly emerges in the developer tray, shapes materializing from nothing into memory.</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Caption</p>
+                    <p class="type-specs">IBM Plex Mono / 14px</p>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.875rem; color: var(--text-secondary);">Technical notes and metadata appear in this smaller size.</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-size">Label</p>
+                    <p class="type-specs">IBM Plex Mono / 12px / Uppercase</p>
+                </div>
+                <div class="uppercase" style="color: var(--text-muted);">Exposure settings and film data</div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">03 / SPACING</p>
+                <h2>Spacing Scale</h2>
+                <p class="lead">A 4px base unit creates consistent rhythm. Generous spacing aids visibility in low light.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">4px</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">xs</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">8px</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">sm</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">16px</span>
+                <div class="spacing-bar" style="width: 64px;"></div>
+                <span class="spacing-value">md</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">24px</span>
+                <div class="spacing-bar" style="width: 96px;"></div>
+                <span class="spacing-value">lg</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">32px</span>
+                <div class="spacing-bar" style="width: 128px;"></div>
+                <span class="spacing-value">xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">48px</span>
+                <div class="spacing-bar" style="width: 192px;"></div>
+                <span class="spacing-value">2xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">64px</span>
+                <div class="spacing-bar" style="width: 256px;"></div>
+                <span class="spacing-value">3xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">96px</span>
+                <div class="spacing-bar" style="width: 320px;"></div>
+                <span class="spacing-value">4xl</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">04 / BUTTONS</p>
+                <h2>Controls</h2>
+                <p class="lead">Inspired by darkroom timers and enlarger controls. The safelight glow guides interaction.</p>
+            </div>
+
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-safelight">Safelight</button>
+                <button class="btn btn-amber">Amber</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-sm">Small</button>
+                <button class="btn">Medium</button>
+                <button class="btn btn-lg">Large</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Timer Display</h3>
+            <div class="timer-display">00:12:45</div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Process Steps</h3>
+            <div class="process-steps">
+                <div class="process-step">
+                    <div class="process-step-number">01</div>
+                    <div class="process-step-name">Developer</div>
+                </div>
+                <div class="process-step active">
+                    <div class="process-step-number">02</div>
+                    <div class="process-step-name">Stop Bath</div>
+                </div>
+                <div class="process-step">
+                    <div class="process-step-number">03</div>
+                    <div class="process-step-name">Fixer</div>
+                </div>
+                <div class="process-step">
+                    <div class="process-step-number">04</div>
+                    <div class="process-step-name">Wash</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">05 / FORMS</p>
+                <h2>Input Fields</h2>
+                <p class="lead">Clean fields with subtle borders. Focus states glow with safelight red.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Film Stock</label>
+                        <input type="text" class="input-field" placeholder="Tri-X 400">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">ISO Rating</label>
+                        <input type="text" class="input-field" placeholder="400">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Developer</label>
+                        <select class="select-field">
+                            <option>D-76</option>
+                            <option>HC-110</option>
+                            <option>Rodinal</option>
+                            <option>XTOL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Development Time</label>
+                        <input type="text" class="input-field" placeholder="9:30">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Notes</label>
+                        <textarea class="input-field" placeholder="Processing notes, observations, adjustments..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Exposure Information</h3>
+            <div class="exposure-info">
+                <div class="exposure-item">
+                    <span class="exposure-label">Aperture</span>
+                    <span class="exposure-value">f/8</span>
+                </div>
+                <div class="exposure-item">
+                    <span class="exposure-label">Shutter</span>
+                    <span class="exposure-value">1/125</span>
+                </div>
+                <div class="exposure-item">
+                    <span class="exposure-label">ISO</span>
+                    <span class="exposure-value">400</span>
+                </div>
+                <div class="exposure-item">
+                    <span class="exposure-label">Filter</span>
+                    <span class="exposure-value">Y2</span>
+                </div>
+                <div class="exposure-item">
+                    <span class="exposure-label">Lens</span>
+                    <span class="exposure-value">50mm</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">06 / CARDS</p>
+                <h2>Content Cards</h2>
+                <p class="lead">Like photo paper emerging in the developer tray. Hover reveals the safelight glow.</p>
+            </div>
+
+            <div class="grid" style="margin-bottom: var(--space-7);">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">01</div>
+                        <h3>Exposure</h3>
+                        <p>Light passes through the negative, projecting the latent image onto sensitive paper below.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">02</div>
+                        <h3>Development</h3>
+                        <p>Chemical reactions reveal the hidden image. Time and temperature are critical variables.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-number">03</div>
+                        <h3>Fixation</h3>
+                        <p>The fixer halts development and removes unexposed silver, making the image permanent.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Photo Card Variant</h3>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">
+                            <p style="text-align: center; color: var(--text-muted); margin-bottom: 0;">[ Image Area ]</p>
+                        </div>
+                        <div class="card-photo-meta">
+                            <span>Frame 24</span>
+                            <span>35mm</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">
+                            <p style="text-align: center; color: var(--text-muted); margin-bottom: 0;">[ Image Area ]</p>
+                        </div>
+                        <div class="card-photo-meta">
+                            <span>Frame 25</span>
+                            <span>35mm</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-photo">
+                        <div class="card-photo-inner">
+                            <p style="text-align: center; color: var(--text-muted); margin-bottom: 0;">[ Image Area ]</p>
+                        </div>
+                        <div class="card-photo-meta">
+                            <span>Frame 26</span>
+                            <span>35mm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Contact Sheet</h3>
+            <div class="contact-sheet">
+                <div class="contact-frame" data-frame="1A">1A</div>
+                <div class="contact-frame" data-frame="2A">2A</div>
+                <div class="contact-frame" data-frame="3A">3A</div>
+                <div class="contact-frame" data-frame="4A">4A</div>
+                <div class="contact-frame" data-frame="5A">5A</div>
+                <div class="contact-frame" data-frame="6A">6A</div>
+                <div class="contact-frame" data-frame="7A">7A</div>
+                <div class="contact-frame" data-frame="8A">8A</div>
+            </div>
+        </section>
+
+        <!-- Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">07 / DATA TABLE</p>
+                <h2>Development Times</h2>
+                <p class="lead">Like a chemical timing chart. Clear headers, minimal lines, easy scanning in dim light.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Film Stock</th>
+                            <th>Developer</th>
+                            <th>Dilution</th>
+                            <th>Time</th>
+                            <th class="text-right">Temp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tri-X 400</td>
+                            <td><span class="chemical-formula">D-76</span></td>
+                            <td>1:1</td>
+                            <td><span class="text-glow">9:30</span></td>
+                            <td class="text-right">20C</td>
+                        </tr>
+                        <tr>
+                            <td>HP5 Plus</td>
+                            <td><span class="chemical-formula">HC-110</span></td>
+                            <td>B</td>
+                            <td><span class="text-glow">6:00</span></td>
+                            <td class="text-right">20C</td>
+                        </tr>
+                        <tr>
+                            <td>T-Max 100</td>
+                            <td><span class="chemical-formula">XTOL</span></td>
+                            <td>1:1</td>
+                            <td><span class="text-glow">10:00</span></td>
+                            <td class="text-right">20C</td>
+                        </tr>
+                        <tr>
+                            <td>Delta 3200</td>
+                            <td><span class="chemical-formula">DD-X</span></td>
+                            <td>1:4</td>
+                            <td><span class="text-glow">12:00</span></td>
+                            <td class="text-right">20C</td>
+                        </tr>
+                        <tr>
+                            <td>FP4 Plus</td>
+                            <td><span class="chemical-formula">Rodinal</span></td>
+                            <td>1:50</td>
+                            <td><span class="text-glow">13:00</span></td>
+                            <td class="text-right">20C</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">08 / BADGES</p>
+                <h2>Status Indicators</h2>
+                <p class="lead">Film canister labels and processing markers. Compact, distinct, functional.</p>
+            </div>
+
+            <div class="badge-row" style="margin-bottom: var(--space-5);">
+                <span class="badge">Default</span>
+                <span class="badge badge-safelight">Active</span>
+                <span class="badge badge-amber">Processing</span>
+                <span class="badge badge-negative">Negative</span>
+                <span class="badge badge-sepia">Archived</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Film Negative Reference</h3>
+            <div class="film-negative">
+                <div class="film-negative-content">
+                    KODAK TRI-X 400 &nbsp;&nbsp; 5063 &nbsp;&nbsp; 24 EXP &nbsp;&nbsp; DX 135-36
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom: var(--space-4);">Developer Tray</h3>
+            <div class="developer-tray">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="uppercase" style="color: var(--text-secondary);">Developer Tray 01</span>
+                    <span class="badge badge-safelight">In Use</span>
+                </div>
+                <div style="margin-top: var(--space-4); color: var(--text-secondary); font-size: 0.85rem;">
+                    Contains fresh D-76 working solution at 20C. Capacity: 8 sheets 8x10 or 16 sheets 5x7.
+                </div>
+            </div>
+        </section>
+
+        <!-- Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">09 / PRINCIPLES</p>
+                <h2>Design Principles</h2>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="glow-block"></div>
+                    <h3>Patience</h3>
+                    <p>Like waiting for an image to emerge in the developer, good design reveals itself slowly. Allow time for elements to develop their full impact.</p>
+                </div>
+                <div class="col-6">
+                    <div class="glow-block"></div>
+                    <h3>Restraint</h3>
+                    <p>The darkroom works under strict limitations. Embrace constraints: limited color, minimal light. What you cannot use becomes as important as what you can.</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="glow-block" style="background: var(--amber-medium); box-shadow: 0 0 30px rgba(122, 80, 32, 0.5);"></div>
+                    <h3>Atmosphere</h3>
+                    <p>Every element contributes to the mood. The warm blacks, the red glow, the chemical references - they create an immersive experience that transcends mere interface.</p>
+                </div>
+                <div class="col-6">
+                    <div class="glow-block" style="background: var(--sepia); box-shadow: 0 0 30px rgba(139, 115, 85, 0.4);"></div>
+                    <h3>Permanence</h3>
+                    <p>A properly fixed print lasts generations. Design decisions should be intentional and lasting, not trendy or ephemeral. Build for archival quality.</p>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="film-strip" style="justify-content: center; opacity: 0.4;">
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+                <span class="film-hole"></span>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="safelight-indicator" style="justify-content: center; margin-bottom: var(--space-4);">
+                <span class="safelight-dot"></span>
+            </div>
+            <p>Darkroom Design System</p>
+            <p style="margin-top: var(--space-2); font-size: 0.7rem;">Where light becomes memory</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parchment Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-display: 'Cinzel', serif;
+            --font-decorative: 'UnifrakturMaguntia', cursive;
+            --font-body: 'EB Garamond', 'Crimson Text', Georgia, serif;
+            --font-accent: 'Crimson Text', Georgia, serif;
+
+            /* Spacing - Golden Ratio inspired */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 13px;
+            --space-4: 21px;
+            --space-5: 34px;
+            --space-6: 55px;
+            --space-7: 89px;
+            --space-8: 144px;
+
+            /* Parchment Colors */
+            --parchment-light: #f4e4c1;
+            --parchment: #e8d5a3;
+            --parchment-dark: #d4c089;
+            --parchment-aged: #c9b87a;
+
+            /* Ink Colors */
+            --ink-black: #2a1f1a;
+            --ink-brown: #4a3728;
+            --ink-sepia: #704214;
+            --ink-faded: #8b7355;
+            --ink-light: #a89070;
+
+            /* Accent Colors */
+            --vermillion: #c53a27;
+            --gold: #b8860b;
+            --gold-light: #d4a84b;
+            --burgundy: #722f37;
+            --forest: #2d4a3e;
+            --royal-blue: #1e3a5f;
+
+            /* Wax Seal Colors */
+            --wax-red: #8b2500;
+            --wax-burgundy: #5c1a1b;
+            --wax-gold: #8b7500;
+
+            /* Foxing and Aging */
+            --foxing: rgba(139, 90, 43, 0.15);
+            --age-stain: rgba(160, 120, 60, 0.1);
+            --shadow-warm: rgba(74, 55, 40, 0.2);
+
+            /* Semantic */
+            --text-primary: var(--ink-black);
+            --text-secondary: var(--ink-brown);
+            --text-muted: var(--ink-faded);
+            --bg-primary: var(--parchment);
+            --bg-secondary: var(--parchment-light);
+            --border-color: var(--ink-light);
+            --accent: var(--vermillion);
+
+            --transition-slow: 0.4s ease;
+            --transition-base: 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 18px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--parchment);
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* Parchment texture background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background:
+                /* Subtle noise texture */
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+                /* Gradient aging effect */
+                radial-gradient(ellipse at 20% 20%, transparent 40%, var(--age-stain) 100%),
+                radial-gradient(ellipse at 80% 80%, transparent 50%, var(--age-stain) 100%),
+                /* Base parchment color variation */
+                linear-gradient(180deg, var(--parchment-light) 0%, var(--parchment) 30%, var(--parchment-dark) 70%, var(--parchment-aged) 100%);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        /* Foxing spots overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-image:
+                radial-gradient(circle at 15% 25%, var(--foxing) 0%, transparent 2%),
+                radial-gradient(circle at 85% 15%, var(--foxing) 0%, transparent 1.5%),
+                radial-gradient(circle at 45% 75%, var(--foxing) 0%, transparent 1%),
+                radial-gradient(circle at 75% 45%, var(--foxing) 0%, transparent 2.5%),
+                radial-gradient(circle at 25% 85%, var(--foxing) 0%, transparent 1.8%),
+                radial-gradient(circle at 55% 35%, var(--foxing) 0%, transparent 1.2%),
+                radial-gradient(circle at 35% 55%, var(--foxing) 0%, transparent 0.8%),
+                radial-gradient(circle at 95% 65%, var(--foxing) 0%, transparent 1.5%),
+                radial-gradient(circle at 5% 55%, var(--foxing) 0%, transparent 2%),
+                radial-gradient(circle at 65% 95%, var(--foxing) 0%, transparent 1%);
+            opacity: 0.6;
+            z-index: 1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Aged page edges effect */
+        .page-edge {
+            position: fixed;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .page-edge-left {
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(90deg,
+                rgba(139, 115, 85, 0.3) 0%,
+                rgba(139, 115, 85, 0.1) 50%,
+                transparent 100%);
+        }
+
+        .page-edge-right {
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(-90deg,
+                rgba(139, 115, 85, 0.3) 0%,
+                rgba(139, 115, 85, 0.1) 50%,
+                transparent 100%);
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.3;
+            letter-spacing: 0.05em;
+            color: var(--ink-brown);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            margin-bottom: var(--space-6);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: var(--space-5);
+            letter-spacing: 0.1em;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: var(--space-4);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 60ch;
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .lead {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--ink-sepia);
+            font-style: italic;
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        /* Decorative initial letter */
+        .dropcap {
+            float: left;
+            font-family: var(--font-decorative);
+            font-size: 4.5rem;
+            line-height: 0.8;
+            padding-right: var(--space-3);
+            padding-top: var(--space-2);
+            color: var(--vermillion);
+            text-shadow: 2px 2px 0 var(--gold);
+        }
+
+        .illuminated {
+            display: inline-block;
+            font-family: var(--font-decorative);
+            font-size: 3rem;
+            color: var(--vermillion);
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(1px 1px 0 var(--ink-brown));
+            padding: var(--space-2);
+            border: 2px solid var(--gold);
+            margin-right: var(--space-2);
+        }
+
+        /* Decorative flourishes */
+        .flourish {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--ink-faded);
+            margin: var(--space-5) 0;
+            letter-spacing: 0.5em;
+        }
+
+        .flourish::before,
+        .flourish::after {
+            content: '';
+            display: inline-block;
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ink-faded), transparent);
+            vertical-align: middle;
+            margin: 0 var(--space-4);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-8) 0 var(--space-7);
+            text-align: center;
+            border-bottom: 2px solid var(--ink-light);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: var(--ink-light);
+        }
+
+        .header-ornament {
+            font-family: var(--font-decorative);
+            font-size: 3rem;
+            color: var(--gold);
+            margin-bottom: var(--space-4);
+            text-shadow: 1px 1px 2px var(--shadow-warm);
+        }
+
+        .header h1 {
+            margin-bottom: var(--space-3);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-accent);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--ink-sepia);
+            letter-spacing: 0.1em;
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-7) 0;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+
+        .section-numeral {
+            font-family: var(--font-display);
+            font-size: 0.875rem;
+            color: var(--vermillion);
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-3);
+            text-transform: uppercase;
+        }
+
+        .section-numeral::before,
+        .section-numeral::after {
+            content: '\2022';
+            margin: 0 var(--space-3);
+            color: var(--gold);
+        }
+
+        /* Decorative rule */
+        .decorative-rule {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: var(--space-5) 0;
+        }
+
+        .decorative-rule::before,
+        .decorative-rule::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ink-faded), transparent);
+            max-width: 150px;
+        }
+
+        .decorative-rule-center {
+            width: 12px;
+            height: 12px;
+            border: 1px solid var(--gold);
+            transform: rotate(45deg);
+            margin: 0 var(--space-4);
+            background: var(--parchment);
+        }
+
+        /* Color Blocks */
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            border: 3px double var(--ink-light);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+            position: relative;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px var(--shadow-warm);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-weight: 500;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .color-value {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            font-family: var(--font-body);
+            font-style: italic;
+        }
+
+        /* Color palette sections */
+        .color-category {
+            margin-bottom: var(--space-6);
+        }
+
+        .color-category-title {
+            font-family: var(--font-accent);
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--ink-sepia);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-2);
+            border-bottom: 1px dotted var(--ink-light);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-5);
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: 2px solid var(--ink-brown);
+            background: transparent;
+            color: var(--ink-brown);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid var(--ink-light);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .btn:hover {
+            background: var(--ink-brown);
+            color: var(--parchment);
+            box-shadow: 2px 2px 8px var(--shadow-warm);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+            border-color: var(--parchment-light);
+        }
+
+        .btn-primary {
+            background: var(--ink-brown);
+            color: var(--parchment);
+        }
+
+        .btn-primary:hover {
+            background: var(--ink-black);
+            border-color: var(--ink-black);
+        }
+
+        .btn-accent {
+            border-color: var(--vermillion);
+            color: var(--vermillion);
+        }
+
+        .btn-accent:hover {
+            background: var(--vermillion);
+            color: var(--parchment);
+            border-color: var(--vermillion);
+        }
+
+        .btn-gold {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: linear-gradient(135deg, transparent 0%, rgba(184, 134, 11, 0.1) 100%);
+        }
+
+        .btn-gold:hover {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            color: var(--ink-black);
+            border-color: var(--gold);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-6);
+            font-size: 0.9rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Quill button decoration */
+        .btn-quill::after {
+            content: '\270E';
+            margin-left: var(--space-2);
+            font-size: 1.1em;
+        }
+
+        /* Input / Forms */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--ink-sepia);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ink-brown);
+            border: 1px solid var(--ink-light);
+            border-bottom: 2px solid var(--ink-brown);
+            background: rgba(255, 255, 255, 0.3);
+            transition: all var(--transition-base);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 2px 8px rgba(184, 134, 11, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: var(--ink-faded);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 150px;
+            line-height: 1.8;
+        }
+
+        /* Manuscript-style select */
+        .select-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ink-brown);
+            border: 1px solid var(--ink-light);
+            border-bottom: 2px solid var(--ink-brown);
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a3728' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+        }
+
+        /* Checkbox - manuscript style */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .checkbox-field {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--ink-brown);
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            appearance: none;
+            position: relative;
+        }
+
+        .checkbox-field:checked::after {
+            content: '\2713';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: var(--vermillion);
+            font-weight: bold;
+        }
+
+        .checkbox-label {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ink-brown);
+            cursor: pointer;
+        }
+
+        /* Cards */
+        .card {
+            background: linear-gradient(135deg, var(--parchment-light) 0%, var(--parchment) 100%);
+            border: 2px solid var(--ink-light);
+            padding: var(--space-5);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid var(--ink-light);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .card:hover {
+            border-color: var(--ink-brown);
+            box-shadow: 4px 4px 16px var(--shadow-warm);
+            transform: translateY(-2px);
+        }
+
+        .card-initial {
+            font-family: var(--font-decorative);
+            font-size: 3.5rem;
+            line-height: 1;
+            color: var(--vermillion);
+            margin-bottom: var(--space-3);
+            text-shadow: 1px 1px 0 var(--gold);
+        }
+
+        .card h3 {
+            font-family: var(--font-display);
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            color: var(--ink-sepia);
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+
+        /* Scroll card variant */
+        .card-scroll {
+            background:
+                linear-gradient(90deg, rgba(139, 115, 85, 0.15) 0%, transparent 5%, transparent 95%, rgba(139, 115, 85, 0.15) 100%),
+                linear-gradient(135deg, var(--parchment-light) 0%, var(--parchment) 100%);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .card-scroll::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(180deg, rgba(139, 115, 85, 0.2) 0%, transparent 100%);
+        }
+
+        /* Table */
+        .table-wrapper {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid var(--ink-light);
+            padding: var(--space-4);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--ink-light);
+        }
+
+        .table th {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--ink-sepia);
+            border-bottom: 2px solid var(--ink-brown);
+        }
+
+        .table td {
+            font-family: var(--font-body);
+            color: var(--ink-brown);
+        }
+
+        .table tbody tr:hover td {
+            background: rgba(184, 134, 11, 0.1);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges - Wax Seal Style */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-2) var(--space-3);
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 2px;
+            border: 1px solid currentColor;
+            color: var(--ink-brown);
+            background: transparent;
+        }
+
+        .badge-seal {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--wax-red) 0%, #6b1c00 100%);
+            color: var(--parchment-light);
+            border: none;
+            font-size: 0.6rem;
+            box-shadow:
+                inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+                2px 2px 6px var(--shadow-warm);
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+
+        .badge-seal-gold {
+            background: radial-gradient(circle at 30% 30%, var(--gold-light) 0%, var(--wax-gold) 100%);
+            color: var(--ink-black);
+        }
+
+        .badge-seal-burgundy {
+            background: radial-gradient(circle at 30% 30%, #8b3a3a 0%, var(--wax-burgundy) 100%);
+        }
+
+        .badge-manuscript {
+            background: var(--parchment-light);
+            border: 2px double var(--ink-brown);
+            color: var(--ink-brown);
+        }
+
+        .badge-vermillion {
+            color: var(--vermillion);
+            border-color: var(--vermillion);
+        }
+
+        .badge-gold {
+            color: var(--gold);
+            border-color: var(--gold);
+            background: rgba(184, 134, 11, 0.1);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Spacing Demo */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-style: italic;
+            color: var(--ink-sepia);
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(135deg, var(--ink-brown) 0%, var(--ink-sepia) 100%);
+            border: 1px solid var(--ink-brown);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 50%;
+            bottom: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .spacing-value {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            color: var(--ink-faded);
+            letter-spacing: 0.1em;
+            width: 50px;
+        }
+
+        /* Typography Scale */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px dotted var(--ink-light);
+            padding: var(--space-4) 0;
+        }
+
+        .type-meta {
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .type-size {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--ink-sepia);
+        }
+
+        .type-specs {
+            font-size: 0.75rem;
+            color: var(--ink-faded);
+            font-style: italic;
+        }
+
+        /* Principle blocks */
+        .principle-block {
+            text-align: center;
+            padding: var(--space-5);
+        }
+
+        .principle-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto var(--space-4);
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-decorative);
+            font-size: 2rem;
+            color: var(--vermillion);
+            background: linear-gradient(135deg, var(--parchment-light) 0%, var(--parchment) 100%);
+            transform: rotate(45deg);
+        }
+
+        .principle-icon span {
+            transform: rotate(-45deg);
+        }
+
+        .principle-block h3 {
+            font-family: var(--font-display);
+        }
+
+        .principle-block p {
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        /* Manuscript marginalia */
+        .marginalia {
+            font-family: var(--font-accent);
+            font-style: italic;
+            font-size: 0.85rem;
+            color: var(--ink-faded);
+            border-left: 2px solid var(--ink-light);
+            padding-left: var(--space-4);
+            margin: var(--space-5) 0;
+        }
+
+        /* Ink blot decoration */
+        .ink-blot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--ink-brown);
+            border-radius: 50% 40% 50% 40%;
+            margin: 0 var(--space-2);
+            opacity: 0.6;
+        }
+
+        /* Candle glow effect for focus states */
+        .candle-glow {
+            box-shadow: 0 0 20px rgba(255, 200, 100, 0.3), 0 0 40px rgba(255, 180, 80, 0.1);
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-7) 0;
+            text-align: center;
+            border-top: 2px solid var(--ink-light);
+            margin-top: var(--space-6);
+        }
+
+        .footer-ornament {
+            font-size: 1.5rem;
+            color: var(--gold);
+            margin-bottom: var(--space-4);
+            letter-spacing: 0.5em;
+        }
+
+        .footer p {
+            font-family: var(--font-accent);
+            font-style: italic;
+            color: var(--ink-sepia);
+            font-size: 0.95rem;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-date {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            color: var(--ink-faded);
+            letter-spacing: 0.2em;
+            margin-top: var(--space-4);
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            html {
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 0 var(--space-4);
+            }
+
+            .type-row {
+                flex-direction: column;
+            }
+
+            .type-meta {
+                width: 100%;
+                margin-bottom: var(--space-2);
+            }
+
+            .header {
+                padding: var(--space-6) 0;
+            }
+
+            .page-edge-left,
+            .page-edge-right {
+                width: 15px;
+            }
+        }
+
+        /* Print styles for authentic document feel */
+        @media print {
+            body::before,
+            body::after {
+                display: none;
+            }
+
+            .page-edge {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Aged page edges -->
+    <div class="page-edge page-edge-left"></div>
+    <div class="page-edge page-edge-right"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-ornament">&#x2766;</div>
+            <h1>Parchment</h1>
+            <p class="header-subtitle">A Design System for the Ages</p>
+            <div class="flourish">&#x2767;</div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter I</p>
+                <h2>Colour Palette</h2>
+                <p class="lead">Drawn from aged manuscripts, faded inks, and candlelit scriptoriums.</p>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Parchment &amp; Vellum</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--parchment-light);">
+                            <span class="color-name">Vellum</span>
+                            <span class="color-value">#F4E4C1</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--parchment);">
+                            <span class="color-name">Parchment</span>
+                            <span class="color-value">#E8D5A3</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--parchment-dark);">
+                            <span class="color-name">Aged Paper</span>
+                            <span class="color-value">#D4C089</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--parchment-aged);">
+                            <span class="color-name">Antique</span>
+                            <span class="color-value">#C9B87A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Inks &amp; Pigments</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--ink-black); color: var(--parchment);">
+                            <span class="color-name">Iron Gall</span>
+                            <span class="color-value">#2A1F1A</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--ink-brown); color: var(--parchment);">
+                            <span class="color-name">Sepia Ink</span>
+                            <span class="color-value">#4A3728</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--ink-sepia); color: var(--parchment);">
+                            <span class="color-name">Bistre</span>
+                            <span class="color-value">#704214</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--ink-faded); color: var(--parchment-light);">
+                            <span class="color-name">Faded</span>
+                            <span class="color-value">#8B7355</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Illumination Colours</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--vermillion); color: var(--parchment);">
+                            <span class="color-name">Vermillion</span>
+                            <span class="color-value">#C53A27</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--gold); color: var(--parchment-light);">
+                            <span class="color-name">Gold Leaf</span>
+                            <span class="color-value">#B8860B</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--burgundy); color: var(--parchment);">
+                            <span class="color-name">Burgundy</span>
+                            <span class="color-value">#722F37</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--royal-blue); color: var(--parchment);">
+                            <span class="color-name">Lapis</span>
+                            <span class="color-value">#1E3A5F</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter II</p>
+                <h2>Typography</h2>
+                <p class="lead">The art of the written word, from formal inscriptions to flowing script.</p>
+            </div>
+
+            <div class="marginalia">
+                "Let those who wish to know what writing is know that it is a divine art."
+                <span class="ink-blot"></span> Alcuin of York
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Display</p>
+                    <p class="type-specs">Cinzel / 64px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 3.5rem; font-weight: 600; letter-spacing: 0.1em; color: var(--ink-brown);">Scriptorum</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Blackletter</p>
+                    <p class="type-specs">UnifrakturMaguntia / 48px</p>
+                </div>
+                <div style="font-family: var(--font-decorative); font-size: 2.5rem; color: var(--ink-brown);">Illuminated</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading I</p>
+                    <p class="type-specs">Cinzel / 36px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 2rem; font-weight: 600; letter-spacing: 0.05em; color: var(--ink-brown);">In the Beginning</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading II</p>
+                    <p class="type-specs">Cinzel / 28px / 500</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; letter-spacing: 0.05em; color: var(--ink-brown);">Of Ancient Wisdom</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Body Text</p>
+                    <p class="type-specs">EB Garamond / 18px / 400</p>
+                </div>
+                <div style="font-family: var(--font-body); max-width: 50ch;">
+                    <span class="dropcap">T</span>he quick brown fox leaps gracefully over the slumbering hound. Typography, that most noble of arts, transforms mere symbols into vessels of meaning and beauty.
+                </div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Italic</p>
+                    <p class="type-specs">EB Garamond / 18px / Italic</p>
+                </div>
+                <div style="font-family: var(--font-body); font-style: italic;">Annotations and marginal notes are rendered thus, in flowing italic hand.</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-size">Small Caps</p>
+                    <p class="type-specs">Cinzel / 14px / 500</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;">Anno Domini MMXXVI</div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter III</p>
+                <h2>Spacing</h2>
+                <p class="lead">A scale inspired by the golden ratio, as employed by the masters of old.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">4px</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">I</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">8px</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">II</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">13px</span>
+                <div class="spacing-bar" style="width: 52px;"></div>
+                <span class="spacing-value">III</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">21px</span>
+                <div class="spacing-bar" style="width: 84px;"></div>
+                <span class="spacing-value">IV</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">34px</span>
+                <div class="spacing-bar" style="width: 136px;"></div>
+                <span class="spacing-value">V</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">55px</span>
+                <div class="spacing-bar" style="width: 220px;"></div>
+                <span class="spacing-value">VI</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">89px</span>
+                <div class="spacing-bar" style="width: 300px;"></div>
+                <span class="spacing-value">VII</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">144px</span>
+                <div class="spacing-bar" style="width: 400px;"></div>
+                <span class="spacing-value">VIII</span>
+            </div>
+
+            <div class="marginalia mt-6">
+                The Fibonacci sequence, wherein each number is the sum of the two preceding, creates harmonious proportions beloved by scribes and architects alike.
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter IV</p>
+                <h2>Buttons</h2>
+                <p class="lead">Actions rendered in the manner of formal proclamations and sealed decrees.</p>
+            </div>
+
+            <div class="button-row">
+                <button class="btn">Inscribe</button>
+                <button class="btn btn-primary">Proclaim</button>
+                <button class="btn btn-accent">Decree</button>
+                <button class="btn btn-gold">Illuminate</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-sm">Minor</button>
+                <button class="btn">Standard</button>
+                <button class="btn btn-lg">Formal</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-quill">Compose</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter V</p>
+                <h2>Forms</h2>
+                <p class="lead">Fields for the recording of information, as in a ledger or register.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Given Name</label>
+                        <input type="text" class="input-field" placeholder="Enter thy name">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">House or Guild</label>
+                        <input type="text" class="input-field" placeholder="Thy affiliation">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Province</label>
+                        <select class="select-field">
+                            <option>Select thy region</option>
+                            <option>The Northern Realm</option>
+                            <option>The Eastern Marches</option>
+                            <option>The Southern Kingdom</option>
+                            <option>The Western Isles</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Year of Birth</label>
+                        <input type="text" class="input-field" placeholder="In the year of our Lord">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Petition</label>
+                        <textarea class="input-field" placeholder="State thy business or request herein..."></textarea>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox-field" id="oath">
+                        <label class="checkbox-label" for="oath">I do solemnly swear that the above is true and accurate</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox-field" id="seal" checked>
+                        <label class="checkbox-label" for="seal">Affix my seal to this document</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter VI</p>
+                <h2>Cards</h2>
+                <p class="lead">Containers for content, styled as illuminated manuscript pages.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-initial">A</div>
+                        <h3>Antiquity</h3>
+                        <p>The wisdom of ages past, preserved in careful script and guarded in hallowed halls.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-initial">B</div>
+                        <h3>Breviary</h3>
+                        <p>A compendium of essential knowledge, distilled for daily contemplation and use.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-initial">C</div>
+                        <h3>Codex</h3>
+                        <p>Bound wisdom in structured form, the predecessor to all modern volumes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="decorative-rule mt-6">
+                <div class="decorative-rule-center"></div>
+            </div>
+
+            <div class="grid mt-6">
+                <div class="col-6">
+                    <div class="card card-scroll">
+                        <h3>The Scroll</h3>
+                        <p>Before the codex came the scroll, unfurling its secrets to those who sought knowledge. This variant card echoes that ancient form, with subtle shadows suggesting rolled edges.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-scroll">
+                        <h3>The Chronicle</h3>
+                        <p>Events of great import were recorded by chroniclers, their accounts becoming the history we study today. Each entry builds upon the last, creating a tapestry of time.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter VII</p>
+                <h2>Data Table</h2>
+                <p class="lead">Records and registers, organised in the manner of a medieval ledger.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Manuscript</th>
+                            <th>Origin</th>
+                            <th>Status</th>
+                            <th class="text-right">Folios</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Book of Kells</td>
+                            <td>Ireland, c. 800</td>
+                            <td><span class="badge badge-seal">Sacred</span></td>
+                            <td class="text-right">340</td>
+                        </tr>
+                        <tr>
+                            <td>Lindisfarne Gospels</td>
+                            <td>Northumbria, c. 700</td>
+                            <td><span class="badge badge-seal">Sacred</span></td>
+                            <td class="text-right">259</td>
+                        </tr>
+                        <tr>
+                            <td>Codex Gigas</td>
+                            <td>Bohemia, c. 1230</td>
+                            <td><span class="badge badge-seal-burgundy">Rare</span></td>
+                            <td class="text-right">310</td>
+                        </tr>
+                        <tr>
+                            <td>Gutenberg Bible</td>
+                            <td>Mainz, c. 1455</td>
+                            <td><span class="badge badge-seal-gold">Historic</span></td>
+                            <td class="text-right">1,286</td>
+                        </tr>
+                        <tr>
+                            <td>Book of Hours</td>
+                            <td>Various, 13th-16th c.</td>
+                            <td><span class="badge badge-manuscript">Common</span></td>
+                            <td class="text-right">Varies</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter VIII</p>
+                <h2>Badges</h2>
+                <p class="lead">Marks of distinction, from humble labels to noble wax seals.</p>
+            </div>
+
+            <h4 class="color-category-title">Wax Seals</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge badge-seal">Royal</span>
+                <span class="badge badge-seal-gold">Noble</span>
+                <span class="badge badge-seal-burgundy">Guild</span>
+            </div>
+
+            <h4 class="color-category-title">Manuscript Labels</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge">Standard</span>
+                <span class="badge badge-manuscript">Verified</span>
+                <span class="badge badge-vermillion">Urgent</span>
+                <span class="badge badge-gold">Treasured</span>
+            </div>
+
+            <div class="marginalia">
+                The wax seal, impressed with signet ring, served as both signature and security, ensuring that documents arrived unopened and authenticated.
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-numeral">Chapter IX</p>
+                <h2>Design Principles</h2>
+                <p class="lead">The guiding tenets of this ancient aesthetic.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">
+                            <span>A</span>
+                        </div>
+                        <h3>Authenticity</h3>
+                        <p>Honour the materials and methods of the past. Let texture, warmth, and human touch speak through every element.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">
+                            <span>P</span>
+                        </div>
+                        <h3>Patience</h3>
+                        <p>As the scribe laboured over each letter, so should we craft with care. Quality endures where haste fails.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">
+                            <span>R</span>
+                        </div>
+                        <h3>Reverence</h3>
+                        <p>Treat content as sacred. Each word, each image, each element deserves thoughtful placement and presentation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="decorative-rule">
+                <div class="decorative-rule-center"></div>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">
+                            <span>H</span>
+                        </div>
+                        <h3>Hierarchy</h3>
+                        <p>The illuminated initial draws the eye, the rubric guides understanding, and the body text conveys meaning. Establish clear order in all compositions.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">
+                            <span>L</span>
+                        </div>
+                        <h3>Legibility</h3>
+                        <p>Above all adornment, the text must be read. Beauty serves purpose; never sacrifice clarity for decoration.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-ornament">&#x2726; &#x2726; &#x2726;</div>
+            <p>Parchment Design System<br><em>Wherein beauty and wisdom are preserved for posterity</em></p>
+            <p class="footer-date">Anno Domini MMXXVI</p>
+        </footer>
+    </div>
+</body>
+</html>
