@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risograph Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Risograph Soy-Based Ink Colors */
+            --riso-coral: #FF6B6B;
+            --riso-coral-light: #FF8E8E;
+            --riso-teal: #2EC4B6;
+            --riso-teal-dark: #1A9E92;
+            --riso-yellow: #FFE66D;
+            --riso-yellow-dark: #E6CF5C;
+            --riso-blue: #4361EE;
+            --riso-blue-light: #6B83F2;
+            --riso-pink: #FF006E;
+            --riso-pink-light: #FF3D8E;
+            --riso-black: #1A1A2E;
+            --riso-cream: #FDF6E3;
+            --riso-paper: #F5F0E1;
+            --riso-paper-dark: #E8E0CC;
+
+            /* Typography */
+            --font-mono: 'Space Mono', 'Courier New', monospace;
+            --font-sans: 'DM Sans', 'Helvetica Neue', sans-serif;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Misregistration offsets */
+            --offset-sm: 2px;
+            --offset-md: 3px;
+            --offset-lg: 4px;
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+        }
+
+        /* Paper Grain Texture - SVG Noise Filter */
+        svg.noise-filter {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--riso-black);
+            background: var(--riso-paper);
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Paper grain overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Secondary grain layer for depth */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.08;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(26, 26, 46, 0.03) 2px,
+                    rgba(26, 26, 46, 0.03) 4px
+                );
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Typography with Misregistration Effect */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            line-height: 1.2;
+            position: relative;
+        }
+
+        /* Misregistration text effect */
+        .misregister {
+            position: relative;
+        }
+
+        .misregister::before,
+        .misregister::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .misregister::before {
+            color: var(--riso-coral);
+            transform: translate(calc(var(--offset-md) * -1), var(--offset-sm));
+            opacity: 0.7;
+            mix-blend-mode: multiply;
+        }
+
+        .misregister::after {
+            color: var(--riso-teal);
+            transform: translate(var(--offset-md), calc(var(--offset-sm) * -1));
+            opacity: 0.7;
+            mix-blend-mode: multiply;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 7vw, 4.5rem);
+            margin-bottom: var(--space-6);
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: var(--space-5);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: var(--space-4);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 60ch;
+        }
+
+        .lead {
+            font-size: 1.125rem;
+            line-height: 1.7;
+            color: var(--riso-black);
+            opacity: 0.85;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        /* Halftone Pattern Mixin via pseudo-elements */
+        .halftone {
+            position: relative;
+        }
+
+        .halftone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+            background-size: 4px 4px;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-9) 0 var(--space-8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: var(--riso-yellow);
+            border-radius: 50%;
+            opacity: 0.4;
+            filter: blur(2px);
+            mix-blend-mode: multiply;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 350px;
+            height: 350px;
+            background: var(--riso-coral);
+            border-radius: 50%;
+            opacity: 0.35;
+            filter: blur(3px);
+            mix-blend-mode: multiply;
+            transform: translate(50px, 0);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--riso-pink);
+            margin-bottom: var(--space-3);
+            display: inline-block;
+            background: var(--riso-cream);
+            padding: var(--space-1) var(--space-3);
+        }
+
+        .header-title {
+            color: var(--riso-black);
+        }
+
+        .header-description {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            max-width: 500px;
+            margin-top: var(--space-5);
+            padding: var(--space-4);
+            background: var(--riso-cream);
+            border-left: 4px solid var(--riso-teal);
+            position: relative;
+        }
+
+        /* Ink Bleed Effect for borders */
+        .ink-bleed {
+            position: relative;
+            filter: blur(0.3px);
+        }
+
+        /* Section Styling */
+        .section {
+            padding: var(--space-8) 0;
+            position: relative;
+        }
+
+        .section:not(:last-of-type)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--riso-black) 0px,
+                var(--riso-black) 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            opacity: 0.2;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--riso-cream);
+            background: var(--riso-pink);
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            margin-bottom: var(--space-3);
+            position: relative;
+        }
+
+        .section-number::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-sm);
+            left: var(--offset-sm);
+            right: calc(var(--offset-sm) * -1);
+            bottom: calc(var(--offset-sm) * -1);
+            background: var(--riso-teal);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Color Blocks with Overprint Effect */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--space-4);
+        }
+
+        @media (max-width: 768px) {
+            .color-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-3);
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--transition-base);
+        }
+
+        .color-block:hover {
+            transform: scale(1.03) rotate(-1deg);
+        }
+
+        /* Halftone overlay on color blocks */
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px);
+            background-size: 3px 3px;
+            pointer-events: none;
+        }
+
+        /* Ink bleed edge effect */
+        .color-block::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: inherit;
+            filter: blur(2px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .color-name {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Overprint Demo */
+        .overprint-demo {
+            position: relative;
+            height: 200px;
+            margin-top: var(--space-6);
+            background: var(--riso-cream);
+        }
+
+        .overprint-circle {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            mix-blend-mode: multiply;
+        }
+
+        .overprint-circle:nth-child(1) {
+            background: var(--riso-coral);
+            top: 20px;
+            left: 50px;
+        }
+
+        .overprint-circle:nth-child(2) {
+            background: var(--riso-teal);
+            top: 40px;
+            left: 120px;
+        }
+
+        .overprint-circle:nth-child(3) {
+            background: var(--riso-yellow);
+            top: 60px;
+            left: 90px;
+        }
+
+        /* Typography Scale */
+        .type-specimen {
+            background: var(--riso-cream);
+            padding: var(--space-6);
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .type-specimen::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-md);
+            left: var(--offset-md);
+            right: calc(var(--offset-md) * -1);
+            bottom: calc(var(--offset-md) * -1);
+            background: var(--riso-coral);
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            padding: var(--space-4) 0;
+            border-bottom: 2px dashed var(--riso-paper-dark);
+        }
+
+        .type-row:last-child {
+            border-bottom: none;
+        }
+
+        .type-meta {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .type-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--riso-pink);
+            font-weight: 700;
+        }
+
+        .type-specs {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--riso-black);
+            opacity: 0.6;
+        }
+
+        .type-sample {
+            flex: 1;
+        }
+
+        /* Spacing Demo */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 70px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--riso-black);
+        }
+
+        .spacing-bar {
+            height: 28px;
+            position: relative;
+            background: var(--riso-blue);
+        }
+
+        .spacing-bar::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-sm);
+            left: var(--offset-sm);
+            width: 100%;
+            height: 100%;
+            background: var(--riso-pink);
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        /* Halftone on spacing bars */
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px);
+            background-size: 3px 3px;
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--riso-teal);
+            font-weight: 700;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-5);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-decoration: none;
+            border: 3px solid var(--riso-black);
+            background: var(--riso-cream);
+            color: var(--riso-black);
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-md);
+            left: var(--offset-md);
+            width: 100%;
+            height: 100%;
+            background: var(--riso-teal);
+            z-index: -1;
+            transition: all var(--transition-fast);
+        }
+
+        .btn:hover {
+            transform: translate(calc(var(--offset-md) * -1), calc(var(--offset-md) * -1));
+        }
+
+        .btn:hover::before {
+            top: calc(var(--offset-md) * 2);
+            left: calc(var(--offset-md) * 2);
+        }
+
+        .btn:active {
+            transform: translate(var(--offset-sm), var(--offset-sm));
+        }
+
+        .btn:active::before {
+            top: 0;
+            left: 0;
+        }
+
+        .btn-coral {
+            background: var(--riso-coral);
+            color: var(--riso-cream);
+            border-color: var(--riso-black);
+        }
+
+        .btn-coral::before {
+            background: var(--riso-yellow);
+        }
+
+        .btn-pink {
+            background: var(--riso-pink);
+            color: var(--riso-cream);
+            border-color: var(--riso-black);
+        }
+
+        .btn-pink::before {
+            background: var(--riso-blue);
+        }
+
+        .btn-blue {
+            background: var(--riso-blue);
+            color: var(--riso-cream);
+            border-color: var(--riso-black);
+        }
+
+        .btn-blue::before {
+            background: var(--riso-coral);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-7);
+            font-size: 0.9rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-5);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--riso-pink);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border: 3px solid var(--riso-black);
+            background: var(--riso-cream);
+            color: var(--riso-black);
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            box-shadow:
+                var(--offset-md) var(--offset-md) 0 var(--riso-teal),
+                calc(var(--offset-md) * -1) calc(var(--offset-md) * -1) 0 var(--riso-coral);
+        }
+
+        .input-field::placeholder {
+            color: var(--riso-black);
+            opacity: 0.4;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-md);
+            left: var(--offset-md);
+            width: 100%;
+            height: 100%;
+            background: var(--riso-yellow);
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        /* Checkbox styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--riso-black);
+            background: var(--riso-cream);
+            cursor: pointer;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .checkbox:checked {
+            background: var(--riso-pink);
+        }
+
+        .checkbox:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--riso-cream);
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--riso-cream);
+            padding: var(--space-5);
+            position: relative;
+            transition: all var(--transition-base);
+            border: 3px solid var(--riso-black);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-lg);
+            left: var(--offset-lg);
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: all var(--transition-base);
+        }
+
+        .card:nth-child(3n+1)::before {
+            background: var(--riso-coral);
+        }
+
+        .card:nth-child(3n+2)::before {
+            background: var(--riso-teal);
+        }
+
+        .card:nth-child(3n)::before {
+            background: var(--riso-yellow);
+        }
+
+        .card:hover {
+            transform: translate(calc(var(--offset-sm) * -1), calc(var(--offset-sm) * -1));
+        }
+
+        .card:hover::before {
+            top: calc(var(--offset-lg) + var(--offset-sm));
+            left: calc(var(--offset-lg) + var(--offset-sm));
+        }
+
+        .card-number {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: var(--space-3);
+            position: relative;
+            display: inline-block;
+        }
+
+        .card:nth-child(3n+1) .card-number {
+            color: var(--riso-coral);
+        }
+
+        .card:nth-child(3n+2) .card-number {
+            color: var(--riso-teal);
+        }
+
+        .card:nth-child(3n) .card-number {
+            color: var(--riso-blue);
+        }
+
+        .card h3 {
+            font-family: var(--font-mono);
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            opacity: 0.85;
+        }
+
+        /* Data Table */
+        .table-wrapper {
+            background: var(--riso-cream);
+            border: 3px solid var(--riso-black);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-wrapper::before {
+            content: '';
+            position: absolute;
+            top: var(--offset-md);
+            left: var(--offset-md);
+            right: calc(var(--offset-md) * -1);
+            bottom: calc(var(--offset-md) * -1);
+            background: var(--riso-blue);
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .table th {
+            background: var(--riso-black);
+            color: var(--riso-cream);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        .table tbody tr {
+            border-bottom: 2px dashed var(--riso-paper-dark);
+            transition: background var(--transition-fast);
+        }
+
+        .table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .table tbody tr:hover {
+            background: var(--riso-yellow);
+            mix-blend-mode: multiply;
+        }
+
+        .table .text-right {
+            text-align: right;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border: 2px solid var(--riso-black);
+            background: var(--riso-cream);
+            position: relative;
+        }
+
+        .badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .badge-coral {
+            background: var(--riso-coral);
+            color: var(--riso-cream);
+        }
+
+        .badge-coral::before {
+            background: var(--riso-yellow);
+        }
+
+        .badge-teal {
+            background: var(--riso-teal);
+            color: var(--riso-cream);
+        }
+
+        .badge-teal::before {
+            background: var(--riso-pink);
+        }
+
+        .badge-pink {
+            background: var(--riso-pink);
+            color: var(--riso-cream);
+        }
+
+        .badge-pink::before {
+            background: var(--riso-blue);
+        }
+
+        .badge-blue {
+            background: var(--riso-blue);
+            color: var(--riso-cream);
+        }
+
+        .badge-blue::before {
+            background: var(--riso-coral);
+        }
+
+        .badge-yellow {
+            background: var(--riso-yellow);
+            color: var(--riso-black);
+        }
+
+        .badge-yellow::before {
+            background: var(--riso-teal);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+        }
+
+        /* Principles Section */
+        .principle-card {
+            padding: var(--space-6);
+            background: var(--riso-cream);
+            position: relative;
+            border: 3px solid var(--riso-black);
+        }
+
+        .principle-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+        }
+
+        .principle-card:nth-child(1)::before {
+            background: var(--riso-coral);
+        }
+
+        .principle-card:nth-child(2)::before {
+            background: var(--riso-teal);
+        }
+
+        .principle-card:nth-child(3)::before {
+            background: var(--riso-pink);
+        }
+
+        .principle-card:nth-child(4)::before {
+            background: var(--riso-blue);
+        }
+
+        .principle-icon {
+            width: 60px;
+            height: 60px;
+            margin-bottom: var(--space-4);
+            position: relative;
+        }
+
+        .principle-icon .shape {
+            position: absolute;
+            mix-blend-mode: multiply;
+        }
+
+        .principle-icon .shape-1 {
+            width: 40px;
+            height: 40px;
+            background: var(--riso-coral);
+            top: 0;
+            left: 0;
+        }
+
+        .principle-icon .shape-2 {
+            width: 40px;
+            height: 40px;
+            background: var(--riso-teal);
+            top: 15px;
+            left: 15px;
+        }
+
+        .principle-card h3 {
+            font-family: var(--font-mono);
+        }
+
+        .principle-card p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+            margin-bottom: 0;
+        }
+
+        /* Decorative Elements */
+        .deco-circle {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+        }
+
+        .deco-dots {
+            background-image: radial-gradient(circle, var(--riso-black) 2px, transparent 2px);
+            background-size: 12px 12px;
+        }
+
+        /* Zine-style decorative border */
+        .zine-border {
+            border: 3px solid var(--riso-black);
+            position: relative;
+        }
+
+        .zine-border::before,
+        .zine-border::after {
+            content: '';
+            position: absolute;
+            border: 3px solid var(--riso-black);
+        }
+
+        .zine-border::before {
+            top: 4px;
+            left: 4px;
+            right: -8px;
+            bottom: -8px;
+            border-color: var(--riso-coral);
+        }
+
+        .zine-border::after {
+            top: 8px;
+            left: 8px;
+            right: -16px;
+            bottom: -16px;
+            border-color: var(--riso-teal);
+            opacity: 0.6;
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: var(--riso-black);
+        }
+
+        .footer p {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            margin: 0 auto;
+            color: var(--riso-black);
+            opacity: 0.7;
+        }
+
+        .footer-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto var(--space-4);
+            position: relative;
+        }
+
+        .footer-icon::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--riso-coral);
+            border-radius: 50%;
+        }
+
+        .footer-icon::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 100%;
+            height: 100%;
+            background: var(--riso-teal);
+            border-radius: 50%;
+            mix-blend-mode: multiply;
+        }
+
+        /* Print Registration Marks */
+        .registration-mark {
+            position: fixed;
+            font-family: var(--font-mono);
+            font-size: 8px;
+            color: var(--riso-black);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
+        .registration-mark.top-left {
+            top: 10px;
+            left: 10px;
+        }
+
+        .registration-mark.top-right {
+            top: 10px;
+            right: 10px;
+        }
+
+        .registration-mark.bottom-left {
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .registration-mark.bottom-right {
+            bottom: 10px;
+            right: 10px;
+        }
+
+        .reg-cross {
+            width: 20px;
+            height: 20px;
+            position: relative;
+        }
+
+        .reg-cross::before,
+        .reg-cross::after {
+            content: '';
+            position: absolute;
+            background: var(--riso-black);
+        }
+
+        .reg-cross::before {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+
+        .reg-cross::after {
+            width: 1px;
+            height: 100%;
+            top: 0;
+            left: 50%;
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mt-8 { margin-top: var(--space-8); }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header::before,
+            .header::after {
+                width: 200px;
+                height: 200px;
+            }
+
+            .type-row {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+
+            .type-meta {
+                width: 100%;
+            }
+
+            .registration-mark {
+                display: none;
+            }
+        }
+
+        /* Animation for interactive elements */
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-1deg); }
+            50% { transform: rotate(1deg); }
+        }
+
+        .wiggle:hover {
+            animation: wiggle 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Registration Marks (print aesthetic) -->
+    <div class="registration-mark top-left">
+        <div class="reg-cross"></div>
+    </div>
+    <div class="registration-mark top-right">
+        <div class="reg-cross"></div>
+    </div>
+    <div class="registration-mark bottom-left">
+        <div class="reg-cross"></div>
+    </div>
+    <div class="registration-mark bottom-right">
+        <div class="reg-cross"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <span class="header-label">Design System</span>
+                <h1 class="header-title misregister" data-text="Risograph">Risograph</h1>
+                <div class="header-description">
+                    Imperfect prints. Soy-based inks. Paper grain. The beautiful accidents of duplicator machines and indie zine culture.
+                </div>
+            </div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2>Color</h2>
+                <p class="lead">Soy-based ink colors from the Risograph palette. Rich, vibrant, and designed to overlap beautifully with mix-blend-mode: multiply.</p>
+            </div>
+
+            <div class="color-grid">
+                <div class="color-block" style="background: var(--riso-coral); color: var(--riso-cream);">
+                    <span class="color-name">Coral</span>
+                    <span class="color-value">#FF6B6B</span>
+                </div>
+                <div class="color-block" style="background: var(--riso-teal); color: var(--riso-cream);">
+                    <span class="color-name">Teal</span>
+                    <span class="color-value">#2EC4B6</span>
+                </div>
+                <div class="color-block" style="background: var(--riso-yellow); color: var(--riso-black);">
+                    <span class="color-name">Yellow</span>
+                    <span class="color-value">#FFE66D</span>
+                </div>
+                <div class="color-block" style="background: var(--riso-blue); color: var(--riso-cream);">
+                    <span class="color-name">Blue</span>
+                    <span class="color-value">#4361EE</span>
+                </div>
+                <div class="color-block" style="background: var(--riso-pink); color: var(--riso-cream);">
+                    <span class="color-name">Fluoro Pink</span>
+                    <span class="color-value">#FF006E</span>
+                </div>
+            </div>
+
+            <h3 class="mt-8">Overprint Effect</h3>
+            <p>When Risograph colors overlap, they create new colors through subtractive mixing. This is achieved in CSS using mix-blend-mode: multiply.</p>
+
+            <div class="overprint-demo">
+                <div class="overprint-circle"></div>
+                <div class="overprint-circle"></div>
+                <div class="overprint-circle"></div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2>Typography</h2>
+                <p class="lead">Space Mono for headings and labels brings that typewriter, zine aesthetic. DM Sans for body text maintains readability.</p>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">Display</p>
+                        <p class="type-specs">72px / Bold / Space Mono</p>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 3.5rem; font-weight: 700; line-height: 1;">Aa</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">H1</p>
+                        <p class="type-specs">48px / Bold / Space Mono</p>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 2.5rem; font-weight: 700;">Heading One</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">H2</p>
+                        <p class="type-specs">32px / Bold / Space Mono</p>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 2rem; font-weight: 700;">Heading Two</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">H3</p>
+                        <p class="type-specs">20px / Bold / Space Mono</p>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700;">Heading Three</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">Body</p>
+                        <p class="type-specs">16px / Regular / DM Sans</p>
+                    </div>
+                    <div class="type-sample">The quick brown fox jumps over the lazy dog. Beautiful imperfection in every print.</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <p class="type-label">Mono</p>
+                        <p class="type-specs">14px / Regular / Space Mono</p>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 0.875rem;">Code, labels, and technical details use monospace.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2>Spacing</h2>
+                <p class="lead">A 4px base unit creates consistent rhythm. Slightly loose spacing reflects the casual, handmade nature of zine printing.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">4px</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">xs</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">8px</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">sm</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">16px</span>
+                <div class="spacing-bar" style="width: 64px;"></div>
+                <span class="spacing-value">md</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">24px</span>
+                <div class="spacing-bar" style="width: 96px;"></div>
+                <span class="spacing-value">lg</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">32px</span>
+                <div class="spacing-bar" style="width: 128px;"></div>
+                <span class="spacing-value">xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">48px</span>
+                <div class="spacing-bar" style="width: 192px;"></div>
+                <span class="spacing-value">2xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">64px</span>
+                <div class="spacing-bar" style="width: 256px;"></div>
+                <span class="spacing-value">3xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">96px</span>
+                <div class="spacing-bar" style="width: 320px;"></div>
+                <span class="spacing-value">4xl</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2>Buttons</h2>
+                <p class="lead">Chunky, offset shadows create depth. The misregistration effect gives that hand-printed, slightly-off-center feel.</p>
+            </div>
+
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn btn-coral">Coral</button>
+                <button class="btn btn-pink">Fluoro Pink</button>
+                <button class="btn btn-blue">Blue</button>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-sm">Small</button>
+                <button class="btn">Medium</button>
+                <button class="btn btn-lg">Large</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2>Forms</h2>
+                <p class="lead">Bold borders and offset shadows. Focus states add color bleeds reminiscent of ink spreading on paper.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Your Name</label>
+                        <div class="input-wrapper">
+                            <input type="text" class="input-field" placeholder="Enter your name">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Email Address</label>
+                        <div class="input-wrapper">
+                            <input type="email" class="input-field" placeholder="you@example.com">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Your Message</label>
+                        <div class="input-wrapper">
+                            <textarea class="input-field" placeholder="Write something..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox" id="check1" checked>
+                        <label class="checkbox-label" for="check1">Subscribe to zine updates</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox" id="check2">
+                        <label class="checkbox-label" for="check2">Accept imperfections</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2>Cards</h2>
+                <p class="lead">Layered offset shadows in different ink colors. Each card feels like a separate print layer stacked together.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card wiggle">
+                        <div class="card-number">01</div>
+                        <h3>Layer One</h3>
+                        <p>Each color is printed separately, creating natural misalignment and overlap effects.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card wiggle">
+                        <div class="card-number">02</div>
+                        <h3>Layer Two</h3>
+                        <p>Soy-based inks absorb into paper, creating soft edges and subtle bleeding.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card wiggle">
+                        <div class="card-number">03</div>
+                        <h3>Layer Three</h3>
+                        <p>The grain of recycled paper adds texture and warmth to every print.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2>Data Table</h2>
+                <p class="lead">Monospace type in tables feels like print shop inventory lists. Dashed borders add handmade charm.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Ink Color</th>
+                            <th>Stock</th>
+                            <th>Coverage</th>
+                            <th class="text-right">Price/Drum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Fluorescent Pink</td>
+                            <td><span class="badge badge-teal">In Stock</span></td>
+                            <td>8,000 prints</td>
+                            <td class="text-right">$185</td>
+                        </tr>
+                        <tr>
+                            <td>Teal</td>
+                            <td><span class="badge badge-teal">In Stock</span></td>
+                            <td>8,000 prints</td>
+                            <td class="text-right">$165</td>
+                        </tr>
+                        <tr>
+                            <td>Sunflower Yellow</td>
+                            <td><span class="badge badge-coral">Low Stock</span></td>
+                            <td>8,000 prints</td>
+                            <td class="text-right">$165</td>
+                        </tr>
+                        <tr>
+                            <td>Blue</td>
+                            <td><span class="badge badge-pink">Out of Stock</span></td>
+                            <td>8,000 prints</td>
+                            <td class="text-right">$165</td>
+                        </tr>
+                        <tr>
+                            <td>Coral</td>
+                            <td><span class="badge badge-teal">In Stock</span></td>
+                            <td>8,000 prints</td>
+                            <td class="text-right">$175</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2>Badges</h2>
+                <p class="lead">Small, punchy labels with offset shadows. Like stamps or stickers on a zine cover.</p>
+            </div>
+
+            <div class="badge-row">
+                <span class="badge">Default</span>
+                <span class="badge badge-coral">Coral</span>
+                <span class="badge badge-teal">Teal</span>
+                <span class="badge badge-pink">Pink</span>
+                <span class="badge badge-blue">Blue</span>
+                <span class="badge badge-yellow">Yellow</span>
+            </div>
+
+            <h3 class="mt-8">Usage Examples</h3>
+            <div class="badge-row mt-4">
+                <span class="badge badge-pink">New Issue</span>
+                <span class="badge badge-teal">Limited Run</span>
+                <span class="badge badge-coral">Sold Out</span>
+                <span class="badge badge-yellow">Pre-Order</span>
+                <span class="badge badge-blue">Digital Only</span>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2>Design Principles</h2>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="shape shape-1"></div>
+                            <div class="shape shape-2"></div>
+                        </div>
+                        <h3>Embrace Imperfection</h3>
+                        <p>Misregistration, ink bleed, and grain are features, not bugs. The beauty of risograph lies in its happy accidents and organic inconsistencies.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="shape shape-1" style="background: var(--riso-yellow);"></div>
+                            <div class="shape shape-2" style="background: var(--riso-pink);"></div>
+                        </div>
+                        <h3>Layer with Purpose</h3>
+                        <p>Each color is a separate pass through the machine. Design with overprinting in mind, letting colors mix and create new tones where they overlap.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="shape shape-1" style="background: var(--riso-blue);"></div>
+                            <div class="shape shape-2" style="background: var(--riso-yellow);"></div>
+                        </div>
+                        <h3>Limited Palette</h3>
+                        <p>Work within constraints. A limited color palette forces creativity and creates cohesion. Two or three spot colors can achieve remarkable range.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-card">
+                        <div class="principle-icon">
+                            <div class="shape shape-1" style="background: var(--riso-teal); border-radius: 50%;"></div>
+                            <div class="shape shape-2" style="background: var(--riso-coral); border-radius: 50%;"></div>
+                        </div>
+                        <h3>DIY Spirit</h3>
+                        <p>Risograph emerged from the independent publishing scene. Maintain that grassroots, accessible, punk-inspired energy in every design decision.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-icon"></div>
+            <p>Risograph Design System</p>
+            <p class="mt-4" style="font-size: 0.75rem;">Beautiful accidents since 1986</p>
+        </footer>
+    </div>
+</body>
+</html>

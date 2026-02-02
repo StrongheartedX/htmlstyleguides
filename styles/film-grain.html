@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Film Grain Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typefaces */
+            --font-display: 'Special Elite', 'Courier New', monospace;
+            --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+            --font-mono: 'DM Mono', 'Courier New', monospace;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Film-Inspired Color Palette */
+            /* Warm Base Tones (Kodak Portra inspired) */
+            --cream: #f5f0e6;
+            --cream-dark: #ebe4d4;
+            --paper: #faf6ed;
+            --paper-aged: #f0e8d8;
+
+            /* Warm Accents */
+            --amber: #d4a066;
+            --amber-light: #e8c898;
+            --amber-dark: #b8864a;
+            --sepia: #8b7355;
+            --sepia-light: #a69076;
+            --sepia-dark: #6b5343;
+
+            /* Faded Film Colors (Fujifilm inspired) */
+            --faded-red: #c47d6d;
+            --faded-orange: #d49a6a;
+            --faded-yellow: #d4c078;
+            --faded-green: #8b9b7a;
+            --faded-teal: #7a9b9b;
+            --faded-blue: #7a8b9b;
+            --faded-purple: #9b7a8b;
+
+            /* Neutral Tones */
+            --charcoal: #3d3a35;
+            --charcoal-light: #5a5650;
+            --charcoal-dark: #2a2825;
+            --warm-gray: #9b958a;
+            --warm-gray-light: #b8b2a6;
+            --warm-gray-dark: #7a756b;
+
+            /* Shadow & Vignette */
+            --shadow-warm: rgba(60, 50, 40, 0.15);
+            --shadow-deep: rgba(40, 35, 30, 0.4);
+            --vignette-color: rgba(30, 25, 20, 0.6);
+
+            /* Light Leak Colors */
+            --leak-orange: rgba(255, 180, 100, 0.15);
+            --leak-red: rgba(255, 120, 100, 0.1);
+            --leak-blue: rgba(100, 150, 200, 0.08);
+
+            /* Semantic Colors */
+            --text-primary: var(--charcoal);
+            --text-secondary: var(--sepia);
+            --text-muted: var(--warm-gray);
+            --bg-primary: var(--paper);
+            --bg-secondary: var(--cream);
+            --bg-tertiary: var(--cream-dark);
+            --border-color: var(--warm-gray-light);
+            --border-dark: var(--warm-gray);
+            --accent: var(--amber);
+            --accent-dark: var(--amber-dark);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --transition-slow: 0.4s ease;
+        }
+
+        /* Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        /* Film Grain Overlay - Applied to body::before */
+        body {
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Film Grain Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            mix-blend-mode: overlay;
+        }
+
+        /* Vignette Effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                transparent 50%,
+                rgba(30, 25, 20, 0.15) 80%,
+                rgba(30, 25, 20, 0.4) 100%
+            );
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            line-height: 1.3;
+            letter-spacing: 0.02em;
+            color: var(--charcoal);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            margin-bottom: var(--space-6);
+            text-shadow: 1px 1px 0 var(--cream-dark);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: var(--space-5);
+        }
+
+        h3 {
+            font-size: 1.35rem;
+            margin-bottom: var(--space-4);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 60ch;
+        }
+
+        .lead {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--sepia);
+            font-style: italic;
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            letter-spacing: -0.02em;
+        }
+
+        .caption {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--warm-gray);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-9) 0;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Light Leak Effect on Header */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 60%;
+            height: 200%;
+            background: linear-gradient(
+                135deg,
+                var(--leak-orange) 0%,
+                var(--leak-red) 50%,
+                transparent 100%
+            );
+            pointer-events: none;
+            transform: rotate(-15deg);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header h1 {
+            margin-bottom: 0;
+        }
+
+        .header-meta {
+            text-align: right;
+        }
+
+        .header-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--amber);
+            border: 1px solid var(--amber);
+            padding: var(--space-1) var(--space-3);
+            margin-bottom: var(--space-3);
+            background: var(--paper);
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-8) 0;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--amber);
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-number::after {
+            content: '';
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--amber);
+            opacity: 0.5;
+        }
+
+        /* Film Frame Decoration */
+        .film-frame {
+            position: relative;
+            padding: var(--space-4);
+            background: var(--charcoal-dark);
+        }
+
+        .film-frame::before,
+        .film-frame::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background:
+                repeating-linear-gradient(
+                    to bottom,
+                    var(--charcoal-dark) 0px,
+                    var(--charcoal-dark) 6px,
+                    var(--charcoal) 6px,
+                    var(--charcoal) 8px,
+                    var(--charcoal-dark) 8px,
+                    var(--charcoal-dark) 14px
+                );
+        }
+
+        .film-frame::before {
+            left: 0;
+        }
+
+        .film-frame::after {
+            right: 0;
+        }
+
+        .film-frame-inner {
+            margin: 0 var(--space-5);
+            background: var(--paper);
+            padding: var(--space-5);
+        }
+
+        /* Color Blocks */
+        .color-block {
+            aspect-ratio: 4/3;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid var(--paper);
+            box-shadow:
+                0 2px 8px var(--shadow-warm),
+                inset 0 0 30px rgba(0,0,0,0.1);
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 40%,
+                rgba(0,0,0,0.15) 100%
+            );
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: scale(1.02) rotate(-0.5deg);
+            box-shadow:
+                0 8px 24px var(--shadow-warm),
+                inset 0 0 30px rgba(0,0,0,0.1);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Polaroid Style Color Block */
+        .polaroid {
+            background: var(--paper);
+            padding: var(--space-3);
+            padding-bottom: var(--space-6);
+            box-shadow: 0 4px 12px var(--shadow-warm);
+            transition: transform var(--transition-base);
+        }
+
+        .polaroid:hover {
+            transform: rotate(-2deg) translateY(-4px);
+        }
+
+        .polaroid-image {
+            aspect-ratio: 1;
+            margin-bottom: var(--space-3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .polaroid-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 50%,
+                rgba(0,0,0,0.2) 100%
+            );
+        }
+
+        .polaroid-label {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            color: var(--charcoal);
+            text-align: center;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-5);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            border: 2px solid var(--charcoal);
+            background: transparent;
+            color: var(--charcoal);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.3),
+                transparent
+            );
+            transition: left var(--transition-slow);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: var(--charcoal);
+            color: var(--paper);
+            box-shadow: 0 4px 12px var(--shadow-warm);
+        }
+
+        .btn-primary {
+            background: var(--amber);
+            border-color: var(--amber);
+            color: var(--paper);
+        }
+
+        .btn-primary:hover {
+            background: var(--amber-dark);
+            border-color: var(--amber-dark);
+            color: var(--paper);
+        }
+
+        .btn-warm {
+            background: var(--sepia);
+            border-color: var(--sepia);
+            color: var(--paper);
+        }
+
+        .btn-warm:hover {
+            background: var(--sepia-dark);
+            border-color: var(--sepia-dark);
+        }
+
+        .btn-faded {
+            border-color: var(--warm-gray);
+            color: var(--warm-gray);
+            background: transparent;
+        }
+
+        .btn-faded:hover {
+            background: var(--warm-gray);
+            color: var(--paper);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-7);
+            font-size: 0.9rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--sepia);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            color: var(--charcoal);
+            border: 1px solid var(--border-color);
+            background: var(--paper);
+            transition: all var(--transition-fast);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--amber);
+            box-shadow:
+                inset 0 1px 3px rgba(0,0,0,0.05),
+                0 0 0 3px rgba(212, 160, 102, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: var(--warm-gray-light);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        /* Checkbox & Radio - Vintage Style */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-family: var(--font-serif);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .checkbox-input {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-dark);
+            background: var(--paper);
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .checkbox-input:checked {
+            background: var(--amber);
+            border-color: var(--amber);
+        }
+
+        .checkbox-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .radio-input {
+            border-radius: 50%;
+        }
+
+        .radio-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 8px;
+            height: 8px;
+            background: var(--paper);
+            border-radius: 50%;
+            border: none;
+            transform: none;
+        }
+
+        /* Select Dropdown */
+        .select-field {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b7355' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            padding-right: var(--space-8);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--paper);
+            border: 1px solid var(--border-color);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle light leak on cards */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            right: -20%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(
+                ellipse at center,
+                var(--leak-orange),
+                transparent 70%
+            );
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--transition-slow);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card:hover {
+            border-color: var(--amber);
+            box-shadow: 0 8px 24px var(--shadow-warm);
+            transform: translateY(-2px);
+        }
+
+        .card-vintage {
+            background:
+                linear-gradient(135deg, var(--paper) 0%, var(--cream) 100%);
+            box-shadow:
+                0 2px 8px var(--shadow-warm),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .card-frame {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--amber);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+
+        /* Photo Card Variant */
+        .photo-card {
+            padding: 0;
+            background: var(--charcoal-dark);
+        }
+
+        .photo-card-image {
+            aspect-ratio: 16/10;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .photo-card-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.3) 100%),
+                linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4) 100%);
+        }
+
+        .photo-card-body {
+            padding: var(--space-5);
+            background: var(--paper);
+        }
+
+        /* Data Table */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--sepia);
+            background: var(--cream);
+            border-bottom: 2px solid var(--border-dark);
+        }
+
+        .table tr {
+            transition: background var(--transition-fast);
+        }
+
+        .table tbody tr:hover {
+            background: var(--cream);
+        }
+
+        .table tbody tr:hover td {
+            color: var(--charcoal);
+        }
+
+        /* Vintage Table Variant */
+        .table-vintage {
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px var(--shadow-warm);
+        }
+
+        .table-vintage th {
+            background: var(--sepia);
+            color: var(--paper);
+            border-bottom-color: var(--sepia-dark);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid currentColor;
+            background: transparent;
+        }
+
+        .badge-amber {
+            background: var(--amber);
+            color: var(--paper);
+            border-color: var(--amber);
+        }
+
+        .badge-sepia {
+            background: var(--sepia);
+            color: var(--paper);
+            border-color: var(--sepia);
+        }
+
+        .badge-faded {
+            color: var(--warm-gray);
+            border-color: var(--warm-gray-light);
+        }
+
+        .badge-warm {
+            background: var(--faded-orange);
+            color: var(--paper);
+            border-color: var(--faded-orange);
+        }
+
+        .badge-cool {
+            background: var(--faded-teal);
+            color: var(--paper);
+            border-color: var(--faded-teal);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* Spacing Demo */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--sepia);
+        }
+
+        .spacing-bar {
+            height: 28px;
+            background: linear-gradient(
+                90deg,
+                var(--amber) 0%,
+                var(--amber-light) 100%
+            );
+            border-radius: 2px;
+            box-shadow: 0 2px 4px var(--shadow-warm);
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--warm-gray);
+            width: 50px;
+        }
+
+        /* Type Scale Demo */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px solid var(--border-color);
+            padding: var(--space-4) 0;
+        }
+
+        .type-meta {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .type-size {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--amber);
+        }
+
+        .type-specs {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--warm-gray);
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                var(--border-color) 20%,
+                var(--border-color) 80%,
+                transparent
+            );
+            margin: var(--space-7) 0;
+        }
+
+        /* Film Strip Decoration */
+        .film-strip {
+            display: flex;
+            gap: var(--space-2);
+            padding: var(--space-4);
+            background: var(--charcoal-dark);
+            overflow-x: auto;
+        }
+
+        .film-strip-frame {
+            flex-shrink: 0;
+            width: 120px;
+            aspect-ratio: 3/2;
+            background: var(--paper);
+            padding: var(--space-1);
+            position: relative;
+        }
+
+        .film-strip-frame::before,
+        .film-strip-frame::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 4px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--charcoal-dark) 0px,
+                    var(--charcoal-dark) 6px,
+                    transparent 6px,
+                    transparent 10px
+                );
+        }
+
+        .film-strip-frame::before {
+            top: -6px;
+        }
+
+        .film-strip-frame::after {
+            bottom: -6px;
+        }
+
+        /* Vintage Print Decoration */
+        .print-border {
+            border: 8px solid var(--paper);
+            box-shadow:
+                0 0 0 1px var(--border-color),
+                0 4px 16px var(--shadow-warm);
+        }
+
+        /* Timestamp Style */
+        .timestamp {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--faded-orange);
+            letter-spacing: 0.05em;
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: var(--amber);
+        }
+
+        .footer p {
+            color: var(--sepia);
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            margin: 0 auto;
+        }
+
+        .footer-meta {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--warm-gray);
+            margin-top: var(--space-3);
+        }
+
+        /* Principles Block */
+        .principle-block {
+            position: relative;
+            padding-left: var(--space-6);
+        }
+
+        .principle-block::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(
+                to bottom,
+                var(--amber),
+                var(--amber-light)
+            );
+        }
+
+        .principle-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--cream);
+            border: 2px solid var(--amber);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-4);
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--amber);
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+
+        /* Light Leak Utility */
+        .light-leak {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light-leak::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                var(--leak-orange),
+                transparent 60%
+            );
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Color Temperature Overlay */
+        .warm-cast {
+            filter: sepia(10%) saturate(90%);
+        }
+
+        /* Faded Photo Effect */
+        .faded {
+            filter: contrast(95%) brightness(102%) saturate(85%);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-4);
+            }
+
+            .header-meta {
+                text-align: left;
+            }
+
+            .type-row {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+
+            .type-meta {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div>
+                    <span class="header-badge">Design System</span>
+                    <h1>Film Grain</h1>
+                </div>
+                <div class="header-meta">
+                    <p class="small" style="color: var(--sepia); margin-bottom: var(--space-2); font-style: italic;">
+                        Analog warmth.<br>
+                        Nostalgic imperfection.<br>
+                        Timeless beauty.
+                    </p>
+                    <span class="timestamp">Exposed: 2024</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">01 / Colors</p>
+                <h2>Color Palette</h2>
+                <p class="lead">Muted, warm tones inspired by Kodak Portra and Fujifilm stocks. Faded elegance with amber undertones.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Base Tones</h3>
+            <div class="grid" style="margin-bottom: var(--space-7);">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--paper); color: var(--charcoal);">
+                        <span class="color-name">Paper</span>
+                        <span class="color-value">#FAF6ED</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--cream); color: var(--charcoal);">
+                        <span class="color-name">Cream</span>
+                        <span class="color-value">#F5F0E6</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--charcoal); color: var(--paper);">
+                        <span class="color-name">Charcoal</span>
+                        <span class="color-value">#3D3A35</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--charcoal-dark); color: var(--paper);">
+                        <span class="color-name">Deep Shadow</span>
+                        <span class="color-value">#2A2825</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Warm Accents</h3>
+            <div class="grid" style="margin-bottom: var(--space-7);">
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--amber); color: var(--paper);">
+                        <span class="color-name">Amber</span>
+                        <span class="color-value">#D4A066</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--amber-light); color: var(--charcoal);">
+                        <span class="color-name">Amber Light</span>
+                        <span class="color-value">#E8C898</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--sepia); color: var(--paper);">
+                        <span class="color-name">Sepia</span>
+                        <span class="color-value">#8B7355</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-block" style="background: var(--sepia-dark); color: var(--paper);">
+                        <span class="color-name">Sepia Dark</span>
+                        <span class="color-value">#6B5343</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Faded Film Tones</h3>
+            <div class="grid">
+                <div class="col-3">
+                    <div class="polaroid">
+                        <div class="polaroid-image" style="background: var(--faded-red);"></div>
+                        <span class="polaroid-label">Faded Red</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid">
+                        <div class="polaroid-image" style="background: var(--faded-orange);"></div>
+                        <span class="polaroid-label">Faded Orange</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid">
+                        <div class="polaroid-image" style="background: var(--faded-green);"></div>
+                        <span class="polaroid-label">Faded Green</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid">
+                        <div class="polaroid-image" style="background: var(--faded-teal);"></div>
+                        <span class="polaroid-label">Faded Teal</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">02 / Typography</p>
+                <h2>Type System</h2>
+                <p class="lead">Special Elite for display text evokes typewriter nostalgia. Source Serif 4 for readable body copy with classic elegance.</p>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Display</p>
+                    <p class="type-specs">Special Elite / 64px</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 3rem; line-height: 1.2;">Analog Dreams</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H1</p>
+                    <p class="type-specs">Special Elite / 40px</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 2.5rem;">Heading One</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H2</p>
+                    <p class="type-specs">Special Elite / 32px</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 2rem;">Heading Two</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">H3</p>
+                    <p class="type-specs">Special Elite / 22px</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 1.35rem;">Heading Three</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Body</p>
+                    <p class="type-specs">Source Serif 4 / 16px</p>
+                </div>
+                <div style="max-width: 50ch;">The warmth of analog photography lives in every imperfection. Like memories fading at the edges, each frame tells a story that digital precision cannot capture.</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Caption</p>
+                    <p class="type-specs">DM Mono / 12px / Uppercase</p>
+                </div>
+                <div class="caption">Frame 24 / Kodak Portra 400 / f/2.8</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-size">Mono</p>
+                    <p class="type-specs">DM Mono / 14px</p>
+                </div>
+                <div class="mono">ISO 400 | 1/125s | 50mm</div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">03 / Spacing</p>
+                <h2>Spacing Scale</h2>
+                <p class="lead">A harmonious scale based on 4px increments. Generous whitespace lets content breathe like light through a lens.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">4px</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">xs</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">8px</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">sm</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">16px</span>
+                <div class="spacing-bar" style="width: 64px;"></div>
+                <span class="spacing-value">md</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">24px</span>
+                <div class="spacing-bar" style="width: 96px;"></div>
+                <span class="spacing-value">lg</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">32px</span>
+                <div class="spacing-bar" style="width: 128px;"></div>
+                <span class="spacing-value">xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">48px</span>
+                <div class="spacing-bar" style="width: 192px;"></div>
+                <span class="spacing-value">2xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">64px</span>
+                <div class="spacing-bar" style="width: 256px;"></div>
+                <span class="spacing-value">3xl</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">96px</span>
+                <div class="spacing-bar" style="width: 320px;"></div>
+                <span class="spacing-value">4xl</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">04 / Buttons</p>
+                <h2>Buttons</h2>
+                <p class="lead">Tactile buttons with warm tones and subtle animations. Each click feels deliberate, like pressing a camera shutter.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Button Variants</h3>
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-warm">Warm</button>
+                <button class="btn btn-faded">Faded</button>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Button Sizes</h3>
+            <div class="button-row">
+                <button class="btn btn-sm">Small</button>
+                <button class="btn">Medium</button>
+                <button class="btn btn-lg">Large</button>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Primary Sizes</h3>
+            <div class="button-row">
+                <button class="btn btn-primary btn-sm">Upload Film</button>
+                <button class="btn btn-primary">Develop Roll</button>
+                <button class="btn btn-primary btn-lg">View Gallery</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">05 / Forms</p>
+                <h2>Form Elements</h2>
+                <p class="lead">Clean inputs with warm focus states. Every field feels like writing in a vintage notebook.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Photographer Name</label>
+                        <input type="text" class="input-field" placeholder="Enter your name">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Email Address</label>
+                        <input type="email" class="input-field" placeholder="you@darkroom.com">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Film Stock</label>
+                        <select class="input-field select-field">
+                            <option>Kodak Portra 400</option>
+                            <option>Kodak Gold 200</option>
+                            <option>Fujifilm Pro 400H</option>
+                            <option>Ilford HP5 Plus</option>
+                            <option>CineStill 800T</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Exposure Date</label>
+                        <input type="text" class="input-field" placeholder="MM/DD/YYYY">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Notes</label>
+                        <textarea class="input-field" placeholder="Describe your shot, lighting conditions, mood..."></textarea>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Processing Options</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" checked>
+                                Push processing (+1 stop)
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input">
+                                Cross processing
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input">
+                                Border prints
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Print Size</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="radio" name="size" class="checkbox-input radio-input" checked>
+                                4x6 Standard
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="radio" name="size" class="checkbox-input radio-input">
+                                5x7 Medium
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="radio" name="size" class="checkbox-input radio-input">
+                                8x10 Large
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">06 / Cards</p>
+                <h2>Cards</h2>
+                <p class="lead">Content containers with subtle light leak effects. Like photographs waiting to be discovered in an old shoebox.</p>
+            </div>
+
+            <div class="grid" style="margin-bottom: var(--space-7);">
+                <div class="col-4">
+                    <div class="card card-vintage">
+                        <span class="card-frame">Frame 01</span>
+                        <h3>Golden Hour</h3>
+                        <p>The magic hour when warm light wraps everything in amber. Shadows stretch long and colors deepen.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card card-vintage">
+                        <span class="card-frame">Frame 02</span>
+                        <h3>Light Leaks</h3>
+                        <p>Happy accidents where light sneaks in. Unpredictable streaks of color that add character.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card card-vintage">
+                        <span class="card-frame">Frame 03</span>
+                        <h3>Grain Structure</h3>
+                        <p>The organic texture of silver halide crystals. Each frame unique, never perfectly smooth.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-5);">Photo Cards</h3>
+            <div class="grid">
+                <div class="col-6">
+                    <div class="photo-card">
+                        <div class="photo-card-image" style="background: linear-gradient(135deg, var(--faded-orange), var(--faded-red), var(--sepia));"></div>
+                        <div class="photo-card-body">
+                            <span class="timestamp" style="display: block; margin-bottom: var(--space-2);">Aug 1985</span>
+                            <h3>Summer Memories</h3>
+                            <p>Captured on Kodak Gold 200. The colors fade but the feeling remains.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="photo-card">
+                        <div class="photo-card-image" style="background: linear-gradient(135deg, var(--faded-teal), var(--faded-green), var(--sepia-light));"></div>
+                        <div class="photo-card-body">
+                            <span class="timestamp" style="display: block; margin-bottom: var(--space-2);">Dec 1992</span>
+                            <h3>Mountain Light</h3>
+                            <p>Fujifilm Velvia slides. The greens were never quite this vivid in person.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">07 / Data Table</p>
+                <h2>Data Table</h2>
+                <p class="lead">Organized information with vintage warmth. Like a photographer's logbook tracking every roll.</p>
+            </div>
+
+            <table class="table table-vintage">
+                <thead>
+                    <tr>
+                        <th>Film Stock</th>
+                        <th>Type</th>
+                        <th>ISO</th>
+                        <th>Character</th>
+                        <th class="text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Kodak Portra 400</td>
+                        <td>Color Negative</td>
+                        <td>400</td>
+                        <td>Warm skin tones, fine grain</td>
+                        <td class="text-right"><span class="badge badge-amber">In Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td>Kodak Gold 200</td>
+                        <td>Color Negative</td>
+                        <td>200</td>
+                        <td>Warm, saturated colors</td>
+                        <td class="text-right"><span class="badge badge-amber">In Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td>Fujifilm Pro 400H</td>
+                        <td>Color Negative</td>
+                        <td>400</td>
+                        <td>Soft pastels, fine grain</td>
+                        <td class="text-right"><span class="badge badge-sepia">Discontinued</span></td>
+                    </tr>
+                    <tr>
+                        <td>Ilford HP5 Plus</td>
+                        <td>B&W Negative</td>
+                        <td>400</td>
+                        <td>Classic grain, high contrast</td>
+                        <td class="text-right"><span class="badge badge-amber">In Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td>CineStill 800T</td>
+                        <td>Color Negative</td>
+                        <td>800</td>
+                        <td>Tungsten balanced, halation</td>
+                        <td class="text-right"><span class="badge badge-faded">Limited</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">08 / Badges</p>
+                <h2>Badges</h2>
+                <p class="lead">Status indicators with analog warmth. Small labels that tell the story of each frame.</p>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Status Badges</h3>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge">Default</span>
+                <span class="badge badge-amber">In Stock</span>
+                <span class="badge badge-sepia">Developed</span>
+                <span class="badge badge-faded">Expired</span>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Color Badges</h3>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge badge-warm">Warm</span>
+                <span class="badge badge-cool">Cool</span>
+                <span class="badge" style="background: var(--faded-green); color: var(--paper); border-color: var(--faded-green);">Natural</span>
+                <span class="badge" style="background: var(--faded-purple); color: var(--paper); border-color: var(--faded-purple);">Creative</span>
+            </div>
+
+            <h3 style="margin-bottom: var(--space-4);">Film Type Badges</h3>
+            <div class="badge-row">
+                <span class="badge badge-amber">35mm</span>
+                <span class="badge badge-sepia">120 Medium</span>
+                <span class="badge badge-faded">4x5 Large</span>
+                <span class="badge" style="background: var(--charcoal); color: var(--paper); border-color: var(--charcoal);">Instant</span>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">09 / Principles</p>
+                <h2>Design Principles</h2>
+                <p class="lead">The philosophy behind the aesthetic. Embracing imperfection and the beauty of analog.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">01</div>
+                        <h3>Embrace Imperfection</h3>
+                        <p>Film grain, light leaks, and color shifts are not flaws but features. They add character and humanity that perfect digital reproduction cannot match. Let the imperfections tell their own story.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">02</div>
+                        <h3>Warm Over Clinical</h3>
+                        <p>Digital coldness gives way to analog warmth. Amber tints and sepia tones evoke memory and emotion. The goal is not accuracy but feeling. Colors should feel remembered, not recorded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">03</div>
+                        <h3>Texture is Essential</h3>
+                        <p>Every surface should have presence. The grain overlay reminds us that we are looking at something physical, something that existed in the world. Smoothness is suspicious; texture is trustworthy.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">04</div>
+                        <h3>Time-Worn Beauty</h3>
+                        <p>New things are suspicious. Designs should feel like they have history, like they have been loved and used. Faded colors suggest years of exposure to light and memory. Age adds value.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">05</div>
+                        <h3>Deliberate Limitation</h3>
+                        <p>Constraints breed creativity. The 36-exposure limit of a film roll forces intentionality. Apply this mindset: every element should earn its place. Less but better. Meaningful over abundant.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">06</div>
+                        <h3>Nostalgic Future</h3>
+                        <p>Honor the past while serving the present. These aesthetics are not about living in the past but bringing its warmth forward. Technology changes; the human desire for beauty and connection does not.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Film Strip Decoration -->
+        <div class="film-frame" style="margin-top: var(--space-7);">
+            <div class="film-frame-inner">
+                <p class="text-center" style="margin-bottom: 0; font-style: italic; color: var(--sepia);">
+                    "There is something about the tactile quality of film, the grain, the color shifts, the happy accidents. It teaches you to see differently, to accept imperfection as beauty."
+                </p>
+                <p class="text-center caption" style="margin-top: var(--space-4); margin-bottom: 0;">
+                    On the philosophy of analog photography
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Film Grain Design System</p>
+            <p class="footer-meta">Capturing the warmth of analog in a digital world</p>
+            <p class="footer-meta" style="margin-top: var(--space-4);">
+                <span class="timestamp">Kodak Portra 400 | f/2.8 | 1/125s | 50mm</span>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
