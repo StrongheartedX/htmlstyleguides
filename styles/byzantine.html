@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Byzantine Mosaic Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Uncial+Antiqua&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-display: 'Uncial Antiqua', cursive;
+            --font-heading: 'Cinzel', serif;
+            --font-body: 'Cormorant Garamond', serif;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* Byzantine Color Palette */
+            --gold: #d4a012;
+            --gold-light: #f0c848;
+            --gold-dark: #a67c00;
+            --gold-shimmer: linear-gradient(135deg, #f0c848 0%, #d4a012 25%, #a67c00 50%, #d4a012 75%, #f0c848 100%);
+            --imperial-purple: #4a0e4e;
+            --purple-light: #6b2d6e;
+            --purple-dark: #2d0a30;
+            --deep-crimson: #8b1538;
+            --crimson-light: #b22222;
+            --crimson-dark: #5c0f24;
+            --lapis-blue: #1e3a5f;
+            --lapis-light: #2e5a8f;
+            --lapis-dark: #0f1e33;
+            --emerald: #1a5c3a;
+            --emerald-light: #2d8c5a;
+            --emerald-dark: #0d3320;
+            --ivory: #f5f0e1;
+            --cream: #e8dcc4;
+            --dark-bg: #1a1410;
+            --mosaic-grout: #2a2218;
+
+            /* Semantic Colors */
+            --text-primary: var(--ivory);
+            --text-secondary: rgba(245, 240, 225, 0.75);
+            --text-gold: var(--gold-light);
+            --bg-primary: var(--dark-bg);
+            --bg-secondary: var(--mosaic-grout);
+            --accent-primary: var(--gold);
+            --accent-secondary: var(--imperial-purple);
+            --accent-tertiary: var(--deep-crimson);
+
+            /* Shadows & Effects */
+            --shadow-gold: 0 0 30px rgba(212, 160, 18, 0.4);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shimmer-animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes tesserae-shimmer {
+            0%, 100% { opacity: 0.03; }
+            50% { opacity: 0.06; }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1.125rem;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           TESSERAE MOSAIC BACKGROUND PATTERN
+           ============================================ */
+        .tesserae-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-color: var(--dark-bg);
+            animation: tesserae-shimmer 4s ease-in-out infinite;
+        }
+
+        .tesserae-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                /* Tesserae grid pattern */
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(212, 160, 18, 0.03) 8px,
+                    rgba(212, 160, 18, 0.03) 9px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(212, 160, 18, 0.03) 8px,
+                    rgba(212, 160, 18, 0.03) 9px
+                );
+        }
+
+        .tesserae-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(ellipse at 20% 30%, rgba(212, 160, 18, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(212, 160, 18, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(74, 14, 78, 0.05) 0%, transparent 60%);
+        }
+
+        /* Gold shimmer overlay */
+        .gold-shimmer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.02;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(240, 200, 72, 0.3) 45%,
+                rgba(240, 200, 72, 0.5) 50%,
+                rgba(240, 200, 72, 0.3) 55%,
+                transparent 70%
+            );
+            background-size: 400% 400%;
+            animation: var(--shimmer-animation);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-6);
+        }
+
+        /* ============================================
+           HEADER WITH MANDORLA AND SACRED STYLING
+           ============================================ */
+        .header {
+            text-align: center;
+            padding: var(--space-9) var(--space-6);
+            margin-bottom: var(--space-8);
+            position: relative;
+        }
+
+        /* Mandorla (almond halo) shape */
+        .header-mandorla {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(500px, 85%);
+            height: 120%;
+            pointer-events: none;
+        }
+
+        .header-mandorla::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--gold);
+            border-radius: 50% / 30%;
+            opacity: 0.4;
+        }
+
+        .header-mandorla::after {
+            content: '';
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            border: 1px solid var(--gold);
+            border-radius: 50% / 30%;
+            opacity: 0.2;
+        }
+
+        .header-ornament {
+            position: relative;
+            margin-bottom: var(--space-6);
+        }
+
+        .header-ornament svg {
+            width: 180px;
+            height: 80px;
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--gold-light);
+            text-shadow:
+                0 0 40px rgba(212, 160, 18, 0.6),
+                0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: var(--space-4);
+            position: relative;
+        }
+
+        .header-subtitle {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+        }
+
+        /* Chi-Rho style cross ornament */
+        .header-cross {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-top: var(--space-6);
+        }
+
+        .header-cross span {
+            width: 12px;
+            height: 12px;
+            background: var(--gold);
+            clip-path: polygon(
+                50% 0%, 61% 35%, 98% 35%, 68% 57%,
+                79% 91%, 50% 70%, 21% 91%, 32% 57%,
+                2% 35%, 39% 35%
+            );
+        }
+
+        .header-cross span:nth-child(2) {
+            width: 20px;
+            height: 20px;
+            background: var(--deep-crimson);
+        }
+
+        /* ============================================
+           GREEK KEY BORDER PATTERN
+           ============================================ */
+        .greek-key-border {
+            position: relative;
+            padding: 4px;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+        }
+
+        .greek-key-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 0h8v4H4v4H0V0zm12 0h8v8h-4V4h-4V0zm12 0h8v4h-4v4h-4V0zm12 0h8v8h-4V4h-4V0z' fill='%231a1410'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+            background-position: center;
+        }
+
+        /* ============================================
+           FRAME WITH MOSAIC TEXTURE
+           ============================================ */
+        .frame {
+            position: relative;
+            padding: var(--space-7);
+            margin-bottom: var(--space-8);
+            background:
+                linear-gradient(135deg, rgba(42, 34, 24, 0.95) 0%, rgba(26, 20, 16, 0.98) 100%);
+            border: 3px solid var(--gold);
+            box-shadow:
+                inset 0 0 60px rgba(212, 160, 18, 0.1),
+                0 0 40px rgba(212, 160, 18, 0.2);
+        }
+
+        .frame::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 160, 18, 0.3);
+            pointer-events: none;
+        }
+
+        /* Mosaic tile texture overlay */
+        .frame::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 6px,
+                    rgba(0, 0, 0, 0.1) 6px,
+                    rgba(0, 0, 0, 0.1) 7px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 6px,
+                    rgba(0, 0, 0, 0.1) 6px,
+                    rgba(0, 0, 0, 0.1) 7px
+                );
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* Interlocking circle corners */
+        .circle-corners {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            pointer-events: none;
+        }
+
+        .circle-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+        }
+
+        .circle-corner svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .circle-corner-tl { top: 0; left: 0; }
+        .circle-corner-tr { top: 0; right: 0; }
+        .circle-corner-bl { bottom: 0; left: 0; }
+        .circle-corner-br { bottom: 0; right: 0; }
+
+        /* ============================================
+           SECTION STYLING
+           ============================================ */
+        .section {
+            margin-bottom: var(--space-9);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: var(--gold);
+            opacity: 0.3;
+            margin-bottom: var(--space-2);
+            line-height: 1;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            text-shadow: 0 0 20px rgba(212, 160, 18, 0.3);
+            margin-bottom: var(--space-4);
+        }
+
+        /* Interlocking circles divider */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .section-divider svg {
+            width: 50px;
+            height: 50px;
+        }
+
+        /* ============================================
+           COLOR PALETTE - JEWEL TONES WITH SHIMMER
+           ============================================ */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-swatch {
+            text-align: center;
+            padding: var(--space-5);
+            background: rgba(42, 34, 24, 0.8);
+            border: 1px solid rgba(212, 160, 18, 0.3);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .color-swatch::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 4px,
+                    rgba(0, 0, 0, 0.05) 4px,
+                    rgba(0, 0, 0, 0.05) 5px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 4px,
+                    rgba(0, 0, 0, 0.05) 4px,
+                    rgba(0, 0, 0, 0.05) 5px
+                );
+            pointer-events: none;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-gold);
+            border-color: var(--gold);
+        }
+
+        .color-preview {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto var(--space-4);
+            position: relative;
+            border: 2px solid rgba(212, 160, 18, 0.5);
+            /* Octagonal shape like mosaic tesserae */
+            clip-path: polygon(
+                30% 0%, 70% 0%, 100% 30%, 100% 70%,
+                70% 100%, 30% 100%, 0% 70%, 0% 30%
+            );
+            transition: transform 0.4s ease;
+        }
+
+        .color-preview.shimmer {
+            background-size: 200% 200%;
+            animation: var(--shimmer-animation);
+        }
+
+        .color-swatch:hover .color-preview {
+            transform: rotate(22.5deg);
+        }
+
+        .color-name {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ivory);
+            margin-bottom: var(--space-1);
+        }
+
+        .color-value {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        /* ============================================
+           TYPOGRAPHY - SACRED TEXT STYLING
+           ============================================ */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-7);
+        }
+
+        .type-specimen {
+            text-align: center;
+            padding: var(--space-6);
+            border-bottom: 1px solid rgba(212, 160, 18, 0.15);
+            position: relative;
+        }
+
+        .type-specimen:last-child {
+            border-bottom: none;
+        }
+
+        .type-label {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--deep-crimson);
+            margin-bottom: var(--space-4);
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            color: var(--gold-light);
+            text-shadow:
+                0 0 40px rgba(212, 160, 18, 0.5),
+                0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .type-heading {
+            font-family: var(--font-heading);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--ivory);
+        }
+
+        .type-subheading {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+            font-size: 1.25rem;
+            font-weight: 400;
+            line-height: 1.9;
+            max-width: 65ch;
+            margin: 0 auto;
+            color: var(--text-secondary);
+        }
+
+        .type-sacred {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--deep-crimson);
+            text-shadow: 0 0 20px rgba(139, 21, 56, 0.4);
+        }
+
+        /* Drop cap styling */
+        .drop-cap::first-letter {
+            font-family: var(--font-display);
+            font-size: 4em;
+            float: left;
+            line-height: 0.8;
+            padding-right: var(--space-3);
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 160, 18, 0.5);
+        }
+
+        /* ============================================
+           BUTTONS - MOSAIC TEXTURE
+           ============================================ */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-6);
+        }
+
+        .btn {
+            font-family: var(--font-heading);
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: var(--space-4) var(--space-7);
+            border: 2px solid var(--gold);
+            background: transparent;
+            color: var(--gold);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* Mosaic texture on buttons */
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(212, 160, 18, 0.1) 3px,
+                    rgba(212, 160, 18, 0.1) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(212, 160, 18, 0.1) 3px,
+                    rgba(212, 160, 18, 0.1) 4px
+                );
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--dark-bg);
+            border-color: var(--gold-light);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn:hover::after {
+            width: 300%;
+            height: 300%;
+        }
+
+        .btn-filled {
+            background: var(--gold-shimmer);
+            background-size: 200% 200%;
+            color: var(--dark-bg);
+            border-color: var(--gold-light);
+        }
+
+        .btn-filled:hover {
+            animation: var(--shimmer-animation);
+        }
+
+        .btn-filled::after {
+            background: var(--dark-bg);
+        }
+
+        .btn-filled:hover {
+            color: var(--gold);
+        }
+
+        .btn-purple {
+            border-color: var(--imperial-purple);
+            color: var(--purple-light);
+        }
+
+        .btn-purple::after {
+            background: var(--imperial-purple);
+        }
+
+        .btn-purple:hover {
+            color: var(--ivory);
+            border-color: var(--purple-light);
+        }
+
+        .btn-crimson {
+            border-color: var(--deep-crimson);
+            color: var(--crimson-light);
+        }
+
+        .btn-crimson::after {
+            background: var(--deep-crimson);
+        }
+
+        .btn-crimson:hover {
+            color: var(--ivory);
+            border-color: var(--crimson-light);
+        }
+
+        /* Octagonal button */
+        .btn-octagon {
+            clip-path: polygon(
+                20% 0%, 80% 0%, 100% 20%, 100% 80%,
+                80% 100%, 20% 100%, 0% 80%, 0% 20%
+            );
+            padding: var(--space-5) var(--space-8);
+        }
+
+        /* ============================================
+           FORM ELEMENTS
+           ============================================ */
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .input-group {
+            margin-bottom: var(--space-5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-4) var(--space-5);
+            font-family: var(--font-body);
+            font-size: 1.125rem;
+            font-weight: 400;
+            background: rgba(42, 34, 24, 0.9);
+            border: 2px solid rgba(212, 160, 18, 0.3);
+            color: var(--ivory);
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow:
+                var(--shadow-gold),
+                inset 0 0 30px rgba(212, 160, 18, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        /* Custom Select */
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: var(--space-4);
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid var(--gold);
+            border-bottom: 2px solid var(--gold);
+            pointer-events: none;
+        }
+
+        .select-field {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        /* ============================================
+           CARDS WITH GOLD MOSAIC BACKGROUNDS
+           ============================================ */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(42, 34, 24, 0.95) 0%, rgba(26, 20, 16, 0.98) 100%);
+            border: 2px solid rgba(212, 160, 18, 0.4);
+            padding: var(--space-6);
+            position: relative;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        /* Gold mosaic background effect */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(212, 160, 18, 0.02) 5px,
+                    rgba(212, 160, 18, 0.02) 6px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(212, 160, 18, 0.02) 5px,
+                    rgba(212, 160, 18, 0.02) 6px
+                );
+            pointer-events: none;
+        }
+
+        /* Top gold bar with shimmer */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gold-shimmer);
+            background-size: 200% 200%;
+            animation: var(--shimmer-animation);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--gold);
+            box-shadow:
+                var(--shadow-gold),
+                inset 0 0 60px rgba(212, 160, 18, 0.1);
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--space-5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gold-shimmer);
+            background-size: 200% 200%;
+            border: 2px solid var(--gold-light);
+            /* Mandorla shape */
+            border-radius: 50% / 30%;
+            transition: all 0.4s ease;
+            animation: var(--shimmer-animation);
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(212, 160, 18, 0.5);
+        }
+
+        .card-icon svg {
+            width: 36px;
+            height: 36px;
+            fill: var(--dark-bg);
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.375rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            margin-bottom: var(--space-3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-content {
+            font-family: var(--font-body);
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ============================================
+           DATA TABLE
+           ============================================ */
+        .table-wrapper {
+            overflow-x: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-body);
+        }
+
+        .table th,
+        .table td {
+            padding: var(--space-4) var(--space-5);
+            text-align: left;
+            border-bottom: 1px solid rgba(212, 160, 18, 0.2);
+        }
+
+        .table th {
+            font-family: var(--font-heading);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold);
+            background: rgba(212, 160, 18, 0.1);
+            border-bottom: 2px solid var(--gold);
+        }
+
+        .table tr:hover td {
+            background: rgba(212, 160, 18, 0.05);
+        }
+
+        .table td {
+            color: var(--text-secondary);
+            font-size: 1.0625rem;
+        }
+
+        /* ============================================
+           BADGES - MEDALLION STYLE
+           ============================================ */
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-4);
+        }
+
+        .badge {
+            font-family: var(--font-heading);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: var(--space-2) var(--space-4);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            background: rgba(212, 160, 18, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .badge:hover {
+            background: var(--gold);
+            color: var(--dark-bg);
+            box-shadow: 0 0 15px rgba(212, 160, 18, 0.4);
+        }
+
+        .badge-filled {
+            background: var(--gold);
+            color: var(--dark-bg);
+        }
+
+        .badge-filled:hover {
+            background: var(--gold-light);
+        }
+
+        .badge-purple {
+            border-color: var(--imperial-purple);
+            color: var(--purple-light);
+            background: rgba(74, 14, 78, 0.2);
+        }
+
+        .badge-purple:hover {
+            background: var(--imperial-purple);
+            color: var(--ivory);
+        }
+
+        .badge-crimson {
+            border-color: var(--deep-crimson);
+            color: var(--crimson-light);
+            background: rgba(139, 21, 56, 0.2);
+        }
+
+        .badge-crimson:hover {
+            background: var(--deep-crimson);
+            color: var(--ivory);
+        }
+
+        .badge-lapis {
+            border-color: var(--lapis-blue);
+            color: var(--lapis-light);
+            background: rgba(30, 58, 95, 0.2);
+        }
+
+        .badge-lapis:hover {
+            background: var(--lapis-blue);
+            color: var(--ivory);
+        }
+
+        /* Medallion badge (circular) */
+        .badge-medallion {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border-width: 3px;
+        }
+
+        /* ============================================
+           SPACING DEMO
+           ============================================ */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-family: var(--font-heading);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gold);
+            text-align: right;
+            letter-spacing: 0.1em;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: var(--gold-shimmer);
+            background-size: 200% 200%;
+            position: relative;
+            animation: var(--shimmer-animation);
+            border: 1px solid var(--gold-light);
+        }
+
+        /* ============================================
+           DIVIDERS
+           ============================================ */
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-4);
+            margin: var(--space-8) 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .divider-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .divider-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ============================================
+           DESIGN PRINCIPLES
+           ============================================ */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .principle {
+            padding: var(--space-5);
+            border-left: 3px solid var(--gold);
+            background: rgba(212, 160, 18, 0.05);
+        }
+
+        .principle-title {
+            font-family: var(--font-heading);
+            font-size: 1.125rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            margin-bottom: var(--space-2);
+        }
+
+        .principle-text {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            padding: var(--space-9) var(--space-6);
+            margin-top: var(--space-9);
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(400px, 80%);
+            height: 3px;
+            background: var(--gold-shimmer);
+            background-size: 200% 200%;
+            animation: var(--shimmer-animation);
+        }
+
+        .footer-ornament {
+            margin-bottom: var(--space-6);
+        }
+
+        .footer-ornament svg {
+            width: 100px;
+            height: 100px;
+        }
+
+        .footer-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--gold-light);
+            text-shadow: 0 0 30px rgba(212, 160, 18, 0.5);
+            margin-bottom: var(--space-4);
+        }
+
+        .footer-text {
+            font-family: var(--font-body);
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-7) var(--space-4);
+            }
+
+            .header h1 {
+                letter-spacing: 0.05em;
+            }
+
+            .frame {
+                padding: var(--space-5);
+            }
+
+            .button-grid {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================
+           UTILITY CLASSES
+           ============================================ */
+        .text-gold { color: var(--gold-light); }
+        .text-purple { color: var(--purple-light); }
+        .text-crimson { color: var(--crimson-light); }
+        .text-lapis { color: var(--lapis-light); }
+        .text-center { text-align: center; }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-6 { margin-bottom: var(--space-6); }
+    </style>
+</head>
+<body>
+    <!-- Tesserae Mosaic Background -->
+    <div class="tesserae-bg"></div>
+    <div class="gold-shimmer-overlay"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-mandorla"></div>
+            <div class="header-ornament">
+                <svg viewBox="0 0 180 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Chi-Rho inspired symbol -->
+                    <circle cx="90" cy="40" r="25" fill="none" stroke="#d4a012" stroke-width="2"/>
+                    <circle cx="90" cy="40" r="20" fill="none" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <line x1="90" y1="10" x2="90" y2="70" stroke="#d4a012" stroke-width="2"/>
+                    <line x1="65" y1="30" x2="115" y2="50" stroke="#d4a012" stroke-width="2"/>
+                    <circle cx="90" cy="40" r="6" fill="#8b1538"/>
+                    <!-- Side ornaments -->
+                    <circle cx="30" cy="40" r="8" fill="none" stroke="#d4a012" stroke-width="1.5"/>
+                    <circle cx="30" cy="40" r="4" fill="#4a0e4e"/>
+                    <circle cx="150" cy="40" r="8" fill="none" stroke="#d4a012" stroke-width="1.5"/>
+                    <circle cx="150" cy="40" r="4" fill="#1e3a5f"/>
+                    <!-- Connecting lines -->
+                    <line x1="0" y1="40" x2="22" y2="40" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <line x1="38" y1="40" x2="60" y2="40" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <line x1="120" y1="40" x2="142" y2="40" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <line x1="158" y1="40" x2="180" y2="40" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                </svg>
+            </div>
+            <h1>Byzantine</h1>
+            <p class="header-subtitle">Sacred Splendor of Constantinople</p>
+            <div class="header-cross">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </header>
+
+        <!-- Greek Key Border Demo -->
+        <div class="greek-key-border" style="margin-bottom: var(--space-8);"></div>
+
+        <!-- Colors -->
+        <section class="section" id="colors">
+            <div class="section-header">
+                <div class="section-number">I</div>
+                <h2 class="section-title">Color Palette</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Interlocking circles -->
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#d4a012" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#d4a012"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="frame">
+                <div class="circle-corners">
+                    <div class="circle-corner circle-corner-tl">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#d4a012" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#d4a012" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#d4a012"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-tr">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#d4a012" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#d4a012" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#d4a012"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-bl">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#d4a012" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#d4a012" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#d4a012"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-br">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#d4a012" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#d4a012" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#d4a012"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-preview shimmer" style="background: var(--gold-shimmer);"></div>
+                        <p class="color-name">Sacred Gold</p>
+                        <p class="color-value">#D4A012</p>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--imperial-purple);"></div>
+                        <p class="color-name">Imperial Purple</p>
+                        <p class="color-value">#4A0E4E</p>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--deep-crimson);"></div>
+                        <p class="color-name">Deep Crimson</p>
+                        <p class="color-value">#8B1538</p>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--lapis-blue);"></div>
+                        <p class="color-name">Lapis Blue</p>
+                        <p class="color-value">#1E3A5F</p>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--emerald);"></div>
+                        <p class="color-name">Emerald</p>
+                        <p class="color-value">#1A5C3A</p>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--ivory);"></div>
+                        <p class="color-name">Ivory</p>
+                        <p class="color-value">#F5F0E1</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section" id="typography">
+            <div class="section-header">
+                <div class="section-number">II</div>
+                <h2 class="section-title">Typography</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#8b1538" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#8b1538" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#8b1538" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#8b1538"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="type-scale">
+                <div class="type-specimen">
+                    <p class="type-label">Display / Uncial Antiqua</p>
+                    <p class="type-display">GLORIA</p>
+                </div>
+                <div class="type-specimen">
+                    <p class="type-label">Heading / Cinzel</p>
+                    <p class="type-heading">Hagia Sophia</p>
+                </div>
+                <div class="type-specimen">
+                    <p class="type-label">Subheading</p>
+                    <p class="type-subheading">The Wisdom of God Made Manifest</p>
+                </div>
+                <div class="type-specimen">
+                    <p class="type-label">Body / Cormorant Garamond</p>
+                    <p class="type-body">The Byzantine Empire preserved and transformed the artistic traditions of the ancient world, creating a visual language of sacred splendor that would influence art for over a millennium. Through shimmering gold mosaics and hieratic imagery, Byzantine artists sought to manifest heaven on earth.</p>
+                </div>
+                <div class="type-specimen">
+                    <p class="type-label">Sacred Text</p>
+                    <p class="type-sacred">In Nomine Patris</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">III</div>
+                <h2 class="section-title">Spacing Scale</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#4a0e4e" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#4a0e4e" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#4a0e4e" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#4a0e4e"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="spacing-demo">
+                <div class="spacing-item">
+                    <span class="spacing-label">4px</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">8px</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">16px</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">24px</span>
+                    <div class="spacing-bar" style="width: 192px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">32px</span>
+                    <div class="spacing-bar" style="width: 256px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">48px</span>
+                    <div class="spacing-bar" style="width: 320px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">64px</span>
+                    <div class="spacing-bar" style="width: 400px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="divider">
+            <div class="divider-icon">
+                <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Cross with mandorla -->
+                    <ellipse cx="30" cy="30" rx="25" ry="28" fill="none" stroke="#d4a012" stroke-width="2"/>
+                    <line x1="30" y1="5" x2="30" y2="55" stroke="#d4a012" stroke-width="2"/>
+                    <line x1="10" y1="30" x2="50" y2="30" stroke="#d4a012" stroke-width="2"/>
+                    <circle cx="30" cy="30" r="8" fill="#8b1538"/>
+                    <circle cx="30" cy="30" r="4" fill="#d4a012"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <section class="section" id="buttons">
+            <div class="section-header">
+                <div class="section-number">IV</div>
+                <h2 class="section-title">Buttons</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#d4a012" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#d4a012"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="button-grid">
+                <button class="btn">Standard</button>
+                <button class="btn btn-filled">Sacred Gold</button>
+                <button class="btn btn-octagon">Octagon</button>
+            </div>
+
+            <div class="button-grid">
+                <button class="btn btn-purple">Imperial</button>
+                <button class="btn btn-crimson">Crimson</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section" id="forms">
+            <div class="section-header">
+                <div class="section-number">V</div>
+                <h2 class="section-title">Form Elements</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#1e3a5f" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#1e3a5f" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#1e3a5f"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="frame">
+                <div class="circle-corners">
+                    <div class="circle-corner circle-corner-tl">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#1e3a5f"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-tr">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#1e3a5f"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-bl">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#1e3a5f"/>
+                        </svg>
+                    </div>
+                    <div class="circle-corner circle-corner-br">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke="#1e3a5f" stroke-width="2"/>
+                            <circle cx="20" cy="20" r="8" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+                            <circle cx="20" cy="20" r="3" fill="#1e3a5f"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label class="input-label">Your Name</label>
+                        <input type="text" class="input-field" placeholder="Enter your name...">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Email Address</label>
+                        <input type="email" class="input-field" placeholder="you@example.com">
+                    </div>
+                </div>
+
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label class="input-label">Select Diocese</label>
+                        <div class="select-wrapper">
+                            <select class="input-field select-field">
+                                <option>Constantinople</option>
+                                <option>Alexandria</option>
+                                <option>Antioch</option>
+                                <option>Jerusalem</option>
+                                <option>Rome</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Your Message</label>
+                    <textarea class="input-field" placeholder="Compose your sacred message..."></textarea>
+                </div>
+
+                <div class="button-grid mt-6">
+                    <button class="btn btn-filled">Submit Petition</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section" id="cards">
+            <div class="section-header">
+                <div class="section-number">VI</div>
+                <h2 class="section-title">Cards</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#1a5c3a" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#1a5c3a" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#1a5c3a" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#1a5c3a"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 4L20 16L32 18L20 20L18 32L16 20L4 18L16 16Z"/>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Tesserae</h3>
+                    <p class="card-content">The individual tiles of glass, stone, and gold leaf that compose the luminous mosaics, each piece carefully set to catch and reflect divine light.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="18" cy="18" r="12"/>
+                            <circle cx="18" cy="18" r="6" fill="none" stroke="#1a1410" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Nimbus</h3>
+                    <p class="card-content">The golden halo surrounding sacred figures, symbolizing divine light and spiritual illumination radiating from the holy.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                            <ellipse cx="18" cy="18" rx="10" ry="14"/>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Mandorla</h3>
+                    <p class="card-content">The almond-shaped aureole enclosing figures of Christ or the Virgin, representing the intersection of heaven and earth.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">VII</div>
+                <h2 class="section-title">Data Table</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#d4a012" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#d4a012"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="frame">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Monument</th>
+                                <th>Location</th>
+                                <th>Founded</th>
+                                <th>Notable Feature</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Hagia Sophia</td>
+                                <td>Constantinople</td>
+                                <td>537 CE</td>
+                                <td>Massive dome, golden mosaics</td>
+                            </tr>
+                            <tr>
+                                <td>San Vitale</td>
+                                <td>Ravenna</td>
+                                <td>547 CE</td>
+                                <td>Justinian and Theodora mosaics</td>
+                            </tr>
+                            <tr>
+                                <td>Chora Church</td>
+                                <td>Constantinople</td>
+                                <td>1077 CE</td>
+                                <td>Anastasis fresco</td>
+                            </tr>
+                            <tr>
+                                <td>St. Mark's Basilica</td>
+                                <td>Venice</td>
+                                <td>1063 CE</td>
+                                <td>85,000 sq ft of mosaics</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">VIII</div>
+                <h2 class="section-title">Badges</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#8b1538" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#8b1538" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#8b1538" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#8b1538"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="badge-row">
+                <span class="badge">Sacred</span>
+                <span class="badge badge-filled">Imperial</span>
+                <span class="badge badge-purple">Tyrian</span>
+                <span class="badge badge-crimson">Martyr</span>
+                <span class="badge badge-lapis">Heavenly</span>
+                <span class="badge badge-medallion">IC</span>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">IX</div>
+                <h2 class="section-title">Design Principles</h2>
+                <div class="section-divider">
+                    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#4a0e4e" stroke-width="2"/>
+                        <circle cx="15" cy="25" r="12" fill="none" stroke="#4a0e4e" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="35" cy="25" r="12" fill="none" stroke="#4a0e4e" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="25" cy="25" r="6" fill="#4a0e4e"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="principles-grid">
+                <div class="principle">
+                    <h3 class="principle-title">Sacred Splendor</h3>
+                    <p class="principle-text">Every element should evoke the transcendent beauty of Byzantine churches. Gold dominates as the color of divine light, with jewel tones providing contrast and hierarchy.</p>
+                </div>
+                <div class="principle">
+                    <h3 class="principle-title">Hieratic Formality</h3>
+                    <p class="principle-text">Maintain ceremonial dignity through symmetry, centered compositions, and formal typography. The design should command reverence and contemplation.</p>
+                </div>
+                <div class="principle">
+                    <h3 class="principle-title">Tesserae Texture</h3>
+                    <p class="principle-text">Surfaces should suggest the handcrafted quality of mosaic work. Subtle grid patterns and shimmer effects evoke thousands of tiny tiles catching light.</p>
+                </div>
+                <div class="principle">
+                    <h3 class="principle-title">Interlocking Geometry</h3>
+                    <p class="principle-text">Use circles, mandorlas, and Greek key patterns to create visual unity. These forms represent cosmic order and the interconnection of heaven and earth.</p>
+                </div>
+                <div class="principle">
+                    <h3 class="principle-title">Imperial Authority</h3>
+                    <p class="principle-text">Purple and crimson convey power and martyrdom. Use these colors sparingly to denote importance and create visual hierarchy within the golden realm.</p>
+                </div>
+                <div class="principle">
+                    <h3 class="principle-title">Luminous Depth</h3>
+                    <p class="principle-text">Create the illusion of inner light through gradients, glows, and shimmer animations. Backgrounds should feel like they emanate golden radiance.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="divider">
+            <div class="divider-icon">
+                <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="30" cy="30" rx="25" ry="28" fill="none" stroke="#d4a012" stroke-width="2"/>
+                    <ellipse cx="30" cy="30" rx="18" ry="21" fill="none" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <circle cx="30" cy="30" r="10" fill="#4a0e4e"/>
+                    <circle cx="30" cy="30" r="5" fill="#d4a012"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-ornament">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Ornate cross in mandorla -->
+                    <ellipse cx="50" cy="50" rx="40" ry="45" fill="none" stroke="#d4a012" stroke-width="2"/>
+                    <ellipse cx="50" cy="50" rx="32" ry="37" fill="none" stroke="#d4a012" stroke-width="1" opacity="0.5"/>
+                    <line x1="50" y1="15" x2="50" y2="85" stroke="#d4a012" stroke-width="3"/>
+                    <line x1="20" y1="50" x2="80" y2="50" stroke="#d4a012" stroke-width="3"/>
+                    <circle cx="50" cy="50" r="12" fill="#8b1538"/>
+                    <circle cx="50" cy="50" r="6" fill="#d4a012"/>
+                    <!-- Corner decorations -->
+                    <circle cx="50" cy="20" r="4" fill="#4a0e4e"/>
+                    <circle cx="50" cy="80" r="4" fill="#4a0e4e"/>
+                    <circle cx="25" cy="50" r="4" fill="#1e3a5f"/>
+                    <circle cx="75" cy="50" r="4" fill="#1e3a5f"/>
+                </svg>
+            </div>
+            <h2 class="footer-title">Byzantine</h2>
+            <p class="footer-text">A design system inspired by the sacred mosaics and imperial grandeur of the Eastern Roman Empire, where gold tesserae caught the light of heaven.</p>
+        </footer>
+    </div>
+</body>
+</html>

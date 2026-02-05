@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Novel / Dating Sim - Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Quicksand:wght@400;500;600;700&family=Klee+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-nameplate: 'Cinzel', serif;
+            --font-dialog: 'Quicksand', sans-serif;
+            --font-japanese: 'Klee One', cursive;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* Soft Pastel Palette - Romantic Route */
+            --sakura: #ffb7c5;
+            --sakura-dark: #e8909f;
+            --lavender: #c8a2c8;
+            --sky: #87ceeb;
+            --cream: #fff8e7;
+            --gold: #d4af37;
+            --rose: #ff6b9d;
+            --blush: #ffd1dc;
+
+            /* Dramatic/Mystery Route */
+            --midnight: #1a1a2e;
+            --dusk: #16213e;
+            --twilight: #0f3460;
+            --crimson: #e94560;
+            --moonlight: rgba(255, 255, 255, 0.9);
+
+            /* UI Elements */
+            --dialog-bg: rgba(20, 20, 35, 0.85);
+            --dialog-border: rgba(255, 183, 197, 0.4);
+            --nameplate-bg: linear-gradient(135deg, var(--sakura) 0%, var(--lavender) 100%);
+            --choice-glow: 0 0 20px var(--sakura), 0 0 40px rgba(255, 183, 197, 0.3);
+            --heart-color: #ff6b9d;
+
+            --text-primary: #ffffff;
+            --text-dialog: #f0e6d3;
+            --text-muted: rgba(255, 255, 255, 0.6);
+
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+
+            --transition-fast: 0.2s ease;
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-dialog);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--midnight);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Dreamy Bokeh Background */
+        .bg-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg,
+                #1a1a2e 0%,
+                #2d1b4e 30%,
+                #4a3f6b 60%,
+                #695d87 100%
+            );
+            z-index: -3;
+        }
+
+        .bokeh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .bokeh-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.4;
+            animation: float-bokeh 15s ease-in-out infinite;
+        }
+
+        .bokeh-1 {
+            width: 300px;
+            height: 300px;
+            background: var(--sakura);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .bokeh-2 {
+            width: 200px;
+            height: 200px;
+            background: var(--lavender);
+            top: 60%;
+            right: 15%;
+            animation-delay: -5s;
+        }
+
+        .bokeh-3 {
+            width: 250px;
+            height: 250px;
+            background: var(--sky);
+            bottom: 20%;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        .bokeh-4 {
+            width: 180px;
+            height: 180px;
+            background: var(--gold);
+            top: 30%;
+            right: 25%;
+            animation-delay: -7s;
+            opacity: 0.25;
+        }
+
+        @keyframes float-bokeh {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -20px) scale(1.1); }
+            50% { transform: translate(-20px, 30px) scale(0.9); }
+            75% { transform: translate(-30px, -10px) scale(1.05); }
+        }
+
+        /* Falling Petals Effect */
+        .petals {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .petal {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: var(--sakura);
+            border-radius: 150% 0 150% 0;
+            opacity: 0.6;
+            animation: fall linear infinite;
+        }
+
+        .petal:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; }
+        .petal:nth-child(2) { left: 25%; animation-duration: 15s; animation-delay: -3s; }
+        .petal:nth-child(3) { left: 40%; animation-duration: 11s; animation-delay: -6s; }
+        .petal:nth-child(4) { left: 55%; animation-duration: 14s; animation-delay: -2s; }
+        .petal:nth-child(5) { left: 70%; animation-duration: 13s; animation-delay: -8s; }
+        .petal:nth-child(6) { left: 85%; animation-duration: 16s; animation-delay: -4s; }
+
+        @keyframes fall {
+            0% {
+                top: -20px;
+                transform: translateX(0) rotate(0deg);
+                opacity: 0.6;
+            }
+            100% {
+                top: 100%;
+                transform: translateX(100px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-5);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: var(--space-9) 0;
+            margin-bottom: var(--space-8);
+        }
+
+        .header h1 {
+            font-family: var(--font-nameplate);
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--cream);
+            text-shadow:
+                0 0 10px rgba(255, 183, 197, 0.5),
+                0 0 30px rgba(255, 183, 197, 0.3),
+                2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: var(--space-4);
+        }
+
+        .header-sub {
+            font-family: var(--font-dialog);
+            font-size: 1.25rem;
+            color: var(--sakura);
+            letter-spacing: 0.3em;
+            font-weight: 500;
+        }
+
+        .header-jp {
+            font-family: var(--font-japanese);
+            font-size: 1.5rem;
+            color: var(--lavender);
+            margin-top: var(--space-4);
+            opacity: 0.8;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: var(--space-9);
+            padding: var(--space-6);
+            background: rgba(26, 26, 46, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--dialog-border);
+            border-radius: var(--radius-lg);
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--nameplate-bg);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .section-title {
+            font-family: var(--font-nameplate);
+            font-size: 1.75rem;
+            color: var(--cream);
+            margin-bottom: var(--space-5);
+            letter-spacing: 0.05em;
+        }
+
+        .section-subtitle {
+            font-size: 0.875rem;
+            color: var(--sakura);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-3);
+            font-weight: 600;
+        }
+
+        /* Colors */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform var(--transition-fast);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+        }
+
+        .color-preview {
+            height: 80px;
+        }
+
+        .color-info {
+            padding: var(--space-3);
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--cream);
+        }
+
+        .color-value {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Typography */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-5);
+        }
+
+        .type-specimen {
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--sakura);
+        }
+
+        .type-label {
+            font-size: 0.75rem;
+            color: var(--sakura);
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+        }
+
+        .type-nameplate {
+            font-family: var(--font-nameplate);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--cream);
+            letter-spacing: 0.05em;
+        }
+
+        .type-dialog {
+            font-family: var(--font-dialog);
+            font-size: 1.125rem;
+            color: var(--text-dialog);
+            line-height: 1.8;
+        }
+
+        .type-japanese {
+            font-family: var(--font-japanese);
+            font-size: 1.25rem;
+            color: var(--lavender);
+        }
+
+        .type-system {
+            font-family: var(--font-dialog);
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* Spacing */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-size: 0.875rem;
+            color: var(--lavender);
+            font-family: monospace;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(90deg, var(--sakura), var(--lavender));
+            border-radius: var(--radius-sm);
+            box-shadow: 0 0 15px rgba(255, 183, 197, 0.3);
+        }
+
+        /* Buttons - Choice Selection Style */
+        .button-grid {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .choice-btn {
+            font-family: var(--font-dialog);
+            font-size: 1rem;
+            font-weight: 500;
+            padding: var(--space-4) var(--space-6);
+            background: rgba(20, 20, 35, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--dialog-border);
+            border-radius: var(--radius-md);
+            color: var(--text-dialog);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .choice-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--sakura);
+            transform: scaleY(0);
+            transition: transform var(--transition-base);
+        }
+
+        .choice-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                rgba(255, 183, 197, 0.1) 0%,
+                transparent 100%
+            );
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .choice-btn:hover {
+            border-color: var(--sakura);
+            box-shadow: var(--choice-glow);
+            transform: translateX(8px);
+        }
+
+        .choice-btn:hover::before {
+            transform: scaleY(1);
+        }
+
+        .choice-btn:hover::after {
+            opacity: 1;
+        }
+
+        .choice-btn.romantic {
+            border-color: rgba(255, 107, 157, 0.4);
+        }
+
+        .choice-btn.romantic:hover {
+            border-color: var(--rose);
+            box-shadow: 0 0 20px var(--rose), 0 0 40px rgba(255, 107, 157, 0.3);
+        }
+
+        .choice-btn.romantic::before {
+            background: var(--rose);
+        }
+
+        .choice-btn.mystery {
+            border-color: rgba(233, 69, 96, 0.4);
+        }
+
+        .choice-btn.mystery:hover {
+            border-color: var(--crimson);
+            box-shadow: 0 0 20px var(--crimson), 0 0 40px rgba(233, 69, 96, 0.3);
+        }
+
+        .choice-btn.mystery::before {
+            background: var(--crimson);
+        }
+
+        .choice-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background: var(--sakura);
+            color: var(--midnight);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: var(--space-3);
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--sakura);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-2);
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-4);
+            font-family: var(--font-dialog);
+            font-size: 1rem;
+            background: rgba(20, 20, 35, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--dialog-border);
+            border-radius: var(--radius-md);
+            color: var(--text-dialog);
+            transition: all var(--transition-base);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--sakura);
+            box-shadow: 0 0 20px rgba(255, 183, 197, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Character Profile Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .character-card {
+            background: rgba(20, 20, 35, 0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--dialog-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .character-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg,
+                rgba(255, 183, 197, 0.1) 0%,
+                transparent 50%
+            );
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .character-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--sakura);
+        }
+
+        .character-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-portrait {
+            height: 200px;
+            background: linear-gradient(180deg, var(--twilight) 0%, var(--dusk) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-portrait::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(transparent, rgba(20, 20, 35, 0.9));
+        }
+
+        .portrait-placeholder {
+            width: 120px;
+            height: 160px;
+            background: linear-gradient(135deg, var(--sakura) 0%, var(--lavender) 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--midnight);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-body {
+            padding: var(--space-5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-name {
+            font-family: var(--font-nameplate);
+            font-size: 1.25rem;
+            color: var(--cream);
+            margin-bottom: var(--space-1);
+        }
+
+        .card-role {
+            font-size: 0.875rem;
+            color: var(--sakura);
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-3);
+        }
+
+        .card-bio {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.8125rem;
+            color: var(--lavender);
+        }
+
+        /* Dialog Box - Signature VN Element */
+        .dialog-container {
+            position: relative;
+            margin: var(--space-6) 0;
+        }
+
+        .dialog-box {
+            background: var(--dialog-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--dialog-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            padding-top: var(--space-7);
+            position: relative;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .dialog-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--sakura) 20%,
+                var(--lavender) 50%,
+                var(--sakura) 80%,
+                transparent 100%
+            );
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .nameplate {
+            position: absolute;
+            top: -16px;
+            left: var(--space-5);
+            background: var(--nameplate-bg);
+            padding: var(--space-2) var(--space-5);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-nameplate);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--midnight);
+            letter-spacing: 0.05em;
+            box-shadow:
+                0 4px 15px rgba(255, 183, 197, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .dialog-text {
+            font-family: var(--font-dialog);
+            font-size: 1.125rem;
+            color: var(--text-dialog);
+            line-height: 1.9;
+            letter-spacing: 0.02em;
+        }
+
+        .dialog-text .highlight {
+            color: var(--sakura);
+            font-weight: 600;
+        }
+
+        .dialog-text .dramatic {
+            color: var(--crimson);
+            font-weight: 600;
+        }
+
+        /* Text Animation Indicator */
+        .text-indicator {
+            position: absolute;
+            bottom: var(--space-4);
+            right: var(--space-5);
+            width: 12px;
+            height: 12px;
+            animation: indicator-pulse 1s ease-in-out infinite;
+        }
+
+        .text-indicator::before,
+        .text-indicator::after {
+            content: '';
+            position: absolute;
+            border: solid var(--sakura);
+            border-width: 0 2px 2px 0;
+            padding: 3px;
+            transform: rotate(45deg);
+        }
+
+        .text-indicator::after {
+            top: 4px;
+            animation: indicator-bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes indicator-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes indicator-bounce {
+            0%, 100% { transform: rotate(45deg) translateY(0); }
+            50% { transform: rotate(45deg) translateY(3px); }
+        }
+
+        /* Portrait Frame Component */
+        .portrait-frame {
+            position: relative;
+            display: inline-block;
+        }
+
+        .portrait-frame-inner {
+            width: 200px;
+            height: 280px;
+            background: linear-gradient(180deg, var(--twilight) 0%, var(--midnight) 100%);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .portrait-frame::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(135deg, var(--sakura), var(--lavender), var(--sakura));
+            border-radius: calc(var(--radius-md) + 3px);
+            z-index: -1;
+        }
+
+        .portrait-frame::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(255, 183, 197, 0.3);
+            border-radius: calc(var(--radius-md) - 6px);
+            pointer-events: none;
+        }
+
+        .portrait-content {
+            font-size: 5rem;
+            text-shadow: 0 0 30px rgba(255, 183, 197, 0.5);
+        }
+
+        .portrait-frame-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-5);
+            justify-content: center;
+        }
+
+        /* Badges - Affection & Route Indicators */
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full, 9999px);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-affection {
+            background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 183, 197, 0.2));
+            border: 1px solid rgba(255, 107, 157, 0.4);
+            color: var(--rose);
+        }
+
+        .badge-affection .heart {
+            animation: heartbeat 1s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .badge-route {
+            background: rgba(200, 162, 200, 0.2);
+            border: 1px solid rgba(200, 162, 200, 0.4);
+            color: var(--lavender);
+        }
+
+        .badge-locked {
+            background: rgba(100, 100, 120, 0.2);
+            border: 1px solid rgba(100, 100, 120, 0.4);
+            color: var(--text-muted);
+        }
+
+        .badge-new {
+            background: linear-gradient(135deg, var(--sakura), var(--lavender));
+            border: none;
+            color: var(--midnight);
+        }
+
+        .badge-ending {
+            background: linear-gradient(135deg, var(--gold), #c5a028);
+            border: none;
+            color: var(--midnight);
+        }
+
+        /* Affection Meter */
+        .affection-meter {
+            margin-bottom: var(--space-5);
+        }
+
+        .affection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+
+        .affection-label {
+            font-size: 0.875rem;
+            color: var(--sakura);
+            font-weight: 600;
+        }
+
+        .affection-hearts {
+            display: flex;
+            gap: var(--space-1);
+        }
+
+        .heart {
+            color: var(--rose);
+            font-size: 1rem;
+        }
+
+        .heart.empty {
+            opacity: 0.3;
+        }
+
+        .affection-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-full, 9999px);
+            overflow: hidden;
+        }
+
+        .affection-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sakura), var(--rose));
+            border-radius: var(--radius-full, 9999px);
+            position: relative;
+            transition: width var(--transition-slow);
+        }
+
+        .affection-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Design Principles */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .principle-card {
+            padding: var(--space-5);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--sakura);
+        }
+
+        .principle-card h4 {
+            font-family: var(--font-nameplate);
+            font-size: 1.125rem;
+            color: var(--cream);
+            margin-bottom: var(--space-3);
+        }
+
+        .principle-card p {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Scene Transition */
+        .scene-transition {
+            margin: var(--space-7) 0;
+            text-align: center;
+            position: relative;
+            padding: var(--space-5) 0;
+        }
+
+        .scene-transition::before,
+        .scene-transition::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 100px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--sakura), transparent);
+        }
+
+        .scene-transition::before {
+            left: 0;
+        }
+
+        .scene-transition::after {
+            right: 0;
+        }
+
+        .scene-transition span {
+            font-family: var(--font-japanese);
+            color: var(--lavender);
+            padding: 0 var(--space-5);
+            letter-spacing: 0.3em;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-8) 0;
+            margin-top: var(--space-8);
+            border-top: 1px solid var(--dialog-border);
+        }
+
+        .footer-text {
+            font-family: var(--font-japanese);
+            font-size: 1.25rem;
+            color: var(--lavender);
+            margin-bottom: var(--space-3);
+        }
+
+        .footer-sub {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5);
+            }
+
+            .section {
+                padding: var(--space-5);
+            }
+
+            .dialog-box {
+                padding: var(--space-5);
+                padding-top: var(--space-6);
+            }
+
+            .portrait-frame-inner {
+                width: 150px;
+                height: 210px;
+            }
+
+            .portrait-content {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-scene"></div>
+    <div class="bokeh">
+        <div class="bokeh-circle bokeh-1"></div>
+        <div class="bokeh-circle bokeh-2"></div>
+        <div class="bokeh-circle bokeh-3"></div>
+        <div class="bokeh-circle bokeh-4"></div>
+    </div>
+    <div class="petals">
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="petal"></div>
+        <div class="petal"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>Visual Novel</h1>
+            <p class="header-sub">DESIGN SYSTEM</p>
+            <p class="header-jp">恋愛シミュレーション</p>
+        </header>
+
+        <!-- Colors -->
+        <section class="section">
+            <p class="section-subtitle">01 / Palette</p>
+            <h2 class="section-title">Color Palette</h2>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #ffb7c5, #e8909f);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Sakura</div>
+                        <div class="color-value">#ffb7c5</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #c8a2c8;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Lavender</div>
+                        <div class="color-value">#c8a2c8</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #87ceeb;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Sky</div>
+                        <div class="color-value">#87ceeb</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ff6b9d;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Rose</div>
+                        <div class="color-value">#ff6b9d</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #d4af37;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Gold</div>
+                        <div class="color-value">#d4af37</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #e94560;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Crimson</div>
+                        <div class="color-value">#e94560</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #1a1a2e;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Midnight</div>
+                        <div class="color-value">#1a1a2e</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #fff8e7;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Cream</div>
+                        <div class="color-value">#fff8e7</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <p class="section-subtitle">02 / Typography</p>
+            <h2 class="section-title">Type Scale</h2>
+            <div class="type-scale">
+                <div class="type-specimen">
+                    <div class="type-label">Nameplate / Cinzel / 28px</div>
+                    <div class="type-nameplate">Sakura Haruno</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-label">Dialog / Quicksand / 18px</div>
+                    <div class="type-dialog">The cherry blossoms are beautiful this time of year, aren't they? I always come to this spot when I need to clear my head...</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-label">Japanese / Klee One / 20px</div>
+                    <div class="type-japanese">あなたに会えてよかった...</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-label">System Text / Quicksand / 14px</div>
+                    <div class="type-system">Chapter 3 - A Chance Encounter | Auto Mode: ON | Text Speed: Normal</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <p class="section-subtitle">03 / Spacing</p>
+            <h2 class="section-title">Spacing Scale</h2>
+            <div class="spacing-demo">
+                <div class="spacing-item">
+                    <span class="spacing-label">4px</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">8px</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">16px</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">24px</span>
+                    <div class="spacing-bar" style="width: 192px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">32px</span>
+                    <div class="spacing-bar" style="width: 256px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">48px</span>
+                    <div class="spacing-bar" style="width: 320px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons / Choices -->
+        <section class="section">
+            <p class="section-subtitle">04 / Choices</p>
+            <h2 class="section-title">Choice Buttons</h2>
+            <p style="color: var(--text-muted); margin-bottom: var(--space-5);">Interactive story choices with glow effects on hover. Each choice leads to different story branches.</p>
+            <div class="button-grid">
+                <button class="choice-btn">
+                    <span class="choice-number">1</span>
+                    "I'd love to stay and watch the sunset with you."
+                </button>
+                <button class="choice-btn romantic">
+                    <span class="choice-number">2</span>
+                    "You look beautiful in this light..."
+                </button>
+                <button class="choice-btn mystery">
+                    <span class="choice-number">3</span>
+                    "Wait - did you hear that sound just now?"
+                </button>
+            </div>
+        </section>
+
+        <!-- Form Elements -->
+        <section class="section">
+            <p class="section-subtitle">05 / Forms</p>
+            <h2 class="section-title">Input Fields</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5);">
+                <div class="input-group">
+                    <label class="input-label">Character Name</label>
+                    <input type="text" class="input-field" placeholder="Enter your name...">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Birthday</label>
+                    <input type="text" class="input-field" placeholder="MM / DD">
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Personal Message</label>
+                <textarea class="input-field" style="min-height: 100px; resize: vertical;" placeholder="Write something..."></textarea>
+            </div>
+        </section>
+
+        <!-- Character Cards -->
+        <section class="section">
+            <p class="section-subtitle">06 / Characters</p>
+            <h2 class="section-title">Character Profile Cards</h2>
+            <div class="card-grid">
+                <div class="character-card">
+                    <div class="card-portrait">
+                        <div class="portrait-placeholder">*</div>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-name">Akira Tanaka</h3>
+                        <p class="card-role">Childhood Friend</p>
+                        <p class="card-bio">Your neighbor since elementary school. Reliable and kind, but hides a secret passion for writing poetry.</p>
+                        <div class="card-stats">
+                            <span class="stat">* Romance</span>
+                            <span class="stat">* 3 Endings</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="character-card">
+                    <div class="card-portrait">
+                        <div class="portrait-placeholder">*</div>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-name">Yuki Shirogane</h3>
+                        <p class="card-role">Student Council President</p>
+                        <p class="card-bio">The school's perfect student - top grades, elegant, and seemingly unapproachable. But is that really who she is?</p>
+                        <div class="card-stats">
+                            <span class="stat">* Mystery</span>
+                            <span class="stat">* 4 Endings</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="character-card">
+                    <div class="card-portrait">
+                        <div class="portrait-placeholder">*</div>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-name">Ren Kurosawa</h3>
+                        <p class="card-role">Transfer Student</p>
+                        <p class="card-bio">Mysterious and brooding, he arrived mid-semester with no explanation. His past seems to be catching up with him.</p>
+                        <div class="card-stats">
+                            <span class="stat">* Drama</span>
+                            <span class="stat">* 5 Endings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dialog Box -->
+        <section class="section">
+            <p class="section-subtitle">07 / Dialog</p>
+            <h2 class="section-title">Dialog Box Component</h2>
+            <p style="color: var(--text-muted); margin-bottom: var(--space-5);">The signature visual novel dialog box with semi-transparent blur, nameplate accent, and text continuation indicator.</p>
+
+            <div class="dialog-container">
+                <div class="dialog-box">
+                    <div class="nameplate">Sakura</div>
+                    <p class="dialog-text">
+                        I've been meaning to tell you something... <span class="highlight">something important</span>.
+                        Ever since that day at the festival, I haven't been able to stop thinking about what you said.
+                    </p>
+                    <div class="text-indicator"></div>
+                </div>
+            </div>
+
+            <div class="dialog-container">
+                <div class="dialog-box">
+                    <div class="nameplate">???</div>
+                    <p class="dialog-text">
+                        You shouldn't have come here. <span class="dramatic">This place... it's not safe.</span>
+                        If they find out you're looking for the truth, there's no telling what they'll do.
+                    </p>
+                    <div class="text-indicator"></div>
+                </div>
+            </div>
+
+            <h3 style="font-family: var(--font-nameplate); color: var(--cream); margin: var(--space-6) 0 var(--space-4);">Portrait Frames</h3>
+            <div class="portrait-frame-grid">
+                <div class="portrait-frame">
+                    <div class="portrait-frame-inner">
+                        <span class="portrait-content">*</span>
+                    </div>
+                </div>
+                <div class="portrait-frame">
+                    <div class="portrait-frame-inner">
+                        <span class="portrait-content">*</span>
+                    </div>
+                </div>
+                <div class="portrait-frame">
+                    <div class="portrait-frame-inner">
+                        <span class="portrait-content">*</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="section">
+            <p class="section-subtitle">08 / Status</p>
+            <h2 class="section-title">Badges & Indicators</h2>
+
+            <h4 style="color: var(--cream); margin-bottom: var(--space-3);">Route & Status Badges</h4>
+            <div class="badge-container">
+                <span class="badge badge-affection"><span class="heart">*</span> Affection +10</span>
+                <span class="badge badge-route">* Romance Route</span>
+                <span class="badge badge-route">* True End Available</span>
+                <span class="badge badge-new">NEW</span>
+                <span class="badge badge-ending">* Good Ending</span>
+                <span class="badge badge-locked">* Locked</span>
+            </div>
+
+            <h4 style="color: var(--cream); margin: var(--space-6) 0 var(--space-3);">Affection Meter</h4>
+            <div class="affection-meter">
+                <div class="affection-header">
+                    <span class="affection-label">Sakura - Affection Level</span>
+                    <div class="affection-hearts">
+                        <span class="heart">*</span>
+                        <span class="heart">*</span>
+                        <span class="heart">*</span>
+                        <span class="heart">*</span>
+                        <span class="heart empty">*</span>
+                    </div>
+                </div>
+                <div class="affection-bar">
+                    <div class="affection-fill" style="width: 78%;"></div>
+                </div>
+            </div>
+
+            <div class="affection-meter">
+                <div class="affection-header">
+                    <span class="affection-label">Yuki - Affection Level</span>
+                    <div class="affection-hearts">
+                        <span class="heart">*</span>
+                        <span class="heart">*</span>
+                        <span class="heart empty">*</span>
+                        <span class="heart empty">*</span>
+                        <span class="heart empty">*</span>
+                    </div>
+                </div>
+                <div class="affection-bar">
+                    <div class="affection-fill" style="width: 42%;"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="scene-transition">
+            <span>* * *</span>
+        </div>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <p class="section-subtitle">09 / Philosophy</p>
+            <h2 class="section-title">Design Principles</h2>
+            <div class="principles-grid">
+                <div class="principle-card">
+                    <h4>Emotional Atmosphere</h4>
+                    <p>Use soft bokeh backgrounds, falling petals, and dreamy gradients to create an immersive, romantic atmosphere that draws players into the story.</p>
+                </div>
+                <div class="principle-card">
+                    <h4>Readable Dialog</h4>
+                    <p>Dialog boxes must prioritize readability with high contrast text, comfortable line spacing, and semi-transparent backgrounds that don't obscure character art.</p>
+                </div>
+                <div class="principle-card">
+                    <h4>Clear Choices</h4>
+                    <p>Choice buttons should be visually distinct with hover states that indicate interactivity. Players should never be confused about what's clickable.</p>
+                </div>
+                <div class="principle-card">
+                    <h4>Character Focus</h4>
+                    <p>Every UI element should enhance, not compete with, character portraits. The characters are the stars - the interface supports their story.</p>
+                </div>
+                <div class="principle-card">
+                    <h4>Genre Flexibility</h4>
+                    <p>The color system supports both romantic (soft pastels) and dramatic/mystery (deep darks with crimson accents) story tones through CSS variables.</p>
+                </div>
+                <div class="principle-card">
+                    <h4>Progress Feedback</h4>
+                    <p>Affection meters, route indicators, and ending badges give players clear feedback about their progress and unlock status without spoiling the story.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p class="footer-text">運命の出会い</p>
+            <p class="footer-sub">A FATEFUL ENCOUNTER - VISUAL NOVEL DESIGN SYSTEM</p>
+        </footer>
+    </div>
+</body>
+</html>

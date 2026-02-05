@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JRPG Menu System | Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           JRPG MENU SYSTEM - DESIGN SYSTEM
+           Classic Japanese RPG interface aesthetic inspired by
+           Final Fantasy, Chrono Trigger, and Dragon Quest
+           ============================================================ */
+
+        /* --- CSS VARIABLES / DESIGN TOKENS --- */
+        :root {
+            /* MENU BOX COLORS - Classic blue gradient */
+            --menu-blue-dark: #0a0a2e;
+            --menu-blue-mid: #1a1a4e;
+            --menu-blue-light: #2a2a6e;
+            --menu-purple: #3a2a5e;
+            --menu-gradient: linear-gradient(180deg, var(--menu-blue-light) 0%, var(--menu-blue-dark) 100%);
+
+            /* ACCENT COLORS */
+            --gold-bright: #ffd700;
+            --gold-mid: #daa520;
+            --gold-dark: #b8860b;
+            --bronze: #cd7f32;
+            --silver: #c0c0c0;
+
+            /* TEXT COLORS */
+            --text-white: #f5f5f0;
+            --text-cream: #fffacd;
+            --text-gray: #a0a0a0;
+            --text-disabled: #606060;
+            --text-shadow-color: rgba(0, 0, 0, 0.8);
+
+            /* STATUS COLORS */
+            --hp-green: #22cc44;
+            --hp-yellow: #ddcc00;
+            --hp-red: #dd3322;
+            --mp-blue: #4488ff;
+            --mp-purple: #8844ff;
+            --xp-gold: #ffaa00;
+
+            /* STATUS EFFECT COLORS */
+            --status-poison: #88dd44;
+            --status-fire: #ff6622;
+            --status-ice: #66ccff;
+            --status-thunder: #ffee44;
+            --status-heal: #44ff88;
+            --status-buff: #ff88cc;
+            --status-debuff: #8866aa;
+
+            /* BORDER COLORS */
+            --border-outer: #8888aa;
+            --border-inner: #444466;
+            --border-highlight: #aaaacc;
+            --border-shadow: #222244;
+
+            /* BACKGROUNDS */
+            --bg-dark: #0a0a1a;
+            --bg-overlay: rgba(10, 10, 30, 0.95);
+
+            /* SPACING SCALE (4px base for pixel-perfect feel) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* TYPOGRAPHY */
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Quattrocento Sans', sans-serif;
+            --font-fantasy: 'MedievalSharp', cursive;
+
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 2rem;
+            --text-4xl: 2.5rem;
+
+            /* BORDER STYLES */
+            --menu-border-width: 4px;
+            --menu-radius: 8px;
+
+            /* TRANSITIONS */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes cursor-bounce {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(6px); }
+        }
+
+        @keyframes cursor-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes text-blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes hp-critical {
+            0%, 100% { background-color: var(--hp-red); }
+            50% { background-color: #ff6644; }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes float-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* --- BASE STYLES --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            line-height: 1.6;
+            color: var(--text-white);
+            background: var(--bg-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle scanline overlay for retro CRT feel */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* --- CONTAINER --- */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+
+        /* --- JRPG MENU BOX - THE CORE COMPONENT --- */
+        .menu-box {
+            background: var(--menu-gradient);
+            border-radius: var(--menu-radius);
+            padding: var(--space-5);
+            position: relative;
+            margin-bottom: var(--space-5);
+
+            /* Multi-layer ornate border effect */
+            border: var(--menu-border-width) solid var(--border-outer);
+            box-shadow:
+                inset 0 0 0 2px var(--border-highlight),
+                inset 0 0 0 4px var(--border-inner),
+                0 4px 12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px var(--border-shadow);
+        }
+
+        /* Corner decorations */
+        .menu-box::before,
+        .menu-box::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--gold-mid);
+        }
+
+        .menu-box::before {
+            top: 6px;
+            left: 6px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .menu-box::after {
+            bottom: 6px;
+            right: 6px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Ornate variant with more decorations */
+        .menu-box--ornate {
+            border-width: 6px;
+            border-image: linear-gradient(
+                135deg,
+                var(--gold-dark) 0%,
+                var(--gold-bright) 25%,
+                var(--gold-mid) 50%,
+                var(--gold-bright) 75%,
+                var(--gold-dark) 100%
+            ) 1;
+        }
+
+        .menu-box--ornate::before,
+        .menu-box--ornate::after {
+            width: 16px;
+            height: 16px;
+            border-width: 3px;
+            border-color: var(--gold-bright);
+        }
+
+        /* --- HEADER --- */
+        .header {
+            text-align: center;
+            padding: var(--space-8) 0;
+            position: relative;
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: var(--text-4xl);
+            font-weight: 700;
+            color: var(--gold-bright);
+            text-shadow:
+                2px 2px 0 var(--gold-dark),
+                4px 4px 8px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.3);
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-3);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-fantasy);
+            font-size: var(--text-lg);
+            color: var(--text-cream);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .header-decoration {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-4);
+            margin-top: var(--space-4);
+        }
+
+        .header-crystal {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--mp-blue), var(--mp-purple));
+            transform: rotate(45deg);
+            box-shadow: 0 0 10px var(--mp-blue);
+            animation: float-gentle 2s ease-in-out infinite;
+        }
+
+        .header-line {
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
+        }
+
+        /* --- SECTION STYLES --- */
+        .section {
+            margin-bottom: var(--space-8);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--gold-mid);
+            min-width: 40px;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            font-weight: 600;
+            color: var(--gold-bright);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .section-lead {
+            color: var(--text-cream);
+            margin-bottom: var(--space-5);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        /* --- COLOR PALETTE --- */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            background: var(--menu-gradient);
+            border: 3px solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            overflow: hidden;
+            box-shadow:
+                inset 0 0 0 1px var(--border-highlight),
+                0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .color-preview {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-info {
+            padding: var(--space-2) var(--space-3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--text-cream);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .color-value {
+            font-size: var(--text-xs);
+            color: var(--text-gray);
+            font-family: monospace;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .type-row {
+            padding: var(--space-4);
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--gold-mid);
+        }
+
+        .type-label {
+            font-family: var(--font-display);
+            font-size: var(--text-xs);
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-2);
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-cream);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .type-fantasy {
+            font-family: var(--font-fantasy);
+            color: var(--text-cream);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+            color: var(--text-white);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        /* --- SPACING SCALE --- */
+        .spacing-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .spacing-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 60px;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            font-size: var(--text-sm);
+            color: var(--text-cream);
+        }
+
+        .spacing-bar {
+            height: 20px;
+            background: linear-gradient(90deg, var(--hp-green), var(--xp-gold));
+            border: 2px solid var(--border-outer);
+            border-radius: 2px;
+            box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .spacing-value {
+            font-size: var(--text-sm);
+            color: var(--text-gray);
+            text-align: right;
+        }
+
+        /* --- MENU CURSOR --- */
+        .cursor {
+            display: inline-flex;
+            align-items: center;
+            color: var(--text-cream);
+            font-family: var(--font-body);
+        }
+
+        .cursor::before {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid var(--text-cream);
+            margin-right: var(--space-3);
+            animation: cursor-bounce 0.6s ease-in-out infinite;
+            filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        .cursor--gold::before {
+            border-left-color: var(--gold-bright);
+            filter: drop-shadow(0 0 4px var(--gold-mid));
+        }
+
+        .cursor--selected {
+            color: var(--gold-bright);
+            text-shadow: 0 0 8px var(--gold-mid);
+        }
+
+        /* --- BUTTONS (Menu Selection Style) --- */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .btn {
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            font-weight: 700;
+            padding: var(--space-3) var(--space-5);
+            background: var(--menu-gradient);
+            color: var(--text-cream);
+            border: 3px solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            cursor: pointer;
+            position: relative;
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+            box-shadow:
+                inset 0 0 0 1px var(--border-highlight),
+                inset 0 0 0 2px var(--border-inner),
+                0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: all var(--transition-fast);
+        }
+
+        .btn:hover {
+            background: linear-gradient(180deg, var(--menu-blue-mid) 0%, var(--menu-blue-light) 100%);
+            color: var(--gold-bright);
+            border-color: var(--gold-mid);
+            transform: translateY(-2px);
+            box-shadow:
+                inset 0 0 0 1px var(--border-highlight),
+                inset 0 0 0 2px var(--border-inner),
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Button with cursor indicator */
+        .btn--with-cursor::before {
+            content: '';
+            position: absolute;
+            left: var(--space-3);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid var(--gold-bright);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .btn--with-cursor:hover::before,
+        .btn--with-cursor:focus::before {
+            opacity: 1;
+            animation: cursor-bounce 0.6s ease-in-out infinite;
+        }
+
+        .btn--with-cursor {
+            padding-left: var(--space-7);
+        }
+
+        /* Primary button - gold themed */
+        .btn--primary {
+            border-color: var(--gold-mid);
+            background: linear-gradient(180deg, #3a3a1a, #2a2a0a);
+        }
+
+        .btn--primary:hover {
+            border-color: var(--gold-bright);
+            box-shadow:
+                inset 0 0 0 1px var(--gold-mid),
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Danger button */
+        .btn--danger {
+            border-color: var(--hp-red);
+        }
+
+        .btn--danger:hover {
+            color: var(--hp-red);
+            border-color: #ff4444;
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 100, 100, 0.3),
+                0 6px 12px rgba(0, 0, 0, 0.5),
+                0 0 15px rgba(255, 50, 50, 0.3);
+        }
+
+        /* Disabled state */
+        .btn:disabled {
+            color: var(--text-disabled);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            background: var(--menu-gradient);
+            border-color: var(--border-outer);
+            box-shadow:
+                inset 0 0 0 1px var(--border-highlight),
+                inset 0 0 0 2px var(--border-inner),
+                0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Size variants */
+        .btn--sm {
+            font-size: var(--text-sm);
+            padding: var(--space-2) var(--space-4);
+        }
+
+        .btn--lg {
+            font-size: var(--text-lg);
+            padding: var(--space-4) var(--space-7);
+        }
+
+        /* --- FORM ELEMENTS --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-4);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            color: var(--gold-mid);
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            padding: var(--space-3) var(--space-4);
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--text-cream);
+            border: 2px solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 0 0 1px var(--border-inner);
+            transition: all var(--transition-fast);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-disabled);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        /* Quantity selector (for items) */
+        .quantity-selector {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            overflow: hidden;
+        }
+
+        .quantity-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--menu-gradient);
+            border: none;
+            color: var(--text-cream);
+            font-size: var(--text-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .quantity-btn:hover {
+            background: var(--menu-blue-light);
+            color: var(--gold-bright);
+        }
+
+        .quantity-value {
+            width: 50px;
+            text-align: center;
+            font-family: var(--font-body);
+            font-size: var(--text-lg);
+            font-weight: 700;
+            color: var(--text-cream);
+            background: transparent;
+            border: none;
+            border-left: 1px solid var(--border-inner);
+            border-right: 1px solid var(--border-inner);
+        }
+
+        /* --- CARDS (Menu Windows) --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .card {
+            background: var(--menu-gradient);
+            border: var(--menu-border-width) solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            overflow: hidden;
+            position: relative;
+            box-shadow:
+                inset 0 0 0 2px var(--border-highlight),
+                inset 0 0 0 4px var(--border-inner),
+                0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .card::before,
+        .card::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--gold-mid);
+        }
+
+        .card::before {
+            top: 8px;
+            left: 8px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .card::after {
+            bottom: 8px;
+            right: 8px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .card-header {
+            padding: var(--space-4) var(--space-5);
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid var(--border-inner);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--gold-bright);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .card-body {
+            padding: var(--space-5);
+        }
+
+        .card-footer {
+            padding: var(--space-4) var(--space-5);
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--border-inner);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-3);
+        }
+
+        /* Character Card */
+        .character-card {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: var(--space-4);
+        }
+
+        .character-portrait {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--menu-purple), var(--menu-blue-dark));
+            border: 3px solid var(--gold-mid);
+            border-radius: var(--menu-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-fantasy);
+            font-size: var(--text-2xl);
+            color: var(--text-cream);
+            box-shadow:
+                inset 0 0 10px rgba(0, 0, 0, 0.5),
+                0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .character-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .character-name {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-cream);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .character-class {
+            font-size: var(--text-sm);
+            color: var(--gold-mid);
+        }
+
+        /* --- HP/MP STAT BARS --- */
+        .stat-bars {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .stat-bar {
+            display: grid;
+            grid-template-columns: 40px 1fr 60px;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .stat-bar-label {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-cream);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        .stat-bar-track {
+            height: 18px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--border-outer);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            position: relative;
+            transition: width 0.5s ease;
+        }
+
+        .stat-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .stat-bar-fill--hp {
+            background: linear-gradient(180deg, #44ee66, var(--hp-green));
+        }
+
+        .stat-bar-fill--hp-warning {
+            background: linear-gradient(180deg, #eeee44, var(--hp-yellow));
+        }
+
+        .stat-bar-fill--hp-critical {
+            background: linear-gradient(180deg, #ff6644, var(--hp-red));
+            animation: hp-critical 0.5s ease-in-out infinite;
+        }
+
+        .stat-bar-fill--mp {
+            background: linear-gradient(180deg, #66aaff, var(--mp-blue));
+        }
+
+        .stat-bar-fill--xp {
+            background: linear-gradient(180deg, #ffcc44, var(--xp-gold));
+        }
+
+        .stat-bar-value {
+            font-family: var(--font-body);
+            font-size: var(--text-sm);
+            font-weight: 700;
+            color: var(--text-white);
+            text-align: right;
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        /* --- DATA TABLE (Character Stats) --- */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            border-bottom: 1px solid var(--border-inner);
+        }
+
+        .stats-table th {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-table td {
+            color: var(--text-cream);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        .stats-table tr:hover {
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .stat-value--high {
+            color: var(--hp-green);
+        }
+
+        .stat-value--low {
+            color: var(--hp-red);
+        }
+
+        .stat-modifier {
+            font-size: var(--text-sm);
+            margin-left: var(--space-2);
+        }
+
+        .stat-modifier--positive {
+            color: var(--hp-green);
+        }
+
+        .stat-modifier--negative {
+            color: var(--hp-red);
+        }
+
+        /* --- BADGES (Status Effects & Elements) --- */
+        .badge-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .badge {
+            font-family: var(--font-body);
+            font-size: var(--text-xs);
+            font-weight: 700;
+            padding: var(--space-1) var(--space-3);
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            border: 2px solid;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Element badges */
+        .badge--fire {
+            background: linear-gradient(135deg, #ff4400, #cc2200);
+            border-color: #ff6622;
+            color: var(--text-white);
+        }
+
+        .badge--ice {
+            background: linear-gradient(135deg, #44aaff, #2288dd);
+            border-color: #66ccff;
+            color: var(--text-white);
+        }
+
+        .badge--thunder {
+            background: linear-gradient(135deg, #ffee00, #ccaa00);
+            border-color: #ffff44;
+            color: #333;
+        }
+
+        .badge--earth {
+            background: linear-gradient(135deg, #886622, #664411);
+            border-color: #aa8844;
+            color: var(--text-cream);
+        }
+
+        .badge--wind {
+            background: linear-gradient(135deg, #66cc66, #448844);
+            border-color: #88ee88;
+            color: var(--text-white);
+        }
+
+        .badge--holy {
+            background: linear-gradient(135deg, #ffffcc, #ffeeaa);
+            border-color: #ffffee;
+            color: #665500;
+        }
+
+        .badge--dark {
+            background: linear-gradient(135deg, #442266, #221133);
+            border-color: #664488;
+            color: #cc99ff;
+        }
+
+        /* Status effect badges */
+        .badge--poison {
+            background: linear-gradient(135deg, var(--status-poison), #668833);
+            border-color: #aaff66;
+            color: var(--text-white);
+        }
+
+        .badge--buff {
+            background: linear-gradient(135deg, var(--status-buff), #cc6699);
+            border-color: #ffaacc;
+            color: var(--text-white);
+        }
+
+        .badge--debuff {
+            background: linear-gradient(135deg, var(--status-debuff), #553388);
+            border-color: #9977bb;
+            color: var(--text-cream);
+        }
+
+        /* Rarity badges */
+        .badge--common {
+            background: var(--border-outer);
+            border-color: var(--silver);
+            color: var(--text-white);
+        }
+
+        .badge--rare {
+            background: linear-gradient(135deg, #4488ff, #2255cc);
+            border-color: #66aaff;
+            color: var(--text-white);
+        }
+
+        .badge--epic {
+            background: linear-gradient(135deg, #aa44ff, #7722cc);
+            border-color: #cc77ff;
+            color: var(--text-white);
+        }
+
+        .badge--legendary {
+            background: linear-gradient(135deg, var(--gold-bright), var(--gold-dark));
+            border-color: #ffee88;
+            color: #442200;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        /* --- MENU LIST (Item/Command List) --- */
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--border-inner);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .menu-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-list-item:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .menu-list-item--selected {
+            background: rgba(255, 215, 0, 0.15);
+        }
+
+        .menu-list-item--selected::before {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid var(--gold-bright);
+            margin-right: var(--space-3);
+            animation: cursor-bounce 0.6s ease-in-out infinite;
+        }
+
+        .menu-list-item--disabled {
+            color: var(--text-disabled);
+            cursor: not-allowed;
+        }
+
+        .menu-list-item--disabled:hover {
+            background: transparent;
+        }
+
+        .item-name {
+            font-weight: 700;
+            color: var(--text-cream);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        .item-count {
+            font-size: var(--text-sm);
+            color: var(--text-gray);
+        }
+
+        /* --- DIALOG BOX (Press A to Continue) --- */
+        .dialog-box {
+            background: var(--menu-gradient);
+            border: var(--menu-border-width) solid var(--border-outer);
+            border-radius: var(--menu-radius);
+            padding: var(--space-5);
+            position: relative;
+            box-shadow:
+                inset 0 0 0 2px var(--border-highlight),
+                inset 0 0 0 4px var(--border-inner),
+                0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .dialog-text {
+            font-size: var(--text-lg);
+            color: var(--text-cream);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+            line-height: 1.8;
+            margin-bottom: var(--space-4);
+        }
+
+        .dialog-prompt {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+            color: var(--text-gray);
+        }
+
+        .dialog-prompt-cursor {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid var(--text-cream);
+            animation: cursor-pulse 1s ease-in-out infinite;
+        }
+
+        /* --- EQUIPMENT SLOT --- */
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .equipment-slot {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--border-inner);
+            border-radius: var(--menu-radius);
+            transition: all var(--transition-fast);
+        }
+
+        .equipment-slot:hover {
+            border-color: var(--gold-mid);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .equipment-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--menu-gradient);
+            border: 2px solid var(--border-outer);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-lg);
+        }
+
+        .equipment-details {
+            flex: 1;
+        }
+
+        .equipment-type {
+            font-size: var(--text-xs);
+            color: var(--text-gray);
+            text-transform: uppercase;
+        }
+
+        .equipment-name {
+            font-weight: 700;
+            color: var(--text-cream);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        .equipment-name--rare {
+            color: #66aaff;
+        }
+
+        .equipment-name--epic {
+            color: #aa66ff;
+        }
+
+        .equipment-name--legendary {
+            color: var(--gold-bright);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            text-align: center;
+            padding: var(--space-8) 0;
+            margin-top: var(--space-8);
+            border-top: 2px solid var(--border-inner);
+        }
+
+        .footer-crystal-row {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .footer-crystal {
+            width: 12px;
+            height: 12px;
+            transform: rotate(45deg);
+        }
+
+        .footer-crystal--fire { background: var(--status-fire); box-shadow: 0 0 8px var(--status-fire); }
+        .footer-crystal--ice { background: var(--status-ice); box-shadow: 0 0 8px var(--status-ice); }
+        .footer-crystal--thunder { background: var(--status-thunder); box-shadow: 0 0 8px var(--status-thunder); }
+        .footer-crystal--earth { background: var(--bronze); box-shadow: 0 0 8px var(--bronze); }
+        .footer-crystal--wind { background: var(--hp-green); box-shadow: 0 0 8px var(--hp-green); }
+        .footer-crystal--holy { background: var(--text-cream); box-shadow: 0 0 8px var(--text-cream); }
+
+        .footer-text {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            color: var(--text-gray);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-fantasy);
+            font-size: var(--text-lg);
+            color: var(--gold-mid);
+            margin-top: var(--space-3);
+        }
+
+        /* --- DESIGN PRINCIPLES --- */
+        .principle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .principle-card {
+            padding: var(--space-5);
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--gold-mid);
+        }
+
+        .principle-title {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--gold-bright);
+            margin-bottom: var(--space-3);
+            text-shadow: 2px 2px 4px var(--text-shadow-color);
+        }
+
+        .principle-text {
+            color: var(--text-cream);
+            text-shadow: 1px 1px 2px var(--text-shadow-color);
+            line-height: 1.7;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-4);
+            }
+
+            .header-title {
+                font-size: var(--text-2xl);
+            }
+
+            .section-title {
+                font-size: var(--text-xl);
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .character-card {
+                grid-template-columns: 60px 1fr;
+            }
+
+            .character-portrait {
+                width: 60px;
+                height: 60px;
+            }
+
+            .stat-bar {
+                grid-template-columns: 35px 1fr 50px;
+            }
+
+            .button-grid {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <h1 class="header-title">JRPG Menu System</h1>
+            <p class="header-subtitle">A Design System for Classic RPG Interfaces</p>
+            <div class="header-decoration">
+                <div class="header-line"></div>
+                <div class="header-crystal"></div>
+                <div class="header-line"></div>
+            </div>
+        </header>
+
+        <!-- I. COLORS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">I</span>
+                <h2 class="section-title">Color Palette</h2>
+            </div>
+            <p class="section-lead">Classic JRPG color scheme featuring deep blue menu gradients, golden accents, and status-specific colors for HP, MP, and effects.</p>
+
+            <div class="menu-box">
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin-bottom: var(--space-4);">Menu Colors</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--menu-blue-dark);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Menu Dark</div>
+                            <div class="color-value">#0a0a2e</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--menu-blue-mid);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Menu Mid</div>
+                            <div class="color-value">#1a1a4e</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--menu-blue-light);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Menu Light</div>
+                            <div class="color-value">#2a2a6e</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--menu-purple);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Menu Purple</div>
+                            <div class="color-value">#3a2a5e</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Gold Accents</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--gold-bright);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Gold Bright</div>
+                            <div class="color-value">#ffd700</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--gold-mid);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Gold Mid</div>
+                            <div class="color-value">#daa520</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--gold-dark);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Gold Dark</div>
+                            <div class="color-value">#b8860b</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--bronze);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Bronze</div>
+                            <div class="color-value">#cd7f32</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Status Colors</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--hp-green);"></div>
+                        <div class="color-info">
+                            <div class="color-name">HP Green</div>
+                            <div class="color-value">#22cc44</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--hp-yellow);"></div>
+                        <div class="color-info">
+                            <div class="color-name">HP Warning</div>
+                            <div class="color-value">#ddcc00</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--hp-red);"></div>
+                        <div class="color-info">
+                            <div class="color-name">HP Critical</div>
+                            <div class="color-value">#dd3322</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-preview" style="background: var(--mp-blue);"></div>
+                        <div class="color-info">
+                            <div class="color-name">MP Blue</div>
+                            <div class="color-value">#4488ff</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- II. TYPOGRAPHY -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">II</span>
+                <h2 class="section-title">Typography</h2>
+            </div>
+            <p class="section-lead">RPG-styled fonts with fantasy flair, drop shadows for readability against gradient backgrounds, and clear hierarchy for menu navigation.</p>
+
+            <div class="menu-box">
+                <div class="type-scale">
+                    <div class="type-row">
+                        <div class="type-label">Display / Cinzel / 40px</div>
+                        <div class="type-display" style="font-size: var(--text-4xl);">Final Quest</div>
+                    </div>
+                    <div class="type-row">
+                        <div class="type-label">Heading / Cinzel / 32px</div>
+                        <div class="type-display" style="font-size: var(--text-3xl);">Equipment</div>
+                    </div>
+                    <div class="type-row">
+                        <div class="type-label">Subheading / Cinzel / 24px</div>
+                        <div class="type-display" style="font-size: var(--text-2xl);">Character Status</div>
+                    </div>
+                    <div class="type-row">
+                        <div class="type-label">Fantasy / MedievalSharp / 20px</div>
+                        <div class="type-fantasy" style="font-size: var(--text-xl);">The adventure continues...</div>
+                    </div>
+                    <div class="type-row">
+                        <div class="type-label">Body / Quattrocento Sans / 16px</div>
+                        <div class="type-body">A legendary sword forged in the flames of Mount Doom. Increases ATK by 50 and grants Fire elemental damage.</div>
+                    </div>
+                    <div class="type-row">
+                        <div class="type-label">Small / Quattrocento Sans / 14px</div>
+                        <div class="type-body" style="font-size: var(--text-sm); color: var(--text-gray);">Potion x99 | Gold: 12,500 | Play Time: 45:32</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- III. SPACING -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">III</span>
+                <h2 class="section-title">Spacing System</h2>
+            </div>
+            <p class="section-lead">A 4px-based scale for pixel-perfect alignment, maintaining the crisp feel of classic 16-bit RPG interfaces.</p>
+
+            <div class="menu-box">
+                <div class="spacing-scale">
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-1</span>
+                        <div class="spacing-bar" style="width: 4px;"></div>
+                        <span class="spacing-value">4px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-2</span>
+                        <div class="spacing-bar" style="width: 8px;"></div>
+                        <span class="spacing-value">8px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-3</span>
+                        <div class="spacing-bar" style="width: 12px;"></div>
+                        <span class="spacing-value">12px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-4</span>
+                        <div class="spacing-bar" style="width: 16px;"></div>
+                        <span class="spacing-value">16px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-5</span>
+                        <div class="spacing-bar" style="width: 24px;"></div>
+                        <span class="spacing-value">24px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-6</span>
+                        <div class="spacing-bar" style="width: 32px;"></div>
+                        <span class="spacing-value">32px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-7</span>
+                        <div class="spacing-bar" style="width: 48px;"></div>
+                        <span class="spacing-value">48px</span>
+                    </div>
+                    <div class="spacing-row">
+                        <span class="spacing-label">--space-8</span>
+                        <div class="spacing-bar" style="width: 64px;"></div>
+                        <span class="spacing-value">64px</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- IV. BUTTONS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">IV</span>
+                <h2 class="section-title">Buttons</h2>
+            </div>
+            <p class="section-lead">Menu-style buttons with ornate borders and animated cursor indicators. Hover states reveal golden highlights.</p>
+
+            <div class="menu-box">
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin-bottom: var(--space-4);">Button Variants</h3>
+                <div class="button-grid">
+                    <button class="btn">Default</button>
+                    <button class="btn btn--primary">Confirm</button>
+                    <button class="btn btn--danger">Cancel</button>
+                    <button class="btn" disabled>Disabled</button>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">With Cursor Indicator</h3>
+                <div class="button-grid">
+                    <button class="btn btn--with-cursor">Attack</button>
+                    <button class="btn btn--with-cursor">Magic</button>
+                    <button class="btn btn--with-cursor">Items</button>
+                    <button class="btn btn--with-cursor">Defend</button>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Sizes</h3>
+                <div class="button-grid">
+                    <button class="btn btn--sm">Small</button>
+                    <button class="btn">Medium</button>
+                    <button class="btn btn--lg">Large</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- V. FORM ELEMENTS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">V</span>
+                <h2 class="section-title">Form Elements</h2>
+            </div>
+            <p class="section-lead">Input fields and controls styled for item quantity selection, character naming, and configuration screens.</p>
+
+            <div class="menu-box">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Character Name</label>
+                        <input type="text" class="form-input" placeholder="Enter name..." value="Cloud">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message Speed</label>
+                        <select class="form-input">
+                            <option>Slow</option>
+                            <option selected>Normal</option>
+                            <option>Fast</option>
+                            <option>Instant</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Quantity Selector</h3>
+                <div style="display: flex; align-items: center; gap: var(--space-4);">
+                    <span style="color: var(--text-cream);">Potion</span>
+                    <div class="quantity-selector">
+                        <button class="quantity-btn">-</button>
+                        <input type="text" class="quantity-value" value="10" readonly>
+                        <button class="quantity-btn">+</button>
+                    </div>
+                    <span style="color: var(--text-gray);">x 500 Gil</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VI. CARDS (Menu Windows) -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">VI</span>
+                <h2 class="section-title">Cards / Menu Windows</h2>
+            </div>
+            <p class="section-lead">Ornate bordered containers that serve as the foundation for all JRPG menu interfaces. Features corner decorations and gradient backgrounds.</p>
+
+            <div class="card-grid">
+                <!-- Character Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Status</span>
+                        <span class="badge badge--buff">LV 45</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="character-card">
+                            <div class="character-portrait">C</div>
+                            <div class="character-info">
+                                <div class="character-name">Cloud Strife</div>
+                                <div class="character-class">Soldier 1st Class</div>
+                            </div>
+                        </div>
+                        <div class="stat-bars" style="margin-top: var(--space-4);">
+                            <div class="stat-bar">
+                                <span class="stat-bar-label">HP</span>
+                                <div class="stat-bar-track">
+                                    <div class="stat-bar-fill stat-bar-fill--hp" style="width: 85%;"></div>
+                                </div>
+                                <span class="stat-bar-value">2890/3400</span>
+                            </div>
+                            <div class="stat-bar">
+                                <span class="stat-bar-label">MP</span>
+                                <div class="stat-bar-track">
+                                    <div class="stat-bar-fill stat-bar-fill--mp" style="width: 60%;"></div>
+                                </div>
+                                <span class="stat-bar-value">186/310</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item Menu Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Items</span>
+                        <span style="color: var(--text-gray); font-size: var(--text-sm);">24/99</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <ul class="menu-list">
+                            <li class="menu-list-item menu-list-item--selected">
+                                <span class="item-name">Potion</span>
+                                <span class="item-count">x 15</span>
+                            </li>
+                            <li class="menu-list-item">
+                                <span class="item-name">Hi-Potion</span>
+                                <span class="item-count">x 8</span>
+                            </li>
+                            <li class="menu-list-item">
+                                <span class="item-name">Ether</span>
+                                <span class="item-count">x 5</span>
+                            </li>
+                            <li class="menu-list-item">
+                                <span class="item-name">Phoenix Down</span>
+                                <span class="item-count">x 3</span>
+                            </li>
+                            <li class="menu-list-item menu-list-item--disabled">
+                                <span class="item-name">Elixir</span>
+                                <span class="item-count">x 0</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Equipment Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Equipment</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="equipment-grid">
+                            <div class="equipment-slot">
+                                <div class="equipment-icon">R</div>
+                                <div class="equipment-details">
+                                    <div class="equipment-type">Right Hand</div>
+                                    <div class="equipment-name equipment-name--legendary">Buster Sword</div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot">
+                                <div class="equipment-icon">L</div>
+                                <div class="equipment-details">
+                                    <div class="equipment-type">Left Hand</div>
+                                    <div class="equipment-name equipment-name--rare">Crystal Shield</div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot">
+                                <div class="equipment-icon">H</div>
+                                <div class="equipment-details">
+                                    <div class="equipment-type">Head</div>
+                                    <div class="equipment-name">Mythril Helm</div>
+                                </div>
+                            </div>
+                            <div class="equipment-slot">
+                                <div class="equipment-icon">B</div>
+                                <div class="equipment-details">
+                                    <div class="equipment-type">Body</div>
+                                    <div class="equipment-name equipment-name--epic">Dragon Mail</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dialog Box -->
+            <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-6) 0 var(--space-4);">Dialog Box</h3>
+            <div class="dialog-box">
+                <p class="dialog-text">The legendary crystal has been shattered. You must journey to the four corners of the world to restore its power before darkness consumes everything...</p>
+                <div class="dialog-prompt">
+                    <span>Press A to continue</span>
+                    <span class="dialog-prompt-cursor"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VII. DATA TABLE (Character Stats) -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">VII</span>
+                <h2 class="section-title">Data Tables</h2>
+            </div>
+            <p class="section-lead">Character statistics and equipment comparison tables with clear value highlighting and modifier indicators.</p>
+
+            <div class="menu-box">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Stat</th>
+                            <th>Base</th>
+                            <th>Bonus</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Strength</td>
+                            <td>85</td>
+                            <td><span class="stat-modifier stat-modifier--positive">+15</span></td>
+                            <td><span class="stat-value stat-value--high">100</span></td>
+                        </tr>
+                        <tr>
+                            <td>Vitality</td>
+                            <td>72</td>
+                            <td><span class="stat-modifier stat-modifier--positive">+8</span></td>
+                            <td><span class="stat-value">80</span></td>
+                        </tr>
+                        <tr>
+                            <td>Magic</td>
+                            <td>45</td>
+                            <td><span class="stat-modifier stat-modifier--negative">-5</span></td>
+                            <td><span class="stat-value stat-value--low">40</span></td>
+                        </tr>
+                        <tr>
+                            <td>Spirit</td>
+                            <td>50</td>
+                            <td>-</td>
+                            <td><span class="stat-value">50</span></td>
+                        </tr>
+                        <tr>
+                            <td>Dexterity</td>
+                            <td>68</td>
+                            <td><span class="stat-modifier stat-modifier--positive">+12</span></td>
+                            <td><span class="stat-value stat-value--high">80</span></td>
+                        </tr>
+                        <tr>
+                            <td>Luck</td>
+                            <td>55</td>
+                            <td>-</td>
+                            <td><span class="stat-value">55</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- VIII. BADGES -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">VIII</span>
+                <h2 class="section-title">Badges</h2>
+            </div>
+            <p class="section-lead">Status effects, elemental types, and item rarity indicators with distinctive colors and iconography.</p>
+
+            <div class="menu-box">
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin-bottom: var(--space-4);">Elements</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge--fire">Fire</span>
+                    <span class="badge badge--ice">Ice</span>
+                    <span class="badge badge--thunder">Thunder</span>
+                    <span class="badge badge--earth">Earth</span>
+                    <span class="badge badge--wind">Wind</span>
+                    <span class="badge badge--holy">Holy</span>
+                    <span class="badge badge--dark">Dark</span>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Status Effects</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge--poison">Poison</span>
+                    <span class="badge badge--buff">Haste</span>
+                    <span class="badge badge--buff">Protect</span>
+                    <span class="badge badge--debuff">Slow</span>
+                    <span class="badge badge--debuff">Curse</span>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--gold-mid); margin: var(--space-5) 0 var(--space-4);">Item Rarity</h3>
+                <div class="badge-showcase">
+                    <span class="badge badge--common">Common</span>
+                    <span class="badge badge--rare">Rare</span>
+                    <span class="badge badge--epic">Epic</span>
+                    <span class="badge badge--legendary">Legendary</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- HP/MP Bars Showcase -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">VIII-B</span>
+                <h2 class="section-title">HP/MP Bars</h2>
+            </div>
+            <p class="section-lead">Animated stat bars with warning states and critical flashing effects.</p>
+
+            <div class="menu-box">
+                <div class="stat-bars">
+                    <div class="stat-bar">
+                        <span class="stat-bar-label">HP</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-fill--hp" style="width: 100%;"></div>
+                        </div>
+                        <span class="stat-bar-value">Full</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-bar-label">HP</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-fill--hp-warning" style="width: 45%;"></div>
+                        </div>
+                        <span class="stat-bar-value">Warning</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-bar-label">HP</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-fill--hp-critical" style="width: 15%;"></div>
+                        </div>
+                        <span class="stat-bar-value">Critical!</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-bar-label">MP</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-fill--mp" style="width: 72%;"></div>
+                        </div>
+                        <span class="stat-bar-value">720/1000</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-bar-label">EXP</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-fill--xp" style="width: 65%;"></div>
+                        </div>
+                        <span class="stat-bar-value">To Next Lv</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- IX. DESIGN PRINCIPLES -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">IX</span>
+                <h2 class="section-title">Design Principles</h2>
+            </div>
+            <p class="section-lead">Core guidelines for creating authentic JRPG menu interfaces.</p>
+
+            <div class="menu-box--ornate menu-box">
+                <div class="principle-grid">
+                    <div class="principle-card">
+                        <h3 class="principle-title">Ornate Borders</h3>
+                        <p class="principle-text">Multi-layer borders with beveled edges create the classic menu window look. Use corner decorations and golden accents for headers and important elements.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3 class="principle-title">Gradient Depth</h3>
+                        <p class="principle-text">Blue-to-dark gradients give menus a sense of depth and dimensionality. The darker bottom edge grounds the interface while the lighter top draws the eye.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3 class="principle-title">Text Shadows</h3>
+                        <p class="principle-text">Drop shadows on text ensure readability against gradient backgrounds. Cream and white text with subtle shadows feels both legible and stylistically authentic.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3 class="principle-title">Animated Cursors</h3>
+                        <p class="principle-text">The bouncing arrow cursor is iconic to JRPGs. Use smooth animations to indicate selection and guide player attention through menu navigation.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3 class="principle-title">Status at a Glance</h3>
+                        <p class="principle-text">HP and MP bars with color-coded warning states let players quickly assess their party condition. Red flashing for critical health creates urgency.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3 class="principle-title">Nostalgic Typography</h3>
+                        <p class="principle-text">Fantasy-styled fonts for headers evoke the genre while clean body text maintains usability. Balance decorative flair with functional clarity.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-crystal-row">
+                <div class="footer-crystal footer-crystal--fire"></div>
+                <div class="footer-crystal footer-crystal--ice"></div>
+                <div class="footer-crystal footer-crystal--thunder"></div>
+                <div class="footer-crystal footer-crystal--earth"></div>
+                <div class="footer-crystal footer-crystal--wind"></div>
+                <div class="footer-crystal footer-crystal--holy"></div>
+            </div>
+            <p class="footer-text">JRPG MENU SYSTEM - DESIGN SYSTEM v1.0</p>
+            <p class="footer-tagline">The adventure awaits...</p>
+        </footer>
+    </div>
+
+    <script>
+        // ================================================================
+        // INTERACTIVE MENU CURSOR
+        // ================================================================
+        const menuItems = document.querySelectorAll('.menu-list-item:not(.menu-list-item--disabled)');
+
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Remove selected from all
+                menuItems.forEach(i => i.classList.remove('menu-list-item--selected'));
+                // Add to clicked
+                item.classList.add('menu-list-item--selected');
+            });
+        });
+
+        // ================================================================
+        // QUANTITY SELECTOR
+        // ================================================================
+        const quantityBtns = document.querySelectorAll('.quantity-btn');
+
+        quantityBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = btn.parentElement.querySelector('.quantity-value');
+                let value = parseInt(input.value);
+
+                if (btn.textContent === '+' && value < 99) {
+                    input.value = value + 1;
+                } else if (btn.textContent === '-' && value > 0) {
+                    input.value = value - 1;
+                }
+            });
+        });
+
+        // ================================================================
+        // TYPEWRITER EFFECT FOR DIALOG
+        // ================================================================
+        const dialogTexts = document.querySelectorAll('.dialog-text');
+
+        dialogTexts.forEach(dialog => {
+            const text = dialog.textContent;
+            dialog.textContent = '';
+            let i = 0;
+
+            function typeWriter() {
+                if (i < text.length) {
+                    dialog.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 25);
+                }
+            }
+
+            // Start typing when element is visible
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        typeWriter();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+            observer.observe(dialog);
+        });
+
+        // ================================================================
+        // CURSOR SOUND SIMULATION (visual feedback)
+        // ================================================================
+        const buttons = document.querySelectorAll('.btn:not(:disabled)');
+
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.style.transition = 'all 0.05s ease';
+            });
+        });
+    </script>
+</body>
+</html>

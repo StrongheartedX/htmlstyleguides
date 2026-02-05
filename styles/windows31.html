@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 3.1 Design System - Program Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           WINDOWS 3.1 / PROGRAM MANAGER DESIGN SYSTEM
+           Authentic early-90s Windows aesthetic with beveled 3D buttons,
+           grey backgrounds, and the classic 16-color VGA palette
+        ================================================================ */
+
+        /* --- CSS VARIABLES / DESIGN TOKENS --------------------------- */
+        :root {
+            /* CLASSIC WINDOWS 3.1 16-COLOR VGA PALETTE */
+            --win-black: #000000;
+            --win-dark-blue: #000080;
+            --win-dark-green: #008000;
+            --win-dark-cyan: #008080;
+            --win-dark-red: #800000;
+            --win-dark-magenta: #800080;
+            --win-brown: #808000;
+            --win-light-gray: #C0C0C0;
+            --win-dark-gray: #808080;
+            --win-blue: #0000FF;
+            --win-green: #00FF00;
+            --win-cyan: #00FFFF;
+            --win-red: #FF0000;
+            --win-magenta: #FF00FF;
+            --win-yellow: #FFFF00;
+            --win-white: #FFFFFF;
+
+            /* SEMANTIC COLORS */
+            --bg-desktop: #008080;
+            --bg-window: var(--win-light-gray);
+            --bg-titlebar: var(--win-dark-blue);
+            --bg-titlebar-inactive: var(--win-dark-gray);
+            --text-primary: var(--win-black);
+            --text-titlebar: var(--win-white);
+            --text-disabled: var(--win-dark-gray);
+
+            /* 3D BEVEL COLORS */
+            --bevel-light: var(--win-white);
+            --bevel-medium: var(--win-light-gray);
+            --bevel-dark: var(--win-dark-gray);
+            --bevel-shadow: var(--win-black);
+
+            /* SPACING SCALE (based on 8px grid) */
+            --space-1: 2px;
+            --space-2: 4px;
+            --space-3: 8px;
+            --space-4: 12px;
+            --space-5: 16px;
+            --space-6: 24px;
+            --space-7: 32px;
+            --space-8: 48px;
+            --space-9: 64px;
+
+            /* TYPOGRAPHY */
+            --font-system: 'VT323', 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 2rem;
+            --text-4xl: 2.5rem;
+
+            /* BORDERS */
+            --border-width: 2px;
+        }
+
+        /* --- BASE RESET & GLOBAL STYLES ------------------------------ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-system);
+            font-size: var(--text-lg);
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-desktop);
+            min-height: 100vh;
+            padding: var(--space-6);
+        }
+
+        /* --- CLASSIC BEVELED BORDER MIXINS --------------------------- */
+
+        /* Raised 3D effect (default button/panel state) */
+        .bevel-raised {
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark);
+        }
+
+        /* Sunken 3D effect (pressed button/input field) */
+        .bevel-sunken {
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-dark),
+                inset -1px -1px 0 var(--bevel-light);
+        }
+
+        /* --- WINDOW FRAME -------------------------------------------- */
+        .window {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark),
+                4px 4px 0 rgba(0, 0, 0, 0.3);
+            margin-bottom: var(--space-6);
+        }
+
+        .window-titlebar {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+            padding: var(--space-1) var(--space-2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .window-titlebar-inactive {
+            background: var(--bg-titlebar-inactive);
+        }
+
+        .window-title {
+            flex: 1;
+            padding-left: var(--space-2);
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .window-btn {
+            width: 18px;
+            height: 18px;
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .window-btn:active {
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+        }
+
+        .window-btn-minimize::before {
+            content: '_';
+            position: relative;
+            top: -2px;
+        }
+
+        .window-btn-maximize::before {
+            content: '';
+            display: block;
+            width: 9px;
+            height: 9px;
+            border: 1px solid var(--text-primary);
+            border-top-width: 2px;
+        }
+
+        .window-btn-close::before {
+            content: 'X';
+            font-size: 10px;
+        }
+
+        .window-menubar {
+            background: var(--bg-window);
+            padding: var(--space-1) var(--space-2);
+            border-bottom: 1px solid var(--bevel-dark);
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        .menu-item {
+            padding: var(--space-1) var(--space-2);
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        .menu-item span {
+            text-decoration: underline;
+        }
+
+        .window-content {
+            padding: var(--space-5);
+        }
+
+        .window-statusbar {
+            background: var(--bg-window);
+            border-top: 1px solid var(--bevel-dark);
+            padding: var(--space-1) var(--space-3);
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        .statusbar-section {
+            border: 1px solid;
+            border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+            padding: var(--space-1) var(--space-3);
+            flex: 1;
+        }
+
+        .statusbar-section:first-child {
+            flex: 3;
+        }
+
+        /* --- LAYOUT CONTAINER ---------------------------------------- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- SECTION STYLES ------------------------------------------ */
+        .section {
+            margin-bottom: var(--space-6);
+        }
+
+        .section-title {
+            font-size: var(--text-xl);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-2);
+            border-bottom: 2px solid var(--bevel-dark);
+        }
+
+        /* --- GROUPBOX (Classic Windows panel) ------------------------ */
+        .groupbox {
+            border: 1px solid var(--bevel-dark);
+            border-top-color: var(--bevel-light);
+            border-left-color: var(--bevel-light);
+            margin: var(--space-4) 0;
+            padding: var(--space-4);
+            position: relative;
+        }
+
+        .groupbox::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border: 1px solid;
+            border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+            pointer-events: none;
+        }
+
+        .groupbox-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--bg-window);
+            padding: 0 var(--space-2);
+            font-size: var(--text-base);
+        }
+
+        /* --- COLOR PALETTE ------------------------------------------- */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            background: var(--win-black);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            padding: 2px;
+        }
+
+        .color-swatch {
+            aspect-ratio: 1;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--win-black);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .color-swatch:hover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px dotted var(--win-white);
+        }
+
+        .color-info {
+            margin-top: var(--space-3);
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: var(--space-3);
+        }
+
+        .color-detail {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            padding: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .color-preview-box {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--win-black);
+        }
+
+        .color-name {
+            font-size: var(--text-base);
+        }
+
+        .color-hex {
+            font-size: var(--text-sm);
+            color: var(--text-disabled);
+        }
+
+        /* --- TYPOGRAPHY ---------------------------------------------- */
+        .type-specimen {
+            margin-bottom: var(--space-5);
+            padding: var(--space-4);
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+        }
+
+        .type-label {
+            font-size: var(--text-sm);
+            color: var(--text-disabled);
+            margin-bottom: var(--space-2);
+        }
+
+        .text-4xl { font-size: var(--text-4xl); }
+        .text-3xl { font-size: var(--text-3xl); }
+        .text-2xl { font-size: var(--text-2xl); }
+        .text-xl { font-size: var(--text-xl); }
+        .text-lg { font-size: var(--text-lg); }
+        .text-base { font-size: var(--text-base); }
+        .text-sm { font-size: var(--text-sm); }
+        .text-xs { font-size: var(--text-xs); }
+
+        /* --- SPACING SCALE ------------------------------------------- */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-size: var(--text-sm);
+            color: var(--text-disabled);
+        }
+
+        .spacing-bar {
+            height: 16px;
+            background: var(--win-dark-blue);
+            border: 1px solid var(--win-black);
+        }
+
+        .spacing-value {
+            font-size: var(--text-sm);
+            min-width: 40px;
+        }
+
+        /* --- BUTTONS ------------------------------------------------- */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .btn {
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+            padding: var(--space-2) var(--space-5);
+            background: var(--bg-window);
+            color: var(--text-primary);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark);
+            cursor: pointer;
+            min-width: 75px;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #D4D4D4;
+        }
+
+        .btn:active, .btn--pressed {
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-dark),
+                inset -1px -1px 0 var(--bevel-light);
+            padding: calc(var(--space-2) + 1px) calc(var(--space-5) - 1px) calc(var(--space-2) - 1px) calc(var(--space-5) + 1px);
+        }
+
+        .btn--default {
+            border-width: 3px;
+            border-color: var(--win-black);
+            box-shadow:
+                inset 2px 2px 0 var(--bevel-light),
+                inset -2px -2px 0 var(--bevel-dark),
+                inset 3px 3px 0 var(--bevel-medium);
+        }
+
+        .btn--default:active {
+            box-shadow:
+                inset 2px 2px 0 var(--bevel-dark),
+                inset -2px -2px 0 var(--bevel-light);
+        }
+
+        .btn:disabled {
+            color: var(--text-disabled);
+            text-shadow: 1px 1px 0 var(--win-white);
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:active {
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark);
+            padding: var(--space-2) var(--space-5);
+        }
+
+        .btn--sm {
+            font-size: var(--text-sm);
+            padding: var(--space-1) var(--space-3);
+            min-width: 60px;
+        }
+
+        .btn--lg {
+            font-size: var(--text-lg);
+            padding: var(--space-3) var(--space-7);
+            min-width: 100px;
+        }
+
+        /* Icon buttons */
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .btn-icon::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: var(--win-dark-blue);
+        }
+
+        /* --- FORM ELEMENTS ------------------------------------------- */
+        .form-group {
+            margin-bottom: var(--space-4);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-size: var(--text-base);
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+            padding: var(--space-2) var(--space-3);
+            background: var(--win-white);
+            color: var(--text-primary);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-dark);
+        }
+
+        .form-input:focus {
+            outline: none;
+        }
+
+        .form-input:disabled {
+            background: var(--bg-window);
+            color: var(--text-disabled);
+        }
+
+        textarea.form-input {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* Select / Dropdown */
+        .form-select {
+            width: 100%;
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+            padding: var(--space-2) var(--space-3);
+            background: var(--win-white);
+            color: var(--text-primary);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            cursor: pointer;
+            margin-bottom: var(--space-2);
+        }
+
+        .checkbox-box {
+            width: 13px;
+            height: 13px;
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .checkbox-wrapper input {
+            display: none;
+        }
+
+        .checkbox-wrapper input:checked + .checkbox-box::after {
+            content: 'X';
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--win-black);
+        }
+
+        .checkbox-wrapper input:disabled + .checkbox-box {
+            background: var(--bg-window);
+        }
+
+        .checkbox-wrapper input:disabled + .checkbox-box::after {
+            color: var(--text-disabled);
+        }
+
+        /* Radio button */
+        .radio-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            cursor: pointer;
+            margin-bottom: var(--space-2);
+        }
+
+        .radio-circle {
+            width: 12px;
+            height: 12px;
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .radio-wrapper input {
+            display: none;
+        }
+
+        .radio-wrapper input:checked + .radio-circle::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--win-black);
+            border-radius: 50%;
+        }
+
+        /* Scrollbar styling */
+        .scrollable-area {
+            max-height: 150px;
+            overflow-y: auto;
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            padding: var(--space-2);
+        }
+
+        .scrollable-area::-webkit-scrollbar {
+            width: 16px;
+        }
+
+        .scrollable-area::-webkit-scrollbar-track {
+            background: repeating-linear-gradient(
+                0deg,
+                var(--win-white) 0px,
+                var(--win-white) 2px,
+                var(--bg-window) 2px,
+                var(--bg-window) 4px
+            );
+        }
+
+        .scrollable-area::-webkit-scrollbar-thumb {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+        }
+
+        .scrollable-area::-webkit-scrollbar-button {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            height: 16px;
+        }
+
+        /* --- CARDS (Program Windows) --------------------------------- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .card {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark);
+        }
+
+        .card-titlebar {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+            padding: var(--space-1) var(--space-2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .card-content {
+            padding: var(--space-4);
+        }
+
+        .card-footer {
+            padding: var(--space-3) var(--space-4);
+            border-top: 1px solid var(--bevel-dark);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-3);
+        }
+
+        /* Program Group Icons */
+        .program-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+        }
+
+        .program-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: var(--space-2);
+            cursor: pointer;
+        }
+
+        .program-icon:hover {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        .program-icon-img {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-window);
+            border: 1px solid var(--win-black);
+            margin-bottom: var(--space-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .program-icon-label {
+            font-size: var(--text-sm);
+            word-break: break-word;
+        }
+
+        /* --- DATA TABLE ---------------------------------------------- */
+        .table-container {
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            background: var(--win-white);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--text-base);
+        }
+
+        .data-table th {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            padding: var(--space-2) var(--space-3);
+            text-align: left;
+            font-weight: normal;
+        }
+
+        .data-table td {
+            padding: var(--space-2) var(--space-3);
+            border-bottom: 1px solid var(--bg-window);
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        .data-table tr.selected td {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        /* --- BADGES -------------------------------------------------- */
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .badge {
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            padding: var(--space-1) var(--space-3);
+            background: var(--bg-window);
+            color: var(--text-primary);
+            border: 1px solid var(--win-black);
+        }
+
+        .badge--info {
+            background: var(--win-dark-blue);
+            color: var(--win-white);
+        }
+
+        .badge--success {
+            background: var(--win-dark-green);
+            color: var(--win-white);
+        }
+
+        .badge--warning {
+            background: var(--win-yellow);
+            color: var(--win-black);
+        }
+
+        .badge--error {
+            background: var(--win-dark-red);
+            color: var(--win-white);
+        }
+
+        .badge--outline {
+            background: transparent;
+            border: 2px solid var(--win-dark-blue);
+            color: var(--win-dark-blue);
+        }
+
+        /* --- DIALOG BOX ---------------------------------------------- */
+        .dialog-overlay {
+            position: relative;
+            padding: var(--space-6);
+            background: repeating-linear-gradient(
+                45deg,
+                var(--bg-desktop) 0px,
+                var(--bg-desktop) 2px,
+                #006666 2px,
+                #006666 4px
+            );
+        }
+
+        .dialog {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark),
+                4px 4px 0 rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .dialog-titlebar {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+            padding: var(--space-1) var(--space-2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .dialog-content {
+            padding: var(--space-5);
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        .dialog-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .dialog-icon--warning {
+            color: var(--win-yellow);
+        }
+
+        .dialog-icon--error {
+            color: var(--win-red);
+        }
+
+        .dialog-icon--info {
+            color: var(--win-dark-blue);
+        }
+
+        .dialog-buttons {
+            padding: var(--space-3) var(--space-5);
+            display: flex;
+            justify-content: center;
+            gap: var(--space-3);
+            border-top: 1px solid var(--bevel-dark);
+        }
+
+        /* --- PROGRESS BAR -------------------------------------------- */
+        .progress-container {
+            margin-bottom: var(--space-4);
+        }
+
+        .progress-label {
+            margin-bottom: var(--space-2);
+            font-size: var(--text-base);
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--win-dark-blue);
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill--striped {
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--win-dark-blue) 0px,
+                var(--win-dark-blue) 10px,
+                var(--win-blue) 10px,
+                var(--win-blue) 20px
+            );
+            animation: progress-stripe 1s linear infinite;
+        }
+
+        @keyframes progress-stripe {
+            0% { background-position: 0 0; }
+            100% { background-position: 28px 0; }
+        }
+
+        /* --- FOOTER -------------------------------------------------- */
+        .main-footer {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            padding: var(--space-5);
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+
+        .footer-text {
+            font-size: var(--text-base);
+            color: var(--text-disabled);
+            margin-bottom: var(--space-3);
+        }
+
+        .footer-text strong {
+            color: var(--text-primary);
+        }
+
+        /* --- DESIGN PRINCIPLES --------------------------------------- */
+        .principles-list {
+            list-style: none;
+        }
+
+        .principles-list li {
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            background: var(--win-white);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-start;
+        }
+
+        .principles-list li::before {
+            content: '>';
+            color: var(--win-dark-blue);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .principle-title {
+            font-weight: bold;
+            color: var(--win-dark-blue);
+        }
+
+        /* --- RESPONSIVE ---------------------------------------------- */
+        @media (max-width: 768px) {
+            body {
+                padding: var(--space-3);
+            }
+
+            .window-content {
+                padding: var(--space-3);
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-grid {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- MAIN PROGRAM WINDOW -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">Windows 3.1 Design System - Program Manager</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize" title="Minimize"></button>
+                    <button class="window-btn window-btn-maximize" title="Maximize"></button>
+                </div>
+            </div>
+            <div class="window-menubar">
+                <span class="menu-item"><span>F</span>ile</span>
+                <span class="menu-item"><span>O</span>ptions</span>
+                <span class="menu-item"><span>W</span>indow</span>
+                <span class="menu-item"><span>H</span>elp</span>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4); font-size: var(--text-xl);">
+                    A design system inspired by Microsoft Windows 3.1 (1992), featuring the iconic beveled 3D buttons,
+                    grey backgrounds, chunky UI elements, and the classic 16-color VGA palette.
+                </p>
+            </div>
+            <div class="window-statusbar">
+                <div class="statusbar-section">Ready</div>
+                <div class="statusbar-section">640x480</div>
+                <div class="statusbar-section">16 Colors</div>
+            </div>
+        </div>
+
+        <!-- I. COLOR PALETTE -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">I. Color Palette</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    The classic Windows 3.1 16-color VGA palette. Limited but iconic.
+                </p>
+
+                <div class="color-grid">
+                    <div class="color-swatch" style="background: #000000;" title="Black"></div>
+                    <div class="color-swatch" style="background: #000080;" title="Dark Blue"></div>
+                    <div class="color-swatch" style="background: #008000;" title="Dark Green"></div>
+                    <div class="color-swatch" style="background: #008080;" title="Dark Cyan"></div>
+                    <div class="color-swatch" style="background: #800000;" title="Dark Red"></div>
+                    <div class="color-swatch" style="background: #800080;" title="Dark Magenta"></div>
+                    <div class="color-swatch" style="background: #808000;" title="Brown"></div>
+                    <div class="color-swatch" style="background: #C0C0C0;" title="Light Gray"></div>
+                    <div class="color-swatch" style="background: #808080;" title="Dark Gray"></div>
+                    <div class="color-swatch" style="background: #0000FF;" title="Blue"></div>
+                    <div class="color-swatch" style="background: #00FF00;" title="Green"></div>
+                    <div class="color-swatch" style="background: #00FFFF;" title="Cyan"></div>
+                    <div class="color-swatch" style="background: #FF0000;" title="Red"></div>
+                    <div class="color-swatch" style="background: #FF00FF;" title="Magenta"></div>
+                    <div class="color-swatch" style="background: #FFFF00;" title="Yellow"></div>
+                    <div class="color-swatch" style="background: #FFFFFF; border: 1px solid #808080;" title="White"></div>
+                </div>
+
+                <div class="color-info">
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #C0C0C0;"></div>
+                        <div>
+                            <div class="color-name">Light Gray</div>
+                            <div class="color-hex">#C0C0C0 - Window BG</div>
+                        </div>
+                    </div>
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #000080;"></div>
+                        <div>
+                            <div class="color-name">Dark Blue</div>
+                            <div class="color-hex">#000080 - Title Bar</div>
+                        </div>
+                    </div>
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #008080;"></div>
+                        <div>
+                            <div class="color-name">Dark Cyan</div>
+                            <div class="color-hex">#008080 - Desktop</div>
+                        </div>
+                    </div>
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #FFFFFF;"></div>
+                        <div>
+                            <div class="color-name">White</div>
+                            <div class="color-hex">#FFFFFF - Bevel Light</div>
+                        </div>
+                    </div>
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #808080;"></div>
+                        <div>
+                            <div class="color-name">Dark Gray</div>
+                            <div class="color-hex">#808080 - Bevel Dark</div>
+                        </div>
+                    </div>
+                    <div class="color-detail">
+                        <div class="color-preview-box" style="background: #000000;"></div>
+                        <div>
+                            <div class="color-name">Black</div>
+                            <div class="color-hex">#000000 - Shadow</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- II. TYPOGRAPHY -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">II. Typography</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    System fonts with a bitmap aesthetic. VT323 captures the MS Sans Serif feel.
+                </p>
+
+                <div class="type-specimen">
+                    <div class="type-label">4XL - 2.5rem / 40px</div>
+                    <div class="text-4xl">Program Manager</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">3XL - 2rem / 32px</div>
+                    <div class="text-3xl">File Manager</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">2XL - 1.5rem / 24px</div>
+                    <div class="text-2xl">Control Panel</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">XL - 1.25rem / 20px</div>
+                    <div class="text-xl">Print Manager</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">LG - 1.125rem / 18px</div>
+                    <div class="text-lg">Clipboard Viewer</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">BASE - 1rem / 16px</div>
+                    <div class="text-base">MS-DOS Prompt</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">SM - 0.875rem / 14px</div>
+                    <div class="text-sm">PIF Editor</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">XS - 0.75rem / 12px</div>
+                    <div class="text-xs">Windows Setup</div>
+                </div>
+
+                <div class="type-specimen">
+                    <div class="type-label">PARAGRAPH TEXT</div>
+                    <div class="text-base" style="max-width: 500px;">
+                        Welcome to Windows 3.1! This operating system provides a graphical
+                        user interface for your IBM-compatible personal computer. You can
+                        run multiple applications simultaneously using the Program Manager.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- III. SPACING -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">III. Spacing System</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Compact spacing for efficient use of limited screen real estate.
+                </p>
+
+                <div class="spacing-demo">
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-1</span>
+                        <div class="spacing-bar" style="width: 2px;"></div>
+                        <span class="spacing-value">2px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-2</span>
+                        <div class="spacing-bar" style="width: 4px;"></div>
+                        <span class="spacing-value">4px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-3</span>
+                        <div class="spacing-bar" style="width: 8px;"></div>
+                        <span class="spacing-value">8px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-4</span>
+                        <div class="spacing-bar" style="width: 12px;"></div>
+                        <span class="spacing-value">12px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-5</span>
+                        <div class="spacing-bar" style="width: 16px;"></div>
+                        <span class="spacing-value">16px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-6</span>
+                        <div class="spacing-bar" style="width: 24px;"></div>
+                        <span class="spacing-value">24px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-7</span>
+                        <div class="spacing-bar" style="width: 32px;"></div>
+                        <span class="spacing-value">32px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-8</span>
+                        <div class="spacing-bar" style="width: 48px;"></div>
+                        <span class="spacing-value">48px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-9</span>
+                        <div class="spacing-bar" style="width: 64px;"></div>
+                        <span class="spacing-value">64px</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IV. BUTTONS -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">IV. Buttons</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Classic beveled 3D buttons with light top-left edges and dark bottom-right edges.
+                    Pressing inverts the bevel to create the "pushed in" effect.
+                </p>
+
+                <div class="groupbox" style="margin-top: var(--space-5);">
+                    <span class="groupbox-label">Standard Buttons</span>
+                    <div class="button-grid">
+                        <button class="btn">OK</button>
+                        <button class="btn">Cancel</button>
+                        <button class="btn">Help</button>
+                        <button class="btn">Browse...</button>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Default Button (Focus)</span>
+                    <div class="button-grid">
+                        <button class="btn btn--default">OK</button>
+                        <button class="btn">Cancel</button>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Button States</span>
+                    <div class="button-grid">
+                        <button class="btn">Normal</button>
+                        <button class="btn btn--pressed">Pressed</button>
+                        <button class="btn" disabled>Disabled</button>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Button Sizes</span>
+                    <div class="button-grid">
+                        <button class="btn btn--sm">Small</button>
+                        <button class="btn">Default</button>
+                        <button class="btn btn--lg">Large</button>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Action Buttons</span>
+                    <div class="button-grid">
+                        <button class="btn">&lt; Back</button>
+                        <button class="btn">Next &gt;</button>
+                        <button class="btn">Finish</button>
+                        <button class="btn">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- V. FORM ELEMENTS -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">V. Form Elements</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Chunky form controls with inset borders and the classic "sunken" 3D effect.
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-5);">
+                    <div>
+                        <div class="groupbox">
+                            <span class="groupbox-label">Text Input</span>
+                            <div class="form-group">
+                                <label class="form-label">User Name:</label>
+                                <input type="text" class="form-input" value="Administrator">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Password:</label>
+                                <input type="password" class="form-input" placeholder="Enter password">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Disabled:</label>
+                                <input type="text" class="form-input" value="Read only" disabled>
+                            </div>
+                        </div>
+
+                        <div class="groupbox">
+                            <span class="groupbox-label">Dropdown List</span>
+                            <div class="form-group">
+                                <label class="form-label">Drive:</label>
+                                <select class="form-select">
+                                    <option>C: [MS-DOS_6]</option>
+                                    <option>A: [3.5 Floppy]</option>
+                                    <option>D: [CD-ROM]</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="groupbox">
+                            <span class="groupbox-label">Check Boxes</span>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" checked>
+                                <span class="checkbox-box"></span>
+                                <span>Read Only</span>
+                            </label>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox">
+                                <span class="checkbox-box"></span>
+                                <span>Hidden</span>
+                            </label>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" checked>
+                                <span class="checkbox-box"></span>
+                                <span>Archive</span>
+                            </label>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" disabled>
+                                <span class="checkbox-box"></span>
+                                <span>System (Disabled)</span>
+                            </label>
+                        </div>
+
+                        <div class="groupbox">
+                            <span class="groupbox-label">Radio Buttons</span>
+                            <label class="radio-wrapper">
+                                <input type="radio" name="view" checked>
+                                <span class="radio-circle"></span>
+                                <span>Large Icons</span>
+                            </label>
+                            <label class="radio-wrapper">
+                                <input type="radio" name="view">
+                                <span class="radio-circle"></span>
+                                <span>Small Icons</span>
+                            </label>
+                            <label class="radio-wrapper">
+                                <input type="radio" name="view">
+                                <span class="radio-circle"></span>
+                                <span>List</span>
+                            </label>
+                            <label class="radio-wrapper">
+                                <input type="radio" name="view">
+                                <span class="radio-circle"></span>
+                                <span>Details</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Text Area with Scrollbar</span>
+                    <div class="form-group">
+                        <label class="form-label">Description:</label>
+                        <div class="scrollable-area">
+                            <div style="padding: var(--space-2);">
+                                Microsoft Windows operating system, version 3.1.<br><br>
+                                Copyright (C) 1985-1992 Microsoft Corp.<br><br>
+                                This product is licensed to:<br>
+                                Registered User<br>
+                                Organization Name<br><br>
+                                Product ID: 00000-000-0000000-00000<br><br>
+                                Windows 3.1 requires MS-DOS version 3.1 or later.<br>
+                                Minimum RAM: 1 MB (2 MB recommended)<br>
+                                Hard disk: 6-10 MB free space<br><br>
+                                For best results, use a 386 or higher processor.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VI. CARDS (Program Windows) -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">VI. Cards (Program Windows)</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Cards styled as classic Windows 3.1 program group windows with title bars.
+                </p>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <span>Main</span>
+                            <div class="window-controls">
+                                <button class="window-btn window-btn-minimize"></button>
+                                <button class="window-btn window-btn-maximize"></button>
+                            </div>
+                        </div>
+                        <div class="program-group">
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128190;</div>
+                                <span class="program-icon-label">File Manager</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#9881;</div>
+                                <span class="program-icon-label">Control Panel</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128424;</div>
+                                <span class="program-icon-label">Print Manager</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128203;</div>
+                                <span class="program-icon-label">Clipboard</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <span>Accessories</span>
+                            <div class="window-controls">
+                                <button class="window-btn window-btn-minimize"></button>
+                                <button class="window-btn window-btn-maximize"></button>
+                            </div>
+                        </div>
+                        <div class="program-group">
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128221;</div>
+                                <span class="program-icon-label">Write</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#127912;</div>
+                                <span class="program-icon-label">Paintbrush</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128178;</div>
+                                <span class="program-icon-label">Calculator</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128197;</div>
+                                <span class="program-icon-label">Calendar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <span>Games</span>
+                            <div class="window-controls">
+                                <button class="window-btn window-btn-minimize"></button>
+                                <button class="window-btn window-btn-maximize"></button>
+                            </div>
+                        </div>
+                        <div class="program-group">
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#127183;</div>
+                                <span class="program-icon-label">Solitaire</span>
+                            </div>
+                            <div class="program-icon">
+                                <div class="program-icon-img">&#128163;</div>
+                                <span class="program-icon-label">Minesweeper</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: var(--space-6); margin-bottom: var(--space-3);">Dialog Card</h3>
+                <div class="card" style="max-width: 350px;">
+                    <div class="card-titlebar">
+                        <span>System Properties</span>
+                        <div class="window-controls">
+                            <button class="window-btn window-btn-close"></button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Microsoft Windows</strong></p>
+                        <p>Version 3.1</p>
+                        <p style="margin-top: var(--space-3); color: var(--text-disabled);">
+                            Copyright (C) 1985-1992<br>
+                            Microsoft Corp.
+                        </p>
+                        <p style="margin-top: var(--space-3);">
+                            386 Enhanced Mode<br>
+                            Memory: 4,096 KB Free
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn--default">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VII. DATA TABLE -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">VII. Data Table</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    File listing table styled like File Manager.
+                </p>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="selected">
+                                <td>WIN.INI</td>
+                                <td>14,752</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                            <tr>
+                                <td>SYSTEM.INI</td>
+                                <td>9,344</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                            <tr>
+                                <td>PROGMAN.INI</td>
+                                <td>1,024</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                            <tr>
+                                <td>CONTROL.INI</td>
+                                <td>2,048</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                            <tr>
+                                <td>WINFILE.INI</td>
+                                <td>512</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                            <tr>
+                                <td>MOUSE.INI</td>
+                                <td>256</td>
+                                <td>03/10/92</td>
+                                <td>3:10a</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-disabled);">
+                    6 file(s) - 27,936 bytes
+                </p>
+            </div>
+        </div>
+
+        <!-- VIII. BADGES -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">VIII. Badges</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Status indicators using the Windows 3.1 color palette.
+                </p>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Standard Badges</span>
+                    <div class="badge-container">
+                        <span class="badge">Default</span>
+                        <span class="badge badge--info">Info</span>
+                        <span class="badge badge--success">Success</span>
+                        <span class="badge badge--warning">Warning</span>
+                        <span class="badge badge--error">Error</span>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Outline Badges</span>
+                    <div class="badge-container">
+                        <span class="badge badge--outline">New</span>
+                        <span class="badge badge--outline">Updated</span>
+                        <span class="badge badge--outline">Beta</span>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <span class="groupbox-label">Usage Examples</span>
+                    <div class="badge-container">
+                        <span class="badge badge--info">v3.1</span>
+                        <span class="badge badge--success">Connected</span>
+                        <span class="badge badge--warning">Low Memory</span>
+                        <span class="badge badge--error">Disk Full</span>
+                        <span class="badge">386 Enhanced</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IX. DIALOGS & PROGRESS -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">IX. Dialogs and Progress</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Classic Windows dialog boxes and progress indicators.
+                </p>
+
+                <div class="dialog-overlay">
+                    <div class="dialog">
+                        <div class="dialog-titlebar">
+                            <span>Windows</span>
+                        </div>
+                        <div class="dialog-content">
+                            <div class="dialog-icon dialog-icon--warning">&#9888;</div>
+                            <div>
+                                Are you sure you want to delete 'GAME.EXE'?<br>
+                                This action cannot be undone.
+                            </div>
+                        </div>
+                        <div class="dialog-buttons">
+                            <button class="btn btn--default">Yes</button>
+                            <button class="btn">No</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: var(--space-5);">
+                    <div class="groupbox">
+                        <span class="groupbox-label">Progress Bars</span>
+
+                        <div class="progress-container">
+                            <div class="progress-label">Copying files... 75%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 75%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-label">Installing... 45%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-fill--striped" style="width: 45%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-label">Formatting disk... 100%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- X. DESIGN PRINCIPLES -->
+        <div class="window">
+            <div class="window-titlebar">
+                <span class="window-title">X. Design Principles</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    Core principles for authentic Windows 3.1 visual design.
+                </p>
+
+                <ul class="principles-list">
+                    <li>
+                        <div>
+                            <span class="principle-title">Beveled 3D Effect</span><br>
+                            All interactive elements use the classic beveled border technique:
+                            white/light gray on top-left edges, dark gray/black on bottom-right.
+                            Pressed states invert this pattern.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">16-Color VGA Palette</span><br>
+                            Stick to the authentic 16-color palette. Use Dark Blue (#000080) for
+                            title bars, Light Gray (#C0C0C0) for window backgrounds, and Teal
+                            (#008080) for the desktop.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">System Font Aesthetic</span><br>
+                            Typography should evoke the MS Sans Serif bitmap font feel. Keep text
+                            sizes relatively small and avoid anti-aliasing effects.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">Compact UI Elements</span><br>
+                            Windows 3.1 ran on 640x480 displays. UI elements should be compact but
+                            chunky, with clear visual boundaries. Every pixel matters.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">Window Hierarchy</span><br>
+                            Everything lives in windows. Active windows have blue title bars;
+                            inactive windows have gray. Window controls (minimize/maximize) use
+                            the same beveled button style.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">Consistent Borders</span><br>
+                            Use 2px borders consistently. Raised elements (buttons, panels) push
+                            out from the surface. Sunken elements (text inputs, lists) recede into it.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">Group Boxes</span><br>
+                            Related controls should be grouped in labeled frames (group boxes) with
+                            etched borders. Labels sit on the top border line.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <span class="principle-title">No Gradients or Shadows</span><br>
+                            Avoid modern effects like gradients, drop shadows, or transparency.
+                            The 3D effect comes purely from strategic border color placement.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="main-footer">
+            <div class="footer-text">
+                <strong>Windows 3.1 Design System</strong><br>
+                Inspired by Microsoft Windows 3.1 (1992)<br><br>
+                "Working with windows has never been easier."
+            </div>
+            <div style="margin-top: var(--space-4);">
+                <button class="btn">README.TXT</button>
+                <button class="btn">HELP.HLP</button>
+                <button class="btn">EXIT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // BUTTON INTERACTIONS
+        // ================================================================
+
+        // Add click feedback to all buttons
+        document.querySelectorAll('.btn:not(:disabled)').forEach(btn => {
+            btn.addEventListener('mousedown', function() {
+                this.style.borderColor = 'var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow)';
+                this.style.boxShadow = 'inset 1px 1px 0 var(--bevel-dark), inset -1px -1px 0 var(--bevel-light)';
+            });
+
+            btn.addEventListener('mouseup', function() {
+                if (!this.classList.contains('btn--pressed')) {
+                    this.style.borderColor = '';
+                    this.style.boxShadow = '';
+                }
+            });
+
+            btn.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('btn--pressed')) {
+                    this.style.borderColor = '';
+                    this.style.boxShadow = '';
+                }
+            });
+        });
+
+        // ================================================================
+        // WINDOW CONTROL BUTTONS
+        // ================================================================
+
+        document.querySelectorAll('.window-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Visual feedback - button press animation
+                this.style.borderColor = 'var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow)';
+                setTimeout(() => {
+                    this.style.borderColor = '';
+                }, 100);
+            });
+        });
+
+        // ================================================================
+        // PROGRAM ICON DOUBLE-CLICK SIMULATION
+        // ================================================================
+
+        document.querySelectorAll('.program-icon').forEach(icon => {
+            let clickCount = 0;
+            let clickTimer = null;
+
+            icon.addEventListener('click', function() {
+                clickCount++;
+
+                if (clickCount === 1) {
+                    // First click - select
+                    document.querySelectorAll('.program-icon').forEach(i => {
+                        i.style.background = '';
+                        i.style.color = '';
+                    });
+                    this.style.background = 'var(--bg-titlebar)';
+                    this.style.color = 'var(--text-titlebar)';
+
+                    clickTimer = setTimeout(() => {
+                        clickCount = 0;
+                    }, 400);
+                } else if (clickCount === 2) {
+                    // Double click - "launch"
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+
+                    // Flash effect
+                    this.style.background = 'var(--win-white)';
+                    this.style.color = 'var(--win-black)';
+                    setTimeout(() => {
+                        this.style.background = 'var(--bg-titlebar)';
+                        this.style.color = 'var(--text-titlebar)';
+                    }, 100);
+                }
+            });
+        });
+
+        // ================================================================
+        // TABLE ROW SELECTION
+        // ================================================================
+
+        document.querySelectorAll('.data-table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                document.querySelectorAll('.data-table tbody tr').forEach(r => {
+                    r.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        // ================================================================
+        // COLOR SWATCH CLICK TO COPY
+        // ================================================================
+
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', function() {
+                const color = this.getAttribute('title') || this.style.background;
+                const bgColor = window.getComputedStyle(this).backgroundColor;
+
+                // Convert RGB to HEX
+                const rgb = bgColor.match(/\d+/g);
+                if (rgb) {
+                    const hex = '#' + rgb.map(x => {
+                        const h = parseInt(x).toString(16);
+                        return h.length === 1 ? '0' + h : h;
+                    }).join('').toUpperCase();
+
+                    navigator.clipboard.writeText(hex).then(() => {
+                        // Visual feedback
+                        const originalBorder = this.style.border;
+                        this.style.border = '2px dotted white';
+                        setTimeout(() => {
+                            this.style.border = originalBorder;
+                        }, 200);
+                    });
+                }
+            });
+        });
+
+        // ================================================================
+        // STARTUP SOUND SIMULATION (Console message)
+        // ================================================================
+
+        console.log('%c Microsoft Windows ', 'background: #000080; color: #FFFFFF; font-size: 20px; padding: 10px;');
+        console.log('%c Version 3.1 ', 'background: #C0C0C0; color: #000000; font-size: 14px; padding: 5px;');
+        console.log('%c Design System Ready ', 'background: #008080; color: #FFFFFF; font-size: 12px; padding: 5px;');
+    </script>
+</body>
+</html>

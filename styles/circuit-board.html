@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIRCUIT BOARD // PCB Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CIRCUIT BOARD / PCB DESIGN SYSTEM
+           ============================================
+           Hardware electronics aesthetic.
+           PCB substrate, copper traces, silkscreen.
+           Solder points and component grids.
+           Technical. Precise. Hardware-authentic.
+           ============================================ */
+
+        :root {
+            /* PCB SUBSTRATE COLORS */
+            --pcb-green: #1A472A;
+            --pcb-green-light: #2D5A3D;
+            --pcb-green-dark: #0F2D1A;
+            --pcb-blue: #1A3A4A;
+            --pcb-black: #1A1A1A;
+
+            /* COPPER TRACES */
+            --copper: #B87333;
+            --copper-light: #D4956A;
+            --copper-bright: #E8B796;
+            --copper-dark: #8B5A2B;
+            --gold: #FFD700;
+            --gold-pale: #DAA520;
+
+            /* SILKSCREEN */
+            --silkscreen: #F5F5F0;
+            --silkscreen-dim: #C8C8C0;
+
+            /* SOLDER & METAL */
+            --solder: #C0C0C0;
+            --solder-bright: #E8E8E8;
+            --tin: #8B8B8B;
+            --lead-free: #A8A8A8;
+
+            /* COMPONENT COLORS */
+            --resistor-body: #D2B48C;
+            --capacitor-blue: #4169E1;
+            --led-red: #FF3333;
+            --led-green: #33FF33;
+            --led-amber: #FFBF00;
+            --ic-body: #2D2D2D;
+
+            /* FUNCTIONAL */
+            --error: #FF4444;
+            --success: #44FF44;
+            --warning: #FFAA00;
+            --info: #4499FF;
+
+            /* TYPOGRAPHY */
+            --font-silkscreen: 'Share Tech Mono', 'Courier New', monospace;
+            --font-display: 'Orbitron', 'Arial', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+            /* SPACING (based on 2.54mm grid = standard component pitch) */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-xxl: 48px;
+            --space-grid: 64px;
+
+            /* TRACE WIDTHS */
+            --trace-thin: 1px;
+            --trace-normal: 2px;
+            --trace-thick: 3px;
+            --trace-power: 4px;
+
+            /* VIA SIZES */
+            --via-small: 6px;
+            --via-normal: 8px;
+            --via-large: 12px;
+            --pad-size: 16px;
+        }
+
+        /* RESET */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--silkscreen);
+            background: var(--pcb-green-dark);
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           TEXTURES & PATTERNS
+           ============================================ */
+
+        /* Fiberglass weave texture */
+        .texture-fiberglass {
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255,255,255,0.02) 2px,
+                    rgba(255,255,255,0.02) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255,255,255,0.02) 2px,
+                    rgba(255,255,255,0.02) 4px
+                );
+        }
+
+        /* Component grid pattern */
+        .grid-pattern {
+            background-image:
+                radial-gradient(circle at center, rgba(184,115,51,0.15) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        /* Copper pour pattern */
+        .copper-pour {
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    var(--copper-dark),
+                    var(--copper-dark) 1px,
+                    transparent 1px,
+                    transparent 8px
+                ),
+                var(--copper);
+        }
+
+        /* Solder mask texture */
+        .solder-mask {
+            background:
+                linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.05) 0%,
+                    transparent 50%,
+                    rgba(0,0,0,0.1) 100%
+                ),
+                var(--pcb-green);
+        }
+
+        /* ============================================
+           COPPER TRACES
+           ============================================ */
+
+        .trace {
+            position: relative;
+        }
+
+        .trace-h {
+            height: var(--trace-normal);
+            background: linear-gradient(180deg, var(--copper-light) 0%, var(--copper) 50%, var(--copper-dark) 100%);
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .trace-v {
+            width: var(--trace-normal);
+            background: linear-gradient(90deg, var(--copper-light) 0%, var(--copper) 50%, var(--copper-dark) 100%);
+            box-shadow:
+                1px 0 2px rgba(0,0,0,0.3),
+                inset 1px 0 0 rgba(255,255,255,0.2);
+        }
+
+        /* Via / Through-hole */
+        .via {
+            width: var(--via-normal);
+            height: var(--via-normal);
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--copper-bright), var(--copper) 40%, var(--copper-dark) 100%);
+            box-shadow:
+                inset 0 0 2px rgba(0,0,0,0.5),
+                0 1px 2px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .via::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 3px;
+            height: 3px;
+            background: var(--pcb-green-dark);
+            border-radius: 50%;
+        }
+
+        /* Solder pad */
+        .pad {
+            width: var(--pad-size);
+            height: var(--pad-size);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, var(--solder-bright), var(--solder) 50%, var(--tin) 100%);
+            box-shadow:
+                inset -2px -2px 4px rgba(0,0,0,0.3),
+                inset 2px 2px 4px rgba(255,255,255,0.4),
+                0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .pad-square {
+            border-radius: 2px;
+        }
+
+        .pad-gold {
+            background: radial-gradient(circle at 35% 35%, var(--gold), var(--gold-pale) 70%);
+        }
+
+        /* ============================================
+           PAGE STRUCTURE
+           ============================================ */
+
+        .page-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--pcb-green);
+            position: relative;
+            box-shadow:
+                -20px 0 40px rgba(0,0,0,0.5),
+                20px 0 40px rgba(0,0,0,0.5);
+        }
+
+        /* Board edge - gold fingers */
+        .page-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--gold) 0px,
+                    var(--gold) 20px,
+                    var(--pcb-green-dark) 20px,
+                    var(--pcb-green-dark) 24px
+                );
+        }
+
+        .page-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--gold) 0px,
+                    var(--gold) 20px,
+                    var(--pcb-green-dark) 20px,
+                    var(--pcb-green-dark) 24px
+                );
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+
+        .site-header {
+            position: relative;
+            padding: var(--space-grid) var(--space-xl) var(--space-xl);
+            background:
+                radial-gradient(circle at 20% 80%, rgba(184,115,51,0.1) 0%, transparent 30%),
+                radial-gradient(circle at 80% 20%, rgba(184,115,51,0.08) 0%, transparent 25%),
+                linear-gradient(180deg, var(--pcb-green) 0%, var(--pcb-green-dark) 100%);
+            border-bottom: var(--trace-power) solid var(--copper);
+        }
+
+        /* Decorative traces in header */
+        .header-traces {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 40px;
+            pointer-events: none;
+        }
+
+        .header-traces::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--copper);
+            box-shadow:
+                0 10px 0 var(--copper),
+                0 20px 0 var(--copper),
+                120px 0 0 var(--copper),
+                120px 10px 0 var(--copper);
+        }
+
+        .header-traces::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--copper);
+            box-shadow:
+                0 10px 0 var(--copper),
+                0 20px 0 var(--copper),
+                -120px 0 0 var(--copper),
+                -120px 10px 0 var(--copper);
+        }
+
+        .site-header h1 {
+            font-family: var(--font-silkscreen);
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 400;
+            color: var(--silkscreen);
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            margin-bottom: var(--space-md);
+            line-height: 1;
+            text-shadow: 2px 2px 0 var(--pcb-green-dark);
+        }
+
+        .site-header .tagline {
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            color: var(--silkscreen-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            margin-bottom: var(--space-lg);
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--pcb-green-dark);
+            color: var(--silkscreen);
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: 1px solid var(--copper);
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--led-green);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--led-green);
+            animation: led-blink 2s ease-in-out infinite;
+        }
+
+        @keyframes led-blink {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--led-green); }
+            50% { opacity: 0.6; box-shadow: 0 0 3px var(--led-green); }
+        }
+
+        /* ============================================
+           NAVIGATION
+           ============================================ */
+
+        .nav-bar {
+            display: flex;
+            flex-wrap: wrap;
+            background: var(--pcb-green-dark);
+            border-bottom: var(--trace-normal) solid var(--copper);
+            position: relative;
+        }
+
+        .nav-bar::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--copper) 0px,
+                    var(--copper) 8px,
+                    transparent 8px,
+                    transparent 16px
+                );
+        }
+
+        .nav-bar a {
+            flex: 1 1 auto;
+            padding: var(--space-md) var(--space-lg);
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--silkscreen-dim);
+            text-decoration: none;
+            text-align: center;
+            border-right: 1px solid var(--pcb-green);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-bar a:last-child {
+            border-right: none;
+        }
+
+        .nav-bar a:hover {
+            background: var(--copper);
+            color: var(--pcb-green-dark);
+        }
+
+        .nav-bar a::before {
+            content: '';
+            position: absolute;
+            left: var(--space-sm);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background: var(--copper);
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+
+        .nav-bar a:hover::before {
+            background: var(--pcb-green-dark);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .nav-bar a {
+                flex: 1 1 50%;
+                padding: var(--space-sm) var(--space-md);
+                font-size: 0.625rem;
+            }
+        }
+
+        /* ============================================
+           SECTION STRUCTURE
+           ============================================ */
+
+        .section {
+            padding: var(--space-xxl) var(--space-xl);
+            border-bottom: var(--trace-thick) solid var(--copper);
+            position: relative;
+            background:
+                radial-gradient(circle at center, rgba(184,115,51,0.03) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        .section:nth-child(odd) {
+            background-color: var(--pcb-green);
+        }
+
+        .section:nth-child(even) {
+            background-color: var(--pcb-green-dark);
+        }
+
+        /* Trace routing decoration */
+        .section::before {
+            content: '';
+            position: absolute;
+            top: var(--space-lg);
+            left: var(--space-lg);
+            width: 60px;
+            height: 2px;
+            background: var(--copper);
+            box-shadow:
+                0 8px 0 var(--copper),
+                60px 4px 0 var(--copper);
+        }
+
+        .section::after {
+            content: '';
+            position: absolute;
+            top: var(--space-lg);
+            right: var(--space-lg);
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 30% 30%, var(--copper-bright), var(--copper) 60%);
+            border-radius: 50%;
+            box-shadow:
+                -20px 0 0 var(--copper),
+                -20px 0 0 2px var(--pcb-green-dark),
+                -40px 0 0 var(--copper),
+                -40px 0 0 2px var(--pcb-green-dark);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px dashed var(--copper);
+            position: relative;
+        }
+
+        .section-number {
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            color: var(--copper-light);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            display: block;
+            margin-bottom: var(--space-xs);
+        }
+
+        .section-number::before {
+            content: 'REF: ';
+            color: var(--silkscreen-dim);
+        }
+
+        .section-title {
+            font-family: var(--font-silkscreen);
+            font-size: 1.5rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--silkscreen);
+            margin-bottom: var(--space-sm);
+        }
+
+        .section-description {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--silkscreen-dim);
+            max-width: 700px;
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-silkscreen);
+            font-weight: 400;
+            line-height: 1.3;
+            color: var(--silkscreen);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.5rem; }
+        h3 { font-size: 1.25rem; }
+        h4 { font-size: 1rem; }
+        h5 { font-size: 0.875rem; }
+        h6 { font-size: 0.75rem; }
+
+        p {
+            margin-bottom: var(--space-md);
+        }
+
+        .text-silkscreen {
+            font-family: var(--font-silkscreen);
+            letter-spacing: 0.1em;
+        }
+
+        .text-display {
+            font-family: var(--font-display);
+        }
+
+        .text-mono {
+            font-family: var(--font-mono);
+        }
+
+        .text-copper {
+            color: var(--copper-light);
+        }
+
+        .text-gold {
+            color: var(--gold);
+        }
+
+        .text-dim {
+            color: var(--silkscreen-dim);
+        }
+
+        /* Silkscreen label style */
+        .silkscreen-label {
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--silkscreen);
+            background: transparent;
+            padding: var(--space-xs) 0;
+        }
+
+        /* ============================================
+           COLOR PALETTE
+           ============================================ */
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .color-swatch {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-md);
+            border: 2px solid var(--copper);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Solder pad decoration */
+        .color-swatch::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at 35% 35%, var(--solder-bright), var(--solder) 60%);
+            border-radius: 50%;
+            box-shadow: inset -1px -1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Trace connecting to pad */
+        .color-swatch::after {
+            content: '';
+            position: absolute;
+            top: 13px;
+            right: 18px;
+            width: 20px;
+            height: 2px;
+            background: var(--copper);
+        }
+
+        .color-name {
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-xs);
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            opacity: 0.8;
+        }
+
+        /* ============================================
+           BUTTONS (Component Style)
+           ============================================ */
+
+        .btn {
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            text-decoration: none;
+            position: relative;
+            transition: all 0.15s ease;
+        }
+
+        /* Solder pads on buttons */
+        .btn::before,
+        .btn::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at 35% 35%, var(--solder-bright), var(--solder) 60%);
+            border-radius: 50%;
+            box-shadow:
+                inset -1px -1px 2px rgba(0,0,0,0.3),
+                0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .btn::before {
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn::after {
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Primary - Gold traces */
+        .btn-primary {
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-pale) 100%);
+            color: var(--pcb-green-dark);
+            border: 2px solid var(--copper-dark);
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                0 3px 0 var(--copper-dark),
+                0 4px 8px rgba(0,0,0,0.4);
+            padding-left: var(--space-xl);
+            padding-right: var(--space-xl);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(180deg, #FFE44D 0%, var(--gold) 100%);
+            transform: translateY(-1px);
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                0 4px 0 var(--copper-dark),
+                0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(2px);
+            box-shadow:
+                inset 0 2px 0 rgba(0,0,0,0.1),
+                0 1px 0 var(--copper-dark);
+        }
+
+        /* Secondary - Copper */
+        .btn-secondary {
+            background: linear-gradient(180deg, var(--copper-light) 0%, var(--copper) 100%);
+            color: var(--pcb-green-dark);
+            border: 2px solid var(--copper-dark);
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.2),
+                0 3px 0 var(--copper-dark),
+                0 4px 8px rgba(0,0,0,0.4);
+            padding-left: var(--space-xl);
+            padding-right: var(--space-xl);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(180deg, var(--copper-bright) 0%, var(--copper-light) 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(2px);
+            box-shadow:
+                inset 0 2px 0 rgba(0,0,0,0.1),
+                0 1px 0 var(--copper-dark);
+        }
+
+        /* Outline - Silkscreen style */
+        .btn-outline {
+            background: transparent;
+            color: var(--silkscreen);
+            border: 2px solid var(--silkscreen);
+            box-shadow: none;
+            padding-left: var(--space-xl);
+            padding-right: var(--space-xl);
+        }
+
+        .btn-outline::before,
+        .btn-outline::after {
+            background: var(--silkscreen);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--silkscreen);
+            color: var(--pcb-green-dark);
+        }
+
+        .btn-outline:hover::before,
+        .btn-outline:hover::after {
+            background: var(--pcb-green-dark);
+        }
+
+        /* Danger - Red LED style */
+        .btn-danger {
+            background: linear-gradient(180deg, var(--led-red) 0%, #CC2222 100%);
+            color: var(--silkscreen);
+            border: 2px solid #991111;
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.2),
+                inset 0 -2px 0 rgba(0,0,0,0.3),
+                0 3px 0 #661111,
+                0 4px 8px rgba(0,0,0,0.4),
+                0 0 10px rgba(255,51,51,0.3);
+            padding-left: var(--space-xl);
+            padding-right: var(--space-xl);
+        }
+
+        .btn-danger:hover {
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.2),
+                inset 0 -2px 0 rgba(0,0,0,0.3),
+                0 4px 0 #661111,
+                0 6px 12px rgba(0,0,0,0.5),
+                0 0 15px rgba(255,51,51,0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Size variants */
+        .btn-sm {
+            font-size: 0.625rem;
+            padding: var(--space-sm) var(--space-lg);
+        }
+
+        .btn-sm::before,
+        .btn-sm::after {
+            width: 6px;
+            height: 6px;
+        }
+
+        .btn-lg {
+            font-size: 0.875rem;
+            padding: var(--space-lg) var(--space-xl);
+        }
+
+        .btn-lg::before,
+        .btn-lg::after {
+            width: 12px;
+            height: 12px;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        /* ============================================
+           FORMS
+           ============================================ */
+
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--silkscreen);
+            margin-bottom: var(--space-sm);
+            padding-left: var(--space-sm);
+        }
+
+        .form-label::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--copper);
+            border-radius: 50%;
+            margin-right: var(--space-sm);
+            vertical-align: middle;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            padding: var(--space-md);
+            background: var(--pcb-green-dark);
+            color: var(--silkscreen);
+            border: 2px solid var(--copper);
+            box-shadow:
+                inset 0 2px 6px rgba(0,0,0,0.4),
+                0 1px 0 rgba(255,255,255,0.05);
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow:
+                inset 0 2px 6px rgba(0,0,0,0.4),
+                0 0 0 3px rgba(255,215,0,0.2);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--silkscreen-dim);
+            opacity: 0.5;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23B87333' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 48px;
+        }
+
+        .form-hint {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--silkscreen-dim);
+            margin-top: var(--space-xs);
+            padding-left: var(--space-sm);
+        }
+
+        .form-error {
+            color: var(--led-red);
+            border-left: 2px solid var(--led-red);
+            background: rgba(255,51,51,0.1);
+            padding: var(--space-xs) var(--space-sm);
+            margin-top: var(--space-xs);
+        }
+
+        fieldset {
+            border: 2px solid var(--copper);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            background: rgba(0,0,0,0.2);
+        }
+
+        legend {
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--copper-light);
+            padding: 0 var(--space-md);
+            background: var(--pcb-green);
+        }
+
+        .form-checkbox,
+        .form-radio {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .form-checkbox input,
+        .form-radio input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--gold);
+        }
+
+        /* ============================================
+           CARDS (With Trace Routing)
+           ============================================ */
+
+        .card {
+            background: var(--pcb-green-dark);
+            border: 2px solid var(--copper);
+            margin-bottom: var(--space-lg);
+            position: relative;
+            box-shadow:
+                0 4px 16px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+
+        /* Trace routing decoration */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 20px;
+            width: 2px;
+            height: 20px;
+            background: var(--copper);
+            box-shadow:
+                10px 0 0 var(--copper),
+                20px 0 0 var(--copper);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: 20px;
+            width: 2px;
+            height: 20px;
+            background: var(--copper);
+            box-shadow:
+                -10px 0 0 var(--copper),
+                -20px 0 0 var(--copper);
+        }
+
+        .card-header {
+            padding: var(--space-md) var(--space-lg);
+            background: linear-gradient(180deg, var(--pcb-green) 0%, var(--pcb-green-dark) 100%);
+            border-bottom: 2px solid var(--copper);
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--silkscreen);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        /* Component designator */
+        .card-header::before {
+            content: 'U';
+            counter-increment: card;
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            color: var(--copper-light);
+            padding: 2px 6px;
+            border: 1px solid var(--copper);
+            margin-right: var(--space-sm);
+        }
+
+        .card-body {
+            padding: var(--space-lg);
+        }
+
+        .card-footer {
+            padding: var(--space-md) var(--space-lg);
+            background: var(--pcb-green);
+            border-top: 1px dashed var(--copper);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--silkscreen-dim);
+        }
+
+        /* Card variants */
+        .card-gold {
+            border-color: var(--gold);
+        }
+
+        .card-gold::before,
+        .card-gold::after {
+            background: var(--gold);
+            box-shadow:
+                10px 0 0 var(--gold),
+                20px 0 0 var(--gold);
+        }
+
+        .card-gold .card-header {
+            border-color: var(--gold);
+        }
+
+        .card-error {
+            border-color: var(--led-red);
+        }
+
+        .card-error::before,
+        .card-error::after {
+            background: var(--led-red);
+            box-shadow:
+                10px 0 0 var(--led-red),
+                20px 0 0 var(--led-red);
+        }
+
+        .card-error .card-header {
+            background: linear-gradient(180deg, rgba(255,51,51,0.2) 0%, var(--pcb-green-dark) 100%);
+            border-color: var(--led-red);
+        }
+
+        /* ============================================
+           DATA TABLE (Component Specs Style)
+           ============================================ */
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 2px solid var(--copper);
+            background: var(--pcb-green-dark);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: var(--space-md);
+            text-align: left;
+            border-bottom: 1px solid var(--pcb-green);
+        }
+
+        .data-table th {
+            background: linear-gradient(180deg, var(--pcb-green) 0%, var(--pcb-green-dark) 100%);
+            color: var(--silkscreen);
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border-bottom: 2px solid var(--copper);
+        }
+
+        .data-table tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .data-table tr:hover td {
+            background: rgba(184,115,51,0.1);
+        }
+
+        .data-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--copper-light);
+        }
+
+        .data-table td.part-num {
+            font-family: var(--font-silkscreen);
+            color: var(--gold);
+        }
+
+        .data-table tfoot td {
+            background: var(--pcb-green);
+            font-weight: 600;
+            border-top: 2px solid var(--copper);
+        }
+
+        /* ============================================
+           BADGES (Component Labels)
+           ============================================ */
+
+        .badge {
+            font-family: var(--font-silkscreen);
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-xs) var(--space-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            border: 1px solid;
+        }
+
+        .badge-copper {
+            background: var(--copper);
+            color: var(--pcb-green-dark);
+            border-color: var(--copper-dark);
+        }
+
+        .badge-gold {
+            background: var(--gold);
+            color: var(--pcb-green-dark);
+            border-color: var(--gold-pale);
+        }
+
+        .badge-silkscreen {
+            background: transparent;
+            color: var(--silkscreen);
+            border-color: var(--silkscreen);
+        }
+
+        .badge-success {
+            background: var(--led-green);
+            color: var(--pcb-green-dark);
+            border-color: #22AA22;
+            box-shadow: 0 0 4px var(--led-green);
+        }
+
+        .badge-warning {
+            background: var(--led-amber);
+            color: var(--pcb-green-dark);
+            border-color: #CC9900;
+            box-shadow: 0 0 4px var(--led-amber);
+        }
+
+        .badge-error {
+            background: var(--led-red);
+            color: var(--silkscreen);
+            border-color: #CC2222;
+            box-shadow: 0 0 4px var(--led-red);
+        }
+
+        .badge-info {
+            background: var(--capacitor-blue);
+            color: var(--silkscreen);
+            border-color: #3355CC;
+        }
+
+        /* Component reference style */
+        .badge-ref {
+            background: var(--pcb-green);
+            color: var(--silkscreen);
+            border-color: var(--silkscreen);
+            font-family: var(--font-silkscreen);
+        }
+
+        .badge-ref::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: var(--copper);
+            border-radius: 50%;
+        }
+
+        .badge-lg {
+            font-size: 0.625rem;
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        /* ============================================
+           ALERTS
+           ============================================ */
+
+        .alert {
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            border: 2px solid var(--copper);
+            position: relative;
+            background: var(--pcb-green-dark);
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .alert-title {
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-sm);
+        }
+
+        .alert-info {
+            border-color: var(--capacitor-blue);
+        }
+
+        .alert-info::before {
+            background: var(--capacitor-blue);
+        }
+
+        .alert-info .alert-title {
+            color: var(--info);
+        }
+
+        .alert-success {
+            border-color: var(--led-green);
+        }
+
+        .alert-success::before {
+            background: var(--led-green);
+        }
+
+        .alert-success .alert-title {
+            color: var(--led-green);
+        }
+
+        .alert-warning {
+            border-color: var(--led-amber);
+        }
+
+        .alert-warning::before {
+            background: var(--led-amber);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--led-amber);
+        }
+
+        .alert-error {
+            border-color: var(--led-red);
+        }
+
+        .alert-error::before {
+            background: var(--led-red);
+        }
+
+        .alert-error .alert-title {
+            color: var(--led-red);
+        }
+
+        /* ============================================
+           COMPONENT DECORATIONS
+           ============================================ */
+
+        /* IC Chip style container */
+        .ic-chip {
+            background: var(--ic-body);
+            border: 2px solid #444;
+            position: relative;
+            padding: var(--space-lg);
+        }
+
+        /* Pin notch */
+        .ic-chip::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            background: var(--ic-body);
+            border: 2px solid #444;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* Resistor style */
+        .resistor {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--resistor-body);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .resistor::before,
+        .resistor::after {
+            content: '';
+            width: 12px;
+            height: 2px;
+            background: var(--solder);
+        }
+
+        .resistor-band {
+            width: 4px;
+            height: 100%;
+            min-height: 16px;
+        }
+
+        /* LED indicator */
+        .led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .led-on {
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .led-red { background: var(--led-red); color: var(--led-red); }
+        .led-green { background: var(--led-green); color: var(--led-green); }
+        .led-amber { background: var(--led-amber); color: var(--led-amber); }
+
+        /* ============================================
+           GRID SYSTEM
+           ============================================ */
+
+        .grid {
+            display: grid;
+            gap: var(--space-lg);
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        @media (max-width: 900px) {
+            .grid-3, .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================
+           UTILITIES
+           ============================================ */
+
+        .mb-0 { margin-bottom: 0; }
+        .mb-sm { margin-bottom: var(--space-sm); }
+        .mb-md { margin-bottom: var(--space-md); }
+        .mb-lg { margin-bottom: var(--space-lg); }
+        .mb-xl { margin-bottom: var(--space-xl); }
+
+        .mt-sm { margin-top: var(--space-sm); }
+        .mt-md { margin-top: var(--space-md); }
+        .mt-lg { margin-top: var(--space-lg); }
+        .mt-xl { margin-top: var(--space-xl); }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+
+        .site-footer {
+            padding: var(--space-xxl) var(--space-xl);
+            background:
+                linear-gradient(180deg, var(--pcb-green-dark) 0%, var(--pcb-green) 100%);
+            text-align: center;
+            border-top: var(--trace-power) solid var(--copper);
+            position: relative;
+        }
+
+        .site-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--copper) 0px,
+                    var(--copper) 10px,
+                    transparent 10px,
+                    transparent 20px
+                );
+        }
+
+        .footer-logo {
+            font-family: var(--font-silkscreen);
+            font-size: 1.5rem;
+            color: var(--silkscreen);
+            letter-spacing: 0.3em;
+            margin-bottom: var(--space-sm);
+        }
+
+        .site-footer p {
+            font-family: var(--font-silkscreen);
+            font-size: 0.625rem;
+            color: var(--silkscreen-dim);
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-sm);
+        }
+
+        .site-footer a {
+            color: var(--copper-light);
+            text-decoration: none;
+        }
+
+        .site-footer a:hover {
+            color: var(--gold);
+        }
+
+        /* ============================================
+           TRACE CONNECTOR DECORATION
+           ============================================ */
+
+        .trace-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-lg) 0;
+        }
+
+        .trace-connector::before {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: var(--copper);
+        }
+
+        .trace-connector::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 30% 30%, var(--solder-bright), var(--solder) 60%);
+            border-radius: 50%;
+            margin: 0 var(--space-md);
+            box-shadow:
+                40px 0 0 var(--copper),
+                42px -2px 0 2px var(--solder),
+                -40px 0 0 var(--copper),
+                -42px -2px 0 2px var(--solder);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- ============================================
+             HEADER
+             ============================================ -->
+        <header class="site-header texture-fiberglass">
+            <div class="header-traces"></div>
+            <h1>CIRCUIT BOARD</h1>
+            <p class="tagline">PCB Design System // Rev 1.0</p>
+            <span class="header-badge">PWR OK</span>
+        </header>
+
+        <!-- ============================================
+             NAVIGATION
+             ============================================ -->
+        <nav class="nav-bar">
+            <a href="#colors">Colors</a>
+            <a href="#typography">Typography</a>
+            <a href="#spacing">Spacing</a>
+            <a href="#buttons">Buttons</a>
+            <a href="#forms">Forms</a>
+            <a href="#cards">Cards</a>
+            <a href="#tables">Tables</a>
+            <a href="#badges">Badges</a>
+            <a href="#principles">Principles</a>
+        </nav>
+
+        <!-- ============================================
+             01. COLOR PALETTE
+             ============================================ -->
+        <section class="section" id="colors">
+            <div class="section-header">
+                <span class="section-number">C01</span>
+                <h2 class="section-title">Color Palette</h2>
+                <p class="section-description">
+                    Authentic PCB colors: FR-4 fiberglass green substrate, copper trace metallization, white silkscreen legends, and silver solder joints. Each color serves a functional purpose in hardware design.
+                </p>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">PCB Substrate</h3>
+            <div class="color-grid mb-xl">
+                <div class="color-swatch" style="background: var(--pcb-green); color: var(--silkscreen);">
+                    <span class="color-name">PCB Green</span>
+                    <span class="color-value">#1A472A</span>
+                </div>
+                <div class="color-swatch" style="background: var(--pcb-green-light); color: var(--silkscreen);">
+                    <span class="color-name">PCB Light</span>
+                    <span class="color-value">#2D5A3D</span>
+                </div>
+                <div class="color-swatch" style="background: var(--pcb-green-dark); color: var(--silkscreen);">
+                    <span class="color-name">PCB Dark</span>
+                    <span class="color-value">#0F2D1A</span>
+                </div>
+                <div class="color-swatch" style="background: var(--pcb-blue); color: var(--silkscreen);">
+                    <span class="color-name">PCB Blue</span>
+                    <span class="color-value">#1A3A4A</span>
+                </div>
+                <div class="color-swatch" style="background: var(--pcb-black); color: var(--silkscreen);">
+                    <span class="color-name">PCB Black</span>
+                    <span class="color-value">#1A1A1A</span>
+                </div>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Copper & Gold Traces</h3>
+            <div class="color-grid mb-xl">
+                <div class="color-swatch" style="background: var(--copper); color: var(--pcb-green-dark);">
+                    <span class="color-name">Copper</span>
+                    <span class="color-value">#B87333</span>
+                </div>
+                <div class="color-swatch" style="background: var(--copper-light); color: var(--pcb-green-dark);">
+                    <span class="color-name">Copper Light</span>
+                    <span class="color-value">#D4956A</span>
+                </div>
+                <div class="color-swatch" style="background: var(--copper-bright); color: var(--pcb-green-dark);">
+                    <span class="color-name">Copper Bright</span>
+                    <span class="color-value">#E8B796</span>
+                </div>
+                <div class="color-swatch" style="background: var(--gold); color: var(--pcb-green-dark);">
+                    <span class="color-name">Gold (ENIG)</span>
+                    <span class="color-value">#FFD700</span>
+                </div>
+                <div class="color-swatch" style="background: var(--gold-pale); color: var(--pcb-green-dark);">
+                    <span class="color-name">Gold Pale</span>
+                    <span class="color-value">#DAA520</span>
+                </div>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Silkscreen & Solder</h3>
+            <div class="color-grid mb-xl">
+                <div class="color-swatch" style="background: var(--silkscreen); color: var(--pcb-green-dark);">
+                    <span class="color-name">Silkscreen</span>
+                    <span class="color-value">#F5F5F0</span>
+                </div>
+                <div class="color-swatch" style="background: var(--silkscreen-dim); color: var(--pcb-green-dark);">
+                    <span class="color-name">Silkscreen Dim</span>
+                    <span class="color-value">#C8C8C0</span>
+                </div>
+                <div class="color-swatch" style="background: var(--solder); color: var(--pcb-green-dark);">
+                    <span class="color-name">Solder</span>
+                    <span class="color-value">#C0C0C0</span>
+                </div>
+                <div class="color-swatch" style="background: var(--solder-bright); color: var(--pcb-green-dark);">
+                    <span class="color-name">Solder Bright</span>
+                    <span class="color-value">#E8E8E8</span>
+                </div>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">LED Indicators</h3>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: var(--led-red); color: var(--silkscreen); box-shadow: inset 0 0 20px rgba(255,51,51,0.5);">
+                    <span class="color-name">LED Red</span>
+                    <span class="color-value">#FF3333</span>
+                </div>
+                <div class="color-swatch" style="background: var(--led-green); color: var(--pcb-green-dark); box-shadow: inset 0 0 20px rgba(51,255,51,0.5);">
+                    <span class="color-name">LED Green</span>
+                    <span class="color-value">#33FF33</span>
+                </div>
+                <div class="color-swatch" style="background: var(--led-amber); color: var(--pcb-green-dark); box-shadow: inset 0 0 20px rgba(255,191,0,0.5);">
+                    <span class="color-name">LED Amber</span>
+                    <span class="color-value">#FFBF00</span>
+                </div>
+                <div class="color-swatch" style="background: var(--capacitor-blue); color: var(--silkscreen);">
+                    <span class="color-name">Capacitor Blue</span>
+                    <span class="color-value">#4169E1</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             02. TYPOGRAPHY
+             ============================================ -->
+        <section class="section" id="typography">
+            <div class="section-header">
+                <span class="section-number">C02</span>
+                <h2 class="section-title">Typography</h2>
+                <p class="section-description">
+                    Monospace fonts mimic silkscreen printing on PCBs. Technical labeling with precise letter spacing for component designators and specifications.
+                </p>
+            </div>
+
+            <div class="card mb-lg">
+                <div class="card-header">Share Tech Mono // Silkscreen Labels</div>
+                <div class="card-body">
+                    <p class="text-silkscreen" style="font-size: 2.5rem; color: var(--silkscreen); line-height: 1; margin-bottom: var(--space-md);">MAIN_PCB_V2.1</p>
+                    <p class="text-silkscreen" style="font-size: 1.5rem; color: var(--silkscreen-dim); line-height: 1; margin-bottom: var(--space-md);">R1 R2 C1 C2 U1 U2 D1 D2</p>
+                    <p class="text-mono text-dim" style="font-size: 0.75rem;">Primary silkscreen font. Used for component designators, board labels, and reference text.</p>
+                </div>
+            </div>
+
+            <div class="card mb-lg">
+                <div class="card-header">JetBrains Mono // Body Text</div>
+                <div class="card-body">
+                    <p style="margin-bottom: var(--space-md);">The quick brown fox jumps over the lazy dog. ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789</p>
+                    <p style="font-size: 0.8rem; color: var(--copper-light); margin-bottom: var(--space-md);">VCC: 3.3V | GND: 0V | I/O: 1.8V-5V | FREQ: 16MHz | TEMP: -40C to +85C</p>
+                    <p class="text-mono text-dim" style="font-size: 0.75rem;">Readable monospace for specifications, data, and body text. Equal character width for alignment.</p>
+                </div>
+            </div>
+
+            <div class="card mb-lg">
+                <div class="card-header">Orbitron // Display Headlines</div>
+                <div class="card-body">
+                    <p class="text-display" style="font-size: 2rem; color: var(--gold); line-height: 1; margin-bottom: var(--space-md); font-weight: 700;">SYSTEM ONLINE</p>
+                    <p class="text-display" style="font-size: 1.25rem; color: var(--copper-light); line-height: 1; margin-bottom: var(--space-md); font-weight: 500;">Hardware Initialized</p>
+                    <p class="text-mono text-dim" style="font-size: 0.75rem;">Technical display font for status messages and major headings.</p>
+                </div>
+            </div>
+
+            <div class="trace-connector"></div>
+
+            <h3 class="mb-md text-silkscreen">Type Scale</h3>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Element</th>
+                            <th>Font</th>
+                            <th>Size</th>
+                            <th>Use Case</th>
+                            <th>Sample</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="part-num">LABEL</td>
+                            <td>Share Tech Mono</td>
+                            <td class="num">2rem</td>
+                            <td>Board names</td>
+                            <td><span class="text-silkscreen" style="font-size: 1.25rem;">PCB_REV_A</span></td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">H1</td>
+                            <td>Share Tech Mono</td>
+                            <td class="num">1.5rem</td>
+                            <td>Section headers</td>
+                            <td><span class="text-silkscreen" style="font-size: 1rem;">POWER SUPPLY</span></td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">H2</td>
+                            <td>Share Tech Mono</td>
+                            <td class="num">1.25rem</td>
+                            <td>Sub-sections</td>
+                            <td><span class="text-silkscreen" style="font-size: 0.9rem;">INPUT STAGE</span></td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">BODY</td>
+                            <td>JetBrains Mono</td>
+                            <td class="num">0.875rem</td>
+                            <td>Body text</td>
+                            <td><span class="text-mono">Component specifications</span></td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">SPEC</td>
+                            <td>JetBrains Mono</td>
+                            <td class="num">0.8rem</td>
+                            <td>Technical data</td>
+                            <td><span class="text-mono text-copper">3.3V @ 500mA</span></td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">REF</td>
+                            <td>Share Tech Mono</td>
+                            <td class="num">0.625rem</td>
+                            <td>Designators</td>
+                            <td><span class="text-silkscreen text-dim" style="font-size: 0.625rem;">R1 R2 C1 C2</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ============================================
+             03. SPACING SYSTEM
+             ============================================ -->
+        <section class="section" id="spacing">
+            <div class="section-header">
+                <span class="section-number">C03</span>
+                <h2 class="section-title">Spacing System</h2>
+                <p class="section-description">
+                    Based on standard component pitch (2.54mm / 0.1"). All spacing aligns to a grid for precise component placement and trace routing.
+                </p>
+            </div>
+
+            <div class="grid grid-2 mb-lg">
+                <div class="card">
+                    <div class="card-header">Spacing Scale</div>
+                    <div class="card-body">
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-md);">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">XS (4px)</span>
+                            <div style="width: 4px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-md);">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">SM (8px)</span>
+                            <div style="width: 8px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-md);">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">MD (16px)</span>
+                            <div style="width: 16px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-md);">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">LG (24px)</span>
+                            <div style="width: 24px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-md);">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">XL (32px)</span>
+                            <div style="width: 32px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="text-silkscreen text-dim" style="width: 80px; font-size: 0.625rem;">XXL (48px)</span>
+                            <div style="width: 48px; height: 16px; background: var(--copper);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Trace Widths</div>
+                    <div class="card-body">
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-lg);">
+                            <span class="text-silkscreen text-dim" style="width: 100px; font-size: 0.625rem;">THIN (1px)</span>
+                            <div style="flex: 1; height: 1px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-lg);">
+                            <span class="text-silkscreen text-dim" style="width: 100px; font-size: 0.625rem;">NORMAL (2px)</span>
+                            <div style="flex: 1; height: 2px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: var(--space-lg);">
+                            <span class="text-silkscreen text-dim" style="width: 100px; font-size: 0.625rem;">THICK (3px)</span>
+                            <div style="flex: 1; height: 3px; background: var(--copper);"></div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="text-silkscreen text-dim" style="width: 100px; font-size: 0.625rem;">POWER (4px)</span>
+                            <div style="flex: 1; height: 4px; background: var(--copper);"></div>
+                        </div>
+                    </div>
+                    <div class="card-footer">Signal: 1-2px | Power/GND: 3-4px</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Via & Pad Sizes</div>
+                <div class="card-body">
+                    <div style="display: flex; gap: var(--space-xl); flex-wrap: wrap; align-items: flex-end;">
+                        <div style="text-align: center;">
+                            <div class="via" style="width: 6px; height: 6px; margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">VIA-SM</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="via" style="margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">VIA-MD</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="via" style="width: 12px; height: 12px; margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">VIA-LG</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="pad" style="margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">PAD-RND</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="pad pad-square" style="margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">PAD-SQ</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="pad pad-gold" style="margin: 0 auto var(--space-sm);"></div>
+                            <span class="text-silkscreen text-dim" style="font-size: 0.5rem;">PAD-ENIG</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             04. BUTTONS
+             ============================================ -->
+        <section class="section" id="buttons">
+            <div class="section-header">
+                <span class="section-number">C04</span>
+                <h2 class="section-title">Buttons</h2>
+                <p class="section-description">
+                    Component-style buttons with solder pad decorations. Metallic gradients simulate gold-plated ENIG and copper HASL finishes.
+                </p>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Button Variants</h3>
+            <div class="button-row">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-outline">Outline</button>
+                <button class="btn btn-danger">Danger</button>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Button Sizes</h3>
+            <div class="button-row">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Medium</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Block Button</h3>
+            <button class="btn btn-primary btn-block btn-lg">INITIALIZE HARDWARE</button>
+
+            <div class="alert alert-info mt-lg">
+                <div class="alert-title">Design Note</div>
+                <p style="margin: 0;">Button styling mimics through-hole components with solder pads on each end. Gold for primary actions (premium ENIG finish), copper for secondary (standard HASL).</p>
+            </div>
+        </section>
+
+        <!-- ============================================
+             05. FORMS
+             ============================================ -->
+        <section class="section" id="forms">
+            <div class="section-header">
+                <span class="section-number">C05</span>
+                <h2 class="section-title">Form Elements</h2>
+                <p class="section-description">
+                    Data entry fields styled as recessed PCB areas. Copper borders indicate interactive regions. Gold focus states highlight active inputs.
+                </p>
+            </div>
+
+            <div class="grid grid-2 mb-lg">
+                <div class="form-group">
+                    <label class="form-label">Part Number</label>
+                    <input type="text" class="form-input" placeholder="Enter part number">
+                    <span class="form-hint">e.g., ATmega328P-PU</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-input" placeholder="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Package Type</label>
+                <select class="form-select">
+                    <option value="">-- Select Package --</option>
+                    <option value="dip">DIP (Dual In-line Package)</option>
+                    <option value="soic">SOIC (Small Outline IC)</option>
+                    <option value="qfp">QFP (Quad Flat Package)</option>
+                    <option value="bga">BGA (Ball Grid Array)</option>
+                    <option value="smd">SMD (Surface Mount Device)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-textarea" placeholder="Enter component notes or specifications..."></textarea>
+            </div>
+
+            <fieldset>
+                <legend>Component Parameters</legend>
+                <div class="grid grid-2">
+                    <label class="form-checkbox">
+                        <input type="checkbox" checked>
+                        <span>RoHS Compliant</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox">
+                        <span>Lead-Free Solder</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" checked>
+                        <span>ESD Protected</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox">
+                        <span>Automotive Grade</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Mounting Type</legend>
+                <label class="form-radio">
+                    <input type="radio" name="mount" value="tht" checked>
+                    <span>Through-Hole (THT)</span>
+                </label>
+                <label class="form-radio">
+                    <input type="radio" name="mount" value="smd">
+                    <span>Surface Mount (SMD)</span>
+                </label>
+                <label class="form-radio">
+                    <input type="radio" name="mount" value="mixed">
+                    <span>Mixed Technology</span>
+                </label>
+            </fieldset>
+
+            <div class="form-group">
+                <label class="form-label">Operating Voltage</label>
+                <input type="text" class="form-input" value="Invalid range">
+                <span class="form-hint form-error">ERROR: Voltage must be between 1.8V and 5.5V</span>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-primary">Add Component</button>
+                <button class="btn btn-secondary">Save Draft</button>
+                <button class="btn btn-outline">Cancel</button>
+            </div>
+        </section>
+
+        <!-- ============================================
+             06. CARDS
+             ============================================ -->
+        <section class="section" id="cards">
+            <div class="section-header">
+                <span class="section-number">C06</span>
+                <h2 class="section-title">Cards</h2>
+                <p class="section-description">
+                    Content containers with trace routing decorations. Copper borders and via patterns create authentic PCB layout aesthetic.
+                </p>
+            </div>
+
+            <div class="grid grid-3 mb-lg">
+                <div class="card">
+                    <div class="card-header">Standard Card</div>
+                    <div class="card-body">
+                        <p>Default card with copper trace routing decoration. Use for general content containers.</p>
+                    </div>
+                    <div class="card-footer">REV: 1.0 | STATUS: OK</div>
+                </div>
+                <div class="card card-gold">
+                    <div class="card-header">Gold Finish</div>
+                    <div class="card-body">
+                        <p>Premium ENIG gold finish for highlighted or important content sections.</p>
+                    </div>
+                    <div class="card-footer">REV: 1.0 | PREMIUM</div>
+                </div>
+                <div class="card card-error">
+                    <div class="card-header">Error State</div>
+                    <div class="card-body">
+                        <p>Red indicator for error conditions, warnings, or critical alerts.</p>
+                    </div>
+                    <div class="card-footer">REV: 1.0 | FAULT</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2 mb-lg">
+                <div class="card">
+                    <div class="card-header">Component Status</div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md);">
+                            <div>
+                                <p class="text-silkscreen text-dim" style="font-size: 0.5rem; margin-bottom: var(--space-xs);">VCC</p>
+                                <p class="text-display text-gold" style="font-size: 1.5rem; margin: 0; font-weight: 600;">3.3<span style="font-size: 0.8rem;">V</span></p>
+                            </div>
+                            <div>
+                                <p class="text-silkscreen text-dim" style="font-size: 0.5rem; margin-bottom: var(--space-xs);">CURRENT</p>
+                                <p class="text-display text-gold" style="font-size: 1.5rem; margin: 0; font-weight: 600;">42<span style="font-size: 0.8rem;">mA</span></p>
+                            </div>
+                            <div>
+                                <p class="text-silkscreen text-dim" style="font-size: 0.5rem; margin-bottom: var(--space-xs);">TEMP</p>
+                                <p class="text-display text-copper" style="font-size: 1.5rem; margin: 0; font-weight: 600;">45<span style="font-size: 0.8rem;">C</span></p>
+                            </div>
+                            <div>
+                                <p class="text-silkscreen text-dim" style="font-size: 0.5rem; margin-bottom: var(--space-xs);">FREQ</p>
+                                <p class="text-display text-copper" style="font-size: 1.5rem; margin: 0; font-weight: 600;">16<span style="font-size: 0.8rem;">MHz</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">LED Status Indicators</div>
+                    <div class="card-body">
+                        <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+                            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                                <span class="led led-green led-on"></span>
+                                <span class="text-silkscreen" style="font-size: 0.75rem;">PWR</span>
+                                <span class="text-dim" style="font-size: 0.7rem; margin-left: auto;">System powered</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                                <span class="led led-green led-on"></span>
+                                <span class="text-silkscreen" style="font-size: 0.75rem;">RDY</span>
+                                <span class="text-dim" style="font-size: 0.7rem; margin-left: auto;">Ready for operation</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                                <span class="led led-amber led-on"></span>
+                                <span class="text-silkscreen" style="font-size: 0.75rem;">TX</span>
+                                <span class="text-dim" style="font-size: 0.7rem; margin-left: auto;">Transmitting data</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: var(--space-md);">
+                                <span class="led led-red"></span>
+                                <span class="text-silkscreen" style="font-size: 0.75rem;">ERR</span>
+                                <span class="text-dim" style="font-size: 0.7rem; margin-left: auto;">No errors</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             07. DATA TABLE
+             ============================================ -->
+        <section class="section" id="tables">
+            <div class="section-header">
+                <span class="section-number">C07</span>
+                <h2 class="section-title">Data Tables</h2>
+                <p class="section-description">
+                    Component specification tables with datasheet styling. Monospace alignment for technical values, part numbers in silkscreen style.
+                </p>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Bill of Materials (BOM)</h3>
+            <div class="table-wrapper mb-xl">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ref</th>
+                            <th>Part Number</th>
+                            <th>Description</th>
+                            <th>Package</th>
+                            <th>Value</th>
+                            <th class="num">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="part-num">U1</td>
+                            <td>ATmega328P-PU</td>
+                            <td>8-bit AVR Microcontroller</td>
+                            <td>DIP-28</td>
+                            <td>-</td>
+                            <td class="num">1</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">U2</td>
+                            <td>LM7805CT</td>
+                            <td>5V Linear Regulator</td>
+                            <td>TO-220</td>
+                            <td>5V/1A</td>
+                            <td class="num">1</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">R1-R4</td>
+                            <td>RC0805JR-10K</td>
+                            <td>SMD Resistor</td>
+                            <td>0805</td>
+                            <td>10K</td>
+                            <td class="num">4</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">C1-C2</td>
+                            <td>CC0805KRX7R</td>
+                            <td>Ceramic Capacitor</td>
+                            <td>0805</td>
+                            <td>100nF</td>
+                            <td class="num">2</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">C3</td>
+                            <td>ECA-1HM100</td>
+                            <td>Electrolytic Capacitor</td>
+                            <td>Radial</td>
+                            <td>100uF</td>
+                            <td class="num">1</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">Y1</td>
+                            <td>HC49US-16M</td>
+                            <td>Crystal Oscillator</td>
+                            <td>HC49</td>
+                            <td>16MHz</td>
+                            <td class="num">1</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">D1-D2</td>
+                            <td>1N4148</td>
+                            <td>Switching Diode</td>
+                            <td>DO-35</td>
+                            <td>100V</td>
+                            <td class="num">2</td>
+                        </tr>
+                        <tr>
+                            <td class="part-num">LED1</td>
+                            <td>LTST-C171GKT</td>
+                            <td>Green LED</td>
+                            <td>0805</td>
+                            <td>2.2V</td>
+                            <td class="num">1</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5">Total Unique Parts: 8</td>
+                            <td class="num">13</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Pin Configuration</h3>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Pin</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="num">1</td>
+                            <td class="part-num">VCC</td>
+                            <td>Power</td>
+                            <td>Supply voltage (3.3V-5V)</td>
+                            <td><span class="badge badge-success">Connected</span></td>
+                        </tr>
+                        <tr>
+                            <td class="num">2</td>
+                            <td class="part-num">GND</td>
+                            <td>Power</td>
+                            <td>Ground reference</td>
+                            <td><span class="badge badge-success">Connected</span></td>
+                        </tr>
+                        <tr>
+                            <td class="num">3</td>
+                            <td class="part-num">TX</td>
+                            <td>Output</td>
+                            <td>UART Transmit</td>
+                            <td><span class="badge badge-copper">Routed</span></td>
+                        </tr>
+                        <tr>
+                            <td class="num">4</td>
+                            <td class="part-num">RX</td>
+                            <td>Input</td>
+                            <td>UART Receive</td>
+                            <td><span class="badge badge-copper">Routed</span></td>
+                        </tr>
+                        <tr>
+                            <td class="num">5</td>
+                            <td class="part-num">RST</td>
+                            <td>Input</td>
+                            <td>Reset (active low)</td>
+                            <td><span class="badge badge-warning">Pullup Req</span></td>
+                        </tr>
+                        <tr>
+                            <td class="num">6</td>
+                            <td class="part-num">NC</td>
+                            <td>-</td>
+                            <td>No connection</td>
+                            <td><span class="badge badge-silkscreen">Open</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ============================================
+             08. BADGES
+             ============================================ -->
+        <section class="section" id="badges">
+            <div class="section-header">
+                <span class="section-number">C08</span>
+                <h2 class="section-title">Badges</h2>
+                <p class="section-description">
+                    Component labels and status indicators. Silkscreen styling for reference designators, LED glow effects for status badges.
+                </p>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Component References</h3>
+            <div class="badge-row mb-xl">
+                <span class="badge badge-ref">R1</span>
+                <span class="badge badge-ref">R2</span>
+                <span class="badge badge-ref">C1</span>
+                <span class="badge badge-ref">C2</span>
+                <span class="badge badge-ref">U1</span>
+                <span class="badge badge-ref">D1</span>
+                <span class="badge badge-ref">LED1</span>
+                <span class="badge badge-ref">Y1</span>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Material Finishes</h3>
+            <div class="badge-row mb-xl">
+                <span class="badge badge-copper">HASL</span>
+                <span class="badge badge-gold">ENIG</span>
+                <span class="badge badge-silkscreen">OSP</span>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Status Indicators</h3>
+            <div class="badge-row mb-xl">
+                <span class="badge badge-success">OK</span>
+                <span class="badge badge-warning">WARN</span>
+                <span class="badge badge-error">FAULT</span>
+                <span class="badge badge-info">INFO</span>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">Large Labels</h3>
+            <div class="badge-row mb-xl">
+                <span class="badge badge-lg badge-success">PASSED</span>
+                <span class="badge badge-lg badge-error">FAILED</span>
+                <span class="badge badge-lg badge-gold">VERIFIED</span>
+            </div>
+
+            <h3 class="mb-md text-silkscreen">In Context</h3>
+            <div class="card">
+                <div class="card-header">
+                    PCB Status
+                    <span class="badge badge-success" style="margin-left: auto;">READY</span>
+                </div>
+                <div class="card-body">
+                    <p class="mb-md">
+                        <strong class="text-silkscreen">Power Section:</strong>
+                        <span class="badge badge-ref">U2</span>
+                        <span class="badge badge-ref">C3</span>
+                        <span class="badge badge-success">OK</span>
+                    </p>
+                    <p class="mb-md">
+                        <strong class="text-silkscreen">MCU Section:</strong>
+                        <span class="badge badge-ref">U1</span>
+                        <span class="badge badge-ref">Y1</span>
+                        <span class="badge badge-success">OK</span>
+                    </p>
+                    <p class="mb-0">
+                        <strong class="text-silkscreen">I/O Section:</strong>
+                        <span class="badge badge-ref">R1-R4</span>
+                        <span class="badge badge-warning">CHECK</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             09. DESIGN PRINCIPLES
+             ============================================ -->
+        <section class="section" id="principles">
+            <div class="section-header">
+                <span class="section-number">C09</span>
+                <h2 class="section-title">Design Principles</h2>
+                <p class="section-description">
+                    Core principles derived from PCB design practices and hardware engineering standards.
+                </p>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-gold mb-sm text-display" style="font-size: 2rem;">01</h3>
+                        <h4 class="mb-sm text-silkscreen">Grid Alignment</h4>
+                        <p class="text-dim mb-0">Every element snaps to a standardized grid (0.1" pitch). Precise alignment enables clean trace routing and professional component placement.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-gold mb-sm text-display" style="font-size: 2rem;">02</h3>
+                        <h4 class="mb-sm text-silkscreen">Signal Integrity</h4>
+                        <p class="text-dim mb-0">Clear visual hierarchy reduces noise. Important information gets thicker traces (gold, copper). Secondary content uses thinner lines (silkscreen).</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-gold mb-sm text-display" style="font-size: 2rem;">03</h3>
+                        <h4 class="mb-sm text-silkscreen">Functional Labeling</h4>
+                        <p class="text-dim mb-0">Every component is clearly designated. Silkscreen labels identify function. Reference designators follow IPC standards (R, C, U, D, LED).</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-gold mb-sm text-display" style="font-size: 2rem;">04</h3>
+                        <h4 class="mb-sm text-silkscreen">Material Authenticity</h4>
+                        <p class="text-dim mb-0">Colors and textures reflect real PCB materials: FR-4 green substrate, copper metallization, silver solder, white silkscreen. Hardware-accurate design.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trace-connector mt-xl"></div>
+
+            <div class="alert alert-success mt-lg">
+                <div class="alert-title">System Ready</div>
+                <p style="margin: 0;">PCB Design System initialized. All components verified. Ready for production deployment.</p>
+            </div>
+        </section>
+
+        <!-- ============================================
+             FOOTER
+             ============================================ -->
+        <footer class="site-footer">
+            <div class="footer-logo">CIRCUIT BOARD</div>
+            <p>PCB Design System // Rev 1.0</p>
+            <p>Copper. Silkscreen. Solder.</p>
+            <p style="margin-top: var(--space-lg);">
+                <a href="#">[Documentation]</a> |
+                <a href="#">[Source]</a> |
+                <a href="#">[Back to Top]</a>
+            </p>
+            <p style="margin-top: var(--space-lg); font-size: 0.5rem; opacity: 0.5;">
+                Self-contained HTML. No external dependencies except Google Fonts.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
