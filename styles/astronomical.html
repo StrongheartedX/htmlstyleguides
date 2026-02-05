@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astronomical Design System | Star Charts & Observatory Aesthetic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           ASTRONOMICAL DESIGN SYSTEM
+           Star charts, observatory instruments, deep space data visualization
+           Vintage star atlases meet NASA mission control
+           ================================================================ */
+
+        /* --- DESIGN TOKENS / CSS VARIABLES --- */
+        :root {
+            /* OBSERVATORY PALETTE */
+            --astro-black: #05080e;
+            --deep-navy: #0a1628;
+            --chart-navy: #0f1f3a;
+            --instrument-panel: #142244;
+            --grid-blue: #1a2d54;
+
+            /* CELESTIAL ACCENTS */
+            --nebula-purple: #6b3fa0;
+            --nebula-violet: #8b5fcf;
+            --observation-teal: #2ec4b6;
+            --observation-teal-dim: rgba(46, 196, 182, 0.4);
+            --amber-star: #e8a838;
+            --amber-glow: rgba(232, 168, 56, 0.35);
+            --red-giant: #d64045;
+            --blue-supergiant: #4ea8de;
+            --white-dwarf: #d4e5f7;
+
+            /* SURFACE COLORS */
+            --bg-space: var(--astro-black);
+            --bg-panel: rgba(15, 31, 58, 0.85);
+            --bg-panel-hover: rgba(20, 34, 68, 0.95);
+            --bg-inset: rgba(10, 22, 40, 0.9);
+            --bg-grid-overlay: rgba(26, 45, 84, 0.25);
+
+            /* TEXT COLORS */
+            --text-primary: #c8d6e5;
+            --text-bright: #e8f0f8;
+            --text-secondary: rgba(180, 198, 218, 0.8);
+            --text-muted: rgba(140, 165, 195, 0.55);
+            --text-data: var(--observation-teal);
+
+            /* BORDERS & GRID LINES */
+            --border-grid: rgba(46, 196, 182, 0.12);
+            --border-panel: rgba(107, 63, 160, 0.25);
+            --border-active: var(--observation-teal);
+            --border-coord: rgba(46, 196, 182, 0.08);
+
+            /* GRADIENTS */
+            --gradient-nebula: linear-gradient(135deg,
+                rgba(107, 63, 160, 0.3) 0%,
+                rgba(46, 196, 182, 0.1) 50%,
+                rgba(232, 168, 56, 0.15) 100%);
+            --gradient-instrument: linear-gradient(180deg,
+                var(--chart-navy) 0%,
+                var(--deep-navy) 100%);
+            --gradient-horizon: linear-gradient(180deg,
+                rgba(107, 63, 160, 0.15) 0%,
+                rgba(46, 196, 182, 0.08) 50%,
+                transparent 100%);
+
+            /* TYPOGRAPHY */
+            --font-mono: 'Space Mono', 'Courier New', monospace;
+            --font-body: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
+
+            /* SPACING SCALE (4px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* EFFECTS */
+            --glow-teal: 0 0 12px var(--observation-teal-dim), 0 0 24px rgba(46, 196, 182, 0.15);
+            --glow-amber: 0 0 10px var(--amber-glow), 0 0 20px rgba(232, 168, 56, 0.12);
+            --glow-purple: 0 0 12px rgba(107, 63, 160, 0.4), 0 0 24px rgba(107, 63, 160, 0.15);
+
+            /* TRANSITIONS */
+            --transition-fast: 0.12s ease;
+            --transition-base: 0.25s ease;
+            --transition-slow: 0.5s ease;
+
+            /* BORDER RADIUS */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-lg: 8px;
+            --radius-xl: 12px;
+        }
+
+        /* --- KEYFRAME ANIMATIONS --- */
+
+        @keyframes grid-pulse {
+            0%, 100% { opacity: 0.04; }
+            50% { opacity: 0.08; }
+        }
+
+        @keyframes data-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes scan-line {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes coordinate-fade {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes star-twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes reticle-rotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* --- BASE RESET & GLOBAL STYLES --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--text-primary);
+            background: var(--bg-space);
+            min-height: 100vh;
+            overflow-x: hidden;
+            letter-spacing: 0.01em;
+        }
+
+        /* --- STAR FIELD BACKGROUND (Pure CSS) --- */
+        .starfield-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+            background:
+                /* Tiny distant stars - layer 1 */
+                radial-gradient(1px 1px at 47px 28px, rgba(200, 214, 229, 0.6), transparent),
+                radial-gradient(1px 1px at 132px 64px, rgba(200, 214, 229, 0.5), transparent),
+                radial-gradient(1px 1px at 205px 112px, rgba(200, 214, 229, 0.4), transparent),
+                radial-gradient(1px 1px at 88px 190px, rgba(200, 214, 229, 0.6), transparent),
+                radial-gradient(1px 1px at 310px 45px, rgba(200, 214, 229, 0.3), transparent),
+                radial-gradient(1px 1px at 180px 230px, rgba(200, 214, 229, 0.5), transparent),
+                radial-gradient(1px 1px at 260px 160px, rgba(200, 214, 229, 0.4), transparent),
+                radial-gradient(1px 1px at 15px 140px, rgba(200, 214, 229, 0.5), transparent),
+                radial-gradient(1px 1px at 340px 200px, rgba(200, 214, 229, 0.3), transparent),
+                radial-gradient(1px 1px at 420px 80px, rgba(200, 214, 229, 0.6), transparent),
+                radial-gradient(1px 1px at 380px 250px, rgba(200, 214, 229, 0.4), transparent),
+                radial-gradient(1px 1px at 500px 30px, rgba(200, 214, 229, 0.5), transparent),
+                /* Slightly brighter stars - layer 2 */
+                radial-gradient(1.5px 1.5px at 73px 88px, rgba(212, 229, 247, 0.7), transparent),
+                radial-gradient(1.5px 1.5px at 290px 130px, rgba(212, 229, 247, 0.6), transparent),
+                radial-gradient(1.5px 1.5px at 450px 170px, rgba(212, 229, 247, 0.7), transparent),
+                radial-gradient(1.5px 1.5px at 160px 280px, rgba(212, 229, 247, 0.5), transparent),
+                radial-gradient(1.5px 1.5px at 530px 220px, rgba(212, 229, 247, 0.6), transparent),
+                radial-gradient(1.5px 1.5px at 40px 310px, rgba(212, 229, 247, 0.7), transparent),
+                /* Named stars (larger, colored) */
+                radial-gradient(2px 2px at 220px 55px, rgba(232, 168, 56, 0.8), transparent),
+                radial-gradient(2px 2px at 480px 140px, rgba(78, 168, 222, 0.7), transparent),
+                radial-gradient(2.5px 2.5px at 350px 90px, rgba(232, 240, 248, 0.9), transparent);
+            background-size: 560px 340px;
+            background-color: var(--astro-black);
+        }
+
+        /* Nebula wash - subtle deep space color */
+        .nebula-wash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background:
+                radial-gradient(ellipse 800px 600px at 15% 20%, rgba(107, 63, 160, 0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 600px 500px at 85% 60%, rgba(46, 196, 182, 0.05) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 400px at 50% 90%, rgba(232, 168, 56, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Celestial coordinate grid overlay */
+        .coord-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                /* Vertical lines (Right Ascension) */
+                repeating-linear-gradient(
+                    90deg,
+                    var(--border-coord) 0px,
+                    var(--border-coord) 1px,
+                    transparent 1px,
+                    transparent 120px
+                ),
+                /* Horizontal lines (Declination) */
+                repeating-linear-gradient(
+                    0deg,
+                    var(--border-coord) 0px,
+                    var(--border-coord) 1px,
+                    transparent 1px,
+                    transparent 120px
+                );
+            animation: grid-pulse 8s ease-in-out infinite;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- HEADER / OBSERVATORY HERO --- */
+        .header {
+            text-align: center;
+            padding: var(--space-10) 0 var(--space-9);
+            position: relative;
+        }
+
+        /* Reticle decoration */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            height: 320px;
+            border: 1px solid rgba(46, 196, 182, 0.08);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 220px;
+            border: 1px solid rgba(46, 196, 182, 0.06);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Crosshair lines */
+        .header-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            pointer-events: none;
+        }
+
+        .header-crosshair::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, rgba(46, 196, 182, 0.1), transparent);
+        }
+
+        .header-crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(46, 196, 182, 0.1), transparent);
+        }
+
+        .header-catalog {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--observation-teal);
+            margin-bottom: var(--space-5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-4);
+        }
+
+        .header-catalog::before,
+        .header-catalog::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-grid));
+        }
+
+        .header-catalog::after {
+            background: linear-gradient(90deg, var(--border-grid), transparent);
+        }
+
+        .header-title {
+            font-family: var(--font-mono);
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            line-height: 1.15;
+            margin-bottom: var(--space-4);
+            color: var(--text-bright);
+            text-transform: uppercase;
+        }
+
+        .header-subtitle {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--text-secondary);
+            max-width: 540px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .header-coords {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: var(--space-5);
+            letter-spacing: 2px;
+        }
+
+        .header-coords span {
+            color: var(--observation-teal);
+        }
+
+        /* --- SECTION STYLES --- */
+        .section {
+            padding: var(--space-9) 0;
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--border-grid),
+                var(--border-grid),
+                transparent);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--amber-star);
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-label::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border: 1px solid var(--amber-star);
+            transform: rotate(45deg);
+        }
+
+        .section-title {
+            font-family: var(--font-mono);
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--text-bright);
+            margin-bottom: var(--space-3);
+            text-transform: uppercase;
+        }
+
+        .section-description {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            max-width: 620px;
+            line-height: 1.75;
+        }
+
+        /* --- COLOR PALETTE --- */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            border: 1px solid var(--border-panel);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: all var(--transition-base);
+            background: var(--bg-panel);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            border-color: var(--observation-teal);
+            box-shadow: var(--glow-teal);
+        }
+
+        .color-preview {
+            height: 80px;
+            position: relative;
+        }
+
+        /* Star dot in each swatch */
+        .color-preview::after {
+            content: '+';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .color-info {
+            padding: var(--space-3);
+            background: var(--bg-inset);
+            border-top: 1px solid var(--border-grid);
+        }
+
+        .color-name {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-1);
+            color: var(--text-primary);
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .type-specimen {
+            padding: var(--space-5) var(--space-6);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-left: 3px solid var(--observation-teal);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+        }
+
+        .type-specimen:hover {
+            border-left-color: var(--amber-star);
+            background: var(--bg-panel-hover);
+        }
+
+        .type-meta {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .type-meta-size {
+            color: var(--observation-teal);
+        }
+
+        h1.type-sample {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            line-height: 1.2;
+            color: var(--text-bright);
+            text-transform: uppercase;
+        }
+
+        h2.type-sample {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            line-height: 1.25;
+            color: var(--text-bright);
+        }
+
+        h3.type-sample {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        h4.type-sample {
+            font-family: var(--font-body);
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--text-primary);
+        }
+
+        h5.type-sample {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+        }
+
+        h6.type-sample {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+        }
+
+        p.type-sample {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.75;
+            color: var(--text-secondary);
+        }
+
+        /* --- SPACING SYSTEM --- */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            padding: var(--space-6);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: var(--radius-md);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            width: 90px;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: linear-gradient(90deg, var(--observation-teal), var(--nebula-purple));
+            border-radius: var(--radius-sm);
+            position: relative;
+            border: 1px solid rgba(46, 196, 182, 0.2);
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--observation-teal);
+            min-width: 40px;
+            flex-shrink: 0;
+        }
+
+        /* --- BUTTONS --- */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: var(--space-3) var(--space-6);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-base);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        /* Corner bracket decoration on buttons */
+        .btn::before,
+        .btn::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-color: currentColor;
+            border-style: solid;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .btn::before {
+            top: 3px;
+            left: 3px;
+            border-width: 1px 0 0 1px;
+        }
+
+        .btn::after {
+            bottom: 3px;
+            right: 3px;
+            border-width: 0 1px 1px 0;
+        }
+
+        .btn:hover::before,
+        .btn:hover::after {
+            opacity: 0.5;
+        }
+
+        .btn-primary {
+            background: var(--observation-teal);
+            color: var(--astro-black);
+            border-color: var(--observation-teal);
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--observation-teal);
+            box-shadow: var(--glow-teal);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--nebula-purple);
+            color: var(--nebula-violet);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(107, 63, 160, 0.15);
+            border-color: var(--nebula-violet);
+            box-shadow: var(--glow-purple);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border-grid);
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            background: rgba(200, 214, 229, 0.05);
+        }
+
+        .btn-accent {
+            background: transparent;
+            border: 1px solid var(--amber-star);
+            color: var(--amber-star);
+        }
+
+        .btn-accent:hover {
+            background: rgba(232, 168, 56, 0.12);
+            box-shadow: var(--glow-amber);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.65rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: 0.8rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+            background: inherit;
+        }
+
+        /* --- FORMS / INPUTS --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-label .required {
+            color: var(--red-giant);
+            margin-left: var(--space-1);
+        }
+
+        .input-field {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-inset);
+            border: 1px solid var(--border-grid);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            transition: all var(--transition-base);
+            outline: none;
+            letter-spacing: 0.5px;
+        }
+
+        .input-field:focus {
+            border-color: var(--observation-teal);
+            box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.1), var(--glow-teal);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .input-field.error {
+            border-color: var(--red-giant);
+        }
+
+        .input-field.error:focus {
+            box-shadow: 0 0 0 2px rgba(214, 64, 69, 0.15);
+        }
+
+        textarea.input-field {
+            min-height: 100px;
+            resize: vertical;
+            font-family: var(--font-body);
+        }
+
+        .input-hint {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+            letter-spacing: 1px;
+        }
+
+        .input-error {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--red-giant);
+            margin-top: var(--space-2);
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: var(--space-4);
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--observation-teal);
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        select.input-field {
+            appearance: none;
+            cursor: pointer;
+            padding-right: var(--space-8);
+        }
+
+        /* --- CARDS --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        /* Base card - Observatory Panel */
+        .card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: var(--radius-md);
+            padding: var(--space-6);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--observation-teal), transparent);
+            opacity: 0.5;
+        }
+
+        .card:hover {
+            border-color: var(--observation-teal);
+            box-shadow: var(--glow-teal);
+            transform: translateY(-2px);
+        }
+
+        .card-designation {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--observation-teal);
+            margin-bottom: var(--space-3);
+        }
+
+        .card-title {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            margin-bottom: var(--space-3);
+            color: var(--text-bright);
+        }
+
+        .card-body {
+            font-family: var(--font-body);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: var(--space-5);
+        }
+
+        .card-footer {
+            display: flex;
+            gap: var(--space-3);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--border-grid);
+        }
+
+        /* Card variant: Star Chart */
+        .card-starchart {
+            border-color: var(--amber-star);
+            background: linear-gradient(135deg, var(--bg-panel), rgba(232, 168, 56, 0.03));
+        }
+
+        .card-starchart::before {
+            background: linear-gradient(90deg, var(--amber-star), transparent);
+        }
+
+        .card-starchart .card-designation {
+            color: var(--amber-star);
+        }
+
+        .card-starchart:hover {
+            border-color: var(--amber-star);
+            box-shadow: var(--glow-amber);
+        }
+
+        /* Card variant: Deep Field */
+        .card-deepfield {
+            border-color: var(--nebula-purple);
+            background:
+                radial-gradient(ellipse at 80% 20%, rgba(107, 63, 160, 0.08) 0%, transparent 60%),
+                var(--bg-panel);
+        }
+
+        .card-deepfield::before {
+            background: linear-gradient(90deg, var(--nebula-violet), transparent);
+        }
+
+        .card-deepfield .card-designation {
+            color: var(--nebula-violet);
+        }
+
+        .card-deepfield:hover {
+            border-color: var(--nebula-violet);
+            box-shadow: var(--glow-purple);
+        }
+
+        /* Card variant: Data Readout */
+        .card-readout {
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 23px,
+                    rgba(46, 196, 182, 0.03) 23px,
+                    rgba(46, 196, 182, 0.03) 24px
+                ),
+                var(--bg-panel);
+            font-family: var(--font-mono);
+        }
+
+        .card-readout .card-body {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-data);
+            line-height: 1.9;
+        }
+
+        /* --- CONSTELLATION CONNECTOR --- */
+        .constellation-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-3);
+            margin: var(--space-8) 0;
+            position: relative;
+        }
+
+        .constellation-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-grid), transparent);
+        }
+
+        .constellation-node {
+            width: 6px;
+            height: 6px;
+            background: var(--observation-teal);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--observation-teal-dim);
+            position: relative;
+        }
+
+        .constellation-node::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            border: 1px solid rgba(46, 196, 182, 0.2);
+            border-radius: 50%;
+        }
+
+        .constellation-node-sm {
+            width: 3px;
+            height: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+        }
+
+        /* --- DATA TABLE --- */
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-panel);
+            border-radius: var(--radius-md);
+            background: var(--bg-panel);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            border-bottom: 1px solid var(--border-grid);
+        }
+
+        .data-table th {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            background: var(--bg-inset);
+            border-bottom: 2px solid var(--border-panel);
+        }
+
+        .data-table td {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .data-table tbody tr {
+            transition: background var(--transition-fast);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(46, 196, 182, 0.04);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-id {
+            color: var(--observation-teal);
+            font-weight: 700;
+        }
+
+        .table-coord {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .table-magnitude {
+            color: var(--amber-star);
+        }
+
+        /* --- BADGES / TAGS --- */
+        .badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .badge {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            border: 1px solid var(--border-grid);
+            color: var(--text-secondary);
+            background: var(--bg-inset);
+        }
+
+        .badge-teal {
+            border-color: var(--observation-teal);
+            color: var(--observation-teal);
+        }
+
+        .badge-teal.badge-filled {
+            background: var(--observation-teal);
+            color: var(--astro-black);
+        }
+
+        .badge-amber {
+            border-color: var(--amber-star);
+            color: var(--amber-star);
+        }
+
+        .badge-amber.badge-filled {
+            background: var(--amber-star);
+            color: var(--astro-black);
+        }
+
+        .badge-purple {
+            border-color: var(--nebula-violet);
+            color: var(--nebula-violet);
+        }
+
+        .badge-purple.badge-filled {
+            background: var(--nebula-violet);
+            color: var(--text-bright);
+        }
+
+        .badge-red {
+            border-color: var(--red-giant);
+            color: var(--red-giant);
+        }
+
+        .badge-red.badge-filled {
+            background: var(--red-giant);
+            color: var(--text-bright);
+        }
+
+        .badge-blue {
+            border-color: var(--blue-supergiant);
+            color: var(--blue-supergiant);
+        }
+
+        .badge-blue.badge-filled {
+            background: var(--blue-supergiant);
+            color: var(--astro-black);
+        }
+
+        .badge-indicator {
+            width: 5px;
+            height: 5px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: data-blink 2s ease-in-out infinite;
+        }
+
+        /* --- ALERTS --- */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+            display: flex;
+            gap: var(--space-4);
+            align-items: flex-start;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-left: 3px solid var(--border-grid);
+            font-size: 0.9rem;
+        }
+
+        .alert-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            flex-shrink: 0;
+            border: 1px solid;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-message {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .alert-info {
+            border-left-color: var(--observation-teal);
+        }
+
+        .alert-info .alert-symbol {
+            color: var(--observation-teal);
+            border-color: var(--observation-teal);
+            background: rgba(46, 196, 182, 0.08);
+        }
+
+        .alert-info .alert-title {
+            color: var(--observation-teal);
+        }
+
+        .alert-success {
+            border-left-color: #22c55e;
+        }
+
+        .alert-success .alert-symbol {
+            color: #22c55e;
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .alert-success .alert-title {
+            color: #22c55e;
+        }
+
+        .alert-warning {
+            border-left-color: var(--amber-star);
+        }
+
+        .alert-warning .alert-symbol {
+            color: var(--amber-star);
+            border-color: var(--amber-star);
+            background: rgba(232, 168, 56, 0.08);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--amber-star);
+        }
+
+        .alert-critical {
+            border-left-color: var(--red-giant);
+        }
+
+        .alert-critical .alert-symbol {
+            color: var(--red-giant);
+            border-color: var(--red-giant);
+            background: rgba(214, 64, 69, 0.08);
+        }
+
+        .alert-critical .alert-title {
+            color: var(--red-giant);
+        }
+
+        /* --- DESIGN PRINCIPLES --- */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .principle-card {
+            padding: var(--space-6);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .principle-card::before {
+            content: '';
+            position: absolute;
+            top: var(--space-6);
+            left: 0;
+            bottom: var(--space-6);
+            width: 2px;
+            background: linear-gradient(180deg, var(--observation-teal), var(--nebula-purple));
+        }
+
+        .principle-card:hover {
+            border-color: var(--observation-teal);
+            transform: translateX(4px);
+        }
+
+        .principle-number {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--observation-teal);
+            line-height: 1;
+            margin-bottom: var(--space-3);
+            opacity: 0.4;
+        }
+
+        .principle-name {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            margin-bottom: var(--space-3);
+            color: var(--text-bright);
+        }
+
+        .principle-desc {
+            font-family: var(--font-body);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.75;
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            text-align: center;
+            padding: var(--space-9) 0 var(--space-7);
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-grid), transparent);
+        }
+
+        .footer-brand {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+        }
+
+        .footer-text {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: var(--space-5);
+        }
+
+        .footer-coords {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .footer-coords span {
+            color: var(--observation-teal);
+        }
+
+        .footer-stars {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-5);
+            margin-top: var(--space-5);
+        }
+
+        .footer-dot {
+            width: 3px;
+            height: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: star-twinkle 4s ease-in-out infinite;
+        }
+
+        .footer-dot:nth-child(2) { animation-delay: 0.8s; }
+        .footer-dot:nth-child(3) { animation-delay: 1.6s; }
+        .footer-dot:nth-child(4) { animation-delay: 2.4s; }
+        .footer-dot:nth-child(5) { animation-delay: 3.2s; }
+
+        /* --- UTILITY CLASSES --- */
+        .sub-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-3);
+            margin-top: var(--space-6);
+        }
+
+        .text-center { text-align: center; }
+        .text-teal { color: var(--observation-teal); }
+        .text-amber { color: var(--amber-star); }
+        .text-purple { color: var(--nebula-violet); }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-4 { margin-bottom: var(--space-4); }
+        .mb-6 { margin-bottom: var(--space-6); }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-8) 0 var(--space-7);
+            }
+
+            .header::before,
+            .header::after,
+            .header-crosshair {
+                display: none;
+            }
+
+            .section {
+                padding: var(--space-7) 0;
+            }
+
+            .section-title {
+                font-size: 1.35rem;
+            }
+
+            h1.type-sample {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-full {
+                grid-column: span 1;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+
+            .spacing-row {
+                gap: var(--space-3);
+            }
+
+            .spacing-label {
+                width: 70px;
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background layers -->
+    <div class="starfield-bg"></div>
+    <div class="nebula-wash"></div>
+    <div class="coord-grid"></div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-crosshair"></div>
+            <p class="header-catalog">NGC-2026 // Design Catalog</p>
+            <h1 class="header-title">Astronomical</h1>
+            <p class="header-subtitle">
+                A design system born from star charts, observatory instruments, and deep space data visualization.
+                Precision optics meet celestial cartography.
+            </p>
+            <p class="header-coords">
+                RA <span>14h 29m 42.9s</span> // Dec <span>+38 31' 18"</span> // Epoch J2000.0
+            </p>
+        </header>
+
+        <!-- COLOR PALETTE -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">01 // Chromatic Index</p>
+                <h2 class="section-title">Color Palette</h2>
+                <p class="section-description">Derived from observatory dark rooms, instrument panel displays, and the spectral analysis of stellar objects. Each color maps to a functional role in the data visualization hierarchy.</p>
+            </div>
+
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #05080e;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Deep Space</div>
+                        <div class="color-value">#05080E</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #0a1628;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Deep Navy</div>
+                        <div class="color-value">#0A1628</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #142244;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Instrument</div>
+                        <div class="color-value">#142244</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #2ec4b6;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Observation</div>
+                        <div class="color-value">#2EC4B6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #6b3fa0;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Nebula</div>
+                        <div class="color-value">#6B3FA0</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #e8a838;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Amber Star</div>
+                        <div class="color-value">#E8A838</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #d64045;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Red Giant</div>
+                        <div class="color-value">#D64045</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #4ea8de;"></div>
+                    <div class="color-info">
+                        <div class="color-name">Supergiant</div>
+                        <div class="color-value">#4EA8DE</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #d4e5f7;"></div>
+                    <div class="color-info">
+                        <div class="color-name">White Dwarf</div>
+                        <div class="color-value">#D4E5F7</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TYPOGRAPHY -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">02 // Type Catalog</p>
+                <h2 class="section-title">Typography</h2>
+                <p class="section-description">Space Mono delivers the precision of instrument readouts and star catalog entries. IBM Plex Sans provides the clarity needed for extended observation notes and technical documentation.</p>
+            </div>
+
+            <div class="type-scale">
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H1 // Space Mono Bold</span>
+                        <span class="type-meta-size">48px / 0.06em</span>
+                    </div>
+                    <h1 class="type-sample">Stellar Cartography</h1>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H2 // Space Mono Bold</span>
+                        <span class="type-meta-size">32px / 0.04em</span>
+                    </div>
+                    <h2 class="type-sample">Deep Field Survey</h2>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H3 // Space Mono Bold</span>
+                        <span class="type-meta-size">24px / 0.03em</span>
+                    </div>
+                    <h3 class="type-sample">Observation Log Entry</h3>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H4 // IBM Plex Sans Semibold</span>
+                        <span class="type-meta-size">20px</span>
+                    </div>
+                    <h4 class="type-sample">Spectral Classification Report</h4>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H5 // IBM Plex Sans Semibold</span>
+                        <span class="type-meta-size">16px / Uppercase</span>
+                    </div>
+                    <h5 class="type-sample">Instrument Calibration Data</h5>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>H6 // Space Mono Regular</span>
+                        <span class="type-meta-size">12.8px / 3px tracking</span>
+                    </div>
+                    <h6 class="type-sample">Coordinate Reference Frame</h6>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">
+                        <span>Body // IBM Plex Sans Regular</span>
+                        <span class="type-meta-size">16px / 1.75 leading</span>
+                    </div>
+                    <p class="type-sample">The observatory dome rotates slowly to track the target field. Through the eyepiece, thousands of photons collected over millions of years resolve into points of data on the CCD sensor, each one a record of stellar physics operating at distances that reduce our entire civilization to a footnote.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SPACING SYSTEM -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">03 // Spatial Grid</p>
+                <h2 class="section-title">Spacing System</h2>
+                <p class="section-description">A 4-pixel base unit scales through 10 increments. Like angular separations on a star chart, consistent spacing creates a readable celestial coordinate system for interface layout.</p>
+            </div>
+
+            <div class="spacing-demo">
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-1</span>
+                    <div class="spacing-bar" style="width: 16px;"></div>
+                    <span class="spacing-value">4px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-2</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                    <span class="spacing-value">8px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-3</span>
+                    <div class="spacing-bar" style="width: 48px;"></div>
+                    <span class="spacing-value">12px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-4</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                    <span class="spacing-value">16px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-5</span>
+                    <div class="spacing-bar" style="width: 96px;"></div>
+                    <span class="spacing-value">24px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-6</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                    <span class="spacing-value">32px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-7</span>
+                    <div class="spacing-bar" style="width: 192px;"></div>
+                    <span class="spacing-value">48px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-8</span>
+                    <div class="spacing-bar" style="width: 256px;"></div>
+                    <span class="spacing-value">64px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-9</span>
+                    <div class="spacing-bar" style="width: 320px;"></div>
+                    <span class="spacing-value">96px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-10</span>
+                    <div class="spacing-bar" style="width: 400px;"></div>
+                    <span class="spacing-value">128px</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- BUTTONS -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">04 // Control Panel</p>
+                <h2 class="section-title">Buttons</h2>
+                <p class="section-description">Instrument-grade controls with sharp edges and precise labeling. Corner bracket decorations appear on hover, echoing telescope finder scope reticles.</p>
+            </div>
+
+            <p class="sub-label">Variants</p>
+            <div class="button-group">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-accent">Accent</button>
+            </div>
+
+            <p class="sub-label">Sizes</p>
+            <div class="button-group">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Default</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+
+            <p class="sub-label">States</p>
+            <div class="button-group">
+                <button class="btn btn-primary">Active</button>
+                <button class="btn btn-primary" disabled>Disabled</button>
+                <button class="btn btn-secondary">Active</button>
+                <button class="btn btn-secondary" disabled>Disabled</button>
+            </div>
+        </section>
+
+        <!-- FORMS -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">05 // Data Input</p>
+                <h2 class="section-title">Forms</h2>
+                <p class="section-description">Monospaced input fields styled as instrument data entry terminals. Focus states illuminate with observation teal, indicating active sensor channels.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="input-group">
+                    <label class="input-label">Observer ID<span class="required">*</span></label>
+                    <input type="text" class="input-field" placeholder="Enter observer designation...">
+                    <div class="input-hint">// Format: OBS-XXXX-YYYY</div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Target Coordinates</label>
+                    <input type="text" class="input-field" value="RA 05h 34m 31.94s / Dec +22 00' 52.2&quot;">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Instrument Config</label>
+                    <div class="select-wrapper">
+                        <select class="input-field">
+                            <option>Select instrument...</option>
+                            <option>Primary Mirror - f/8 Cassegrain</option>
+                            <option>Schmidt Camera - Wide Field</option>
+                            <option>Spectrograph - High Resolution</option>
+                            <option>CCD Imager - Narrowband</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Error State</label>
+                    <input type="text" class="input-field error" value="INVALID_EPOCH">
+                    <div class="input-error">// ERR: Epoch must be J2000.0 or B1950.0</div>
+                </div>
+
+                <div class="input-group form-full" style="grid-column: 1 / -1;">
+                    <label class="input-label">Observation Notes</label>
+                    <textarea class="input-field" placeholder="Log seeing conditions, transparency, instrument status..."></textarea>
+                    <div class="input-hint">// Supports standard observation log format</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONSTELLATION DIVIDER -->
+        <div class="constellation-divider">
+            <div class="constellation-line"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line" style="max-width: 60px;"></div>
+            <div class="constellation-node"></div>
+            <div class="constellation-line" style="max-width: 60px;"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line"></div>
+        </div>
+
+        <!-- CARDS -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">06 // Data Panels</p>
+                <h2 class="section-title">Cards</h2>
+                <p class="section-description">Information containers styled as observatory instrument panels. Each variant represents a different class of astronomical data display.</p>
+            </div>
+
+            <div class="card-grid">
+                <!-- Base card -->
+                <div class="card">
+                    <div class="card-designation">OBS // Standard Panel</div>
+                    <h3 class="card-title">Telescope Control</h3>
+                    <p class="card-body">Primary mirror alignment verified. Autoguider locked on reference star at magnitude 8.4. Dome slit positioned for meridian transit observation window.</p>
+                    <div class="card-footer">
+                        <button class="btn btn-primary btn-sm">Initialize</button>
+                        <button class="btn btn-ghost btn-sm">Status</button>
+                    </div>
+                </div>
+
+                <!-- Star chart card -->
+                <div class="card card-starchart">
+                    <div class="card-designation">CAT // Star Chart</div>
+                    <h3 class="card-title">Messier 42 Region</h3>
+                    <p class="card-body">The Great Nebula in Orion. Emission nebula spanning 24 light-years, containing the Trapezium star cluster. Distance: 1,344 ly. Apparent magnitude: +4.0.</p>
+                    <div class="card-footer">
+                        <button class="btn btn-accent btn-sm">Chart</button>
+                        <button class="btn btn-ghost btn-sm">Details</button>
+                    </div>
+                </div>
+
+                <!-- Deep field card -->
+                <div class="card card-deepfield">
+                    <div class="card-designation">DSF // Deep Field</div>
+                    <h3 class="card-title">Hubble Ultra Deep</h3>
+                    <p class="card-body">400 orbit exposure revealing approximately 10,000 galaxies across a field of view equivalent to one thirteen-millionth of the total sky area.</p>
+                    <div class="card-footer">
+                        <button class="btn btn-secondary btn-sm">Analyze</button>
+                    </div>
+                </div>
+
+                <!-- Data readout card -->
+                <div class="card card-readout">
+                    <div class="card-designation">TEL // Data Readout</div>
+                    <h3 class="card-title">System Telemetry</h3>
+                    <div class="card-body">
+                        MIRROR_TEMP: 12.4C<br>
+                        DOME_AZ: 247.3 deg<br>
+                        SEEING: 1.2 arcsec<br>
+                        HUMIDITY: 34%<br>
+                        WIND_SPD: 8.2 m/s
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary btn-sm">Refresh</button>
+                        <button class="btn btn-ghost btn-sm">Export</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DATA TABLE -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">07 // Star Catalog</p>
+                <h2 class="section-title">Data Table</h2>
+                <p class="section-description">Tabular data presentation modeled on professional star catalogs and observation logs. Monospaced columns ensure alignment of numerical data across entries.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Designation</th>
+                            <th>Object</th>
+                            <th>Type</th>
+                            <th>Coordinates</th>
+                            <th>Mag</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="table-id">NGC 7293</td>
+                            <td>Helix Nebula</td>
+                            <td>Planetary Neb.</td>
+                            <td class="table-coord">22h 29m / -20 50'</td>
+                            <td class="table-magnitude">+7.6</td>
+                            <td><span class="badge badge-teal badge-filled"><span class="badge-indicator"></span>Tracking</span></td>
+                        </tr>
+                        <tr>
+                            <td class="table-id">M 31</td>
+                            <td>Andromeda Galaxy</td>
+                            <td>Spiral Galaxy</td>
+                            <td class="table-coord">00h 42m / +41 16'</td>
+                            <td class="table-magnitude">+3.4</td>
+                            <td><span class="badge badge-amber badge-filled">Queued</span></td>
+                        </tr>
+                        <tr>
+                            <td class="table-id">NGC 6543</td>
+                            <td>Cat's Eye Nebula</td>
+                            <td>Planetary Neb.</td>
+                            <td class="table-coord">17h 58m / +66 38'</td>
+                            <td class="table-magnitude">+8.1</td>
+                            <td><span class="badge badge-blue">Below Horizon</span></td>
+                        </tr>
+                        <tr>
+                            <td class="table-id">M 1</td>
+                            <td>Crab Nebula</td>
+                            <td>Supernova Rem.</td>
+                            <td class="table-coord">05h 34m / +22 01'</td>
+                            <td class="table-magnitude">+8.4</td>
+                            <td><span class="badge badge-teal"><span class="badge-indicator"></span>Observable</span></td>
+                        </tr>
+                        <tr>
+                            <td class="table-id">NGC 2237</td>
+                            <td>Rosette Nebula</td>
+                            <td>Emission Neb.</td>
+                            <td class="table-coord">06h 33m / +04 59'</td>
+                            <td class="table-magnitude">+9.0</td>
+                            <td><span class="badge badge-purple">Scheduled</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- BADGES / TAGS -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">08 // Classification</p>
+                <h2 class="section-title">Badges &amp; Tags</h2>
+                <p class="section-description">Classification markers inspired by stellar spectral types and observatory status indicators. Outline variants for secondary information, filled for active states.</p>
+            </div>
+
+            <p class="sub-label">Outline Variants</p>
+            <div class="badge-group">
+                <span class="badge">Default</span>
+                <span class="badge badge-teal">Teal</span>
+                <span class="badge badge-amber">Amber</span>
+                <span class="badge badge-purple">Purple</span>
+                <span class="badge badge-red">Red</span>
+                <span class="badge badge-blue">Blue</span>
+            </div>
+
+            <p class="sub-label">Filled Variants</p>
+            <div class="badge-group">
+                <span class="badge badge-teal badge-filled">Active</span>
+                <span class="badge badge-amber badge-filled">Warning</span>
+                <span class="badge badge-purple badge-filled">Scheduled</span>
+                <span class="badge badge-red badge-filled">Critical</span>
+                <span class="badge badge-blue badge-filled">Info</span>
+            </div>
+
+            <p class="sub-label">With Status Indicator</p>
+            <div class="badge-group">
+                <span class="badge badge-teal badge-filled"><span class="badge-indicator"></span>Tracking</span>
+                <span class="badge badge-amber badge-filled"><span class="badge-indicator"></span>Calibrating</span>
+                <span class="badge badge-red badge-filled"><span class="badge-indicator"></span>Alert</span>
+            </div>
+
+            <p class="sub-label">Spectral Classification</p>
+            <div class="badge-group">
+                <span class="badge badge-blue badge-filled">O-Type</span>
+                <span class="badge badge-blue">B-Type</span>
+                <span class="badge badge-teal">A-Type</span>
+                <span class="badge">F-Type</span>
+                <span class="badge badge-amber">G-Type</span>
+                <span class="badge badge-amber badge-filled">K-Type</span>
+                <span class="badge badge-red badge-filled">M-Type</span>
+            </div>
+        </section>
+
+        <!-- CONSTELLATION DIVIDER -->
+        <div class="constellation-divider">
+            <div class="constellation-line"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line" style="max-width: 40px;"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line" style="max-width: 80px;"></div>
+            <div class="constellation-node"></div>
+            <div class="constellation-line" style="max-width: 80px;"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line" style="max-width: 40px;"></div>
+            <div class="constellation-node-sm"></div>
+            <div class="constellation-line"></div>
+        </div>
+
+        <!-- ALERTS -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">09 // System Messages</p>
+                <h2 class="section-title">Alerts</h2>
+                <p class="section-description">Observatory system notifications styled as instrument status readouts. Severity is communicated through color-coded left borders and symbol indicators.</p>
+            </div>
+
+            <div class="alert alert-info">
+                <div class="alert-symbol">i</div>
+                <div class="alert-content">
+                    <div class="alert-title">Observation Window Open</div>
+                    <div class="alert-message">Astronomical twilight ends at 20:47 UTC. Current seeing conditions: 1.1 arcsec. Transparency: photometric. All instruments are nominal.</div>
+                </div>
+            </div>
+
+            <div class="alert alert-success">
+                <div class="alert-symbol">OK</div>
+                <div class="alert-content">
+                    <div class="alert-title">Target Acquired</div>
+                    <div class="alert-message">Autoguider locked on reference star HD 164922. Tracking error within 0.15 arcsec RMS. Exposure sequence initiated.</div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning">
+                <div class="alert-symbol">!!</div>
+                <div class="alert-content">
+                    <div class="alert-title">Humidity Rising</div>
+                    <div class="alert-message">Relative humidity at 72% and climbing. Dew point approaching mirror temperature. Consider closing dome slit if conditions do not improve within 15 minutes.</div>
+                </div>
+            </div>
+
+            <div class="alert alert-critical">
+                <div class="alert-symbol">XX</div>
+                <div class="alert-content">
+                    <div class="alert-title">Emergency Dome Close</div>
+                    <div class="alert-message">Wind speed exceeds operational limit (25 m/s sustained). Automated dome closure initiated. All tracking suspended. Manual override required to resume operations.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DESIGN PRINCIPLES -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">10 // Operating Procedures</p>
+                <h2 class="section-title">Design Principles</h2>
+                <p class="section-description">The foundational rules governing visual decisions across the astronomical design system.</p>
+            </div>
+
+            <div class="principles-grid">
+                <div class="principle-card">
+                    <div class="principle-number">01</div>
+                    <h3 class="principle-name">Precision Over Ornament</h3>
+                    <p class="principle-desc">Every visual element serves a functional purpose. Like a well-calibrated telescope, nothing is decorative without also being informative. Monospaced type ensures data alignment. Grid lines provide spatial reference.</p>
+                </div>
+
+                <div class="principle-card">
+                    <div class="principle-number">02</div>
+                    <h3 class="principle-name">Dark Adaptation</h3>
+                    <p class="principle-desc">Observatory dark rooms preserve night vision. Deep navy and black backgrounds reduce eye strain during extended sessions. Accent colors are desaturated enough to convey meaning without overwhelming the visual field.</p>
+                </div>
+
+                <div class="principle-card">
+                    <div class="principle-number">03</div>
+                    <h3 class="principle-name">Coordinate Reference</h3>
+                    <p class="principle-desc">Just as celestial objects are located by right ascension and declination, every interface element exists within a defined spatial grid. Consistent spacing creates a navigable coordinate system for the eye.</p>
+                </div>
+
+                <div class="principle-card">
+                    <div class="principle-number">04</div>
+                    <h3 class="principle-name">Signal Over Noise</h3>
+                    <p class="principle-desc">In astronomical imaging, signal-to-noise ratio determines data quality. Interfaces should maximize information clarity while minimizing visual clutter. Every pixel of contrast should carry meaning.</p>
+                </div>
+
+                <div class="principle-card">
+                    <div class="principle-number">05</div>
+                    <h3 class="principle-name">Catalog Everything</h3>
+                    <p class="principle-desc">Astronomers catalog every object with systematic designations. Design tokens, component variants, and interaction states should be equally well-documented and consistently applied across the system.</p>
+                </div>
+
+                <div class="principle-card">
+                    <div class="principle-number">06</div>
+                    <h3 class="principle-name">Long Exposure Thinking</h3>
+                    <p class="principle-desc">The best astronomical images come from patient, extended observations. Design decisions should favor longevity over trend, building interfaces that remain clear and functional across many viewing sessions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-brand">Astronomical Design System</div>
+            <p class="footer-text">
+                Precision instruments for interface cartography.<br>
+                Charting the space between data and understanding.
+            </p>
+            <p class="footer-coords">
+                Catalog <span>NGC-2026</span> // Rev <span>1.0</span> // Epoch <span>J2026.0</span>
+            </p>
+            <div class="footer-stars">
+                <div class="footer-dot"></div>
+                <div class="footer-dot"></div>
+                <div class="footer-dot"></div>
+                <div class="footer-dot"></div>
+                <div class="footer-dot"></div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

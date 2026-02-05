@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Mesh Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-2xl: 40px;
+            --radius-full: 9999px;
+
+            --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+            /* Mesh palette */
+            --mesh-violet: #7c3aed;
+            --mesh-purple: #a855f7;
+            --mesh-blue: #3b82f6;
+            --mesh-cyan: #06b6d4;
+            --mesh-teal: #14b8a6;
+            --mesh-pink: #ec4899;
+            --mesh-rose: #f43f5e;
+            --mesh-orange: #f97316;
+            --mesh-amber: #f59e0b;
+
+            /* UI colors */
+            --bg-base: #050510;
+            --bg-elevated: rgba(255, 255, 255, 0.04);
+            --bg-surface: rgba(255, 255, 255, 0.06);
+            --bg-surface-hover: rgba(255, 255, 255, 0.10);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-default: rgba(255, 255, 255, 0.12);
+            --border-emphasis: rgba(255, 255, 255, 0.20);
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.38);
+
+            /* Functional */
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --info: #3b82f6;
+
+            /* Primary gradient */
+            --gradient-primary: linear-gradient(135deg, var(--mesh-violet), var(--mesh-blue), var(--mesh-cyan));
+            --gradient-warm: linear-gradient(135deg, var(--mesh-pink), var(--mesh-orange), var(--mesh-amber));
+            --gradient-aurora: linear-gradient(135deg, var(--mesh-purple), var(--mesh-blue), var(--mesh-teal), var(--mesh-cyan));
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background: var(--bg-base);
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           MESH GRADIENT BACKGROUND
+           Multiple layered radial gradients that create
+           a mesh-like color field, animated to flow.
+           ============================================ */
+        .mesh-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .mesh-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.5;
+            will-change: transform;
+        }
+
+        .mesh-blob-1 {
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--mesh-violet) 0%, transparent 70%);
+            top: -15%;
+            left: -10%;
+            animation: mesh-drift-1 25s ease-in-out infinite;
+        }
+
+        .mesh-blob-2 {
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, var(--mesh-blue) 0%, transparent 70%);
+            top: 10%;
+            right: -15%;
+            animation: mesh-drift-2 22s ease-in-out infinite;
+        }
+
+        .mesh-blob-3 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--mesh-pink) 0%, transparent 70%);
+            top: 40%;
+            left: 20%;
+            animation: mesh-drift-3 28s ease-in-out infinite;
+        }
+
+        .mesh-blob-4 {
+            width: 750px;
+            height: 750px;
+            background: radial-gradient(circle, var(--mesh-cyan) 0%, transparent 70%);
+            bottom: -10%;
+            right: 5%;
+            animation: mesh-drift-4 24s ease-in-out infinite;
+        }
+
+        .mesh-blob-5 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--mesh-orange) 0%, transparent 70%);
+            bottom: 15%;
+            left: -5%;
+            opacity: 0.35;
+            animation: mesh-drift-5 30s ease-in-out infinite;
+        }
+
+        .mesh-blob-6 {
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, var(--mesh-teal) 0%, transparent 70%);
+            top: 60%;
+            right: 30%;
+            opacity: 0.3;
+            animation: mesh-drift-6 26s ease-in-out infinite;
+        }
+
+        @keyframes mesh-drift-1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(80px, 40px) scale(1.1); }
+            66% { transform: translate(-40px, 80px) scale(0.95); }
+        }
+
+        @keyframes mesh-drift-2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, 50px) scale(0.9); }
+            66% { transform: translate(30px, -60px) scale(1.08); }
+        }
+
+        @keyframes mesh-drift-3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, -40px) scale(1.05); }
+            50% { transform: translate(-30px, -80px) scale(0.92); }
+            75% { transform: translate(-70px, 30px) scale(1.03); }
+        }
+
+        @keyframes mesh-drift-4 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -70px) scale(1.06); }
+            66% { transform: translate(-80px, 20px) scale(0.94); }
+        }
+
+        @keyframes mesh-drift-5 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(100px, -50px) scale(1.12); }
+        }
+
+        @keyframes mesh-drift-6 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-50px, -60px) scale(1.08); }
+            66% { transform: translate(60px, 40px) scale(0.93); }
+        }
+
+        /* Mesh noise overlay for texture */
+        .mesh-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* ============================================
+           GLASS PANEL (distinct from glassmorphism:
+           lighter blur, gradient-tinted borders,
+           mesh-colored accents)
+           ============================================ */
+        .mesh-panel {
+            background: var(--bg-surface);
+            backdrop-filter: blur(40px) saturate(1.5);
+            -webkit-backdrop-filter: blur(40px) saturate(1.5);
+            border: 1px solid var(--border-subtle);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+                0 20px 60px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        .mesh-panel-glow {
+            position: relative;
+        }
+
+        .mesh-panel-glow::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                135deg,
+                rgba(124, 58, 237, 0.3),
+                rgba(59, 130, 246, 0.2),
+                rgba(6, 182, 212, 0.3),
+                rgba(236, 72, 153, 0.2)
+            );
+            background-size: 300% 300%;
+            animation: border-mesh 8s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        @keyframes border-mesh {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-5);
+        }
+
+        .section {
+            margin-bottom: var(--space-8);
+            padding: var(--space-7);
+            border-radius: var(--radius-xl);
+        }
+
+        .section-label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            color: var(--mesh-cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: var(--space-3);
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: var(--space-5);
+        }
+
+        .section-desc {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: var(--space-6);
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-9);
+            padding: var(--space-9) var(--space-6);
+            border-radius: var(--radius-2xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(124, 58, 237, 0.25) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+            animation: header-mesh 12s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes header-mesh {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+
+        .header-chip-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            animation: chip-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes chip-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.7); }
+        }
+
+        .header h1 {
+            font-size: clamp(3rem, 7vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -3px;
+            line-height: 1;
+            margin-bottom: var(--space-5);
+            background: linear-gradient(
+                135deg,
+                var(--mesh-purple) 0%,
+                var(--mesh-blue) 25%,
+                var(--mesh-cyan) 50%,
+                var(--mesh-pink) 75%,
+                var(--mesh-orange) 100%
+            );
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: title-gradient 6s ease infinite;
+        }
+
+        @keyframes title-gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto;
+            font-weight: 400;
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           COLOR PALETTE
+           ============================================ */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .color-swatch {
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-preview {
+            height: 88px;
+            position: relative;
+        }
+
+        .color-preview-mesh {
+            background:
+                radial-gradient(ellipse at 30% 30%, var(--mesh-violet) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, var(--mesh-cyan) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 90%, var(--mesh-pink) 0%, transparent 60%);
+            background-size: 200% 200%;
+            animation: swatch-mesh 6s ease infinite;
+        }
+
+        @keyframes swatch-mesh {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+
+        .color-info {
+            padding: var(--space-3);
+            background: var(--bg-elevated);
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 0.8125rem;
+        }
+
+        .color-value {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-top: 2px;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-5);
+        }
+
+        .type-specimen {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--transition-fast);
+        }
+
+        .type-specimen:hover {
+            border-color: var(--border-default);
+            background: var(--bg-surface);
+        }
+
+        .type-meta {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+        }
+
+        .type-h1 {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1.05;
+        }
+
+        .type-h2 {
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+        }
+
+        .type-h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.75px;
+            line-height: 1.2;
+        }
+
+        .type-h4 {
+            font-size: 1.375rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+
+        .type-h5 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            letter-spacing: -0.25px;
+        }
+
+        .type-h6 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .type-body {
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .type-gradient {
+            background: var(--gradient-primary);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: title-gradient 6s ease infinite;
+        }
+
+        /* ============================================
+           SPACING SYSTEM
+           ============================================ */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            width: 90px;
+            flex-shrink: 0;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            font-weight: 500;
+        }
+
+        .spacing-bar {
+            height: 28px;
+            border-radius: var(--radius-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spacing-bar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-aurora);
+            background-size: 200% 100%;
+            animation: spacing-flow 4s ease infinite;
+            opacity: 0.85;
+        }
+
+        @keyframes spacing-flow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .spacing-value {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: var(--space-3);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.15) 50%,
+                transparent 100%
+            );
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .btn:hover::after {
+            transform: translateX(100%);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            background-size: 200% 200%;
+            color: white;
+            box-shadow:
+                0 4px 20px -4px rgba(124, 58, 237, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            animation: btn-mesh 5s ease infinite;
+        }
+
+        @keyframes btn-mesh {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 30px -4px rgba(124, 58, 237, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-emphasis);
+            transform: translateY(-2px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .btn-accent {
+            background: var(--gradient-warm);
+            background-size: 200% 200%;
+            color: white;
+            box-shadow:
+                0 4px 20px -4px rgba(236, 72, 153, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            animation: btn-mesh 5s ease infinite;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 30px -4px rgba(236, 72, 153, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+        }
+
+        .btn-sm { padding: var(--space-2) var(--space-4); font-size: 0.8125rem; }
+        .btn-lg { padding: var(--space-4) var(--space-7); font-size: 1rem; }
+
+        /* ============================================
+           FORMS
+           ============================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: var(--space-2);
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--mesh-purple);
+            background: var(--bg-surface);
+            box-shadow:
+                0 0 0 3px rgba(124, 58, 237, 0.15),
+                0 0 20px -8px rgba(124, 58, 237, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.input-field {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        select.input-field {
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='rgba(255,255,255,0.4)' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .input-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: var(--space-1);
+        }
+
+        /* Checkbox and radio */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--mesh-violet);
+            cursor: pointer;
+        }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-5);
+        }
+
+        /* Card Variant 1: Standard mesh card */
+        .card {
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-mesh {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .card-mesh::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+            pointer-events: none;
+        }
+
+        .card-mesh:hover {
+            transform: translateY(-8px);
+            border-color: var(--border-default);
+            box-shadow:
+                0 30px 60px -20px rgba(0, 0, 0, 0.5),
+                0 0 40px -20px rgba(124, 58, 237, 0.15);
+        }
+
+        .card-mesh:hover::before {
+            opacity: 1;
+        }
+
+        /* Card Variant 2: Gradient border card */
+        .card-gradient-border {
+            background: var(--bg-base);
+            border: none;
+            position: relative;
+        }
+
+        .card-gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(
+                135deg,
+                var(--mesh-violet),
+                var(--mesh-blue),
+                var(--mesh-cyan),
+                var(--mesh-pink)
+            );
+            background-size: 300% 300%;
+            animation: border-mesh 8s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .card-gradient-border:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 50px -15px rgba(124, 58, 237, 0.2);
+        }
+
+        /* Card Variant 3: Spotlight card */
+        .card-spotlight {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+        }
+
+        .card-spotlight::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.2), transparent 70%);
+            filter: blur(40px);
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: opacity var(--transition-fast);
+            pointer-events: none;
+        }
+
+        .card-spotlight:hover {
+            border-color: var(--border-default);
+            transform: translateY(-4px);
+        }
+
+        .card-spotlight:hover::after {
+            opacity: 1;
+        }
+
+        /* Card Variant 4: Full mesh background card */
+        .card-full-mesh {
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(124, 58, 237, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 100%, rgba(6, 182, 212, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 0%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                var(--bg-base);
+            border: 1px solid var(--border-default);
+        }
+
+        .card-full-mesh:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+        }
+
+        .card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: var(--space-4);
+            background: var(--gradient-primary);
+            background-size: 200% 200%;
+            animation: btn-mesh 5s ease infinite;
+        }
+
+        .card-icon-warm {
+            background: var(--gradient-warm);
+            background-size: 200% 200%;
+            animation: btn-mesh 5s ease infinite;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            letter-spacing: -0.25px;
+        }
+
+        .card-text {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .card-tag {
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            background: var(--bg-surface);
+            color: var(--mesh-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            margin-bottom: var(--space-4);
+        }
+
+        /* ============================================
+           DATA TABLE
+           ============================================ */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9375rem;
+        }
+
+        .data-table thead {
+            background: var(--bg-elevated);
+        }
+
+        .data-table th {
+            padding: var(--space-4) var(--space-5);
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .data-table td {
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .data-table tbody tr {
+            transition: background var(--transition-fast);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-elevated);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        .table-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .table-status-dot.active { background: var(--success); }
+        .table-status-dot.pending { background: var(--warning); }
+        .table-status-dot.inactive { background: var(--error); }
+
+        .table-amount {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================
+           BADGES & TAGS
+           ============================================ */
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-mesh {
+            background: var(--gradient-primary);
+            background-size: 200% 200%;
+            animation: btn-mesh 5s ease infinite;
+            color: white;
+        }
+
+        .badge-surface {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+        }
+
+        .badge-success {
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.25);
+            color: var(--warning);
+        }
+
+        .badge-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: var(--error);
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            color: var(--info);
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: chip-pulse 2s ease-in-out infinite;
+        }
+
+        .tag-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        .tag {
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-sm);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .tag:hover {
+            border-color: var(--mesh-purple);
+            color: var(--mesh-purple);
+        }
+
+        /* ============================================
+           ALERTS
+           ============================================ */
+        .alert {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+            display: flex;
+            gap: var(--space-4);
+            align-items: flex-start;
+            border: 1px solid;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .alert-body {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-message {
+            font-size: 0.875rem;
+            opacity: 0.85;
+            line-height: 1.6;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.2);
+            color: #93bbfc;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.08);
+            border-color: rgba(34, 197, 94, 0.2);
+            color: #6ee7a0;
+        }
+
+        .alert-warning {
+            background: rgba(234, 179, 8, 0.08);
+            border-color: rgba(234, 179, 8, 0.2);
+            color: #fcd34d;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .alert-mesh {
+            background:
+                radial-gradient(ellipse at 0% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                var(--bg-elevated);
+            border-color: var(--border-default);
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           DESIGN PRINCIPLES
+           ============================================ */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .principle-item {
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .principle-item:hover {
+            border-color: var(--border-default);
+            transform: translateY(-4px);
+        }
+
+        .principle-number {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: var(--space-4);
+            background: var(--gradient-primary);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: title-gradient 6s ease infinite;
+            opacity: 0.7;
+        }
+
+        .principle-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            letter-spacing: -0.25px;
+        }
+
+        .principle-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            padding: var(--space-8) var(--space-5);
+            border-radius: var(--radius-xl);
+            margin-top: var(--space-8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(124, 58, 237, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 0%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .footer-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: var(--space-3);
+            background: linear-gradient(
+                135deg,
+                var(--mesh-purple),
+                var(--mesh-blue),
+                var(--mesh-cyan)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-5);
+            margin-top: var(--space-5);
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-link:hover {
+            color: var(--mesh-cyan);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-7) var(--space-5);
+            }
+
+            .section {
+                padding: var(--space-5);
+            }
+
+            .button-grid {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .data-table {
+                font-size: 0.8125rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: var(--space-3);
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-3);
+            }
+        }
+
+        /* ============================================
+           MESH SHOWCASE BANNER
+           ============================================ */
+        .mesh-showcase {
+            padding: var(--space-8);
+            border-radius: var(--radius-2xl);
+            margin-bottom: var(--space-8);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            background:
+                radial-gradient(ellipse at 10% 20%, rgba(124, 58, 237, 0.35) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 30%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(236, 72, 153, 0.25) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(6, 182, 212, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 70%, rgba(249, 115, 22, 0.15) 0%, transparent 50%);
+            background-size: 120% 120%;
+            animation: showcase-mesh 15s ease-in-out infinite alternate;
+            border: 1px solid var(--border-default);
+        }
+
+        @keyframes showcase-mesh {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
+        .mesh-showcase h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin-bottom: var(--space-4);
+            position: relative;
+            z-index: 1;
+        }
+
+        .mesh-showcase p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           UTILITIES
+           ============================================ */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-5);
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mesh gradient background blobs -->
+    <div class="mesh-bg">
+        <div class="mesh-blob mesh-blob-1"></div>
+        <div class="mesh-blob mesh-blob-2"></div>
+        <div class="mesh-blob mesh-blob-3"></div>
+        <div class="mesh-blob mesh-blob-4"></div>
+        <div class="mesh-blob mesh-blob-5"></div>
+        <div class="mesh-blob mesh-blob-6"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header mesh-panel">
+            <div class="header-content">
+                <div class="header-chip">
+                    <span class="header-chip-dot"></span>
+                    Design System v1.0
+                </div>
+                <h1>Gradient Mesh</h1>
+                <p>Vibrant aurora-like color meshes, organic blob shapes, and fluid gradients. A design system inspired by modern SaaS aesthetics and the beauty of interpolated color.</p>
+            </div>
+        </header>
+
+        <!-- Color Palette -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">01 / Palette</p>
+            <h2 class="section-title">Color Palette</h2>
+            <p class="section-desc">A vibrant spectrum anchored in purple, blue, and cyan with warm accents. Colors are designed to blend and overlap, creating rich mesh gradients.</p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview color-preview-mesh"></div>
+                    <div class="color-info">
+                        <div class="color-name">Mesh Blend</div>
+                        <div class="color-value">Multi-stop</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-violet);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Violet</div>
+                        <div class="color-value">#7c3aed</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-purple);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Purple</div>
+                        <div class="color-value">#a855f7</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-blue);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Blue</div>
+                        <div class="color-value">#3b82f6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-cyan);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Cyan</div>
+                        <div class="color-value">#06b6d4</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-teal);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Teal</div>
+                        <div class="color-value">#14b8a6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-pink);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Pink</div>
+                        <div class="color-value">#ec4899</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: var(--mesh-orange);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Orange</div>
+                        <div class="color-value">#f97316</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">02 / Typography</p>
+            <h2 class="section-title">Type Scale</h2>
+            <p class="section-desc">Plus Jakarta Sans is a contemporary geometric sans-serif with excellent readability and a warm, modern feel. Tight tracking on large headings, generous line-height on body text.</p>
+            <div class="type-scale">
+                <div class="type-specimen">
+                    <div class="type-meta">H1 / 800 / Gradient</div>
+                    <div class="type-h1 type-gradient">Fluid color fields</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">H2 / 700 / 2.5rem</div>
+                    <div class="type-h2">Section heading</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">H3 / 700 / 1.75rem</div>
+                    <div class="type-h3">Subsection heading</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">H4 / 600 / 1.375rem</div>
+                    <div class="type-h4">Component heading</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">H5 / 600 / 1.125rem</div>
+                    <div class="type-h5">Card or widget heading</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">H6 / 600 / 0.9375rem / Uppercase</div>
+                    <div class="type-h6">Label heading</div>
+                </div>
+                <div class="type-specimen">
+                    <div class="type-meta">Body / 400 / 1rem</div>
+                    <div class="type-body">Plus Jakarta Sans features a tall x-height and open letterforms that keep text highly readable at any size. Its geometric foundation provides a clean, contemporary feel while subtle humanist touches prevent it from feeling cold or sterile. An ideal choice for interfaces that need to feel both premium and approachable.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spacing System -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">03 / Spacing</p>
+            <h2 class="section-title">Spacing Scale</h2>
+            <p class="section-desc">A 4px base unit with ten increments provides fine-grained control. Each step is chosen for practical layout needs, from tight icon gaps to generous section padding.</p>
+            <div class="spacing-demo">
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-1</span>
+                    <div class="spacing-bar" style="width: 40px;"><span class="spacing-value">4px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-2</span>
+                    <div class="spacing-bar" style="width: 64px;"><span class="spacing-value">8px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-3</span>
+                    <div class="spacing-bar" style="width: 88px;"><span class="spacing-value">12px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-4</span>
+                    <div class="spacing-bar" style="width: 112px;"><span class="spacing-value">16px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-5</span>
+                    <div class="spacing-bar" style="width: 160px;"><span class="spacing-value">24px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-6</span>
+                    <div class="spacing-bar" style="width: 208px;"><span class="spacing-value">32px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-7</span>
+                    <div class="spacing-bar" style="width: 280px;"><span class="spacing-value">48px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-8</span>
+                    <div class="spacing-bar" style="width: 350px;"><span class="spacing-value">64px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-9</span>
+                    <div class="spacing-bar" style="width: 420px;"><span class="spacing-value">96px</span></div>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-10</span>
+                    <div class="spacing-bar" style="width: 500px;"><span class="spacing-value">128px</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">04 / Buttons</p>
+            <h2 class="section-title">Buttons</h2>
+            <p class="section-desc">Four button variants cover primary actions, secondary options, subtle interactions, and warm-toned accents. All feature mesh-inspired gradient motion on hover.</p>
+            <div class="button-grid">
+                <button class="btn btn-primary">Primary Action</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-ghost">Ghost Button</button>
+                <button class="btn btn-accent">Accent Action</button>
+            </div>
+            <div class="button-grid">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Default</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">05 / Forms</p>
+            <h2 class="section-title">Form Elements</h2>
+            <p class="section-desc">Clean, minimal input styling with gradient focus rings that echo the mesh palette. High contrast placeholders and clear focus states ensure accessibility.</p>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label class="input-label">Full Name</label>
+                    <input type="text" class="input-field" placeholder="Enter your name">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" class="input-field" placeholder="you@company.com">
+                    <div class="input-hint">We will never share your email.</div>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" class="input-field" value="mysecretpassword">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Department</label>
+                    <select class="input-field">
+                        <option>Design</option>
+                        <option>Engineering</option>
+                        <option>Marketing</option>
+                        <option>Product</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Message</label>
+                <textarea class="input-field" placeholder="Tell us what you are working on..."></textarea>
+            </div>
+            <div class="input-group">
+                <label class="input-label" style="margin-bottom: var(--space-3);">Preferences</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Enable gradient animations
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox"> Reduce motion
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Send mesh gradient newsletter
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">06 / Cards</p>
+            <h2 class="section-title">Card Components</h2>
+            <p class="section-desc">Four card variants provide different levels of visual weight, from subtle surfaces to full mesh backgrounds, for building layered interfaces.</p>
+            <div class="card-grid" style="margin-bottom: var(--space-6);">
+                <div class="card card-mesh">
+                    <div class="card-icon">&#9733;</div>
+                    <h3 class="card-title">Mesh Surface</h3>
+                    <p class="card-text">A subtle surface card with internal mesh gradients that reveal on hover. Ideal for content grids and feature lists.</p>
+                </div>
+                <div class="card card-gradient-border">
+                    <div class="card-icon card-icon-warm">&#9830;</div>
+                    <h3 class="card-title">Gradient Border</h3>
+                    <p class="card-text">An animated gradient border wraps the card edge, drawing the eye without overwhelming the content inside.</p>
+                </div>
+                <div class="card card-spotlight">
+                    <div class="card-icon">&#10047;</div>
+                    <h3 class="card-title">Spotlight</h3>
+                    <p class="card-text">A radial glow follows the cursor on hover, creating an organic spotlight effect that responds to interaction.</p>
+                </div>
+            </div>
+            <div class="card card-full-mesh" style="max-width: 100%;">
+                <div class="card-tag">Featured</div>
+                <h3 class="card-title" style="font-size: 1.5rem; margin-bottom: var(--space-3);">Full Mesh Background</h3>
+                <p class="card-text" style="max-width: 600px;">This card variant uses layered radial gradients to create a full mesh color field as its background. It works best as a hero or featured content container where you want maximum visual impact.</p>
+                <div style="margin-top: var(--space-5);">
+                    <button class="btn btn-primary btn-sm">Learn More</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mesh Showcase -->
+        <div class="mesh-showcase">
+            <h2 class="type-gradient">Aurora in Motion</h2>
+            <p>When multiple gradient color fields overlap and animate independently, they create organic, aurora-like color blends that feel alive and dynamic.</p>
+        </div>
+
+        <!-- Data Table -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">07 / Data</p>
+            <h2 class="section-title">Data Table</h2>
+            <p class="section-desc">Clean tabular data presentation with subtle hover states and status indicators. Designed for dashboards and data-heavy interfaces.</p>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Members</th>
+                            <th>Budget</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color: var(--text-primary); font-weight: 500;">Aurora Dashboard</td>
+                            <td>
+                                <span class="table-status">
+                                    <span class="table-status-dot active"></span>
+                                    Active
+                                </span>
+                            </td>
+                            <td>8</td>
+                            <td class="table-amount">$24,500</td>
+                            <td>2 hours ago</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-primary); font-weight: 500;">Mesh Editor</td>
+                            <td>
+                                <span class="table-status">
+                                    <span class="table-status-dot active"></span>
+                                    Active
+                                </span>
+                            </td>
+                            <td>12</td>
+                            <td class="table-amount">$48,200</td>
+                            <td>5 hours ago</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-primary); font-weight: 500;">Gradient Studio</td>
+                            <td>
+                                <span class="table-status">
+                                    <span class="table-status-dot pending"></span>
+                                    Review
+                                </span>
+                            </td>
+                            <td>5</td>
+                            <td class="table-amount">$12,800</td>
+                            <td>1 day ago</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-primary); font-weight: 500;">Blob Generator</td>
+                            <td>
+                                <span class="table-status">
+                                    <span class="table-status-dot pending"></span>
+                                    Review
+                                </span>
+                            </td>
+                            <td>3</td>
+                            <td class="table-amount">$8,400</td>
+                            <td>3 days ago</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-primary); font-weight: 500;">Color Field v1</td>
+                            <td>
+                                <span class="table-status">
+                                    <span class="table-status-dot inactive"></span>
+                                    Archived
+                                </span>
+                            </td>
+                            <td>6</td>
+                            <td class="table-amount">$31,000</td>
+                            <td>2 weeks ago</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges & Tags -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">08 / Badges & Tags</p>
+            <h2 class="section-title">Badges & Tags</h2>
+            <p class="section-desc">Compact status indicators and categorical tags for labeling, filtering, and communicating state. Available in mesh gradient and semantic color variants.</p>
+
+            <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: var(--space-4);">Badges</h3>
+            <div class="badge-container">
+                <span class="badge badge-mesh">Mesh</span>
+                <span class="badge badge-surface">Default</span>
+                <span class="badge badge-success"><span class="badge-dot"></span> Online</span>
+                <span class="badge badge-warning"><span class="badge-dot"></span> Pending</span>
+                <span class="badge badge-error">Error</span>
+                <span class="badge badge-info">Info</span>
+            </div>
+
+            <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: var(--space-4);">Tags</h3>
+            <div class="tag-group">
+                <span class="tag">Gradient</span>
+                <span class="tag">Mesh</span>
+                <span class="tag">Aurora</span>
+                <span class="tag">CSS</span>
+                <span class="tag">Blob</span>
+                <span class="tag">Design System</span>
+                <span class="tag">Radial</span>
+                <span class="tag">Color Field</span>
+            </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">09 / Alerts</p>
+            <h2 class="section-title">Alerts</h2>
+            <p class="section-desc">Contextual feedback messages in semantic colors plus a mesh-gradient variant for branded messaging. Each includes an icon, title, and description.</p>
+            <div class="alert alert-info">
+                <span class="alert-icon">&#8505;</span>
+                <div class="alert-body">
+                    <div class="alert-title">Information</div>
+                    <div class="alert-message">Mesh gradients are created by layering multiple radial gradients with different focal points and colors.</div>
+                </div>
+            </div>
+            <div class="alert alert-success">
+                <span class="alert-icon">&#10003;</span>
+                <div class="alert-body">
+                    <div class="alert-title">Success</div>
+                    <div class="alert-message">Your gradient configuration has been saved and applied to all components.</div>
+                </div>
+            </div>
+            <div class="alert alert-warning">
+                <span class="alert-icon">&#9888;</span>
+                <div class="alert-body">
+                    <div class="alert-title">Warning</div>
+                    <div class="alert-message">High blur values on background elements may affect scroll performance on lower-end devices.</div>
+                </div>
+            </div>
+            <div class="alert alert-error">
+                <span class="alert-icon">&#10007;</span>
+                <div class="alert-body">
+                    <div class="alert-title">Error</div>
+                    <div class="alert-message">Failed to generate mesh. Please check your color stops and try again.</div>
+                </div>
+            </div>
+            <div class="alert alert-mesh">
+                <span class="alert-icon">&#9830;</span>
+                <div class="alert-body">
+                    <div class="alert-title">Mesh Alert</div>
+                    <div class="alert-message">This branded alert variant uses radial gradient accents from the mesh palette for a distinctive look.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section mesh-panel mesh-panel-glow">
+            <p class="section-label">10 / Philosophy</p>
+            <h2 class="section-title">Design Principles</h2>
+            <p class="section-desc">The guiding ideas behind the Gradient Mesh system. Every decision, from color choice to animation timing, maps back to these core tenets.</p>
+            <div class="principles-grid">
+                <div class="principle-item">
+                    <div class="principle-number">01</div>
+                    <div class="principle-title">Organic Motion</div>
+                    <div class="principle-desc">Gradients drift and blend like natural phenomena -- aurora borealis, oil on water, light through a prism. Nothing moves in straight lines or at constant speeds.</div>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-number">02</div>
+                    <div class="principle-title">Layered Depth</div>
+                    <div class="principle-desc">Multiple translucent color fields stack to create depth and dimension. Content surfaces float above the mesh, grounded by soft blur and subtle borders.</div>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-number">03</div>
+                    <div class="principle-title">Vibrant Restraint</div>
+                    <div class="principle-desc">Colors are vivid but controlled. The mesh lives in the background; UI elements use muted surfaces and clear typography so content always takes priority.</div>
+                </div>
+                <div class="principle-item">
+                    <div class="principle-number">04</div>
+                    <div class="principle-title">Responsive Feel</div>
+                    <div class="principle-desc">Every interaction provides feedback: buttons glow, cards lift, inputs illuminate. The system feels alive without being distracting or overwhelming.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer mesh-panel">
+            <div class="footer-content">
+                <div class="footer-brand">Gradient Mesh</div>
+                <p>A design system built on flowing color fields, organic motion, and the beauty of layered gradients.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Documentation</a>
+                    <a href="#" class="footer-link">Components</a>
+                    <a href="#" class="footer-link">Resources</a>
+                    <a href="#" class="footer-link">GitHub</a>
+                </div>
+                <p style="margin-top: var(--space-5); font-size: 0.75rem;">Built with CSS mesh gradients and radial color fields</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Spotlight card cursor tracking
+        document.querySelectorAll('.card-spotlight').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--spot-x', x + 'px');
+                card.style.setProperty('--spot-y', y + 'px');
+                const after = card.querySelector(':after') || card;
+                card.style.cssText += `--spot-x: ${x}px; --spot-y: ${y}px;`;
+            });
+        });
+
+        // Use CSS custom properties for spotlight position
+        const style = document.createElement('style');
+        style.textContent = `
+            .card-spotlight::after {
+                left: var(--spot-x, 50%);
+                top: var(--spot-y, 50%);
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

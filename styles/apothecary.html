@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apothecary Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-display: 'EB Garamond', Georgia, serif;
+            --font-body: 'Spectral', 'Palatino Linotype', Georgia, serif;
+            --font-label: 'EB Garamond', Georgia, serif;
+            --font-mono: 'Courier Prime', 'Courier New', monospace;
+
+            /* Spacing - 4px base */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Apothecary Colors - Core Palette */
+            --amber-glass: #c47b20;
+            --amber-light: #d4942e;
+            --amber-dark: #8b5a10;
+            --amber-glow: rgba(196, 123, 32, 0.15);
+
+            --forest-deep: #2a4a3a;
+            --forest: #3a6b52;
+            --forest-light: #4d8b6a;
+            --forest-muted: #5a7d6b;
+
+            --cream: #f5efe0;
+            --cream-warm: #ede4cf;
+            --parchment: #e6dcc6;
+            --parchment-dark: #d6ccb0;
+
+            --brass: #b08d57;
+            --brass-light: #c9a96e;
+            --brass-dark: #8a6d3e;
+
+            --wood-dark: #3a2a1a;
+            --wood: #5c3d20;
+            --wood-medium: #7a5630;
+            --wood-light: #9a7a52;
+
+            /* Accent Colors */
+            --tincture-red: #8b3a3a;
+            --tincture-blue: #3a5a7a;
+            --tincture-purple: #6a4a6a;
+            --dried-herb: #7a8a5a;
+            --copper: #b87333;
+            --sepia: #704214;
+
+            /* Semantic */
+            --text-primary: var(--wood-dark);
+            --text-secondary: var(--wood);
+            --text-muted: var(--wood-light);
+            --text-on-dark: var(--cream);
+            --bg-primary: var(--cream);
+            --bg-secondary: var(--cream-warm);
+            --bg-card: var(--parchment);
+            --border-color: var(--parchment-dark);
+            --border-ornate: var(--brass);
+            --accent: var(--amber-glass);
+
+            /* Alert Colors */
+            --alert-info-bg: rgba(58, 90, 122, 0.08);
+            --alert-info-border: var(--tincture-blue);
+            --alert-success-bg: rgba(74, 139, 106, 0.08);
+            --alert-success-border: var(--forest);
+            --alert-warning-bg: rgba(196, 123, 32, 0.08);
+            --alert-warning-border: var(--amber-glass);
+            --alert-danger-bg: rgba(139, 58, 58, 0.08);
+            --alert-danger-border: var(--tincture-red);
+
+            /* Transitions */
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 17px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.75;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* Subtle aged paper texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background:
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+                radial-gradient(ellipse at 30% 20%, transparent 50%, rgba(112, 66, 20, 0.04) 100%),
+                radial-gradient(ellipse at 70% 80%, transparent 50%, rgba(112, 66, 20, 0.04) 100%);
+            opacity: 0.35;
+            z-index: -1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1060px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* ===== Typography ===== */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            margin-bottom: var(--space-6);
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+        }
+
+        h2 {
+            font-size: 1.85rem;
+            margin-bottom: var(--space-5);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: var(--space-4);
+            letter-spacing: 0.06em;
+        }
+
+        h4 {
+            font-size: 1.15rem;
+            margin-bottom: var(--space-3);
+            letter-spacing: 0.04em;
+        }
+
+        h5 {
+            font-size: 0.95rem;
+            margin-bottom: var(--space-3);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        h6 {
+            font-size: 0.8rem;
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 64ch;
+        }
+
+        .lead {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Label typography - medicine label style */
+        .label-text {
+            font-family: var(--font-label);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .mono-text {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        /* Decorative horizontal rules */
+        .rule-ornate {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: var(--space-6) 0;
+            gap: var(--space-3);
+        }
+
+        .rule-ornate::before,
+        .rule-ornate::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            max-width: 200px;
+            background: linear-gradient(90deg, transparent, var(--brass), transparent);
+        }
+
+        .rule-ornate-diamond {
+            width: 10px;
+            height: 10px;
+            border: 1px solid var(--brass);
+            transform: rotate(45deg);
+            background: var(--cream);
+            flex-shrink: 0;
+        }
+
+        .rule-double {
+            border: none;
+            border-top: 2px solid var(--border-ornate);
+            border-bottom: 2px solid var(--border-ornate);
+            height: 6px;
+            margin: var(--space-5) 0;
+        }
+
+        .rule-botanical {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--forest-muted);
+            margin: var(--space-5) 0;
+            letter-spacing: 0.8em;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            padding: var(--space-9) 0 var(--space-8);
+            text-align: center;
+            border-bottom: 3px double var(--brass);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            bottom: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 1px;
+            background: var(--brass);
+        }
+
+        .header-crest {
+            font-size: 2.8rem;
+            margin-bottom: var(--space-4);
+            color: var(--forest);
+            line-height: 1;
+        }
+
+        .header-label {
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.35em;
+            color: var(--brass-dark);
+            margin-bottom: var(--space-2);
+        }
+
+        .header h1 {
+            margin-bottom: var(--space-3);
+            color: var(--wood-dark);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-body);
+            font-style: italic;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.06em;
+        }
+
+        .header-tagline {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--text-muted);
+            margin-top: var(--space-5);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--parchment-dark);
+        }
+
+        /* ===== Section ===== */
+        .section {
+            padding: var(--space-8) 0;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+            text-align: center;
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--amber-glass);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-3);
+        }
+
+        .section-number::before,
+        .section-number::after {
+            content: '\2014';
+            margin: 0 var(--space-3);
+            color: var(--brass);
+        }
+
+        /* ===== Color Palette ===== */
+        .color-block {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            border: 2px solid var(--parchment-dark);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+            position: relative;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
+
+        .color-block:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 16px rgba(58, 42, 26, 0.2);
+        }
+
+        .color-name {
+            font-family: var(--font-label);
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .color-category {
+            margin-bottom: var(--space-7);
+        }
+
+        .color-category-title {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-2);
+            border-bottom: 1px dotted var(--border-color);
+            letter-spacing: 0.06em;
+        }
+
+        /* ===== Typography Scale ===== */
+        .type-row {
+            display: flex;
+            align-items: baseline;
+            border-bottom: 1px dotted var(--border-color);
+            padding: var(--space-4) 0;
+        }
+
+        .type-meta {
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .type-size {
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--amber-dark);
+        }
+
+        .type-specs {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== Spacing System ===== */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 90px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .spacing-bar {
+            height: 22px;
+            background: linear-gradient(135deg, var(--forest-deep) 0%, var(--forest) 100%);
+            border: 1px solid var(--forest-deep);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 50%;
+            bottom: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .spacing-value {
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.12em;
+            width: 50px;
+            text-transform: uppercase;
+        }
+
+        /* ===== Buttons ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-label);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            border: 2px solid var(--wood);
+            background: transparent;
+            color: var(--wood);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid var(--wood-light);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn-primary {
+            background: var(--forest-deep);
+            border-color: var(--forest-deep);
+            color: var(--cream);
+        }
+
+        .btn-primary:hover {
+            background: var(--forest);
+            border-color: var(--forest);
+            box-shadow: 0 3px 12px rgba(42, 74, 58, 0.3);
+        }
+
+        .btn-primary:hover::before {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--cream-warm);
+            border-color: var(--brass);
+            color: var(--wood);
+        }
+
+        .btn-secondary:hover {
+            background: var(--brass);
+            color: var(--cream);
+            box-shadow: 0 3px 12px rgba(176, 141, 87, 0.3);
+        }
+
+        .btn-secondary:hover::before {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-ghost {
+            border-color: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--border-color);
+            background: var(--cream-warm);
+            color: var(--text-primary);
+        }
+
+        .btn-ghost::before {
+            display: none;
+        }
+
+        .btn-accent {
+            background: var(--amber-glass);
+            border-color: var(--amber-glass);
+            color: var(--cream);
+        }
+
+        .btn-accent:hover {
+            background: var(--amber-dark);
+            border-color: var(--amber-dark);
+            box-shadow: 0 3px 12px rgba(196, 123, 32, 0.3);
+        }
+
+        .btn-accent:hover::before {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.65rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-7);
+            font-size: 0.78rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-5);
+        }
+
+        /* ===== Forms ===== */
+        .input-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-label);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--wood);
+            margin-bottom: var(--space-2);
+        }
+
+        .input-hint {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-style: italic;
+            color: var(--text-muted);
+            margin-top: var(--space-1);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            border: 1px solid var(--parchment-dark);
+            border-bottom: 2px solid var(--wood-light);
+            background: rgba(255, 255, 255, 0.4);
+            transition: all var(--transition-base);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--amber-glass);
+            border-bottom-color: var(--amber-glass);
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 8px var(--amber-glow);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.8;
+        }
+
+        .select-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            border: 1px solid var(--parchment-dark);
+            border-bottom: 2px solid var(--wood-light);
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235c3d20' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            transition: all var(--transition-base);
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: var(--amber-glass);
+            border-bottom-color: var(--amber-glass);
+            box-shadow: 0 2px 8px var(--amber-glow);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .checkbox-field {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--wood-light);
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            appearance: none;
+            position: relative;
+            transition: all var(--transition-base);
+        }
+
+        .checkbox-field:checked {
+            border-color: var(--forest);
+            background: var(--forest-deep);
+        }
+
+        .checkbox-field:checked::after {
+            content: '\2713';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            color: var(--cream);
+            font-weight: bold;
+        }
+
+        .checkbox-label {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        /* ===== Cards ===== */
+
+        /* Ornate frame mixin - decorative border around cards */
+        .card-frame {
+            position: relative;
+            border: 2px solid var(--brass);
+            padding: var(--space-6);
+            background: linear-gradient(160deg, var(--cream) 0%, var(--cream-warm) 100%);
+            transition: all var(--transition-base);
+        }
+
+        .card-frame::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid var(--brass-light);
+            pointer-events: none;
+        }
+
+        .card-frame::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px dotted var(--parchment-dark);
+            pointer-events: none;
+        }
+
+        .card-frame:hover {
+            border-color: var(--amber-glass);
+            box-shadow: 0 6px 24px rgba(58, 42, 26, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-frame h3 {
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 1.1rem;
+        }
+
+        .card-frame p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-bottom: 0;
+        }
+
+        /* Medicine Label Card */
+        .card-label {
+            position: relative;
+            border: 2px solid var(--wood-light);
+            padding: 0;
+            background: var(--cream);
+            text-align: center;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .card-label::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px solid var(--parchment-dark);
+            pointer-events: none;
+        }
+
+        .card-label:hover {
+            border-color: var(--brass);
+            box-shadow: 0 6px 20px rgba(58, 42, 26, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-label-header {
+            background: var(--forest-deep);
+            color: var(--cream);
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            font-weight: 600;
+        }
+
+        .card-label-body {
+            padding: var(--space-5) var(--space-4);
+        }
+
+        .card-label-body h3 {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-2);
+            font-size: 1.3rem;
+        }
+
+        .card-label-body .card-latin {
+            font-style: italic;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-3);
+        }
+
+        .card-label-rule {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin: var(--space-3) auto;
+            max-width: 120px;
+        }
+
+        .card-label-rule::before,
+        .card-label-rule::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--brass);
+        }
+
+        .card-label-rule-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--brass);
+            flex-shrink: 0;
+        }
+
+        .card-label-body p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        .card-label-footer {
+            background: var(--parchment);
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            border-top: 1px solid var(--parchment-dark);
+        }
+
+        /* Amber Glass Card */
+        .card-amber {
+            position: relative;
+            background: linear-gradient(160deg, rgba(196, 123, 32, 0.12) 0%, rgba(139, 90, 16, 0.08) 100%);
+            border: 2px solid var(--amber-glass);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+        }
+
+        .card-amber::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px solid rgba(196, 123, 32, 0.3);
+            pointer-events: none;
+        }
+
+        .card-amber:hover {
+            box-shadow: 0 6px 24px rgba(196, 123, 32, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card-amber h3 {
+            color: var(--amber-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .card-amber p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-bottom: 0;
+        }
+
+        /* Herbarium Card */
+        .card-herbarium {
+            position: relative;
+            background: var(--cream);
+            border: 1px solid var(--parchment-dark);
+            padding: 0;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .card-herbarium:hover {
+            box-shadow: 0 6px 20px rgba(58, 42, 26, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .card-herbarium-accent {
+            height: 4px;
+            background: linear-gradient(90deg, var(--forest-deep), var(--forest), var(--dried-herb));
+        }
+
+        .card-herbarium-body {
+            padding: var(--space-5);
+        }
+
+        .card-herbarium-number {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-2);
+        }
+
+        .card-herbarium h3 {
+            font-size: 1.15rem;
+            margin-bottom: var(--space-1);
+        }
+
+        .card-herbarium .card-latin {
+            font-style: italic;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            color: var(--forest-muted);
+            margin-bottom: var(--space-3);
+        }
+
+        .card-herbarium p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        /* ===== Data Table ===== */
+        .table-wrapper {
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid var(--parchment-dark);
+            padding: var(--space-4);
+            position: relative;
+        }
+
+        .table-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px solid var(--parchment-dark);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .table-title {
+            font-family: var(--font-label);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--text-muted);
+            margin-bottom: var(--space-4);
+            text-align: center;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            position: relative;
+            z-index: 1;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--parchment-dark);
+        }
+
+        .table th {
+            font-family: var(--font-label);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--wood);
+            border-bottom: 2px solid var(--wood-light);
+        }
+
+        .table td {
+            font-family: var(--font-body);
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+        }
+
+        .table tbody tr:hover td {
+            background: var(--amber-glow);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table .text-right {
+            text-align: right;
+        }
+
+        .table .text-center {
+            text-align: center;
+        }
+
+        .table-mono {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        /* ===== Badges / Tags ===== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-label);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            border: 1px solid currentColor;
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        .badge-forest {
+            color: var(--forest-deep);
+            border-color: var(--forest);
+            background: rgba(58, 107, 82, 0.08);
+        }
+
+        .badge-amber {
+            color: var(--amber-dark);
+            border-color: var(--amber-glass);
+            background: rgba(196, 123, 32, 0.08);
+        }
+
+        .badge-brass {
+            color: var(--brass-dark);
+            border-color: var(--brass);
+            background: rgba(176, 141, 87, 0.1);
+        }
+
+        .badge-tincture-red {
+            color: var(--tincture-red);
+            border-color: var(--tincture-red);
+            background: rgba(139, 58, 58, 0.06);
+        }
+
+        .badge-tincture-blue {
+            color: var(--tincture-blue);
+            border-color: var(--tincture-blue);
+            background: rgba(58, 90, 122, 0.06);
+        }
+
+        .badge-dried-herb {
+            color: var(--dried-herb);
+            border-color: var(--dried-herb);
+            background: rgba(122, 138, 90, 0.08);
+        }
+
+        .badge-filled {
+            background: var(--forest-deep);
+            border-color: var(--forest-deep);
+            color: var(--cream);
+        }
+
+        .badge-filled-amber {
+            background: var(--amber-glass);
+            border-color: var(--amber-glass);
+            color: var(--cream);
+        }
+
+        .badge-ornate {
+            border: 2px double var(--brass);
+            padding: var(--space-2) var(--space-4);
+            color: var(--wood);
+            background: var(--cream);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* ===== Alerts ===== */
+        .alert {
+            padding: var(--space-5);
+            border-left: 4px solid var(--border-color);
+            background: var(--cream-warm);
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 1px solid var(--parchment-dark);
+            pointer-events: none;
+        }
+
+        .alert-title {
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-2);
+        }
+
+        .alert p {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        .alert-info {
+            border-left-color: var(--alert-info-border);
+            background: var(--alert-info-bg);
+        }
+
+        .alert-info .alert-title {
+            color: var(--tincture-blue);
+        }
+
+        .alert-success {
+            border-left-color: var(--alert-success-border);
+            background: var(--alert-success-bg);
+        }
+
+        .alert-success .alert-title {
+            color: var(--forest);
+        }
+
+        .alert-warning {
+            border-left-color: var(--alert-warning-border);
+            background: var(--alert-warning-bg);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--amber-dark);
+        }
+
+        .alert-danger {
+            border-left-color: var(--alert-danger-border);
+            background: var(--alert-danger-bg);
+        }
+
+        .alert-danger .alert-title {
+            color: var(--tincture-red);
+        }
+
+        /* ===== Design Principles ===== */
+        .principle-block {
+            text-align: center;
+            padding: var(--space-5);
+        }
+
+        .principle-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto var(--space-4);
+            border: 2px solid var(--forest);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--forest-deep);
+            background: var(--cream);
+            transition: all var(--transition-base);
+        }
+
+        .principle-block:hover .principle-icon {
+            background: var(--forest-deep);
+            color: var(--cream);
+        }
+
+        .principle-block h3 {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .principle-block p {
+            text-align: center;
+            margin: 0 auto;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        /* ===== Prescription / Quote Block ===== */
+        .prescription {
+            font-family: var(--font-body);
+            font-style: italic;
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            border-left: 3px solid var(--brass);
+            padding-left: var(--space-5);
+            margin: var(--space-5) 0;
+        }
+
+        .prescription-source {
+            display: block;
+            font-family: var(--font-mono);
+            font-style: normal;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+            letter-spacing: 0.08em;
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            border-top: 3px double var(--brass);
+            margin-top: var(--space-7);
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 1px;
+            background: var(--brass);
+        }
+
+        .footer-crest {
+            font-size: 1.8rem;
+            color: var(--forest-muted);
+            margin-bottom: var(--space-4);
+        }
+
+        .footer-name {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .footer p {
+            font-family: var(--font-body);
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin: 0 auto var(--space-3);
+            text-align: center;
+        }
+
+        .footer-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* ===== Utilities ===== */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-5 { margin-top: var(--space-5); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mt-7 { margin-top: var(--space-7); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            html {
+                font-size: 15px;
+            }
+
+            .container {
+                padding: 0 var(--space-4);
+            }
+
+            .type-row {
+                flex-direction: column;
+            }
+
+            .type-meta {
+                width: 100%;
+                margin-bottom: var(--space-2);
+            }
+
+            .header {
+                padding: var(--space-7) 0 var(--space-6);
+            }
+
+            .section {
+                padding: var(--space-6) 0;
+            }
+
+            .card-frame {
+                padding: var(--space-4);
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+            }
+        }
+
+        /* ===== Print ===== */
+        @media print {
+            body::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-label">Est. MDCCCXLVII</div>
+            <div class="header-crest">&#x2698;</div>
+            <h1>Apothecary</h1>
+            <p class="header-subtitle">A Design System of Botanical Precision &amp; Curative Craft</p>
+            <div class="rule-ornate mt-5">
+                <div class="rule-ornate-diamond"></div>
+            </div>
+            <p class="header-tagline">Materia Medica &bull; Herbarium &bull; Tinctures &amp; Preparations</p>
+        </header>
+
+        <!-- Color Palette -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section I</p>
+                <h2>Colour Palette</h2>
+                <p class="lead">Drawn from amber glass, dried botanicals, aged brass fixtures, and dark wood apothecary cabinets.</p>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Amber Glass &amp; Tinctures</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--amber-glass); color: var(--cream);">
+                            <span class="color-name">Amber Glass</span>
+                            <span class="color-value">#C47B20</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--amber-light); color: var(--cream);">
+                            <span class="color-name">Amber Light</span>
+                            <span class="color-value">#D4942E</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--amber-dark); color: var(--cream);">
+                            <span class="color-name">Amber Dark</span>
+                            <span class="color-value">#8B5A10</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--copper); color: var(--cream);">
+                            <span class="color-name">Copper</span>
+                            <span class="color-value">#B87333</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Forest &amp; Botanicals</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--forest-deep); color: var(--cream);">
+                            <span class="color-name">Deep Forest</span>
+                            <span class="color-value">#2A4A3A</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--forest); color: var(--cream);">
+                            <span class="color-name">Forest</span>
+                            <span class="color-value">#3A6B52</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--forest-light); color: var(--cream);">
+                            <span class="color-name">Forest Light</span>
+                            <span class="color-value">#4D8B6A</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--dried-herb); color: var(--cream);">
+                            <span class="color-name">Dried Herb</span>
+                            <span class="color-value">#7A8A5A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Cream, Parchment &amp; Brass</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--cream); border-color: var(--parchment-dark);">
+                            <span class="color-name">Cream</span>
+                            <span class="color-value">#F5EFE0</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--parchment); border-color: var(--parchment-dark);">
+                            <span class="color-name">Parchment</span>
+                            <span class="color-value">#E6DCC6</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--brass); color: var(--cream);">
+                            <span class="color-name">Brass</span>
+                            <span class="color-value">#B08D57</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--brass-dark); color: var(--cream);">
+                            <span class="color-name">Brass Dark</span>
+                            <span class="color-value">#8A6D3E</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="color-category">
+                <h4 class="color-category-title">Wood &amp; Accents</h4>
+                <div class="grid">
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--wood-dark); color: var(--cream);">
+                            <span class="color-name">Dark Wood</span>
+                            <span class="color-value">#3A2A1A</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--wood); color: var(--cream);">
+                            <span class="color-name">Wood</span>
+                            <span class="color-value">#5C3D20</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--tincture-red); color: var(--cream);">
+                            <span class="color-name">Tincture Red</span>
+                            <span class="color-value">#8B3A3A</span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="color-block" style="background: var(--tincture-blue); color: var(--cream);">
+                            <span class="color-name">Tincture Blue</span>
+                            <span class="color-value">#3A5A7A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section II</p>
+                <h2>Typography</h2>
+                <p class="lead">Medicine label precision meets classical botanical illustration lettering.</p>
+            </div>
+
+            <div class="prescription">
+                "The careful hand of the apothecary is known first by his labels, then by his cures."
+                <span class="prescription-source">-- Culpeper's Complete Herbal, 1653</span>
+            </div>
+
+            <div class="type-row mt-6">
+                <div class="type-meta">
+                    <p class="type-size">Heading 1</p>
+                    <p class="type-specs">EB Garamond / 52px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 3.2rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--wood-dark);">Apothecary</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading 2</p>
+                    <p class="type-specs">EB Garamond / 32px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 1.85rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wood-dark);">Materia Medica</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading 3</p>
+                    <p class="type-specs">EB Garamond / 24px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; letter-spacing: 0.06em; color: var(--wood-dark);">Tinctures &amp; Preparations</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading 4</p>
+                    <p class="type-specs">EB Garamond / 20px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; color: var(--wood-dark);">Dosage Instructions</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading 5</p>
+                    <p class="type-specs">EB Garamond / 16px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wood-dark);">Active Ingredients</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Heading 6</p>
+                    <p class="type-specs">EB Garamond / 14px / 600</p>
+                </div>
+                <div style="font-family: var(--font-display); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted);">Lot Number &amp; Expiry</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Body</p>
+                    <p class="type-specs">Spectral / 17px / 400</p>
+                </div>
+                <div style="font-family: var(--font-body); max-width: 50ch;">The apothecary's art lies in the precise measurement and combination of natural ingredients, each selected for its specific properties and prepared according to time-honoured methods.</div>
+            </div>
+
+            <div class="type-row">
+                <div class="type-meta">
+                    <p class="type-size">Label</p>
+                    <p class="type-specs">EB Garamond / 12px / SC</p>
+                </div>
+                <div style="font-family: var(--font-label); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em; color: var(--wood);">Caution: For External Use Only</div>
+            </div>
+
+            <div class="type-row" style="border-bottom: none;">
+                <div class="type-meta">
+                    <p class="type-size">Monospace</p>
+                    <p class="type-specs">Courier Prime / 14px</p>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">Batch No. 1847-APX &mdash; 15ml / 0.5 fl.oz.</div>
+            </div>
+        </section>
+
+        <!-- Spacing -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section III</p>
+                <h2>Spacing System</h2>
+                <p class="lead">A measured scale of 4px increments, reflecting the apothecary's devotion to precise quantities.</p>
+            </div>
+
+            <div class="spacing-row">
+                <span class="spacing-label">--space-1</span>
+                <div class="spacing-bar" style="width: 16px;"></div>
+                <span class="spacing-value">4px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-2</span>
+                <div class="spacing-bar" style="width: 32px;"></div>
+                <span class="spacing-value">8px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-3</span>
+                <div class="spacing-bar" style="width: 48px;"></div>
+                <span class="spacing-value">12px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-4</span>
+                <div class="spacing-bar" style="width: 64px;"></div>
+                <span class="spacing-value">16px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-5</span>
+                <div class="spacing-bar" style="width: 96px;"></div>
+                <span class="spacing-value">24px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-6</span>
+                <div class="spacing-bar" style="width: 128px;"></div>
+                <span class="spacing-value">32px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-7</span>
+                <div class="spacing-bar" style="width: 192px;"></div>
+                <span class="spacing-value">48px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-8</span>
+                <div class="spacing-bar" style="width: 256px;"></div>
+                <span class="spacing-value">64px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-9</span>
+                <div class="spacing-bar" style="width: 340px;"></div>
+                <span class="spacing-value">96px</span>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-10</span>
+                <div class="spacing-bar" style="width: 420px;"></div>
+                <span class="spacing-value">128px</span>
+            </div>
+
+            <div class="prescription mt-6">
+                As the apothecary measures each grain with care, so should the designer measure each space. Precision in proportion yields harmony in composition.
+                <span class="prescription-source">-- On the Order of Visual Things</span>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section IV</p>
+                <h2>Buttons</h2>
+                <p class="lead">Actions styled in the manner of vintage pharmacy labels and brass drawer pulls.</p>
+            </div>
+
+            <h4 class="color-category-title">Standard Variants</h4>
+            <div class="button-row">
+                <button class="btn btn-primary">Dispense</button>
+                <button class="btn btn-secondary">Catalogue</button>
+                <button class="btn btn-ghost">Browse Remedies</button>
+                <button class="btn btn-accent">Prepare Tincture</button>
+            </div>
+
+            <h4 class="color-category-title">Default &amp; Sizes</h4>
+            <div class="button-row">
+                <button class="btn btn-sm btn-primary">Small Vial</button>
+                <button class="btn btn-primary">Standard Bottle</button>
+                <button class="btn btn-lg btn-primary">Apothecary Jar</button>
+            </div>
+
+            <h4 class="color-category-title">Outlined Variants</h4>
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn" style="border-color: var(--forest); color: var(--forest);">Herbal</button>
+                <button class="btn" style="border-color: var(--amber-glass); color: var(--amber-glass);">Amber</button>
+                <button class="btn" style="border-color: var(--brass); color: var(--brass);">Brass</button>
+            </div>
+        </section>
+
+        <!-- Forms -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section V</p>
+                <h2>Forms</h2>
+                <p class="lead">Fields for the recording of prescriptions, inventory, and patient particulars.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Patient Name</label>
+                        <input type="text" class="input-field" placeholder="Full name of the patient">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Date of Consultation</label>
+                        <input type="text" class="input-field" placeholder="DD / MM / MDCCC">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Preparation Type</label>
+                        <select class="select-field">
+                            <option>Select preparation</option>
+                            <option>Tincture (Alcohol-based extract)</option>
+                            <option>Decoction (Boiled preparation)</option>
+                            <option>Infusion (Steeped in water)</option>
+                            <option>Poultice (Topical application)</option>
+                            <option>Elixir (Sweetened solution)</option>
+                            <option>Salve (Oil-based ointment)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Dosage</label>
+                        <input type="text" class="input-field" placeholder="e.g. 15 drops, thrice daily">
+                        <p class="input-hint">Specify quantity, frequency, and duration.</p>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Prescription Notes</label>
+                        <textarea class="input-field" placeholder="Describe symptoms, recommended botanicals, contraindications, and any special instructions for preparation..."></textarea>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox-field" id="verified">
+                        <label class="checkbox-label" for="verified">I have verified the patient has no known allergies to the prescribed botanicals</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox-field" id="labelled" checked>
+                        <label class="checkbox-label" for="labelled">Preparation has been properly labelled with ingredients and dosage</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" class="checkbox-field" id="recorded" checked>
+                        <label class="checkbox-label" for="recorded">Entry recorded in the dispensary ledger</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section VI</p>
+                <h2>Cards</h2>
+                <p class="lead">Containers for content, styled as specimen cards, medicine labels, and herbarium sheets.</p>
+            </div>
+
+            <!-- Ornate Frame Cards -->
+            <h4 class="color-category-title">Ornate Frame Cards</h4>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card-frame">
+                        <h3>Lavandula</h3>
+                        <div class="rule-botanical">&#x2740;</div>
+                        <p>Calming properties well-documented since antiquity. Recommended for anxiety, restlessness, and disturbances of sleep.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-frame">
+                        <h3>Matricaria</h3>
+                        <div class="rule-botanical">&#x2740;</div>
+                        <p>The gentle chamomile, indispensable to the apothecary. Soothes digestion and calms the troubled mind.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-frame">
+                        <h3>Echinacea</h3>
+                        <div class="rule-botanical">&#x2740;</div>
+                        <p>A powerful ally of the immune system. Prepare as tincture at the first sign of seasonal affliction.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rule-ornate mt-7">
+                <div class="rule-ornate-diamond"></div>
+            </div>
+
+            <!-- Medicine Label Cards -->
+            <h4 class="color-category-title mt-6">Medicine Label Cards</h4>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card-label">
+                        <div class="card-label-header">Tincture</div>
+                        <div class="card-label-body">
+                            <h3>Valerian Root</h3>
+                            <p class="card-latin">Valeriana officinalis</p>
+                            <div class="card-label-rule"><div class="card-label-rule-dot"></div></div>
+                            <p>For the relief of nervous tension and promotion of restful sleep. 20 drops in water.</p>
+                        </div>
+                        <div class="card-label-footer">30ml &bull; Batch 1847-VR</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-label">
+                        <div class="card-label-header">Essential Oil</div>
+                        <div class="card-label-body">
+                            <h3>Tea Tree</h3>
+                            <p class="card-latin">Melaleuca alternifolia</p>
+                            <div class="card-label-rule"><div class="card-label-rule-dot"></div></div>
+                            <p>Antiseptic properties for topical application. Dilute in carrier oil before use.</p>
+                        </div>
+                        <div class="card-label-footer">15ml &bull; Batch 1847-TT</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-label">
+                        <div class="card-label-header">Dried Herb</div>
+                        <div class="card-label-body">
+                            <h3>Peppermint</h3>
+                            <p class="card-latin">Mentha piperita</p>
+                            <div class="card-label-rule"><div class="card-label-rule-dot"></div></div>
+                            <p>Digestive aid and headache relief. Steep one teaspoon per cup, five minutes.</p>
+                        </div>
+                        <div class="card-label-footer">50g &bull; Batch 1847-PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rule-ornate mt-7">
+                <div class="rule-ornate-diamond"></div>
+            </div>
+
+            <!-- Amber Glass & Herbarium Cards -->
+            <h4 class="color-category-title mt-6">Amber Glass &amp; Herbarium Cards</h4>
+            <div class="grid">
+                <div class="col-6">
+                    <div class="card-amber">
+                        <h3>Amber Preservation</h3>
+                        <p>Amber glass protects photosensitive compounds from degradation. All tinctures and essential oils should be stored in amber vessels, away from direct sunlight, in a cool and dry location.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card-herbarium">
+                        <div class="card-herbarium-accent"></div>
+                        <div class="card-herbarium-body">
+                            <p class="card-herbarium-number">Specimen No. 0247</p>
+                            <h3>Rosmarinus</h3>
+                            <p class="card-latin">Salvia rosmarinus</p>
+                            <p>Collected from the southern hillsides. Notable for improving circulation and memory. The essential oil is among the most versatile in the apothecary.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section VII</p>
+                <h2>Data Table</h2>
+                <p class="lead">Records organised in the manner of a dispensary ledger.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <p class="table-title">Dispensary Ledger &mdash; Current Inventory</p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Preparation</th>
+                            <th>Botanical Source</th>
+                            <th>Form</th>
+                            <th class="text-center">Stock</th>
+                            <th class="text-right">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Valerian Tincture</td>
+                            <td style="font-style: italic;">Valeriana officinalis</td>
+                            <td><span class="badge badge-forest">Tincture</span></td>
+                            <td class="text-center table-mono">24 vials</td>
+                            <td class="text-right table-mono">2s. 6d.</td>
+                        </tr>
+                        <tr>
+                            <td>Chamomile Infusion</td>
+                            <td style="font-style: italic;">Matricaria chamomilla</td>
+                            <td><span class="badge badge-dried-herb">Dried</span></td>
+                            <td class="text-center table-mono">18 tins</td>
+                            <td class="text-right table-mono">1s. 3d.</td>
+                        </tr>
+                        <tr>
+                            <td>Arnica Salve</td>
+                            <td style="font-style: italic;">Arnica montana</td>
+                            <td><span class="badge badge-amber">Salve</span></td>
+                            <td class="text-center table-mono">12 jars</td>
+                            <td class="text-right table-mono">3s. 9d.</td>
+                        </tr>
+                        <tr>
+                            <td>Echinacea Extract</td>
+                            <td style="font-style: italic;">Echinacea purpurea</td>
+                            <td><span class="badge badge-forest">Tincture</span></td>
+                            <td class="text-center table-mono">36 vials</td>
+                            <td class="text-right table-mono">4s. 2d.</td>
+                        </tr>
+                        <tr>
+                            <td>Laudanum</td>
+                            <td style="font-style: italic;">Papaver somniferum</td>
+                            <td><span class="badge badge-tincture-red">Restricted</span></td>
+                            <td class="text-center table-mono">6 vials</td>
+                            <td class="text-right table-mono">7s. 6d.</td>
+                        </tr>
+                        <tr>
+                            <td>Witch Hazel Distillate</td>
+                            <td style="font-style: italic;">Hamamelis virginiana</td>
+                            <td><span class="badge badge-tincture-blue">Distillate</span></td>
+                            <td class="text-center table-mono">30 bottles</td>
+                            <td class="text-right table-mono">1s. 9d.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges / Tags -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section VIII</p>
+                <h2>Badges &amp; Tags</h2>
+                <p class="lead">Classification markers for botanicals, preparations, and inventory status.</p>
+            </div>
+
+            <h4 class="color-category-title">Outlined Badges</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge">Standard</span>
+                <span class="badge badge-forest">Botanical</span>
+                <span class="badge badge-amber">Tincture</span>
+                <span class="badge badge-brass">Brass Label</span>
+                <span class="badge badge-tincture-red">Caution</span>
+                <span class="badge badge-tincture-blue">Distillate</span>
+                <span class="badge badge-dried-herb">Dried Herb</span>
+            </div>
+
+            <h4 class="color-category-title">Filled Badges</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge badge-filled">In Stock</span>
+                <span class="badge badge-filled-amber">New Arrival</span>
+                <span class="badge badge-ornate">Verified</span>
+            </div>
+
+            <div class="prescription">
+                Each preparation must be clearly labelled with its contents, dosage, and any necessary cautions. The badge system mirrors the coloured labels used in the traditional apothecary to distinguish between types of remedy.
+                <span class="prescription-source">-- The Dispensary Manual</span>
+            </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section IX</p>
+                <h2>Alerts</h2>
+                <p class="lead">Notices for the dispensary, from general information to urgent cautions.</p>
+            </div>
+
+            <div class="alert alert-info">
+                <p class="alert-title">Nota Bene</p>
+                <p>A new shipment of dried lavender from the southern provinces has arrived and is available for inspection in the botanical receiving room.</p>
+            </div>
+
+            <div class="alert alert-success">
+                <p class="alert-title">Preparation Complete</p>
+                <p>Batch 1847-EC of Echinacea tincture has passed quality inspection and has been cleared for dispensing. Thirty-six vials have been added to the active inventory.</p>
+            </div>
+
+            <div class="alert alert-warning">
+                <p class="alert-title">Inventory Notice</p>
+                <p>Stocks of Arnica montana are running low. A resupply order should be placed with the botanical supplier before the end of the current month to avoid interruption.</p>
+            </div>
+
+            <div class="alert alert-danger">
+                <p class="alert-title">Caution &mdash; Restricted Substance</p>
+                <p>Laudanum preparations require double verification and must be recorded in both the dispensary ledger and the controlled substances register. Dispensing without proper documentation is strictly prohibited.</p>
+            </div>
+        </section>
+
+        <!-- Design Principles -->
+        <section class="section">
+            <div class="section-header">
+                <p class="section-number">Section X</p>
+                <h2>Design Principles</h2>
+                <p class="lead">The guiding tenets of the apothecary aesthetic.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">P</div>
+                        <h3>Precision</h3>
+                        <p>Every measurement matters. Spacing, type sizes, and colour values should be deliberate and exact, as the apothecary measures each grain.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">P</div>
+                        <h3>Provenance</h3>
+                        <p>Know your materials. Every design choice should trace back to the natural, the handcrafted, and the historically grounded.</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="principle-block">
+                        <div class="principle-icon">L</div>
+                        <h3>Legibility</h3>
+                        <p>A misread label is a dangerous label. Clarity of information is the first duty, above all ornament and decoration.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rule-ornate">
+                <div class="rule-ornate-diamond"></div>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">W</div>
+                        <h3>Warmth</h3>
+                        <p>The apothecary is a place of care and refuge. Amber tones, natural textures, and considered typography should convey trust and comfort, never sterility.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle-block">
+                        <div class="principle-icon">O</div>
+                        <h3>Order</h3>
+                        <p>Behind the shelves of bottles and bundles of herbs lies rigorous organisation. Every element belongs in its place, catalogued and accessible.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-crest">&#x2698;</div>
+            <p class="footer-name">Apothecary Design System</p>
+            <p><em>Curated with botanical precision &amp; dispensed with care</em></p>
+            <div class="rule-ornate" style="margin: var(--space-4) auto; max-width: 200px;">
+                <div class="rule-ornate-diamond"></div>
+            </div>
+            <p class="footer-label">Anno Domini MMXXVI</p>
+        </footer>
+    </div>
+</body>
+</html>

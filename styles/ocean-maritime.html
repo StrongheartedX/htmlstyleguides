@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Maritime Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Maritime Primary Colors */
+            --navy-900: #0A1628;
+            --navy-800: #0F2240;
+            --navy-700: #152E54;
+            --navy-600: #1B3A68;
+            --navy-500: #1E4D8C;
+            --ocean-blue: #1A6FA0;
+            --sea-blue: #2E8BC0;
+            --seafoam: #78C4C8;
+            --seafoam-light: #B4E0E0;
+            --white: #FAFBFD;
+            --cream: #F5F0E8;
+            --parchment: #EDE5D5;
+
+            /* Accent Colors */
+            --brass: #C5972C;
+            --brass-light: #D4AA4F;
+            --brass-dark: #9A7520;
+            --copper: #B87333;
+            --rust: #A0522D;
+            --storm-gray: #5A6B7B;
+            --rope: #C4A56E;
+            --driftwood: #8B7355;
+
+            /* Semantic Colors */
+            --text-primary: var(--navy-900);
+            --text-secondary: var(--navy-600);
+            --text-muted: var(--storm-gray);
+            --text-on-dark: var(--cream);
+            --bg-primary: var(--white);
+            --bg-secondary: var(--cream);
+            --bg-dark: var(--navy-900);
+            --border-color: var(--navy-700);
+
+            /* Status Colors */
+            --success: #2D8B57;
+            --warning: var(--brass);
+            --danger: #C0392B;
+            --info: var(--sea-blue);
+
+            /* Typography */
+            --font-display: 'Playfair Display', 'Georgia', serif;
+            --font-body: 'Libre Baskerville', 'Georgia', serif;
+
+            /* Spacing Scale (4px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.6s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-5);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        @media (max-width: 768px) {
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+        }
+
+        /* Wave Patterns */
+        @keyframes waveFlow {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-200px); }
+        }
+
+        @keyframes waveRise {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .wave-border {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-border::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -200px;
+            right: -200px;
+            height: 20px;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 20'%3E%3Cpath d='M0 10 Q25 0 50 10 Q75 20 100 10 Q125 0 150 10 Q175 20 200 10 L200 20 L0 20 Z' fill='%230A1628'/%3E%3C/svg%3E")
+                repeat-x bottom;
+            background-size: 200px 20px;
+            animation: waveFlow 4s linear infinite;
+        }
+
+        .wave-divider {
+            width: 100%;
+            height: 30px;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30'%3E%3Cpath d='M0 15 Q25 5 50 15 Q75 25 100 15 Q125 5 150 15 Q175 25 200 15' fill='none' stroke='%231B3A68' stroke-width='2'/%3E%3C/svg%3E")
+                repeat-x center;
+            background-size: 200px 30px;
+            margin: var(--space-6) 0;
+        }
+
+        /* Rope Border Pattern */
+        .rope-border {
+            border: 3px solid var(--rope);
+            border-image: repeating-linear-gradient(
+                45deg,
+                var(--rope) 0px,
+                var(--rope) 4px,
+                var(--driftwood) 4px,
+                var(--driftwood) 8px,
+                var(--rope) 8px,
+                var(--rope) 12px,
+                transparent 12px,
+                transparent 14px
+            ) 6;
+        }
+
+        .rope-border-thick {
+            border: 6px solid transparent;
+            border-image: repeating-linear-gradient(
+                45deg,
+                var(--rope) 0px,
+                var(--rope) 5px,
+                var(--driftwood) 5px,
+                var(--driftwood) 10px
+            ) 8;
+        }
+
+        /* Compass Rose */
+        .compass-rose {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+
+        .compass-rose::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 80%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--brass);
+            border-radius: 50%;
+        }
+
+        .compass-rose::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 60%;
+            transform: translate(-50%, -50%);
+            border: 1px solid var(--brass-light);
+            border-radius: 50%;
+        }
+
+        .compass-point {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+        }
+
+        .compass-point-n {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 40px solid var(--brass);
+            transform: translate(-50%, -100%);
+        }
+
+        .compass-point-s {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 40px solid var(--navy-700);
+            transform: translate(-50%, 0%);
+        }
+
+        .compass-point-e {
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 40px solid var(--navy-700);
+            transform: translate(0%, -50%);
+        }
+
+        .compass-point-w {
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 40px solid var(--brass);
+            transform: translate(-100%, -50%);
+        }
+
+        .compass-point-ne {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 28px solid var(--brass-light);
+            transform: translate(-50%, -100%) rotate(45deg);
+            transform-origin: bottom center;
+        }
+
+        .compass-point-nw {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 28px solid var(--brass-light);
+            transform: translate(-50%, -100%) rotate(-45deg);
+            transform-origin: bottom center;
+        }
+
+        .compass-point-se {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 28px solid var(--navy-600);
+            transform: translate(-50%, 0%) rotate(-45deg);
+            transform-origin: top center;
+        }
+
+        .compass-point-sw {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 28px solid var(--navy-600);
+            transform: translate(-50%, 0%) rotate(45deg);
+            transform-origin: top center;
+        }
+
+        .compass-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: var(--brass);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 0 0 3px var(--navy-900), 0 0 0 5px var(--brass-light);
+        }
+
+        .compass-label {
+            position: absolute;
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--brass);
+            letter-spacing: 0.05em;
+        }
+
+        .compass-label-n { top: 2px; left: 50%; transform: translateX(-50%); }
+        .compass-label-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .compass-label-e { right: 2px; top: 50%; transform: translateY(-50%); }
+        .compass-label-w { left: 4px; top: 50%; transform: translateY(-50%); }
+
+        /* Anchor Motif */
+        .anchor-icon {
+            display: inline-block;
+            width: 24px;
+            height: 28px;
+            position: relative;
+        }
+
+        .anchor-icon::before {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            border-top: none;
+        }
+
+        .anchor-icon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: currentColor;
+        }
+
+        /* Nautical Chart Lines */
+        .chart-lines {
+            background-image:
+                linear-gradient(rgba(26, 111, 160, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(26, 111, 160, 0.06) 1px, transparent 1px),
+                linear-gradient(rgba(26, 111, 160, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(26, 111, 160, 0.03) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--navy-900);
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 900;
+            margin-bottom: var(--space-6);
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-5);
+            font-weight: 800;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-4);
+            font-weight: 700;
+        }
+
+        h4 {
+            font-size: 1.2rem;
+            margin-bottom: var(--space-3);
+            font-weight: 600;
+        }
+
+        h5 {
+            font-size: 1rem;
+            margin-bottom: var(--space-3);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        h6 {
+            font-size: 0.875rem;
+            margin-bottom: var(--space-2);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+        }
+
+        .lead {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .small {
+            font-size: 0.875rem;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-10) 0 var(--space-9);
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(175deg, var(--navy-900) 0%, var(--navy-700) 50%, var(--navy-600) 100%);
+            color: var(--text-on-dark);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(120, 196, 200, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(120, 196, 200, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .header-waves {
+            position: absolute;
+            bottom: 0;
+            left: -200px;
+            right: -200px;
+            height: 60px;
+            overflow: hidden;
+        }
+
+        .header-wave {
+            position: absolute;
+            bottom: 0;
+            left: -200px;
+            right: -200px;
+            height: 30px;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30'%3E%3Cpath d='M0 15 Q25 0 50 15 Q75 30 100 15 Q125 0 150 15 Q175 30 200 15 L200 30 L0 30 Z' fill='%23FAFBFD'/%3E%3C/svg%3E")
+                repeat-x bottom;
+            background-size: 200px 30px;
+        }
+
+        .header-wave:nth-child(1) {
+            bottom: 0;
+            opacity: 1;
+            animation: waveFlow 6s linear infinite;
+        }
+
+        .header-wave:nth-child(2) {
+            bottom: 8px;
+            opacity: 0.3;
+            animation: waveFlow 8s linear infinite reverse;
+        }
+
+        .header-wave:nth-child(3) {
+            bottom: 16px;
+            opacity: 0.15;
+            animation: waveFlow 10s linear infinite;
+        }
+
+        .header-content {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--space-7);
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            color: var(--cream);
+            margin-bottom: var(--space-3);
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-tagline {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--seafoam-light);
+            border-left: 3px solid var(--brass);
+            padding-left: var(--space-4);
+            font-style: italic;
+            max-width: 40ch;
+        }
+
+        .header-compass {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--brass-light);
+            font-family: var(--font-display);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-9) 0;
+            border-bottom: 1px solid rgba(26, 111, 160, 0.15);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+            position: relative;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 900;
+            color: rgba(26, 111, 160, 0.08);
+            position: absolute;
+            top: -24px;
+            left: -10px;
+            z-index: 0;
+            line-height: 1;
+        }
+
+        .section-header h2 {
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--brass), var(--brass-light));
+            margin-top: var(--space-3);
+        }
+
+        .section-decoration {
+            position: absolute;
+            right: var(--space-6);
+            top: var(--space-9);
+            opacity: 0.12;
+        }
+
+        /* Color Palette */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--space-3);
+        }
+
+        .color-block {
+            border-radius: 6px;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--space-4);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(10, 22, 40, 0.15);
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        .color-block:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(10, 22, 40, 0.25);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+        }
+
+        .color-value {
+            font-size: 0.7rem;
+            opacity: 0.75;
+            font-family: monospace;
+            margin-top: var(--space-1);
+        }
+
+        @media (max-width: 768px) {
+            .color-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Typography Scale */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .type-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            align-items: baseline;
+            border-bottom: 1px solid rgba(26, 111, 160, 0.1);
+            padding: var(--space-5) 0;
+            gap: var(--space-5);
+        }
+
+        .type-row:last-child {
+            border-bottom: none;
+        }
+
+        .type-meta {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .type-name {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brass-dark);
+        }
+
+        .type-specs {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .type-sample {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Spacing Demo */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--text-secondary);
+        }
+
+        .spacing-bar {
+            height: 28px;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .spacing-value {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 50px;
+            font-family: monospace;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            border: 2px solid var(--navy-700);
+            background: var(--navy-700);
+            color: var(--cream);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            background: var(--navy-900);
+            border-color: var(--navy-900);
+            box-shadow: 0 4px 16px rgba(10, 22, 40, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brass-dark), var(--brass), var(--brass-light));
+            border-color: var(--brass);
+            color: var(--navy-900);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--brass), var(--brass-light));
+            border-color: var(--brass-light);
+            box-shadow: 0 4px 16px rgba(197, 151, 44, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border-color: var(--navy-600);
+            color: var(--navy-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--navy-700);
+            color: var(--cream);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border-color: transparent;
+            color: var(--navy-700);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(26, 111, 160, 0.08);
+            border-color: transparent;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-accent {
+            background: var(--ocean-blue);
+            border-color: var(--ocean-blue);
+            color: var(--white);
+        }
+
+        .btn-accent:hover {
+            background: var(--sea-blue);
+            border-color: var(--sea-blue);
+            box-shadow: 0 4px 16px rgba(46, 139, 192, 0.4);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.75rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: 1rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-6);
+            align-items: center;
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-2);
+            color: var(--navy-700);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            border: 2px solid rgba(26, 111, 160, 0.2);
+            background: var(--white);
+            color: var(--text-primary);
+            border-radius: 4px;
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ocean-blue);
+            box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.12);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Select */
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: var(--space-4);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--navy-700);
+            pointer-events: none;
+        }
+
+        select.input-field {
+            appearance: none;
+            padding-right: var(--space-8);
+            cursor: pointer;
+        }
+
+        /* Checkbox & Radio */
+        .checkbox-group,
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .checkbox-label,
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .checkbox-custom {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--navy-600);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .checkbox-custom::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--ocean-blue);
+            border-radius: 2px;
+            transform: scale(0);
+            transition: transform var(--transition-fast);
+        }
+
+        input[type="checkbox"]:checked + .checkbox-custom::after {
+            transform: scale(1);
+        }
+
+        input[type="checkbox"]:checked + .checkbox-custom {
+            border-color: var(--ocean-blue);
+        }
+
+        .radio-custom {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--navy-600);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .radio-custom::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: var(--brass);
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform var(--transition-fast);
+        }
+
+        input[type="radio"]:checked + .radio-custom::after {
+            transform: scale(1);
+        }
+
+        input[type="radio"]:checked + .radio-custom {
+            border-color: var(--brass);
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Cards */
+        .card {
+            border: 1px solid rgba(26, 111, 160, 0.15);
+            border-radius: 6px;
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+            position: relative;
+            background: var(--white);
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--navy-700), var(--ocean-blue), var(--seafoam));
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 32px rgba(10, 22, 40, 0.12);
+            transform: translateY(-4px);
+            border-color: rgba(26, 111, 160, 0.25);
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--space-4);
+            border-top: 1px solid rgba(26, 111, 160, 0.1);
+        }
+
+        /* Card Variant: Nautical Chart */
+        .card-chart {
+            background: var(--parchment);
+            border: 2px solid var(--driftwood);
+            border-radius: 2px;
+        }
+
+        .card-chart::before {
+            height: 0;
+            background: none;
+        }
+
+        .card-chart::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(139, 115, 85, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 115, 85, 0.06) 1px, transparent 1px);
+            background-size: 30px 30px;
+            pointer-events: none;
+        }
+
+        .card-chart:hover {
+            box-shadow: 4px 4px 0 var(--driftwood);
+            transform: translate(-2px, -2px);
+        }
+
+        /* Card Variant: Captain's Log */
+        .card-log {
+            background: linear-gradient(135deg, var(--navy-800), var(--navy-700));
+            color: var(--cream);
+            border: 1px solid var(--navy-600);
+        }
+
+        .card-log::before {
+            background: linear-gradient(90deg, var(--brass-dark), var(--brass), var(--brass-light));
+        }
+
+        .card-log h3,
+        .card-log h4 {
+            color: var(--brass-light);
+        }
+
+        .card-log p {
+            color: var(--seafoam-light);
+        }
+
+        .card-log .card-footer {
+            border-top-color: rgba(120, 196, 200, 0.15);
+        }
+
+        .card-log:hover {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-color: var(--brass-dark);
+        }
+
+        /* Card Variant: Rope Border */
+        .card-rope {
+            border: none;
+            padding: calc(var(--space-6) + 4px);
+            background: var(--cream);
+        }
+
+        .card-rope::before {
+            height: 0;
+            background: none;
+        }
+
+        .card-rope::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 3px solid transparent;
+            border-image: repeating-linear-gradient(
+                45deg,
+                var(--rope) 0px,
+                var(--rope) 5px,
+                var(--driftwood) 5px,
+                var(--driftwood) 10px
+            ) 6;
+            pointer-events: none;
+        }
+
+        .card-rope:hover {
+            box-shadow: 0 6px 24px rgba(139, 115, 85, 0.2);
+        }
+
+        /* Table */
+        .table-wrapper {
+            border: 1px solid rgba(26, 111, 160, 0.15);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(10, 22, 40, 0.06);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid rgba(26, 111, 160, 0.08);
+        }
+
+        .table th {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            background: var(--navy-900);
+            color: var(--brass-light);
+            border-bottom: 2px solid var(--brass-dark);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table tr:hover td {
+            background: rgba(26, 111, 160, 0.03);
+        }
+
+        .table tr:nth-child(even) td {
+            background: rgba(26, 111, 160, 0.02);
+        }
+
+        .table tr:nth-child(even):hover td {
+            background: rgba(26, 111, 160, 0.05);
+        }
+
+        .table .text-right {
+            text-align: right;
+        }
+
+        /* Status Indicators */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 0 3px rgba(45, 139, 87, 0.2);
+        }
+
+        .status-dot.warning {
+            background: var(--warning);
+            box-shadow: 0 0 0 3px rgba(197, 151, 44, 0.2);
+        }
+
+        .status-dot.danger {
+            background: var(--danger);
+            box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.2);
+        }
+
+        .status-dot.info {
+            background: var(--info);
+            box-shadow: 0 0 0 3px rgba(46, 139, 192, 0.2);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border: 1px solid var(--navy-600);
+            border-radius: 3px;
+            color: var(--navy-700);
+            background: var(--white);
+        }
+
+        .badge-navy {
+            background: var(--navy-800);
+            border-color: var(--navy-800);
+            color: var(--cream);
+        }
+
+        .badge-brass {
+            background: var(--brass);
+            border-color: var(--brass);
+            color: var(--navy-900);
+        }
+
+        .badge-ocean {
+            background: var(--ocean-blue);
+            border-color: var(--ocean-blue);
+            color: var(--white);
+        }
+
+        .badge-seafoam {
+            background: var(--seafoam);
+            border-color: var(--seafoam);
+            color: var(--navy-900);
+        }
+
+        .badge-outline-brass {
+            background: transparent;
+            border-color: var(--brass);
+            color: var(--brass-dark);
+        }
+
+        .badge-outline-ocean {
+            background: transparent;
+            border-color: var(--ocean-blue);
+            color: var(--ocean-blue);
+        }
+
+        .badge-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: var(--white);
+        }
+
+        .badge-success {
+            background: var(--success);
+            border-color: var(--success);
+            color: var(--white);
+        }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            border-radius: 4px;
+            margin-bottom: var(--space-5);
+            border-left: 4px solid;
+            position: relative;
+        }
+
+        .alert-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: var(--space-2);
+        }
+
+        .alert-body {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+
+        .alert-info {
+            background: rgba(46, 139, 192, 0.08);
+            border-color: var(--sea-blue);
+            color: var(--navy-700);
+        }
+
+        .alert-info .alert-title {
+            color: var(--ocean-blue);
+        }
+
+        .alert-success {
+            background: rgba(45, 139, 87, 0.08);
+            border-color: var(--success);
+        }
+
+        .alert-success .alert-title {
+            color: var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(197, 151, 44, 0.08);
+            border-color: var(--brass);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--brass-dark);
+        }
+
+        .alert-danger {
+            background: rgba(192, 57, 43, 0.08);
+            border-color: var(--danger);
+        }
+
+        .alert-danger .alert-title {
+            color: var(--danger);
+        }
+
+        /* Principles */
+        .principle {
+            position: relative;
+            padding-left: var(--space-7);
+        }
+
+        .principle-icon {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .principle-icon-compass {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--brass);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .principle-icon-compass::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 12px solid var(--brass);
+            transform: translate(-50%, -80%);
+        }
+
+        .principle-icon-anchor {
+            color: var(--navy-700);
+            font-weight: 900;
+            font-family: var(--font-display);
+        }
+
+        .principle-icon-wave {
+            width: 32px;
+            height: 16px;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'%3E%3Cpath d='M0 8 Q4 2 8 8 Q12 14 16 8 Q20 2 24 8 Q28 14 32 8' fill='none' stroke='%231A6FA0' stroke-width='2.5'/%3E%3C/svg%3E")
+                no-repeat center;
+        }
+
+        .principle-icon-star {
+            width: 32px;
+            height: 32px;
+            position: relative;
+        }
+
+        .principle-icon-star::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: var(--brass);
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .principle-icon-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 22px;
+            background: var(--brass);
+            transform: translate(-50%, -50%);
+            box-shadow: 9px 0 0 -0.5px var(--brass), -9px 0 0 -0.5px var(--brass);
+        }
+
+        .principle h3 {
+            margin-bottom: var(--space-2);
+        }
+
+        .principle p {
+            color: var(--text-secondary);
+        }
+
+        /* Knot Divider */
+        .knot-divider {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin: var(--space-7) 0;
+        }
+
+        .knot-divider::before,
+        .knot-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--rope), transparent);
+        }
+
+        .knot-divider-center {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--rope);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .knot-divider-center::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--brass);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0 var(--space-7);
+            background: linear-gradient(175deg, var(--navy-800), var(--navy-900));
+            color: var(--text-on-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -200px;
+            right: -200px;
+            height: 30px;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30'%3E%3Cpath d='M0 0 L0 15 Q25 30 50 15 Q75 0 100 15 Q125 30 150 15 Q175 0 200 15 L200 0 Z' fill='%23FAFBFD'/%3E%3C/svg%3E")
+                repeat-x top;
+            background-size: 200px 30px;
+            animation: waveFlow 8s linear infinite;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            padding-top: var(--space-5);
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--cream);
+            letter-spacing: 0.03em;
+        }
+
+        .footer-tagline {
+            font-size: 0.9rem;
+            color: var(--seafoam);
+            font-style: italic;
+            margin-top: var(--space-2);
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-right p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: rgba(180, 224, 224, 0.6);
+        }
+
+        .footer-coordinates {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--brass-light);
+            letter-spacing: 0.05em;
+        }
+
+        .footer-chart-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(120, 196, 200, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 30%, rgba(197, 151, 44, 0.03) 0%, transparent 40%),
+                linear-gradient(rgba(120, 196, 200, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(120, 196, 200, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 60px 60px, 60px 60px;
+            pointer-events: none;
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mt-8 { margin-top: var(--space-8); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header-compass {
+                display: none;
+            }
+
+            .section-decoration {
+                display: none;
+            }
+
+            .type-row {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: var(--space-5);
+                text-align: center;
+            }
+
+            .footer-right {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header" style="margin: 0 calc(-50vw + 50%); padding-left: calc(50vw - 50%); padding-right: calc(50vw - 50%);">
+            <div class="header-content" style="max-width: 1200px; margin: 0 auto;">
+                <div>
+                    <p class="header-label">Design System</p>
+                    <h1>Ocean Maritime</h1>
+                    <p class="header-tagline">
+                        Charting a course through visual design<br>
+                        with the precision of celestial navigation<br>
+                        and the timelessness of the open sea.
+                    </p>
+                </div>
+                <div class="header-compass">
+                    <div class="compass-rose">
+                        <div class="compass-point compass-point-n"></div>
+                        <div class="compass-point compass-point-s"></div>
+                        <div class="compass-point compass-point-e"></div>
+                        <div class="compass-point compass-point-w"></div>
+                        <div class="compass-point compass-point-ne"></div>
+                        <div class="compass-point compass-point-nw"></div>
+                        <div class="compass-point compass-point-se"></div>
+                        <div class="compass-point compass-point-sw"></div>
+                        <div class="compass-center"></div>
+                        <span class="compass-label compass-label-n">N</span>
+                        <span class="compass-label compass-label-s">S</span>
+                        <span class="compass-label compass-label-e">E</span>
+                        <span class="compass-label compass-label-w">W</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-waves">
+                <div class="header-wave"></div>
+                <div class="header-wave"></div>
+                <div class="header-wave"></div>
+            </div>
+        </header>
+    </div>
+
+    <div class="container chart-lines">
+        <!-- Colors Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2>Color Palette</h2>
+                <p class="lead">From the deepest navy of midnight waters to the gleaming brass of a ship's wheel, every color is drawn from the maritime world.</p>
+            </div>
+
+            <h4>Primary Ocean Colors</h4>
+            <div class="color-grid" style="margin-bottom: var(--space-6);">
+                <div class="color-block" style="background: var(--navy-900); color: var(--cream);">
+                    <span class="color-name">Deep Navy</span>
+                    <span class="color-value">#0A1628</span>
+                </div>
+                <div class="color-block" style="background: var(--navy-700); color: var(--cream);">
+                    <span class="color-name">Navy</span>
+                    <span class="color-value">#152E54</span>
+                </div>
+                <div class="color-block" style="background: var(--ocean-blue); color: var(--cream);">
+                    <span class="color-name">Ocean Blue</span>
+                    <span class="color-value">#1A6FA0</span>
+                </div>
+                <div class="color-block" style="background: var(--sea-blue); color: var(--white);">
+                    <span class="color-name">Sea Blue</span>
+                    <span class="color-value">#2E8BC0</span>
+                </div>
+                <div class="color-block" style="background: var(--seafoam); color: var(--navy-900);">
+                    <span class="color-name">Seafoam</span>
+                    <span class="color-value">#78C4C8</span>
+                </div>
+            </div>
+
+            <h4>Accent and Material Colors</h4>
+            <div class="color-grid">
+                <div class="color-block" style="background: var(--brass); color: var(--navy-900);">
+                    <span class="color-name">Brass</span>
+                    <span class="color-value">#C5972C</span>
+                </div>
+                <div class="color-block" style="background: var(--copper); color: var(--white);">
+                    <span class="color-name">Copper</span>
+                    <span class="color-value">#B87333</span>
+                </div>
+                <div class="color-block" style="background: var(--rope); color: var(--navy-900);">
+                    <span class="color-name">Rope</span>
+                    <span class="color-value">#C4A56E</span>
+                </div>
+                <div class="color-block" style="background: var(--parchment); color: var(--navy-900);">
+                    <span class="color-name">Parchment</span>
+                    <span class="color-value">#EDE5D5</span>
+                </div>
+                <div class="color-block" style="background: var(--storm-gray); color: var(--white);">
+                    <span class="color-name">Storm Gray</span>
+                    <span class="color-value">#5A6B7B</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2>Typography</h2>
+                <p class="lead">Classic serif typefaces evoke the engraved lettering of nautical charts, ship nameplates, and captain's logbooks.</p>
+            </div>
+
+            <div class="type-scale">
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 1</span>
+                        <span class="type-specs">Playfair / 48-88px / 900</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: clamp(3rem, 5vw, 5.5rem); font-weight: 900; line-height: 1.1; letter-spacing: -0.02em;">Maritime</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 2</span>
+                        <span class="type-specs">Playfair / 40px / 800</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 800; line-height: 1.2;">The Open Sea</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 3</span>
+                        <span class="type-specs">Playfair / 24px / 700</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.3;">Navigational Charts</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 4</span>
+                        <span class="type-specs">Playfair / 19px / 600</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; line-height: 1.3;">Celestial Navigation</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 5</span>
+                        <span class="type-specs">Playfair / 16px / 700 / UC</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Port Authority</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Heading 6</span>
+                        <span class="type-specs">Playfair / 14px / 700 / UC</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-display); font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary);">Ship's Manifest</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Body</span>
+                        <span class="type-specs">Libre Baskerville / 16px / 400</span>
+                    </div>
+                    <div class="type-sample">The sea, once it casts its spell, holds one in its net of wonder forever. The rhythm of the waves, the salt air, and the vast horizon become a part of the soul.</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-name">Caption</span>
+                        <span class="type-specs">Playfair / 12px / 700 / UC</span>
+                    </div>
+                    <div class="type-sample uppercase">Log entries, coordinates, and chart annotations</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spacing Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2>Spacing System</h2>
+                <p class="lead">A measured 4px base unit brings the same precision to layout that nautical miles bring to charting a course.</p>
+            </div>
+
+            <div class="spacing-demo">
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-1</span>
+                    <div class="spacing-bar" style="width: 16px; background: linear-gradient(90deg, var(--navy-900), var(--navy-700));"></div>
+                    <span class="spacing-value">4px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-2</span>
+                    <div class="spacing-bar" style="width: 32px; background: linear-gradient(90deg, var(--navy-800), var(--navy-600));"></div>
+                    <span class="spacing-value">8px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-3</span>
+                    <div class="spacing-bar" style="width: 48px; background: linear-gradient(90deg, var(--navy-700), var(--ocean-blue));"></div>
+                    <span class="spacing-value">12px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-4</span>
+                    <div class="spacing-bar" style="width: 64px; background: linear-gradient(90deg, var(--ocean-blue), var(--sea-blue));"></div>
+                    <span class="spacing-value">16px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-5</span>
+                    <div class="spacing-bar" style="width: 96px; background: linear-gradient(90deg, var(--sea-blue), var(--seafoam));"></div>
+                    <span class="spacing-value">24px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-6</span>
+                    <div class="spacing-bar" style="width: 128px; background: linear-gradient(90deg, var(--brass-dark), var(--brass));"></div>
+                    <span class="spacing-value">32px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-7</span>
+                    <div class="spacing-bar" style="width: 192px; background: linear-gradient(90deg, var(--brass), var(--brass-light));"></div>
+                    <span class="spacing-value">48px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-8</span>
+                    <div class="spacing-bar" style="width: 256px; background: linear-gradient(90deg, var(--navy-700), var(--ocean-blue), var(--seafoam));"></div>
+                    <span class="spacing-value">64px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-9</span>
+                    <div class="spacing-bar" style="width: 320px; background: linear-gradient(90deg, var(--navy-900), var(--ocean-blue), var(--seafoam), var(--brass-light));"></div>
+                    <span class="spacing-value">96px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-10</span>
+                    <div class="spacing-bar" style="width: 400px; background: linear-gradient(90deg, var(--navy-900), var(--navy-700), var(--ocean-blue), var(--sea-blue), var(--seafoam));"></div>
+                    <span class="spacing-value">128px</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2>Buttons</h2>
+                <p class="lead">Actions forged with the reliability of brass fittings and the clarity of signal flags. Each button communicates intent and hierarchy.</p>
+            </div>
+
+            <h4 class="mt-6">Button Variants</h4>
+            <div class="button-row">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-accent">Accent</button>
+            </div>
+
+            <h4>Default Style</h4>
+            <div class="button-row">
+                <button class="btn">Default</button>
+                <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">Disabled</button>
+            </div>
+
+            <h4>Sizes</h4>
+            <div class="button-row">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Medium</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+
+            <h4>Contextual Actions</h4>
+            <div class="button-row">
+                <button class="btn btn-accent">Set Course</button>
+                <button class="btn btn-secondary">Drop Anchor</button>
+                <button class="btn btn-ghost">View Log</button>
+            </div>
+        </section>
+
+        <!-- Forms Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2>Forms</h2>
+                <p class="lead">Input elements as precise as a ship's log. Every field captures essential data for navigation and record-keeping.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Vessel Name</label>
+                        <input type="text" class="input-field" placeholder="HMS Endeavour">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Captain</label>
+                        <input type="text" class="input-field" placeholder="James Cook">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Port of Origin</label>
+                        <div class="select-wrapper">
+                            <select class="input-field">
+                                <option>Select a port</option>
+                                <option>Portsmouth, England</option>
+                                <option>Boston, Massachusetts</option>
+                                <option>Amsterdam, Netherlands</option>
+                                <option>Cadiz, Spain</option>
+                                <option>Yokohama, Japan</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="input-group">
+                        <label class="input-label">Coordinates</label>
+                        <input type="text" class="input-field" placeholder="51.5074 N, 1.3519 W">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <label class="input-label">Log Entry</label>
+                        <textarea class="input-field" placeholder="Record the day's observations, weather conditions, and notable events..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid mt-6">
+                <div class="col-6">
+                    <h4>Checkboxes</h4>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-custom"></span>
+                            Navigation charts verified
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Provisions stocked
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox">
+                            <span class="checkbox-custom"></span>
+                            Crew manifest complete
+                        </label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <h4>Radio Buttons</h4>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="watch" checked>
+                            <span class="radio-custom"></span>
+                            First Watch (20:00 - 00:00)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="watch">
+                            <span class="radio-custom"></span>
+                            Middle Watch (00:00 - 04:00)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="watch">
+                            <span class="radio-custom"></span>
+                            Morning Watch (04:00 - 08:00)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2>Cards</h2>
+                <p class="lead">Content vessels carrying information as reliably as clipper ships. Each variant serves a distinct navigational purpose.</p>
+            </div>
+
+            <h4>Standard Cards</h4>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="card">
+                        <h3>Navigation</h3>
+                        <p>Celestial and dead reckoning methods for determining position at sea using the stars and compass.</p>
+                        <div class="card-footer">
+                            <span class="badge badge-ocean">Wayfinding</span>
+                            <button class="btn btn-sm btn-ghost">Chart Course</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <h3>Cartography</h3>
+                        <p>The art and science of mapmaking, translating the curved earth onto flat parchment with precision.</p>
+                        <div class="card-footer">
+                            <span class="badge badge-brass">Charting</span>
+                            <button class="btn btn-sm btn-ghost">Explore</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <h3>Meteorology</h3>
+                        <p>Reading the sky, barometer, and sea state to predict weather and plot safe passage through storms.</p>
+                        <div class="card-footer">
+                            <span class="badge badge-seafoam">Weather</span>
+                            <button class="btn btn-sm btn-ghost">Forecast</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="knot-divider">
+                <div class="knot-divider-center"></div>
+            </div>
+
+            <h4>Nautical Chart Card</h4>
+            <div class="grid">
+                <div class="col-6">
+                    <div class="card card-chart" style="position: relative;">
+                        <h3 style="position: relative; z-index: 1;">Passage Plan</h3>
+                        <p style="position: relative; z-index: 1;">Detailed route from departure to arrival, including waypoints, hazards, tidal data, and contingency anchorages along the passage.</p>
+                        <div class="card-footer" style="position: relative; z-index: 1; border-top-color: var(--driftwood);">
+                            <span class="badge badge-outline-brass">Chart No. 4721</span>
+                            <span class="small" style="color: var(--driftwood);">Last updated: 2026</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-chart" style="position: relative;">
+                        <h3 style="position: relative; z-index: 1;">Harbor Approach</h3>
+                        <p style="position: relative; z-index: 1;">Detailed soundings and navigational aids for safe entry into port, including buoy positions and channel markers.</p>
+                        <div class="card-footer" style="position: relative; z-index: 1; border-top-color: var(--driftwood);">
+                            <span class="badge badge-outline-brass">Chart No. 1158</span>
+                            <span class="small" style="color: var(--driftwood);">Scale 1:25000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="knot-divider">
+                <div class="knot-divider-center"></div>
+            </div>
+
+            <h4>Captain's Log Card</h4>
+            <div class="grid">
+                <div class="col-6">
+                    <div class="card card-log">
+                        <h4>Day 47 at Sea</h4>
+                        <p>Wind shifted to the southwest at dawn. Reduced sail and altered course to compensate. Crew in good spirits despite rough conditions.</p>
+                        <div class="card-footer">
+                            <span class="badge badge-brass">Log Entry</span>
+                            <span class="small" style="color: var(--seafoam);">14:30 UTC</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-rope" style="position: relative;">
+                        <h3 style="position: relative; z-index: 1;">Boatswain's Report</h3>
+                        <p style="position: relative; z-index: 1;">Standing rigging inspected and found in satisfactory condition. Replaced two worn shrouds on the mainmast. All running rigging serviceable.</p>
+                        <div class="card-footer" style="position: relative; z-index: 1; border-top-color: var(--rope);">
+                            <span class="badge badge-outline-ocean">Maintenance</span>
+                            <button class="btn btn-sm btn-ghost">Full Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2>Data Table</h2>
+                <p class="lead">Structured records as orderly as a ship's manifest. Clear headers and measured rows provide quick comprehension at a glance.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Vessel</th>
+                            <th>Classification</th>
+                            <th>Home Port</th>
+                            <th>Status</th>
+                            <th class="text-right">Tonnage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: 700;">HMS Endeavour</td>
+                            <td>Bark</td>
+                            <td>Whitby, England</td>
+                            <td>
+                                <span class="status">
+                                    <span class="status-dot active"></span>
+                                    At Sea
+                                </span>
+                            </td>
+                            <td class="text-right">366</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">Flying Cloud</td>
+                            <td>Clipper Ship</td>
+                            <td>Boston, MA</td>
+                            <td>
+                                <span class="status">
+                                    <span class="status-dot active"></span>
+                                    At Sea
+                                </span>
+                            </td>
+                            <td class="text-right">1,783</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">Cutty Sark</td>
+                            <td>Clipper Ship</td>
+                            <td>London, England</td>
+                            <td>
+                                <span class="status">
+                                    <span class="status-dot warning"></span>
+                                    In Port
+                                </span>
+                            </td>
+                            <td class="text-right">963</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">Constitution</td>
+                            <td>Frigate</td>
+                            <td>Boston, MA</td>
+                            <td>
+                                <span class="status">
+                                    <span class="status-dot info"></span>
+                                    Refit
+                                </span>
+                            </td>
+                            <td class="text-right">2,200</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">Thermopylae</td>
+                            <td>Composite Clipper</td>
+                            <td>Aberdeen, Scotland</td>
+                            <td>
+                                <span class="status">
+                                    <span class="status-dot danger"></span>
+                                    Decommissioned
+                                </span>
+                            </td>
+                            <td class="text-right">948</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Badges Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2>Badges & Tags</h2>
+                <p class="lead">Signal flags of the interface, communicating classification, status, and category with compact maritime precision.</p>
+            </div>
+
+            <h4>Filled Badges</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge badge-navy">Navy</span>
+                <span class="badge badge-ocean">Ocean</span>
+                <span class="badge badge-brass">Brass</span>
+                <span class="badge badge-seafoam">Seafoam</span>
+                <span class="badge badge-success">Cleared</span>
+                <span class="badge badge-danger">Storm</span>
+            </div>
+
+            <div class="wave-divider"></div>
+
+            <h4>Outline Badges</h4>
+            <div class="badge-row" style="margin-bottom: var(--space-6);">
+                <span class="badge">Default</span>
+                <span class="badge badge-outline-brass">Brass</span>
+                <span class="badge badge-outline-ocean">Ocean</span>
+            </div>
+
+            <div class="wave-divider"></div>
+
+            <h4>Contextual Usage</h4>
+            <div class="badge-row">
+                <span class="badge badge-navy">Flagship</span>
+                <span class="badge badge-ocean">Merchant</span>
+                <span class="badge badge-brass">Royal Charter</span>
+                <span class="badge badge-seafoam">Exploration</span>
+                <span class="badge badge-success">Fair Winds</span>
+                <span class="badge badge-danger">Gale Warning</span>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2>Alerts</h2>
+                <p class="lead">Critical communications from the bridge, ranging from routine notices to urgent warnings. Each level carries appropriate visual gravity.</p>
+            </div>
+
+            <div class="alert alert-info">
+                <p class="alert-title">Navigational Notice</p>
+                <p class="alert-body">New channel markers have been deployed at the harbor entrance. All vessels should update their charts to reflect the revised approach bearings.</p>
+            </div>
+
+            <div class="alert alert-success">
+                <p class="alert-title">All Clear</p>
+                <p class="alert-body">Port inspection completed successfully. Vessel cleared for departure on the next favorable tide. All documentation verified and stamped.</p>
+            </div>
+
+            <div class="alert alert-warning">
+                <p class="alert-title">Weather Advisory</p>
+                <p class="alert-body">Barometric pressure falling rapidly. Expect deteriorating conditions within 12 hours. All vessels should secure loose gear and review storm procedures.</p>
+            </div>
+
+            <div class="alert alert-danger">
+                <p class="alert-title">Storm Warning</p>
+                <p class="alert-body">Force 10 gale imminent from the northwest. All vessels must seek shelter immediately. Harbor operations suspended until further notice.</p>
+            </div>
+        </section>
+
+        <!-- Design Principles Section -->
+        <section class="section" style="border-bottom: none;">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2>Design Principles</h2>
+                <p class="lead">The guiding stars by which we navigate our design decisions, drawn from centuries of maritime tradition and seamanship.</p>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-compass"></div>
+                        </div>
+                        <h3>True North</h3>
+                        <p>Every design decision should point toward clarity. Like a compass needle, our interfaces guide users unerringly to their destination without confusion or misdirection.</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-wave"></div>
+                        </div>
+                        <h3>Weatherproof</h3>
+                        <p>Design for all conditions, not just fair weather. Interfaces must remain usable and legible across devices, screen sizes, and varying user contexts, much as a ship endures all seas.</p>
+                    </div>
+                </div>
+                <div class="col-6 mt-8">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-star"></div>
+                        </div>
+                        <h3>Celestial Hierarchy</h3>
+                        <p>Just as navigators read the stars by brightness, our visual hierarchy must make the most important elements shine brightest while supporting stars provide essential context.</p>
+                    </div>
+                </div>
+                <div class="col-6 mt-8">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-compass"></div>
+                        </div>
+                        <h3>Measured Craft</h3>
+                        <p>Precision in every detail, from spacing to typography. A ship's rigging must be measured and tied with exactness; likewise, every pixel of our design must serve its purpose with care.</p>
+                    </div>
+                </div>
+                <div class="col-6 mt-8">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-wave"></div>
+                        </div>
+                        <h3>Steady as She Goes</h3>
+                        <p>Consistency is the keel of good design. Patterns, once established, should be maintained throughout the system so that users always know what to expect.</p>
+                    </div>
+                </div>
+                <div class="col-6 mt-8">
+                    <div class="principle">
+                        <div class="principle-icon">
+                            <div class="principle-icon-star"></div>
+                        </div>
+                        <h3>Built to Last</h3>
+                        <p>Like a well-built vessel, our design system must be durable and timeless. Trends may shift like tides, but fundamentally sound design endures through every season.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-chart-bg"></div>
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <p class="footer-logo">Ocean Maritime</p>
+                    <p class="footer-tagline">Design System</p>
+                </div>
+                <div class="footer-right">
+                    <p class="footer-coordinates">51.5074 N, 0.1278 W</p>
+                    <p>Fair winds and following seas.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

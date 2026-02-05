@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mac OS Classic Design System - Platinum</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Geneva:wght@400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           MAC OS CLASSIC (SYSTEM 7 / PLATINUM) DESIGN SYSTEM
+           The iconic Macintosh interface from 1991-2001, featuring
+           horizontal-striped title bars, the Chicago/Charcoal font feel,
+           Platinum grey surfaces, and warm, approachable UI design.
+        ================================================================ */
+
+        /* --- CSS VARIABLES / DESIGN TOKENS --------------------------- */
+        :root {
+            /* PLATINUM GREY PALETTE */
+            --mac-white: #FFFFFF;
+            --mac-platinum: #DDDDDD;
+            --mac-platinum-light: #EEEEEE;
+            --mac-platinum-mid: #CCCCCC;
+            --mac-platinum-dark: #AAAAAA;
+            --mac-grey: #999999;
+            --mac-grey-dark: #808080;
+            --mac-grey-deeper: #666666;
+            --mac-charcoal: #333333;
+            --mac-black: #000000;
+
+            /* ACCENT COLORS (Mac OS 8/9 Appearance) */
+            --mac-highlight: #3366CC;
+            --mac-highlight-light: #6699FF;
+            --mac-highlight-text: #FFFFFF;
+            --mac-alert-red: #CC3333;
+            --mac-success-green: #339933;
+            --mac-caution-yellow: #FFCC00;
+            --mac-purple: #663399;
+            --mac-link-blue: #0000EE;
+
+            /* SEMANTIC TOKENS */
+            --bg-desktop: var(--mac-platinum);
+            --bg-window: var(--mac-platinum);
+            --bg-content: var(--mac-white);
+            --bg-titlebar-stripe-light: var(--mac-white);
+            --bg-titlebar-stripe-dark: var(--mac-platinum-mid);
+            --bg-menubar: var(--mac-platinum-light);
+            --text-primary: var(--mac-black);
+            --text-secondary: var(--mac-grey-deeper);
+            --text-disabled: var(--mac-grey);
+
+            /* BEVEL COLORS (Platinum appearance) */
+            --bevel-light: var(--mac-white);
+            --bevel-medium: var(--mac-platinum);
+            --bevel-dark: var(--mac-grey);
+            --bevel-shadow: var(--mac-charcoal);
+
+            /* SPACING SCALE (4px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* TYPOGRAPHY */
+            --font-system: 'VT323', 'Chicago', 'Charcoal', 'Geneva', 'Helvetica', sans-serif;
+            --font-body: 'Inter', 'Geneva', 'Helvetica Neue', 'Helvetica', sans-serif;
+            --text-xs: 0.6875rem;
+            --text-sm: 0.8125rem;
+            --text-base: 0.9375rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 2rem;
+            --text-4xl: 2.5rem;
+
+            /* BORDERS */
+            --border-width: 1px;
+            --border-radius: 3px;
+        }
+
+        /* --- BASE RESET & GLOBAL STYLES ------------------------------ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            line-height: 1.5;
+            color: var(--text-primary);
+            min-height: 100vh;
+
+            /* Classic Mac desktop pattern - small repeating dots */
+            background-color: var(--mac-platinum);
+            background-image:
+                radial-gradient(circle, var(--mac-platinum-mid) 1px, transparent 1px);
+            background-size: 6px 6px;
+
+            padding: 0;
+        }
+
+        /* --- GLOBAL MENU BAR (Mac signature element) ----------------- */
+        .menubar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-menubar);
+            border-bottom: 2px solid;
+            border-bottom-color: var(--mac-grey-dark);
+            padding: 1px var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            font-family: var(--font-system);
+            font-size: var(--text-lg);
+            height: 20px;
+            box-shadow: 0 1px 0 var(--mac-white) inset;
+        }
+
+        .menubar-apple {
+            font-size: 1.25rem;
+            padding: 0 var(--space-2);
+            cursor: pointer;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .menubar-item {
+            padding: 0 var(--space-3);
+            cursor: pointer;
+            white-space: nowrap;
+            line-height: 20px;
+        }
+
+        .menubar-item:hover {
+            background: var(--mac-highlight);
+            color: var(--mac-highlight-text);
+        }
+
+        .menubar-item.bold {
+            font-weight: bold;
+        }
+
+        .menubar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        /* --- LAYOUT CONTAINER ---------------------------------------- */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: var(--space-5);
+        }
+
+        /* --- CLASSIC MAC WINDOW CHROME ------------------------------- */
+        .window {
+            background: var(--bg-window);
+            border: 1px solid var(--mac-black);
+            border-radius: 0;
+            margin-bottom: var(--space-5);
+            box-shadow: 1px 1px 0 var(--mac-black),
+                        2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Title bar with horizontal stripes - THE Mac signature */
+        .window-titlebar {
+            height: 20px;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--bg-titlebar-stripe-light) 0px,
+                var(--bg-titlebar-stripe-light) 1px,
+                var(--bg-titlebar-stripe-dark) 1px,
+                var(--bg-titlebar-stripe-dark) 2px,
+                var(--bg-titlebar-stripe-light) 2px,
+                var(--bg-titlebar-stripe-light) 3px
+            );
+            border-bottom: 1px solid var(--mac-black);
+            display: flex;
+            align-items: center;
+            padding: 0 var(--space-2);
+            position: relative;
+        }
+
+        /* Inactive title bar - no stripes, just grey */
+        .window-titlebar.inactive {
+            background: var(--mac-platinum);
+        }
+
+        .window-titlebar.inactive .close-box {
+            background: var(--mac-platinum);
+            border-color: var(--mac-grey);
+        }
+
+        .window-titlebar.inactive .window-title {
+            color: var(--mac-grey);
+        }
+
+        /* Close box - small square on the LEFT side (Mac signature) */
+        .close-box {
+            width: 13px;
+            height: 11px;
+            background: var(--mac-white);
+            border: 1px solid var(--mac-black);
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .close-box:active {
+            background: var(--mac-black);
+        }
+
+        /* Window title - centered (Mac style, unlike Windows left-aligned) */
+        .window-title {
+            flex: 1;
+            text-align: center;
+            font-family: var(--font-system);
+            font-size: var(--text-lg);
+            font-weight: bold;
+            color: var(--mac-black);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 var(--space-2);
+            /* Title sits on a white background pill to be readable over stripes */
+            margin: 0 var(--space-1);
+        }
+
+        /* Collapse and Zoom boxes on the RIGHT side */
+        .window-controls-right {
+            display: flex;
+            gap: 1px;
+            flex-shrink: 0;
+        }
+
+        .zoom-box, .collapse-box {
+            width: 13px;
+            height: 11px;
+            background: var(--mac-white);
+            border: 1px solid var(--mac-black);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .zoom-box:active, .collapse-box:active {
+            background: var(--mac-black);
+        }
+
+        /* Inner zoom box detail */
+        .zoom-box::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 7px;
+            height: 5px;
+            border: 1px solid var(--mac-black);
+        }
+
+        .window-content {
+            padding: var(--space-4);
+        }
+
+        /* Scrollbar area for Mac-style scroll */
+        .window-scroll-area {
+            border: 1px solid var(--mac-grey-dark);
+            border-top: none;
+            background: var(--mac-white);
+        }
+
+        /* Resize handle in bottom-right corner */
+        .window-resize {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            cursor: nwse-resize;
+            background: linear-gradient(
+                135deg,
+                transparent 30%,
+                var(--mac-grey) 30%,
+                var(--mac-grey) 35%,
+                transparent 35%,
+                transparent 45%,
+                var(--mac-grey) 45%,
+                var(--mac-grey) 50%,
+                transparent 50%,
+                transparent 60%,
+                var(--mac-grey) 60%,
+                var(--mac-grey) 65%,
+                transparent 65%
+            );
+        }
+
+        /* --- BEVELED 3D BUTTON (Platinum style) ---------------------- */
+        /* Mac bevels are softer than Windows: 1px borders, rounded corners */
+        .bevel-raised {
+            border: 1px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow: inset 1px 1px 0 var(--mac-platinum-light),
+                        inset -1px -1px 0 var(--mac-grey);
+        }
+
+        .bevel-sunken {
+            border: 1px solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--mac-grey),
+                        inset -1px -1px 0 var(--mac-platinum-light);
+        }
+
+        /* --- SECTION STYLES ------------------------------------------ */
+        .section {
+            margin-bottom: var(--space-5);
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--mac-grey);
+            border-bottom: 1px solid var(--mac-white);
+            margin: var(--space-4) 0;
+        }
+
+        /* --- COLOR PALETTE ------------------------------------------- */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: var(--space-2);
+        }
+
+        .color-swatch-card {
+            background: var(--mac-platinum-light);
+            border: 1px solid var(--mac-grey-dark);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .color-swatch-preview {
+            height: 60px;
+            border-bottom: 1px solid var(--mac-grey-dark);
+        }
+
+        .color-swatch-label {
+            padding: var(--space-1) var(--space-2);
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+        }
+
+        .color-swatch-hex {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            padding-bottom: var(--space-1);
+        }
+
+        /* --- TYPOGRAPHY ---------------------------------------------- */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-system);
+            line-height: 1.2;
+            color: var(--mac-black);
+        }
+
+        .type-specimen {
+            margin-bottom: var(--space-3);
+            padding: var(--space-3);
+            background: var(--mac-white);
+            border: 1px solid var(--mac-grey-dark);
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-4);
+        }
+
+        .type-label {
+            font-family: var(--font-system);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .type-sample {
+            font-family: var(--font-system);
+        }
+
+        .type-sample-body {
+            font-family: var(--font-body);
+        }
+
+        .text-h1 { font-size: var(--text-4xl); }
+        .text-h2 { font-size: var(--text-3xl); }
+        .text-h3 { font-size: var(--text-2xl); }
+        .text-h4 { font-size: var(--text-xl); }
+        .text-h5 { font-size: var(--text-lg); }
+        .text-h6 { font-size: var(--text-base); font-weight: bold; }
+
+        /* --- SPACING SCALE ------------------------------------------- */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        .spacing-bar {
+            height: 14px;
+            background: var(--mac-highlight);
+            border: 1px solid var(--mac-charcoal);
+            border-radius: 1px;
+        }
+
+        .spacing-value {
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            min-width: 40px;
+        }
+
+        /* --- BUTTONS ------------------------------------------------- */
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .btn {
+            font-family: var(--font-system);
+            font-size: var(--text-lg);
+            padding: var(--space-1) var(--space-4);
+            background: var(--mac-platinum);
+            color: var(--text-primary);
+            border: 1px solid var(--mac-black);
+            border-radius: var(--border-radius);
+            box-shadow: inset 1px 1px 0 var(--mac-white),
+                        inset -1px -1px 0 var(--mac-grey-dark);
+            cursor: pointer;
+            min-width: 60px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .btn:hover {
+            background: var(--mac-platinum-light);
+        }
+
+        .btn:active {
+            background: var(--mac-grey);
+            box-shadow: inset 1px 1px 0 var(--mac-grey-dark),
+                        inset -1px -1px 0 var(--mac-white);
+        }
+
+        /* Primary button - thick black border, default action */
+        .btn-primary {
+            border: 2px solid var(--mac-black);
+            border-radius: 5px;
+            padding: var(--space-1) var(--space-5);
+            box-shadow: inset 1px 1px 0 var(--mac-white),
+                        inset -1px -1px 0 var(--mac-grey-dark),
+                        0 0 0 1px var(--mac-black);
+            font-weight: bold;
+        }
+
+        .btn-primary:active {
+            background: var(--mac-highlight);
+            color: var(--mac-white);
+            box-shadow: inset 1px 1px 0 var(--mac-grey-dark),
+                        inset -1px -1px 0 var(--mac-white);
+        }
+
+        /* Secondary button */
+        .btn-secondary {
+            background: var(--mac-platinum-light);
+        }
+
+        .btn-secondary:active {
+            background: var(--mac-grey);
+        }
+
+        /* Ghost button - minimal chrome */
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid transparent;
+            box-shadow: none;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            background: var(--mac-platinum);
+            border-color: var(--mac-grey);
+        }
+
+        .btn-ghost:active {
+            background: var(--mac-grey);
+            color: var(--mac-white);
+        }
+
+        /* Accent button - blue highlight */
+        .btn-accent {
+            background: var(--mac-highlight);
+            color: var(--mac-white);
+            border: 2px solid var(--mac-black);
+            border-radius: 5px;
+            box-shadow: inset 1px 1px 0 var(--mac-highlight-light),
+                        inset -1px -1px 0 #224488;
+        }
+
+        .btn-accent:hover {
+            background: var(--mac-highlight-light);
+        }
+
+        .btn-accent:active {
+            background: #224488;
+            box-shadow: inset 1px 1px 0 #224488,
+                        inset -1px -1px 0 var(--mac-highlight-light);
+        }
+
+        /* Disabled button */
+        .btn:disabled, .btn[disabled] {
+            color: var(--mac-grey);
+            cursor: not-allowed;
+            box-shadow: inset 1px 1px 0 var(--mac-white),
+                        inset -1px -1px 0 var(--mac-grey);
+        }
+
+        .btn:disabled:hover {
+            background: var(--mac-platinum);
+        }
+
+        .btn:disabled:active {
+            box-shadow: inset 1px 1px 0 var(--mac-white),
+                        inset -1px -1px 0 var(--mac-grey);
+        }
+
+        /* --- FORM ELEMENTS ------------------------------------------- */
+        .form-group {
+            margin-bottom: var(--space-3);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-1);
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            padding: var(--space-1) var(--space-2);
+            background: var(--mac-white);
+            color: var(--text-primary);
+            border: 1px solid var(--mac-grey-dark);
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal),
+                        inset -1px -1px 0 var(--mac-platinum-light);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--mac-highlight);
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal),
+                        inset -1px -1px 0 var(--mac-platinum-light),
+                        0 0 0 1px var(--mac-highlight);
+        }
+
+        .form-input:disabled {
+            background: var(--mac-platinum);
+            color: var(--text-disabled);
+        }
+
+        textarea.form-input {
+            min-height: 80px;
+            resize: vertical;
+            font-family: var(--font-body);
+        }
+
+        /* Mac-style popup menu (dropdown) */
+        .form-select {
+            width: 100%;
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+            padding: var(--space-1) var(--space-5) var(--space-1) var(--space-2);
+            background: var(--mac-platinum);
+            color: var(--text-primary);
+            border: 1px solid var(--mac-black);
+            border-radius: var(--border-radius);
+            box-shadow: inset 1px 1px 0 var(--mac-white),
+                        inset -1px -1px 0 var(--mac-grey-dark);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+        }
+
+        /* Mac-style checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            cursor: pointer;
+            margin-bottom: var(--space-2);
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+        }
+
+        .checkbox-box {
+            width: 12px;
+            height: 12px;
+            background: var(--mac-white);
+            border: 1px solid var(--mac-black);
+            border-radius: 1px;
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .checkbox-wrapper input { display: none; }
+
+        .checkbox-wrapper input:checked + .checkbox-box::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4l2 2 4-4' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+        }
+
+        /* Mac-style radio button */
+        .radio-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            cursor: pointer;
+            margin-bottom: var(--space-2);
+            font-family: var(--font-system);
+            font-size: var(--text-base);
+        }
+
+        .radio-circle {
+            width: 12px;
+            height: 12px;
+            background: var(--mac-white);
+            border: 1px solid var(--mac-black);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .radio-wrapper input { display: none; }
+
+        .radio-wrapper input:checked + .radio-circle::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--mac-black);
+            border-radius: 50%;
+        }
+
+        /* Form layout helpers */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .form-section-label {
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--mac-grey);
+            padding-bottom: var(--space-1);
+            margin-bottom: var(--space-3);
+            margin-top: var(--space-4);
+        }
+
+        /* --- CARDS --------------------------------------------------- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
+        }
+
+        /* Card Variant 1: Simple window card */
+        .card {
+            background: var(--mac-platinum);
+            border: 1px solid var(--mac-black);
+            box-shadow: 1px 1px 0 var(--mac-black);
+        }
+
+        .card-titlebar {
+            height: 18px;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--bg-titlebar-stripe-light) 0px,
+                var(--bg-titlebar-stripe-light) 1px,
+                var(--bg-titlebar-stripe-dark) 1px,
+                var(--bg-titlebar-stripe-dark) 2px,
+                var(--bg-titlebar-stripe-light) 2px,
+                var(--bg-titlebar-stripe-light) 3px
+            );
+            border-bottom: 1px solid var(--mac-black);
+            display: flex;
+            align-items: center;
+            padding: 0 var(--space-2);
+        }
+
+        .card-titlebar .close-box {
+            width: 11px;
+            height: 9px;
+        }
+
+        .card-titlebar .card-title {
+            flex: 1;
+            text-align: center;
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-body {
+            padding: var(--space-3);
+        }
+
+        .card-body p {
+            margin-bottom: var(--space-2);
+            font-size: var(--text-sm);
+        }
+
+        .card-footer {
+            padding: var(--space-2) var(--space-3);
+            border-top: 1px solid var(--mac-grey);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-2);
+        }
+
+        /* Card Variant 2: Flat content card */
+        .card-flat {
+            background: var(--mac-white);
+            border: 1px solid var(--mac-grey-dark);
+            padding: var(--space-4);
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal),
+                        inset -1px -1px 0 var(--mac-platinum-light);
+        }
+
+        .card-flat-title {
+            font-family: var(--font-system);
+            font-size: var(--text-lg);
+            font-weight: bold;
+            margin-bottom: var(--space-2);
+        }
+
+        .card-flat p {
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-2);
+        }
+
+        /* Card Variant 3: Icon card (like Finder icons) */
+        .icon-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: var(--space-3);
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: var(--border-radius);
+        }
+
+        .icon-card:hover {
+            background: var(--mac-highlight);
+            border-color: var(--mac-highlight);
+        }
+
+        .icon-card:hover .icon-card-label {
+            color: var(--mac-white);
+        }
+
+        .icon-card-img {
+            width: 32px;
+            height: 32px;
+            background: var(--mac-platinum);
+            border: 1px solid var(--mac-grey-dark);
+            margin-bottom: var(--space-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .icon-card-label {
+            font-family: var(--font-system);
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            word-break: break-word;
+            max-width: 80px;
+        }
+
+        /* Card Variant 4: Alert / Note card */
+        .card-note {
+            background: var(--mac-caution-yellow);
+            border: 1px solid var(--mac-grey-dark);
+            padding: var(--space-3);
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-start;
+            box-shadow: 1px 1px 0 var(--mac-grey-dark);
+        }
+
+        .card-note-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .card-note-text {
+            font-size: var(--text-sm);
+        }
+
+        .card-note-text strong {
+            display: block;
+            font-family: var(--font-system);
+            margin-bottom: var(--space-1);
+        }
+
+        /* --- DATA TABLE ---------------------------------------------- */
+        .table-container {
+            border: 1px solid var(--mac-grey-dark);
+            background: var(--mac-white);
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal),
+                        inset -1px -1px 0 var(--mac-platinum-light);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--text-sm);
+            font-family: var(--font-body);
+        }
+
+        .data-table th {
+            background: var(--mac-platinum);
+            border: 1px solid;
+            border-color: var(--mac-white) var(--mac-grey-dark) var(--mac-grey-dark) var(--mac-white);
+            padding: var(--space-1) var(--space-3);
+            text-align: left;
+            font-family: var(--font-system);
+            font-weight: normal;
+            font-size: var(--text-sm);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .data-table th:hover {
+            background: var(--mac-platinum-light);
+        }
+
+        .data-table td {
+            padding: var(--space-1) var(--space-3);
+            border-bottom: 1px solid var(--mac-platinum);
+        }
+
+        .data-table tr:hover td {
+            background: var(--mac-highlight);
+            color: var(--mac-white);
+        }
+
+        .data-table tr.selected td {
+            background: var(--mac-highlight);
+            color: var(--mac-white);
+        }
+
+        .table-footer {
+            font-family: var(--font-system);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            padding: var(--space-1) var(--space-3);
+            border-top: 1px solid var(--mac-grey);
+            background: var(--mac-platinum);
+        }
+
+        /* --- BADGES / TAGS ------------------------------------------- */
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+        }
+
+        .badge {
+            font-family: var(--font-system);
+            font-size: var(--text-xs);
+            padding: 1px var(--space-2);
+            background: var(--mac-platinum);
+            color: var(--text-primary);
+            border: 1px solid var(--mac-grey-dark);
+            border-radius: 8px;
+        }
+
+        .badge-info {
+            background: var(--mac-highlight);
+            color: var(--mac-white);
+            border-color: var(--mac-highlight);
+        }
+
+        .badge-success {
+            background: var(--mac-success-green);
+            color: var(--mac-white);
+            border-color: var(--mac-success-green);
+        }
+
+        .badge-warning {
+            background: var(--mac-caution-yellow);
+            color: var(--mac-black);
+            border-color: #CC9900;
+        }
+
+        .badge-error {
+            background: var(--mac-alert-red);
+            color: var(--mac-white);
+            border-color: var(--mac-alert-red);
+        }
+
+        .badge-outline {
+            background: transparent;
+            border: 1px solid var(--mac-grey-dark);
+            color: var(--text-secondary);
+        }
+
+        .badge-extension {
+            background: var(--mac-white);
+            border: 1px solid var(--mac-charcoal);
+            font-weight: bold;
+        }
+
+        /* --- ALERTS -------------------------------------------------- */
+        .alert {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-3);
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-start;
+            border: 1px solid var(--mac-grey-dark);
+            background: var(--mac-platinum-light);
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .alert-body {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-family: var(--font-system);
+            font-weight: bold;
+            font-size: var(--text-base);
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-text {
+            font-size: var(--text-sm);
+        }
+
+        .alert-info {
+            border-left: 3px solid var(--mac-highlight);
+        }
+
+        .alert-success {
+            border-left: 3px solid var(--mac-success-green);
+        }
+
+        .alert-warning {
+            background: #FFF8DD;
+            border-left: 3px solid var(--mac-caution-yellow);
+        }
+
+        .alert-error {
+            background: #FFE8E8;
+            border-left: 3px solid var(--mac-alert-red);
+        }
+
+        .alert-dialog {
+            background: var(--mac-platinum);
+            border: 1px solid var(--mac-black);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+        }
+
+        .alert-dialog .alert-buttons {
+            margin-top: var(--space-3);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-2);
+        }
+
+        /* --- DESIGN PRINCIPLES --------------------------------------- */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-3);
+        }
+
+        .principle-card {
+            background: var(--mac-white);
+            border: 1px solid var(--mac-grey-dark);
+            padding: var(--space-4);
+        }
+
+        .principle-number {
+            font-family: var(--font-system);
+            font-size: var(--text-3xl);
+            color: var(--mac-platinum-mid);
+            float: left;
+            margin-right: var(--space-3);
+            line-height: 1;
+        }
+
+        .principle-title {
+            font-family: var(--font-system);
+            font-weight: bold;
+            font-size: var(--text-base);
+            margin-bottom: var(--space-1);
+        }
+
+        .principle-text {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* --- FOOTER -------------------------------------------------- */
+        .main-footer {
+            background: var(--mac-platinum);
+            border: 1px solid var(--mac-black);
+            box-shadow: 1px 1px 0 var(--mac-black);
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+
+        .footer-titlebar {
+            height: 18px;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--bg-titlebar-stripe-light) 0px,
+                var(--bg-titlebar-stripe-light) 1px,
+                var(--bg-titlebar-stripe-dark) 1px,
+                var(--bg-titlebar-stripe-dark) 2px,
+                var(--bg-titlebar-stripe-light) 2px,
+                var(--bg-titlebar-stripe-light) 3px
+            );
+            border-bottom: 1px solid var(--mac-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            font-weight: bold;
+        }
+
+        .footer-content {
+            padding: var(--space-5);
+        }
+
+        .footer-text {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+
+        .footer-text strong {
+            color: var(--text-primary);
+            font-family: var(--font-system);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            margin-top: var(--space-3);
+        }
+
+        .footer-links a {
+            font-family: var(--font-system);
+            font-size: var(--text-sm);
+            color: var(--mac-link-blue);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .footer-links a:hover {
+            color: var(--mac-alert-red);
+        }
+
+        /* --- UTILITY: Mac Separator Line ----------------------------- */
+        .mac-separator {
+            border: none;
+            height: 2px;
+            background: linear-gradient(
+                to bottom,
+                var(--mac-grey) 0px,
+                var(--mac-grey) 1px,
+                var(--mac-white) 1px,
+                var(--mac-white) 2px
+            );
+            margin: var(--space-4) 0;
+        }
+
+        /* --- UTILITY: Finder-style icon grid ------------------------- */
+        .finder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: var(--space-2);
+            background: var(--mac-white);
+            border: 1px solid var(--mac-grey-dark);
+            box-shadow: inset 1px 1px 0 var(--mac-charcoal),
+                        inset -1px -1px 0 var(--mac-platinum-light);
+            padding: var(--space-3);
+        }
+
+        /* --- DIALOG BOX (Mac-style) --------------------------------- */
+        .dialog-demo {
+            padding: var(--space-5);
+            background: repeating-conic-gradient(
+                var(--mac-platinum) 0% 25%,
+                var(--mac-platinum-mid) 0% 50%
+            ) 50% / 8px 8px;
+        }
+
+        .dialog-box {
+            background: var(--mac-platinum);
+            border: 1px solid var(--mac-black);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            max-width: 380px;
+            margin: 0 auto;
+            padding: var(--space-4);
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        .dialog-icon-area {
+            flex-shrink: 0;
+        }
+
+        .dialog-mac-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .dialog-text-area {
+            flex: 1;
+        }
+
+        .dialog-text-area p {
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-3);
+        }
+
+        .dialog-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            align-items: stretch;
+        }
+
+        .dialog-buttons .btn {
+            min-width: 80px;
+        }
+
+        /* --- RESPONSIVE ---------------------------------------------- */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-3);
+            }
+
+            .menubar {
+                font-size: var(--text-sm);
+                overflow-x: auto;
+            }
+
+            .menubar-right {
+                display: none;
+            }
+
+            .window-content {
+                padding: var(--space-3);
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .type-specimen {
+                flex-direction: column;
+                gap: var(--space-1);
+            }
+
+            .type-label {
+                min-width: auto;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .dialog-box {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .dialog-buttons {
+                align-items: center;
+            }
+
+            .finder-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .footer-links {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         GLOBAL MENU BAR - The Mac signature UI element
+         Unlike Windows, the Mac menu bar is always at the top of the screen,
+         not inside each window. This is the defining UI difference.
+    ============================================================ -->
+    <div class="menubar">
+        <span class="menubar-apple" title="Apple Menu">&#63743;</span>
+        <span class="menubar-item bold">File</span>
+        <span class="menubar-item">Edit</span>
+        <span class="menubar-item">View</span>
+        <span class="menubar-item">Special</span>
+        <span class="menubar-item">Help</span>
+        <span class="menubar-right">
+            <span>Wed 2:30 PM</span>
+        </span>
+    </div>
+
+    <div class="container">
+
+        <!-- ============================================================
+             HEADER WINDOW
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">Mac OS Classic Design System</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="font-family: var(--font-system); font-size: var(--text-2xl); margin-bottom: var(--space-3);">
+                    Welcome to Macintosh.
+                </p>
+                <p style="margin-bottom: var(--space-3);">
+                    A design system inspired by the classic Macintosh interface, spanning System 7 (1991)
+                    through Mac OS 9 (1999). Featuring the iconic Platinum appearance with horizontal-striped
+                    title bars, Chicago bitmap font aesthetics, warm grey surfaces, and the approachable,
+                    human-centered design philosophy that defined a generation of personal computing.
+                </p>
+                <div class="badge-container">
+                    <span class="badge badge-info">System 7</span>
+                    <span class="badge badge-info">Mac OS 8</span>
+                    <span class="badge badge-info">Mac OS 9</span>
+                    <span class="badge">Platinum</span>
+                    <span class="badge badge-outline">68K / PowerPC</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             I. COLOR PALETTE
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">I. Color Palette</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    The Platinum appearance uses warm greys as its foundation, with limited accent colors.
+                    Unlike the 16-color VGA palette of Windows, Mac OS supported 256 colors (or millions)
+                    but kept the UI itself deliberately restrained.
+                </p>
+
+                <p style="font-family: var(--font-system); font-size: var(--text-sm); margin-bottom: var(--space-2); color: var(--text-secondary);">
+                    Platinum Grey Scale
+                </p>
+                <div class="color-grid" style="margin-bottom: var(--space-4);">
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #FFFFFF;"></div>
+                        <div class="color-swatch-label">White</div>
+                        <div class="color-swatch-hex">#FFFFFF</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #EEEEEE;"></div>
+                        <div class="color-swatch-label">Platinum Light</div>
+                        <div class="color-swatch-hex">#EEEEEE</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #DDDDDD;"></div>
+                        <div class="color-swatch-label">Platinum</div>
+                        <div class="color-swatch-hex">#DDDDDD</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #CCCCCC;"></div>
+                        <div class="color-swatch-label">Platinum Mid</div>
+                        <div class="color-swatch-hex">#CCCCCC</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #AAAAAA;"></div>
+                        <div class="color-swatch-label">Platinum Dark</div>
+                        <div class="color-swatch-hex">#AAAAAA</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #999999;"></div>
+                        <div class="color-swatch-label">Grey</div>
+                        <div class="color-swatch-hex">#999999</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #808080;"></div>
+                        <div class="color-swatch-label">Grey Dark</div>
+                        <div class="color-swatch-hex">#808080</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #666666;"></div>
+                        <div class="color-swatch-label">Grey Deeper</div>
+                        <div class="color-swatch-hex">#666666</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #333333;"></div>
+                        <div class="color-swatch-label">Charcoal</div>
+                        <div class="color-swatch-hex">#333333</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #000000;"></div>
+                        <div class="color-swatch-label">Black</div>
+                        <div class="color-swatch-hex">#000000</div>
+                    </div>
+                </div>
+
+                <p style="font-family: var(--font-system); font-size: var(--text-sm); margin-bottom: var(--space-2); color: var(--text-secondary);">
+                    System Accent Colors
+                </p>
+                <div class="color-grid">
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #3366CC;"></div>
+                        <div class="color-swatch-label">Highlight</div>
+                        <div class="color-swatch-hex">#3366CC</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #6699FF;"></div>
+                        <div class="color-swatch-label">Highlight Light</div>
+                        <div class="color-swatch-hex">#6699FF</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #339933;"></div>
+                        <div class="color-swatch-label">Success</div>
+                        <div class="color-swatch-hex">#339933</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #FFCC00;"></div>
+                        <div class="color-swatch-label">Caution</div>
+                        <div class="color-swatch-hex">#FFCC00</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #CC3333;"></div>
+                        <div class="color-swatch-label">Alert</div>
+                        <div class="color-swatch-hex">#CC3333</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #663399;"></div>
+                        <div class="color-swatch-label">Purple</div>
+                        <div class="color-swatch-hex">#663399</div>
+                    </div>
+                    <div class="color-swatch-card">
+                        <div class="color-swatch-preview" style="background: #0000EE;"></div>
+                        <div class="color-swatch-label">Link Blue</div>
+                        <div class="color-swatch-hex">#0000EE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             II. TYPOGRAPHY
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">II. Typography</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Classic Mac used Chicago (system font) for menus and UI elements, and Geneva for body text.
+                    These bitmap fonts gave the Mac its distinctive, friendly character. VT323 captures the
+                    bitmap aesthetic for display text, while Inter provides clean body readability.
+                </p>
+
+                <div class="type-specimen">
+                    <span class="type-label">H1 / 2.5rem</span>
+                    <span class="type-sample text-h1">Welcome to Macintosh</span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">H2 / 2rem</span>
+                    <span class="type-sample text-h2">System Preferences</span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">H3 / 1.5rem</span>
+                    <span class="type-sample text-h3">Control Panels</span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">H4 / 1.25rem</span>
+                    <span class="type-sample text-h4">Extensions Manager</span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">H5 / 1.125rem</span>
+                    <span class="type-sample text-h5">Chooser</span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">H6 / 0.9375rem</span>
+                    <span class="type-sample text-h6">Scrapbook</span>
+                </div>
+
+                <hr class="mac-separator">
+
+                <div class="type-specimen">
+                    <span class="type-label">Body</span>
+                    <span class="type-sample-body" style="font-size: var(--text-base); max-width: 480px; display: block;">
+                        The Macintosh uses an advanced operating system that puts you in charge.
+                        Point and click to open files, drag icons to move them, and pull down
+                        menus to access commands. It's the computer for the rest of us.
+                    </span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">Small</span>
+                    <span class="type-sample-body" style="font-size: var(--text-sm);">
+                        Disk space remaining: 127 MB available on "Macintosh HD"
+                    </span>
+                </div>
+                <div class="type-specimen">
+                    <span class="type-label">Caption</span>
+                    <span class="type-sample-body" style="font-size: var(--text-xs); color: var(--text-secondary);">
+                        Last modified: Wed, Jan 15, 1997, 2:30 PM -- Kind: SimpleText document
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             III. SPACING SYSTEM
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">III. Spacing System</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    A 4px-base spacing scale for consistent layout. Classic Mac interfaces were designed
+                    for small screens (512x342 to 1024x768) and used space judiciously.
+                </p>
+
+                <div class="spacing-demo">
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-1</span>
+                        <div class="spacing-bar" style="width: 4px;"></div>
+                        <span class="spacing-value">4px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-2</span>
+                        <div class="spacing-bar" style="width: 8px;"></div>
+                        <span class="spacing-value">8px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-3</span>
+                        <div class="spacing-bar" style="width: 12px;"></div>
+                        <span class="spacing-value">12px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-4</span>
+                        <div class="spacing-bar" style="width: 16px;"></div>
+                        <span class="spacing-value">16px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-5</span>
+                        <div class="spacing-bar" style="width: 24px;"></div>
+                        <span class="spacing-value">24px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-6</span>
+                        <div class="spacing-bar" style="width: 32px;"></div>
+                        <span class="spacing-value">32px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-7</span>
+                        <div class="spacing-bar" style="width: 48px;"></div>
+                        <span class="spacing-value">48px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-8</span>
+                        <div class="spacing-bar" style="width: 64px;"></div>
+                        <span class="spacing-value">64px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-9</span>
+                        <div class="spacing-bar" style="width: 96px;"></div>
+                        <span class="spacing-value">96px</span>
+                    </div>
+                    <div class="spacing-item">
+                        <span class="spacing-label">--space-10</span>
+                        <div class="spacing-bar" style="width: 128px;"></div>
+                        <span class="spacing-value">128px</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             IV. BUTTONS
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">IV. Buttons</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Mac buttons use subtle 1px bevels and rounded corners -- softer than the chunky 2px
+                    bevels of Windows 3.1. The default/primary action button has a distinctive thick
+                    black border, a convention unique to the Mac. Pressing a Mac button inverts it
+                    (text goes white on dark) rather than just shifting the bevel.
+                </p>
+
+                <p class="form-section-label">Primary (Default Action)</p>
+                <div class="button-row">
+                    <button class="btn btn-primary">OK</button>
+                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-primary">Print</button>
+                </div>
+
+                <p class="form-section-label">Secondary (Standard)</p>
+                <div class="button-row">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-secondary">Don't Save</button>
+                    <button class="btn btn-secondary">Revert</button>
+                </div>
+
+                <p class="form-section-label">Ghost (Minimal)</p>
+                <div class="button-row">
+                    <button class="btn btn-ghost">Options</button>
+                    <button class="btn btn-ghost">More Info</button>
+                    <button class="btn btn-ghost">Details</button>
+                </div>
+
+                <p class="form-section-label">Accent (Highlighted Action)</p>
+                <div class="button-row">
+                    <button class="btn btn-accent">Install</button>
+                    <button class="btn btn-accent">Update</button>
+                    <button class="btn btn-accent">Download</button>
+                </div>
+
+                <p class="form-section-label">States</p>
+                <div class="button-row">
+                    <button class="btn btn-primary">Active</button>
+                    <button class="btn btn-secondary">Normal</button>
+                    <button class="btn" disabled>Disabled</button>
+                </div>
+
+                <p class="form-section-label">Dialog Button Layout</p>
+                <div style="background: var(--mac-platinum); border: 1px solid var(--mac-grey-dark); padding: var(--space-4); max-width: 380px;">
+                    <p style="font-size: var(--text-sm); margin-bottom: var(--space-4);">
+                        Do you want to save changes to "Untitled" before closing?
+                    </p>
+                    <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+                        <button class="btn btn-secondary">Don't Save</button>
+                        <button class="btn btn-secondary">Cancel</button>
+                        <button class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             V. FORMS
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">V. Form Elements</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Mac form controls use inset shadows to create the "sunken field" effect. Popup menus
+                    (dropdowns) use the same beveled style as buttons. Focus is indicated with a blue
+                    ring rather than by changing the control's background.
+                </p>
+
+                <div class="form-row">
+                    <div>
+                        <p class="form-section-label">Text Inputs</p>
+                        <div class="form-group">
+                            <label class="form-label">User Name:</label>
+                            <input type="text" class="form-input" value="Steve">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Organization:</label>
+                            <input type="text" class="form-input" placeholder="Apple Computer, Inc.">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Serial Number:</label>
+                            <input type="text" class="form-input" value="XAF-1997-MAC" disabled>
+                        </div>
+
+                        <p class="form-section-label">Popup Menu</p>
+                        <div class="form-group">
+                            <label class="form-label">Startup Disk:</label>
+                            <select class="form-select">
+                                <option>Macintosh HD</option>
+                                <option>Network Server</option>
+                                <option>CD-ROM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sound Output:</label>
+                            <select class="form-select">
+                                <option>Built-in</option>
+                                <option>External Speakers</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="form-section-label">Checkboxes</p>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-box"></span>
+                            <span>Show Desktop Pattern</span>
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-box"></span>
+                            <span>Calculate folder sizes</span>
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox">
+                            <span class="checkbox-box"></span>
+                            <span>Show invisible files</span>
+                        </label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox">
+                            <span class="checkbox-box"></span>
+                            <span>Use Simple Finder</span>
+                        </label>
+
+                        <p class="form-section-label">Radio Buttons</p>
+                        <label class="radio-wrapper">
+                            <input type="radio" name="arrange" checked>
+                            <span class="radio-circle"></span>
+                            <span>by Name</span>
+                        </label>
+                        <label class="radio-wrapper">
+                            <input type="radio" name="arrange">
+                            <span class="radio-circle"></span>
+                            <span>by Date Modified</span>
+                        </label>
+                        <label class="radio-wrapper">
+                            <input type="radio" name="arrange">
+                            <span class="radio-circle"></span>
+                            <span>by Size</span>
+                        </label>
+                        <label class="radio-wrapper">
+                            <input type="radio" name="arrange">
+                            <span class="radio-circle"></span>
+                            <span>by Kind</span>
+                        </label>
+                    </div>
+                </div>
+
+                <p class="form-section-label">Text Area</p>
+                <div class="form-group">
+                    <label class="form-label">Notes:</label>
+                    <textarea class="form-input" rows="4" placeholder="Enter your notes here...">This Macintosh belongs to the Creative Services department. Please do not install unauthorized extensions or control panels. Contact the IT Help Desk at x4200 for software requests.</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             VI. CARDS
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">VI. Cards</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Four card variants reflecting different Mac interface patterns: window cards, flat
+                    content cards, Finder-style icon cards, and sticky note cards.
+                </p>
+
+                <p class="form-section-label">Window Cards</p>
+                <div class="card-grid" style="margin-bottom: var(--space-5);">
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <div class="close-box" style="width: 11px; height: 9px;"></div>
+                            <span class="card-title">SimpleText</span>
+                        </div>
+                        <div class="card-body">
+                            <p>A basic text editor included with every Macintosh. Perfect for reading
+                               Read Me files, writing quick notes, and viewing PICT images.</p>
+                            <p style="color: var(--text-secondary); font-size: var(--text-xs);">
+                                Version 1.4 -- 52 KB on disk
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" style="font-size: var(--text-sm); padding: 2px 12px;">Get Info</button>
+                            <button class="btn btn-primary" style="font-size: var(--text-sm); padding: 2px 12px;">Open</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <div class="close-box" style="width: 11px; height: 9px;"></div>
+                            <span class="card-title">Sherlock</span>
+                        </div>
+                        <div class="card-body">
+                            <p>Search your hard drive, network volumes, or the Internet. Find files
+                               by name, content, or date. Sherlock makes finding things effortless.</p>
+                            <p style="color: var(--text-secondary); font-size: var(--text-xs);">
+                                Version 2.1 -- 1.2 MB on disk
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" style="font-size: var(--text-sm); padding: 2px 12px;">Get Info</button>
+                            <button class="btn btn-primary" style="font-size: var(--text-sm); padding: 2px 12px;">Open</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-titlebar">
+                            <div class="close-box" style="width: 11px; height: 9px;"></div>
+                            <span class="card-title">AppleScript Editor</span>
+                        </div>
+                        <div class="card-body">
+                            <p>Write, compile, and run AppleScript scripts to automate tasks across
+                               your applications. The power of scripting made accessible.</p>
+                            <p style="color: var(--text-secondary); font-size: var(--text-xs);">
+                                Version 1.1 -- 380 KB on disk
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" style="font-size: var(--text-sm); padding: 2px 12px;">Get Info</button>
+                            <button class="btn btn-primary" style="font-size: var(--text-sm); padding: 2px 12px;">Open</button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="form-section-label">Flat Content Cards</p>
+                <div class="card-grid" style="margin-bottom: var(--space-5);">
+                    <div class="card-flat">
+                        <div class="card-flat-title">About This Computer</div>
+                        <p>Mac OS 9.2.2</p>
+                        <p>Built-in Memory: 128 MB</p>
+                        <p style="color: var(--text-secondary);">Largest Unused Block: 89.4 MB</p>
+                    </div>
+                    <div class="card-flat">
+                        <div class="card-flat-title">Network Settings</div>
+                        <p>TCP/IP: Using DHCP Server</p>
+                        <p>AppleTalk: Active (Ethernet)</p>
+                        <p style="color: var(--text-secondary);">File Sharing: On</p>
+                    </div>
+                </div>
+
+                <p class="form-section-label">Finder Icon Cards</p>
+                <div class="finder-grid" style="margin-bottom: var(--space-5);">
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#128190;</div>
+                        <span class="icon-card-label">Macintosh HD</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#128193;</div>
+                        <span class="icon-card-label">System Folder</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#128193;</div>
+                        <span class="icon-card-label">Applications</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#128196;</div>
+                        <span class="icon-card-label">Read Me</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#128438;</div>
+                        <span class="icon-card-label">Trash</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#127912;</div>
+                        <span class="icon-card-label">Kidpix</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#127925;</div>
+                        <span class="icon-card-label">iTunes</span>
+                    </div>
+                    <div class="icon-card">
+                        <div class="icon-card-img">&#127760;</div>
+                        <span class="icon-card-label">Internet Explorer</span>
+                    </div>
+                </div>
+
+                <p class="form-section-label">Note Card</p>
+                <div class="card-note" style="max-width: 400px;">
+                    <span class="card-note-icon">&#128221;</span>
+                    <div class="card-note-text">
+                        <strong>Stickies Note</strong>
+                        Remember to back up the System Folder before installing the new extension set.
+                        Also check if the PRAM needs to be zapped -- hold Cmd+Opt+P+R on startup.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             VII. DATA TABLE
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">VII. Data Table</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Finder list view with sortable column headers. Clicking a row selects it
+                    with the system highlight color. Column headers use the same beveled button
+                    appearance as standard controls.
+                </p>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Date Modified</th>
+                                <th>Size</th>
+                                <th>Kind</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="selected">
+                                <td>System Folder</td>
+                                <td>Wed, Jan 15, 1997</td>
+                                <td>--</td>
+                                <td>folder</td>
+                            </tr>
+                            <tr>
+                                <td>Applications</td>
+                                <td>Mon, Jan 13, 1997</td>
+                                <td>--</td>
+                                <td>folder</td>
+                            </tr>
+                            <tr>
+                                <td>SimpleText</td>
+                                <td>Thu, Oct 3, 1996</td>
+                                <td>52 KB</td>
+                                <td>application</td>
+                            </tr>
+                            <tr>
+                                <td>Read Me</td>
+                                <td>Wed, Jan 15, 1997</td>
+                                <td>4 KB</td>
+                                <td>SimpleText doc</td>
+                            </tr>
+                            <tr>
+                                <td>Desktop DB</td>
+                                <td>Wed, Jan 15, 1997</td>
+                                <td>312 KB</td>
+                                <td>Desktop Database</td>
+                            </tr>
+                            <tr>
+                                <td>Disk First Aid</td>
+                                <td>Tue, Aug 6, 1996</td>
+                                <td>168 KB</td>
+                                <td>application</td>
+                            </tr>
+                            <tr>
+                                <td>TeachText</td>
+                                <td>Mon, Apr 22, 1996</td>
+                                <td>24 KB</td>
+                                <td>application</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="table-footer">
+                        7 items, 127.4 MB available
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             VIII. BADGES & TAGS
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">VIII. Badges & Tags</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Status indicators and labels using the system accent colors. Badges use
+                    rounded pill shapes, a softer look than the rectangular badges of Windows.
+                </p>
+
+                <p class="form-section-label">Status Badges</p>
+                <div class="badge-container">
+                    <span class="badge">Default</span>
+                    <span class="badge badge-info">Info</span>
+                    <span class="badge badge-success">Connected</span>
+                    <span class="badge badge-warning">Low Disk</span>
+                    <span class="badge badge-error">Error</span>
+                </div>
+
+                <p class="form-section-label">Outline Badges</p>
+                <div class="badge-container">
+                    <span class="badge badge-outline">Draft</span>
+                    <span class="badge badge-outline">Shared</span>
+                    <span class="badge badge-outline">Alias</span>
+                    <span class="badge badge-outline">Locked</span>
+                </div>
+
+                <p class="form-section-label">File Type Tags</p>
+                <div class="badge-container">
+                    <span class="badge badge-extension">.sit</span>
+                    <span class="badge badge-extension">.hqx</span>
+                    <span class="badge badge-extension">.img</span>
+                    <span class="badge badge-extension">.pict</span>
+                    <span class="badge badge-extension">.rsrc</span>
+                </div>
+
+                <p class="form-section-label">System Tags</p>
+                <div class="badge-container">
+                    <span class="badge badge-info">Mac OS 9.2.2</span>
+                    <span class="badge badge-success">File Sharing On</span>
+                    <span class="badge badge-warning">Rebuild Desktop</span>
+                    <span class="badge badge-error">Bomb Dialog</span>
+                    <span class="badge">PowerPC G3</span>
+                    <span class="badge">128 MB RAM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             IX. ALERTS
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">IX. Alerts</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-3);">
+                    Mac alerts and dialogs. The Mac is famous for its alert dialogs -- from friendly
+                    informational messages to the dreaded "bomb" dialog for system errors. Inline
+                    alerts use a left-border accent for quick scanning.
+                </p>
+
+                <p class="form-section-label">Inline Alerts</p>
+                <div class="alert alert-info">
+                    <span class="alert-icon">&#8505;</span>
+                    <div class="alert-body">
+                        <div class="alert-title">Note</div>
+                        <div class="alert-text">
+                            AppleTalk is now active. Other users on the network can see your
+                            shared folders.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <span class="alert-icon">&#9989;</span>
+                    <div class="alert-body">
+                        <div class="alert-title">Complete</div>
+                        <div class="alert-text">
+                            The disk "Backup 01-15" has been successfully verified.
+                            No problems were found.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <span class="alert-icon">&#9888;</span>
+                    <div class="alert-body">
+                        <div class="alert-title">Caution</div>
+                        <div class="alert-text">
+                            Your startup disk is almost full. You need to make more space
+                            available on your startup disk by removing files.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-error">
+                    <span class="alert-icon">&#9940;</span>
+                    <div class="alert-body">
+                        <div class="alert-title">Error</div>
+                        <div class="alert-text">
+                            The application "ClarisWorks" has unexpectedly quit, because an error
+                            of type 2 occurred.
+                        </div>
+                    </div>
+                </div>
+
+                <p class="form-section-label">Mac Dialog Alerts</p>
+                <div class="dialog-demo" style="margin-bottom: var(--space-4);">
+                    <div class="dialog-box">
+                        <div class="dialog-icon-area">
+                            <div class="dialog-mac-icon">&#9888;</div>
+                        </div>
+                        <div class="dialog-text-area">
+                            <p>
+                                Are you sure you want to empty the Trash permanently?
+                                You cannot undo this action.
+                            </p>
+                            <div class="dialog-buttons" style="flex-direction: row; justify-content: flex-end;">
+                                <button class="btn btn-secondary" style="font-size: var(--text-sm);">Cancel</button>
+                                <button class="btn btn-primary" style="font-size: var(--text-sm);">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dialog-demo">
+                    <div class="dialog-box">
+                        <div class="dialog-icon-area">
+                            <div class="dialog-mac-icon">&#128163;</div>
+                        </div>
+                        <div class="dialog-text-area">
+                            <p>
+                                Sorry, a system error occurred.
+                            </p>
+                            <p style="font-size: var(--text-xs); color: var(--text-secondary);">
+                                "Finder" error type 11
+                            </p>
+                            <div class="dialog-buttons" style="flex-direction: row; justify-content: flex-end;">
+                                <button class="btn btn-secondary" style="font-size: var(--text-sm);">Force Quit</button>
+                                <button class="btn btn-primary" style="font-size: var(--text-sm);">Restart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             X. DESIGN PRINCIPLES
+        ============================================================ -->
+        <div class="window">
+            <div class="window-titlebar">
+                <div class="close-box"></div>
+                <span class="window-title">X. Design Principles</span>
+                <div class="window-controls-right">
+                    <div class="collapse-box"></div>
+                    <div class="zoom-box"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <p style="margin-bottom: var(--space-4);">
+                    The Macintosh Human Interface Guidelines established principles that remain
+                    influential today. These are the core tenets of authentic Mac OS Classic design.
+                </p>
+
+                <div class="principles-grid">
+                    <div class="principle-card">
+                        <span class="principle-number">1</span>
+                        <div class="principle-title">Striped Title Bars</div>
+                        <div class="principle-text">
+                            The horizontal-striped title bar is the Mac's most recognizable UI element.
+                            Active windows show stripes; inactive windows show flat grey. The window
+                            title is always centered -- never left-aligned like Windows.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">2</span>
+                        <div class="principle-title">Global Menu Bar</div>
+                        <div class="principle-text">
+                            The Mac uses a single, persistent menu bar at the top of the screen that
+                            changes based on the active application. This is fundamentally different
+                            from Windows, where each window carries its own menu bar.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">3</span>
+                        <div class="principle-title">Warm Platinum Grey</div>
+                        <div class="principle-text">
+                            The Platinum appearance uses warmer greys (#DDDDDD base) than the cooler
+                            silver (#C0C0C0) of Windows. Surfaces feel softer and more inviting, with
+                            subtle 1px bevels instead of chunky 2px borders.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">4</span>
+                        <div class="principle-title">Default Button Convention</div>
+                        <div class="principle-text">
+                            The primary action button always has a distinctive thick black rounded
+                            border, making it immediately identifiable. This Mac convention (the
+                            "pulsing default button" in later OS versions) has no Windows equivalent.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">5</span>
+                        <div class="principle-title">Spatial Metaphor</div>
+                        <div class="principle-text">
+                            Every window represents a place. The Finder uses a spatial model where
+                            folders open in the same position and size every time. Icons, files, and
+                            windows are objects that behave predictably in space.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">6</span>
+                        <div class="principle-title">Close Box Left, Controls Right</div>
+                        <div class="principle-text">
+                            The close box is always on the left of the title bar (the opposite of
+                            Windows). The collapse and zoom boxes sit on the right. This layout has
+                            been a Mac tradition since the original 1984 Macintosh.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">7</span>
+                        <div class="principle-title">Friendly Error Messages</div>
+                        <div class="principle-text">
+                            Mac dialogs speak in plain language: "Are you sure?" rather than
+                            cryptic codes. Even the dreaded bomb dialog attempts to be helpful.
+                            Every message should feel like it comes from a helpful assistant.
+                        </div>
+                    </div>
+
+                    <div class="principle-card">
+                        <span class="principle-number">8</span>
+                        <div class="principle-title">Desktop Pattern</div>
+                        <div class="principle-text">
+                            The Mac desktop uses configurable repeating pixel patterns rather than
+                            solid colors. The default pattern is a subtle dot grid. This small detail
+                            gives the desktop texture and visual interest.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             FOOTER
+        ============================================================ -->
+        <div class="main-footer">
+            <div class="footer-titlebar">About This Design System</div>
+            <div class="footer-content">
+                <div class="footer-text">
+                    <strong>Mac OS Classic Design System -- Platinum Appearance</strong>
+                </div>
+                <div class="footer-text">
+                    Inspired by Apple Macintosh System 7 (1991) through Mac OS 9.2.2 (2001)
+                </div>
+                <div class="footer-text" style="margin-top: var(--space-3);">
+                    "The computer for the rest of us."
+                </div>
+                <div class="footer-text" style="font-size: var(--text-xs); margin-top: var(--space-3);">
+                    Built with: Chicago (VT323), Geneva (Inter), Platinum grey, and 10 years of design tradition.
+                </div>
+                <div style="margin-top: var(--space-4); display: flex; justify-content: center; gap: var(--space-2);">
+                    <button class="btn btn-secondary" style="font-size: var(--text-sm);">Read Me</button>
+                    <button class="btn btn-secondary" style="font-size: var(--text-sm);">Balloon Help</button>
+                    <button class="btn btn-primary" style="font-size: var(--text-sm);">Restart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         JAVASCRIPT INTERACTIONS
+    ============================================================ -->
+    <script>
+        // ================================================================
+        // CLOSE BOX INTERACTION
+        // ================================================================
+        document.querySelectorAll('.close-box').forEach(box => {
+            box.addEventListener('mousedown', function() {
+                this.style.background = 'var(--mac-black)';
+            });
+            box.addEventListener('mouseup', function() {
+                this.style.background = 'var(--mac-white)';
+            });
+            box.addEventListener('mouseleave', function() {
+                this.style.background = 'var(--mac-white)';
+            });
+        });
+
+        // ================================================================
+        // BUTTON PRESS FEEDBACK
+        // ================================================================
+        document.querySelectorAll('.btn:not(:disabled)').forEach(btn => {
+            btn.addEventListener('mousedown', function() {
+                if (this.classList.contains('btn-primary') || this.classList.contains('btn-accent')) {
+                    this.style.background = this.classList.contains('btn-accent') ? '#224488' : 'var(--mac-highlight)';
+                    this.style.color = 'var(--mac-white)';
+                } else {
+                    this.style.background = 'var(--mac-grey)';
+                }
+                this.style.boxShadow = 'inset 1px 1px 0 var(--mac-grey-dark), inset -1px -1px 0 var(--mac-white)';
+            });
+
+            btn.addEventListener('mouseup', function() {
+                this.style.background = '';
+                this.style.color = '';
+                this.style.boxShadow = '';
+            });
+
+            btn.addEventListener('mouseleave', function() {
+                this.style.background = '';
+                this.style.color = '';
+                this.style.boxShadow = '';
+            });
+        });
+
+        // ================================================================
+        // TABLE ROW SELECTION (Finder list view behavior)
+        // ================================================================
+        document.querySelectorAll('.data-table tbody tr').forEach(row => {
+            row.addEventListener('click', function() {
+                document.querySelectorAll('.data-table tbody tr').forEach(r => {
+                    r.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        // ================================================================
+        // FINDER ICON SELECTION (single click select, double click "open")
+        // ================================================================
+        document.querySelectorAll('.icon-card').forEach(icon => {
+            let clickCount = 0;
+            let clickTimer = null;
+
+            icon.addEventListener('click', function(e) {
+                clickCount++;
+
+                if (clickCount === 1) {
+                    // Single click - select with highlight
+                    document.querySelectorAll('.icon-card').forEach(i => {
+                        i.style.background = '';
+                        i.style.borderColor = 'transparent';
+                        const label = i.querySelector('.icon-card-label');
+                        if (label) label.style.color = '';
+                    });
+
+                    this.style.background = 'var(--mac-highlight)';
+                    this.style.borderColor = 'var(--mac-highlight)';
+                    const label = this.querySelector('.icon-card-label');
+                    if (label) label.style.color = 'var(--mac-white)';
+
+                    clickTimer = setTimeout(() => { clickCount = 0; }, 400);
+                } else if (clickCount === 2) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+
+                    // Double click - brief flash to simulate "opening"
+                    this.style.background = 'var(--mac-white)';
+                    const label = this.querySelector('.icon-card-label');
+                    if (label) label.style.color = 'var(--mac-black)';
+                    setTimeout(() => {
+                        this.style.background = 'var(--mac-highlight)';
+                        if (label) label.style.color = 'var(--mac-white)';
+                    }, 120);
+                }
+            });
+        });
+
+        // ================================================================
+        // MENU BAR HIGHLIGHT
+        // ================================================================
+        document.querySelectorAll('.menubar-item').forEach(item => {
+            item.addEventListener('mousedown', function() {
+                this.style.background = 'var(--mac-highlight)';
+                this.style.color = 'var(--mac-white)';
+            });
+            item.addEventListener('mouseup', function() {
+                this.style.background = '';
+                this.style.color = '';
+            });
+        });
+
+        // ================================================================
+        // COLOR SWATCH CLICK TO COPY
+        // ================================================================
+        document.querySelectorAll('.color-swatch-card').forEach(card => {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function() {
+                const hex = this.querySelector('.color-swatch-hex');
+                if (hex) {
+                    const color = hex.textContent.trim();
+                    navigator.clipboard.writeText(color).then(() => {
+                        const original = hex.textContent;
+                        hex.textContent = 'Copied!';
+                        hex.style.color = 'var(--mac-highlight)';
+                        setTimeout(() => {
+                            hex.textContent = original;
+                            hex.style.color = '';
+                        }, 800);
+                    });
+                }
+            });
+        });
+
+        // ================================================================
+        // CONSOLE STARTUP MESSAGE
+        // ================================================================
+        console.log('%c Welcome to Macintosh ', 'background: #DDDDDD; color: #000000; font-size: 18px; padding: 8px; border: 2px solid #000;');
+        console.log('%c Mac OS Classic Design System ', 'background: #3366CC; color: #FFFFFF; font-size: 12px; padding: 4px;');
+        console.log('%c Platinum Appearance -- System 7 through Mac OS 9 ', 'background: #EEEEEE; color: #666; font-size: 11px; padding: 4px;');
+    </script>
+</body>
+</html>
