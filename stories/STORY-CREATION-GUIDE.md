@@ -214,6 +214,166 @@ Below are the 54 style guides in `../styles/` with suggested educational topics.
 | `verdant-grove.html` | Botany and ecology — how forests work, photosynthesis, the wood wide web, conservation |
 | `neon-brutal.html` | Neon signs and urban nightlife — Times Square, Vegas, Tokyo, the art of neon bending |
 
+## Audio Narration (Voice Cloning with Qwen3-TTS)
+
+Stories can have read-aloud narration using AI voice cloning. The TTS setup is at `~/projects/qwen-tts-test/` and uses the Qwen3-TTS-12Hz-1.7B-Base model on GPU.
+
+### How It Works
+
+1. **Reference clip** — A 5-10 second WAV of the target voice (clean speech, minimal background noise, mono 24kHz preferred)
+2. **Reference transcript** — Exact text of what's spoken in the clip
+3. **Voice cloning** — The model generates new speech in that voice from any input text
+4. **Integration** — Audio files are loaded per-scene with a play/pause control in the story HTML
+
+### Available Voice References
+
+| Voice | Reference File | Transcript | Best For |
+|---|---|---|---|
+| James Earl Jones | `references/jej_disgraced.wav` | "You have disgraced yourself and you must be punished" | Dark/dramatic narration |
+| JFK | `references/jfk_clean.wav` | "the belief that the rights of man come not from the generosity" | Formal/patriotic topics |
+| MLK Jr | `references/mlk_injustice.wav` | "Injustice anywhere is a threat to justice everywhere" | Passionate/principled topics |
+| Carl Sagan | `references/sagan_clean.wav` | "we humans have had civilization only for about ten thousand years our species is a few hundred thousand years old" | Science/space/wonder |
+
+### Getting New Voice Clips
+
+Use `yt-dlp` to extract audio clips from YouTube:
+
+```bash
+# Download a specific time range as WAV
+yt-dlp -x --audio-format wav --download-sections "*7:43-7:57" \
+  --force-keyframes-at-cuts -o "clip_name.%(ext)s" "YOUTUBE_URL"
+
+# Get auto-generated transcript with timestamps to find good clips
+yt-dlp --write-auto-sub --sub-lang en --sub-format json3 \
+  --skip-download -o "/tmp/transcript" "YOUTUBE_URL"
+
+# Parse the transcript timestamps
+python3 -c "
+import json
+with open('/tmp/transcript.en.json3') as f:
+    data = json.load(f)
+for e in data.get('events', []):
+    if 'segs' in e:
+        start_s = e.get('tStartMs', 0) / 1000
+        text = ''.join(s.get('utf8', '') for s in e['segs']).strip()
+        if text:
+            print(f'{int(start_s//60)}:{start_s%60:05.2f}  {text}')
+"
+```
+
+Convert downloaded clips to the preferred format (mono, 24kHz):
+```bash
+ffmpeg -i input.wav -ac 1 -ar 24000 -y output_clean.wav
+```
+
+### Batch Generation Script
+
+The reusable generation script is at `~/projects/qwen-tts-test/generate_dark_academia.py`. To adapt it for a new story:
+
+1. Update `REF_AUDIO` and `REF_TEXT` for the chosen voice
+2. Update `OUTPUT_DIR` for the new story
+3. Update `STORY_FILE` to point to the story HTML
+4. Run: `source venv/bin/activate && echo "y" | python generate_script.py`
+
+The script automatically:
+- Extracts scene text from the STORY object in the HTML
+- Strips HTML tags, images, and captions to get clean narration text
+- Generates one WAV per scene, skipping already-generated files (resumable)
+- Prints progress and timing for each scene
+
+### Critical Generation Settings
+
+These prevent stuck/runaway generation:
+
+```python
+# ALWAYS set max_new_tokens — without this, generation can run forever
+wavs, sr = model.generate_voice_clone(
+    text=text,
+    language="English",
+    ref_audio=REF_AUDIO,
+    ref_text=REF_TEXT,
+    x_vector_only_mode=False,
+    max_new_tokens=4096,        # Caps output length, prevents infinite loops
+)
+
+# ALWAYS set a per-scene timeout
+import signal
+MAX_SCENE_SECONDS = 300  # 5 min max per scene
+signal.signal(signal.SIGALRM, timeout_handler)
+signal.alarm(MAX_SCENE_SECONDS)
+# ... generate ...
+signal.alarm(0)  # Cancel after success
+```
+
+Without `max_new_tokens`, the model can get stuck generating endlessly on certain inputs. This was discovered when a scene ran for 20+ minutes with no output. Adding `max_new_tokens=4096` fixed it immediately.
+
+### Post-Generation: Convert WAV to MP3
+
+Always convert WAV to MP3 before committing — reduces file size ~3x (82MB → 28MB per story):
+
+```bash
+cd stories/audio/[story-name]/
+for f in *.wav; do
+  ffmpeg -i "$f" -codec:a libmp3lame -b:a 128k -y "${f%.wav}.mp3"
+done
+rm *.wav
+```
+
+Update the audio path in the story HTML from `.wav` to `.mp3`.
+
+### Integrating Audio into the Story HTML
+
+Add these to the story HTML:
+
+1. **CSS** — Audio player styles (play button, progress bar, time display) matching the story's theme
+2. **HTML** — Audio player element between the scene header and scene content
+3. **JS Engine additions**:
+   - `loadAudio(sceneId)` — Creates `new Audio()` with `src = audio/[story-name]/{sceneId}.mp3`
+   - `stopAudio()` — Stops/resets on scene transitions and restart
+   - `toggleAudio()` — Play/pause toggle with `.catch()` for browser autoplay restrictions
+   - `seekAudio(e)` — Click-to-seek on progress bar
+   - Progress update interval (250ms) for fill bar and time display
+
+Hook into the existing engine:
+- Call `stopAudio()` then `loadAudio(sceneId)` at the start of `renderScene()`
+- Call `stopAudio()` in `restart()`
+- Add event listeners in `init()`
+
+Audio does NOT auto-play — it requires a user click. Handle missing audio files gracefully (hide the player on error).
+
+### Audio File Structure
+
+```
+stories/
+├── audio/
+│   ├── dark-academia/
+│   │   ├── summons.mp3
+│   │   ├── official.mp3
+│   │   └── ... (one per scene)
+│   └── cosmic/
+│       ├── intro.mp3
+│       └── ...
+├── dark-academia-the-forbidden-library.html
+└── cosmic-the-golden-record.html
+```
+
+### Performance Notes
+
+- **RTX 3070 (8GB VRAM)**: ~2-3 min per scene, ~1 hour for 27 scenes
+- **VRAM usage**: ~7GB with the 1.7B model in bfloat16
+- **Realtime factor**: ~2.2x (2.2 seconds of compute per 1 second of audio)
+- **Output**: 24kHz mono WAV, ~1-1.5 min of audio per scene
+- Process scenes one at a time (not batched) to manage memory
+- The script is resumable — skips files that already exist
+
+### GitHub Pages Size Limits
+
+- **Repo limit**: 1 GB soft limit
+- **Per-file limit**: 100 MB max
+- **MP3 audio per story**: ~28 MB (27 scenes at 128kbps)
+- At ~28 MB per story, you can add narration to ~35 stories before hitting limits
+- For more stories, consider hosting audio on external storage (S3, Cloudflare R2)
+
 ## Parallel Creation Workflow
 
 To create many stories at once:
