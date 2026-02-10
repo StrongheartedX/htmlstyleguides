@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tmux // Terminal Multiplexer - Complete Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           RETRO TERMINAL DESIGN SYSTEM
+           tmux Tech Guide
+           ============================================ */
+
+        :root {
+            /* PHOSPHOR GREENS */
+            --phosphor-bright: #00ff00;
+            --phosphor-mid: #33ff33;
+            --phosphor-dim: #00cc00;
+            --phosphor-dark: #009900;
+            --phosphor-faded: #006600;
+            --phosphor-ghost: #003300;
+
+            /* SCREEN BLACKS */
+            --crt-black: #000a00;
+            --crt-deep: #001100;
+            --crt-surface: #001a00;
+            --crt-elevated: #002200;
+
+            /* AMBER VARIANT */
+            --amber-bright: #ffb000;
+            --amber-mid: #cc8800;
+            --amber-dim: #996600;
+
+            /* STATUS COLORS */
+            --status-error: #ff3333;
+            --status-warning: #ffcc00;
+            --status-success: #00ff00;
+            --status-info: #00ccff;
+
+            /* TYPOGRAPHY */
+            --font-display: 'VT323', monospace;
+            --font-primary: 'IBM Plex Mono', monospace;
+            --font-code: 'Fira Code', monospace;
+
+            /* SPACING */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --space-3xl: 64px;
+
+            /* GLOW EFFECTS */
+            --glow-soft: 0 0 5px var(--phosphor-bright), 0 0 10px var(--phosphor-dim);
+            --glow-medium: 0 0 10px var(--phosphor-bright), 0 0 20px var(--phosphor-dim), 0 0 30px var(--phosphor-dark);
+            --glow-intense: 0 0 10px var(--phosphor-bright), 0 0 20px var(--phosphor-mid), 0 0 40px var(--phosphor-dim), 0 0 80px var(--phosphor-dark);
+
+            /* TRANSITIONS */
+            --transition-fast: 0.1s ease;
+            --transition-normal: 0.2s ease;
+        }
+
+        /* RESET */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 20px;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--crt-black);
+            color: var(--phosphor-mid);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* CRT SCANLINES */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.3) 2px,
+                    rgba(0, 0, 0, 0.3) 4px
+                );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Screen curvature vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                transparent 60%,
+                rgba(0, 10, 0, 0.4) 80%,
+                rgba(0, 10, 0, 0.8) 100%
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ANIMATIONS */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.8; }
+            94% { opacity: 1; }
+            97% { opacity: 0.9; }
+            98% { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { text-shadow: var(--glow-soft); }
+            50% { text-shadow: var(--glow-medium); }
+        }
+
+        @keyframes type-cursor {
+            0%, 50% { border-right-color: var(--phosphor-bright); }
+            51%, 100% { border-right-color: transparent; }
+        }
+
+        /* MAIN CONTAINER */
+        .terminal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-lg);
+            position: relative;
+            animation: flicker 10s infinite;
+        }
+
+        /* BACK LINK */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-code);
+            font-size: 14px;
+            color: var(--phosphor-dim);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--phosphor-ghost);
+            margin-bottom: var(--space-lg);
+            transition: var(--transition-fast);
+            padding: var(--space-xs) 0;
+        }
+
+        .back-link:hover {
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-soft);
+            border-bottom-color: var(--phosphor-dim);
+        }
+
+        /* TERMINAL HEADER */
+        .terminal-header {
+            border: 2px solid var(--phosphor-dark);
+            background: var(--crt-deep);
+            padding: var(--space-lg) var(--space-xl);
+            margin-bottom: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header::before {
+            content: '[ SYSTEM ONLINE ]';
+            position: absolute;
+            top: var(--space-sm);
+            right: var(--space-md);
+            font-family: var(--font-display);
+            font-size: 14px;
+            color: var(--phosphor-dim);
+            animation: blink 1s infinite;
+        }
+
+        .terminal-header::after {
+            content: '010011101001101001 tmux v3.5+ 110100110110010010 terminal multiplexer 01001101';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            font-family: var(--font-code);
+            font-size: 10px;
+            color: var(--phosphor-ghost);
+            padding: var(--space-xs) var(--space-md);
+            white-space: nowrap;
+            overflow: hidden;
+            opacity: 0.5;
+        }
+
+        .terminal-title {
+            font-family: var(--font-display);
+            font-size: 48px;
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-intense);
+            letter-spacing: 4px;
+            margin-bottom: var(--space-xs);
+            line-height: 1.2;
+        }
+
+        .terminal-subtitle {
+            font-family: var(--font-code);
+            font-size: 14px;
+            color: var(--phosphor-dim);
+            letter-spacing: 2px;
+        }
+
+        .terminal-subtitle::before {
+            content: '> ';
+            color: var(--phosphor-bright);
+        }
+
+        .terminal-desc {
+            font-family: var(--font-primary);
+            font-size: 14px;
+            color: var(--phosphor-faded);
+            margin-top: var(--space-md);
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        /* TYPOGRAPHY */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-soft);
+            letter-spacing: 2px;
+            line-height: 1.2;
+        }
+
+        h2 { font-size: 36px; margin-bottom: var(--space-md); }
+        h3 { font-size: 28px; margin-bottom: var(--space-md); color: var(--phosphor-mid); }
+        h4 { font-size: 22px; margin-bottom: var(--space-sm); color: var(--phosphor-mid); }
+        h5 { font-size: 18px; margin-bottom: var(--space-sm); color: var(--phosphor-dim); }
+
+        p {
+            font-family: var(--font-primary);
+            font-size: 14px;
+            color: var(--phosphor-mid);
+            margin-bottom: var(--space-md);
+            line-height: 1.8;
+        }
+
+        a {
+            color: var(--phosphor-bright);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--phosphor-dim);
+            transition: var(--transition-fast);
+        }
+
+        a:hover {
+            text-shadow: var(--glow-soft);
+            border-bottom-style: solid;
+        }
+
+        code {
+            font-family: var(--font-code);
+            background: var(--crt-surface);
+            padding: 1px 5px;
+            border: 1px solid var(--phosphor-ghost);
+            color: var(--phosphor-bright);
+            font-size: 13px;
+        }
+
+        pre {
+            font-family: var(--font-code);
+            background: var(--crt-black);
+            border: 1px solid var(--phosphor-dark);
+            padding: var(--space-md);
+            overflow-x: auto;
+            margin-bottom: var(--space-md);
+            font-size: 13px;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        pre::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-family: var(--font-display);
+            font-size: 12px;
+            color: var(--phosphor-faded);
+            background: var(--crt-deep);
+            padding: 2px 8px;
+            border-left: 1px solid var(--phosphor-ghost);
+            border-bottom: 1px solid var(--phosphor-ghost);
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--phosphor-mid);
+            font-size: 13px;
+        }
+
+        /* SECTIONS */
+        .section {
+            margin-bottom: var(--space-2xl);
+            border: 1px solid var(--phosphor-ghost);
+            background: var(--crt-deep);
+            padding: var(--space-xl);
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--phosphor-dim), transparent);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px dashed var(--phosphor-ghost);
+            flex-wrap: wrap;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-soft);
+            letter-spacing: 3px;
+        }
+
+        .section-title::before {
+            content: '// ';
+            color: var(--phosphor-dark);
+        }
+
+        .section-desc {
+            font-size: 13px;
+            color: var(--phosphor-faded);
+            font-family: var(--font-code);
+        }
+
+        .subsection {
+            margin-bottom: var(--space-xl);
+        }
+
+        .subsection-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            color: var(--amber-bright);
+            text-shadow: 0 0 5px var(--amber-bright), 0 0 10px var(--amber-dim);
+            letter-spacing: 2px;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-xs);
+            border-bottom: 1px solid var(--amber-dim);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .subsection-title::before {
+            content: '>';
+            color: var(--amber-mid);
+            font-size: 18px;
+        }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--phosphor-dark);
+            margin-bottom: var(--space-md);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-code);
+            font-size: 13px;
+        }
+
+        .table th,
+        .table td {
+            padding: var(--space-sm) var(--space-md);
+            text-align: left;
+            border-bottom: 1px solid var(--phosphor-ghost);
+        }
+
+        .table th {
+            font-family: var(--font-display);
+            font-size: 16px;
+            color: var(--phosphor-bright);
+            background: var(--crt-deep);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--phosphor-dark);
+            white-space: nowrap;
+        }
+
+        .table td {
+            color: var(--phosphor-mid);
+        }
+
+        .table tr:hover td {
+            background: var(--crt-surface);
+            color: var(--phosphor-bright);
+        }
+
+        .table-striped tr:nth-child(even) td {
+            background: rgba(0, 26, 0, 0.5);
+        }
+
+        .table td:first-child {
+            white-space: nowrap;
+        }
+
+        .table .kbd {
+            font-family: var(--font-code);
+            color: var(--phosphor-bright);
+            text-shadow: 0 0 3px var(--phosphor-dim);
+        }
+
+        .table .cmd {
+            font-family: var(--font-code);
+            color: var(--amber-bright);
+        }
+
+        /* CHEAT SHEET (compact at top) */
+        .cheatsheet {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        .cheatsheet-card {
+            background: var(--crt-surface);
+            border: 1px solid var(--phosphor-dark);
+            padding: var(--space-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cheatsheet-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--phosphor-ghost), var(--phosphor-dim), var(--phosphor-ghost));
+        }
+
+        .cheatsheet-card h4 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--amber-bright);
+            text-shadow: 0 0 5px var(--amber-dim);
+            margin-bottom: var(--space-sm);
+            letter-spacing: 2px;
+        }
+
+        .cheatsheet-card h4::before {
+            content: '> ';
+            color: var(--amber-mid);
+        }
+
+        .cheat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 3px 0;
+            border-bottom: 1px dotted var(--phosphor-ghost);
+            font-family: var(--font-code);
+            font-size: 12px;
+            gap: var(--space-sm);
+        }
+
+        .cheat-row:last-child {
+            border-bottom: none;
+        }
+
+        .cheat-key {
+            color: var(--phosphor-bright);
+            text-shadow: 0 0 3px var(--phosphor-dim);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .cheat-desc {
+            color: var(--phosphor-faded);
+            text-align: right;
+            font-size: 11px;
+        }
+
+        /* NAV LINKS */
+        .nav-section {
+            border: 1px solid var(--phosphor-dark);
+            background: var(--crt-deep);
+            padding: var(--space-md) var(--space-lg);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .nav-label {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--phosphor-dim);
+            letter-spacing: 2px;
+            margin-bottom: var(--space-sm);
+        }
+
+        .nav-label::before {
+            content: '$ ';
+            color: var(--phosphor-bright);
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm) var(--space-md);
+            list-style: none;
+        }
+
+        .nav-links li {
+            font-family: var(--font-code);
+            font-size: 13px;
+        }
+
+        .nav-links a {
+            color: var(--phosphor-dim);
+            border-bottom: 1px dashed var(--phosphor-ghost);
+            padding: 2px 0;
+            transition: var(--transition-fast);
+        }
+
+        .nav-links a:hover {
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-soft);
+            border-bottom-color: var(--phosphor-bright);
+        }
+
+        .nav-links a::before {
+            content: '[';
+            color: var(--phosphor-dark);
+        }
+
+        .nav-links a::after {
+            content: ']';
+            color: var(--phosphor-dark);
+        }
+
+        /* ALERT BOXES */
+        .alert {
+            padding: var(--space-md);
+            border: 1px solid var(--phosphor-dark);
+            background: var(--crt-surface);
+            font-family: var(--font-code);
+            font-size: 13px;
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+        }
+
+        .alert::before {
+            font-family: var(--font-display);
+            font-size: 13px;
+            padding: 2px 8px;
+            background: var(--crt-deep);
+            border: 1px solid currentColor;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .alert-info {
+            border-color: var(--status-info);
+        }
+
+        .alert-info::before {
+            content: 'TIP';
+            color: var(--status-info);
+        }
+
+        .alert-warning {
+            border-color: var(--status-warning);
+        }
+
+        .alert-warning::before {
+            content: 'NOTE';
+            color: var(--status-warning);
+        }
+
+        .alert-msg {
+            flex: 1;
+            color: var(--phosphor-mid);
+            line-height: 1.6;
+        }
+
+        /* COMMENT STYLE */
+        .comment {
+            color: var(--phosphor-faded);
+            font-family: var(--font-code);
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .comment::before {
+            content: '# ';
+            color: var(--phosphor-ghost);
+        }
+
+        /* KEY BADGE */
+        kbd {
+            font-family: var(--font-code);
+            background: var(--crt-elevated);
+            color: var(--phosphor-bright);
+            padding: 1px 6px;
+            border: 1px solid var(--phosphor-dark);
+            border-bottom: 2px solid var(--phosphor-dark);
+            font-size: 12px;
+            text-shadow: 0 0 3px var(--phosphor-dim);
+            white-space: nowrap;
+        }
+
+        /* DIVIDER */
+        .divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--phosphor-dark), transparent);
+            margin: var(--space-xl) 0;
+        }
+
+        /* PREFIX INDICATOR */
+        .prefix-note {
+            font-family: var(--font-code);
+            font-size: 12px;
+            color: var(--phosphor-faded);
+            background: var(--crt-surface);
+            border: 1px solid var(--phosphor-ghost);
+            padding: var(--space-sm) var(--space-md);
+            margin-bottom: var(--space-lg);
+            display: inline-block;
+        }
+
+        .prefix-note strong {
+            color: var(--amber-bright);
+            text-shadow: 0 0 3px var(--amber-dim);
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: var(--space-xl);
+            border: 1px solid var(--phosphor-ghost);
+            background: var(--crt-deep);
+            margin-top: var(--space-2xl);
+        }
+
+        .footer p {
+            font-family: var(--font-code);
+            font-size: 12px;
+            color: var(--phosphor-faded);
+        }
+
+        .footer .bright {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--phosphor-bright);
+            text-shadow: var(--glow-soft);
+            letter-spacing: 3px;
+        }
+
+        /* CURSOR */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--phosphor-bright);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+            box-shadow: var(--glow-soft);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .terminal-container {
+                padding: var(--space-md);
+            }
+
+            .terminal-title {
+                font-size: 32px;
+                letter-spacing: 2px;
+            }
+
+            .terminal-header {
+                padding: var(--space-md);
+            }
+
+            .terminal-header::before {
+                font-size: 11px;
+            }
+
+            .section {
+                padding: var(--space-md);
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .cheatsheet {
+                grid-template-columns: 1fr;
+            }
+
+            .cheat-row {
+                font-size: 11px;
+            }
+
+            .table {
+                font-size: 12px;
+            }
+
+            .table th,
+            .table td {
+                padding: var(--space-xs) var(--space-sm);
+            }
+
+            pre {
+                font-size: 12px;
+                padding: var(--space-sm);
+            }
+
+            .nav-links {
+                gap: var(--space-xs) var(--space-sm);
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .alert {
+                flex-direction: column;
+                gap: var(--space-sm);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .terminal-title {
+                font-size: 24px;
+            }
+
+            .terminal-header::before {
+                display: none;
+            }
+
+            h3 {
+                font-size: 22px;
+            }
+
+            .subsection-title {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+
+        <!-- BACK LINK -->
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- HEADER -->
+        <header class="terminal-header">
+            <h1 class="terminal-title">tmux // Terminal Multiplexer</h1>
+            <p class="terminal-subtitle">Complete Reference &amp; Cheat Sheet</p>
+            <p class="terminal-desc">
+                tmux is a terminal multiplexer that lets you run multiple terminal sessions inside a single window.
+                Detach and reattach sessions, split your screen into panes, and manage windows -- all from the keyboard.
+                Default prefix key: <kbd>Ctrl+b</kbd>
+            </p>
+        </header>
+
+        <!-- ==========================================
+             QUICK REFERENCE / CHEAT SHEET
+             ========================================== -->
+        <section class="section" id="cheatsheet">
+            <div class="section-header">
+                <h2 class="section-title">QUICK REFERENCE</h2>
+                <span class="section-desc">essential commands at a glance</span>
+            </div>
+
+            <div class="prefix-note">
+                <strong>Prefix key:</strong> <kbd>Ctrl+b</kbd> &mdash; press this first, then the command key
+            </div>
+
+            <div class="cheatsheet">
+                <!-- Sessions -->
+                <div class="cheatsheet-card">
+                    <h4>SESSIONS</h4>
+                    <div class="cheat-row"><span class="cheat-key">tmux new -s name</span><span class="cheat-desc">new session</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux a -t name</span><span class="cheat-desc">attach</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux ls</span><span class="cheat-desc">list sessions</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b d</span><span class="cheat-desc">detach</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b $</span><span class="cheat-desc">rename session</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b s</span><span class="cheat-desc">list / switch</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b ( )</span><span class="cheat-desc">prev / next session</span></div>
+                </div>
+
+                <!-- Windows -->
+                <div class="cheatsheet-card">
+                    <h4>WINDOWS</h4>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b c</span><span class="cheat-desc">new window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b ,</span><span class="cheat-desc">rename window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b &amp;</span><span class="cheat-desc">kill window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b n / p</span><span class="cheat-desc">next / prev window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b 0-9</span><span class="cheat-desc">select by number</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b w</span><span class="cheat-desc">choose window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b l</span><span class="cheat-desc">last window</span></div>
+                </div>
+
+                <!-- Panes -->
+                <div class="cheatsheet-card">
+                    <h4>PANES</h4>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b %</span><span class="cheat-desc">split vertical</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b "</span><span class="cheat-desc">split horizontal</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b arrows</span><span class="cheat-desc">navigate panes</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b z</span><span class="cheat-desc">zoom toggle</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b x</span><span class="cheat-desc">kill pane</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b !</span><span class="cheat-desc">pane to window</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b Space</span><span class="cheat-desc">cycle layouts</span></div>
+                </div>
+
+                <!-- Copy Mode -->
+                <div class="cheatsheet-card">
+                    <h4>COPY MODE (vi)</h4>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b [</span><span class="cheat-desc">enter copy mode</span></div>
+                    <div class="cheat-row"><span class="cheat-key">/ or ?</span><span class="cheat-desc">search fwd / back</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Space</span><span class="cheat-desc">begin selection</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Enter</span><span class="cheat-desc">copy &amp; exit</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b ]</span><span class="cheat-desc">paste buffer</span></div>
+                    <div class="cheat-row"><span class="cheat-key">q</span><span class="cheat-desc">exit copy mode</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b =</span><span class="cheat-desc">choose buffer</span></div>
+                </div>
+
+                <!-- Misc -->
+                <div class="cheatsheet-card">
+                    <h4>MISC</h4>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b :</span><span class="cheat-desc">command prompt</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b ?</span><span class="cheat-desc">list key bindings</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b t</span><span class="cheat-desc">show clock</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b i</span><span class="cheat-desc">window info</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b q</span><span class="cheat-desc">show pane numbers</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b ~</span><span class="cheat-desc">show messages</span></div>
+                    <div class="cheat-row"><span class="cheat-key">Ctrl+b r</span><span class="cheat-desc">refresh client</span></div>
+                </div>
+
+                <!-- CLI -->
+                <div class="cheatsheet-card">
+                    <h4>COMMAND LINE</h4>
+                    <div class="cheat-row"><span class="cheat-key">tmux new -s name</span><span class="cheat-desc">new session</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux a -t name</span><span class="cheat-desc">attach to session</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux ls</span><span class="cheat-desc">list sessions</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux kill-session -t name</span><span class="cheat-desc">kill session</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux kill-server</span><span class="cheat-desc">kill everything</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux source ~/.tmux.conf</span><span class="cheat-desc">reload config</span></div>
+                    <div class="cheat-row"><span class="cheat-key">tmux new -A -s name</span><span class="cheat-desc">attach or create</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             NAVIGATION
+             ========================================== -->
+        <nav class="nav-section">
+            <div class="nav-label">Jump to Section</div>
+            <ul class="nav-links">
+                <li><a href="#cheatsheet">Quick Ref</a></li>
+                <li><a href="#sessions">Sessions</a></li>
+                <li><a href="#windows">Windows</a></li>
+                <li><a href="#panes">Panes</a></li>
+                <li><a href="#keybindings">Key Bindings</a></li>
+                <li><a href="#copymode">Copy Mode</a></li>
+                <li><a href="#config">Configuration</a></li>
+                <li><a href="#scripting">Scripting</a></li>
+                <li><a href="#protips">Pro Tips</a></li>
+            </ul>
+        </nav>
+
+        <!-- ==========================================
+             1. SESSION MANAGEMENT
+             ========================================== -->
+        <section class="section" id="sessions">
+            <div class="section-header">
+                <h2 class="section-title">SESSION MANAGEMENT</h2>
+                <span class="section-desc">create, attach, detach, and manage sessions</span>
+            </div>
+
+            <p>Sessions are the top-level container in tmux. Each session holds one or more windows, and persists even after you disconnect. This is what makes tmux invaluable for remote work -- your entire workspace survives network drops.</p>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Creating Sessions</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="cmd">tmux</td><td>Start new unnamed session</td></tr>
+                            <tr><td class="cmd">tmux new</td><td>Start new session (alias)</td></tr>
+                            <tr><td class="cmd">tmux new -s &lt;name&gt;</td><td>Start new session with a name</td></tr>
+                            <tr><td class="cmd">tmux new -s &lt;name&gt; -n &lt;win&gt;</td><td>New session with named first window</td></tr>
+                            <tr><td class="cmd">tmux new -s &lt;name&gt; -d</td><td>Create session in background (detached)</td></tr>
+                            <tr><td class="cmd">tmux new -A -s &lt;name&gt;</td><td>Attach if exists, otherwise create</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Attaching to Sessions</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="cmd">tmux attach</td><td>Attach to last session</td></tr>
+                            <tr><td class="cmd">tmux attach -t &lt;name&gt;</td><td>Attach to named session</td></tr>
+                            <tr><td class="cmd">tmux a</td><td>Shorthand for attach</td></tr>
+                            <tr><td class="cmd">tmux a -t &lt;name&gt;</td><td>Shorthand attach to named session</td></tr>
+                            <tr><td class="cmd">tmux attach -d</td><td>Detach other clients when attaching</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Detaching &amp; Switching</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b d</td><td class="cmd">tmux detach</td><td>Detach from current session</td></tr>
+                            <tr><td class="kbd">Ctrl+b D</td><td>-</td><td>Choose which client to detach</td></tr>
+                            <tr><td class="kbd">Ctrl+b s</td><td class="cmd">tmux ls</td><td>List / choose sessions interactively</td></tr>
+                            <tr><td class="kbd">Ctrl+b (</td><td>-</td><td>Switch to previous session</td></tr>
+                            <tr><td class="kbd">Ctrl+b )</td><td>-</td><td>Switch to next session</td></tr>
+                            <tr><td class="kbd">Ctrl+b L</td><td>-</td><td>Switch to last used session</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Renaming &amp; Killing Sessions</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key / Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b $</td><td>Rename current session</td></tr>
+                            <tr><td class="cmd">tmux rename-session -t &lt;old&gt; &lt;new&gt;</td><td>Rename session from CLI</td></tr>
+                            <tr><td class="cmd">tmux kill-session -t &lt;name&gt;</td><td>Kill named session</td></tr>
+                            <tr><td class="cmd">tmux kill-session -a</td><td>Kill all sessions except current</td></tr>
+                            <tr><td class="cmd">tmux kill-server</td><td>Kill tmux server and all sessions</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             2. WINDOW MANAGEMENT
+             ========================================== -->
+        <section class="section" id="windows">
+            <div class="section-header">
+                <h2 class="section-title">WINDOW MANAGEMENT</h2>
+                <span class="section-desc">tabs within a session</span>
+            </div>
+
+            <p>Windows are like tabs within a session. Each window occupies the full terminal screen and can be subdivided into panes. The status bar at the bottom shows all windows in the current session.</p>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Creating &amp; Closing Windows</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b c</td><td class="cmd">tmux new-window</td><td>Create new window</td></tr>
+                            <tr><td>-</td><td class="cmd">tmux new-window -n &lt;name&gt;</td><td>Create window with name</td></tr>
+                            <tr><td class="kbd">Ctrl+b &amp;</td><td class="cmd">tmux kill-window</td><td>Kill current window (confirms)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Navigating Windows</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b 0-9</td><td>Select window by number</td></tr>
+                            <tr><td class="kbd">Ctrl+b n</td><td>Next window</td></tr>
+                            <tr><td class="kbd">Ctrl+b p</td><td>Previous window</td></tr>
+                            <tr><td class="kbd">Ctrl+b l</td><td>Last (previously selected) window</td></tr>
+                            <tr><td class="kbd">Ctrl+b w</td><td>Choose window from interactive list</td></tr>
+                            <tr><td class="kbd">Ctrl+b f</td><td>Find window by name or content</td></tr>
+                            <tr><td class="kbd">Ctrl+b '</td><td>Prompt for window index to select</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Window Operations</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b ,</td><td>Rename current window</td></tr>
+                            <tr><td class="kbd">Ctrl+b .</td><td>Move window to another index</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             3. PANE MANAGEMENT
+             ========================================== -->
+        <section class="section" id="panes">
+            <div class="section-header">
+                <h2 class="section-title">PANE MANAGEMENT</h2>
+                <span class="section-desc">split, resize, navigate, and zoom</span>
+            </div>
+
+            <p>Panes subdivide a window into multiple terminal regions. You can split horizontally or vertically, resize them, zoom into a single pane, and swap their positions. Panes are where your actual work happens.</p>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Splitting Panes</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Command</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b "</td><td class="cmd">tmux split-window</td><td>Split horizontally (top/bottom)</td></tr>
+                            <tr><td class="kbd">Ctrl+b %</td><td class="cmd">tmux split-window -h</td><td>Split vertically (left/right)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info">
+                    <div class="alert-msg">The naming is confusing: <kbd>Ctrl+b "</kbd> creates a <strong>horizontal divider</strong> (panes stacked top/bottom), and <kbd>Ctrl+b %</kbd> creates a <strong>vertical divider</strong> (panes side by side).</div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Navigating Panes</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b &larr;/&rarr;/&uarr;/&darr;</td><td>Move to pane in that direction</td></tr>
+                            <tr><td class="kbd">Ctrl+b o</td><td>Cycle to next pane</td></tr>
+                            <tr><td class="kbd">Ctrl+b ;</td><td>Move to last (previously active) pane</td></tr>
+                            <tr><td class="kbd">Ctrl+b q</td><td>Show pane numbers -- type number to select</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Resizing Panes</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b Ctrl+&larr;</td><td>Resize left by 1 cell</td></tr>
+                            <tr><td class="kbd">Ctrl+b Ctrl+&rarr;</td><td>Resize right by 1 cell</td></tr>
+                            <tr><td class="kbd">Ctrl+b Ctrl+&uarr;</td><td>Resize up by 1 cell</td></tr>
+                            <tr><td class="kbd">Ctrl+b Ctrl+&darr;</td><td>Resize down by 1 cell</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+&larr;</td><td>Resize left by 5 cells</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+&rarr;</td><td>Resize right by 5 cells</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+&uarr;</td><td>Resize up by 5 cells</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+&darr;</td><td>Resize down by 5 cells</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Pane Operations</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b z</td><td>Toggle zoom (full-screen pane)</td></tr>
+                            <tr><td class="kbd">Ctrl+b !</td><td>Break pane out into a new window</td></tr>
+                            <tr><td class="kbd">Ctrl+b x</td><td>Kill current pane (with confirmation)</td></tr>
+                            <tr><td class="kbd">Ctrl+b {</td><td>Swap with previous pane</td></tr>
+                            <tr><td class="kbd">Ctrl+b }</td><td>Swap with next pane</td></tr>
+                            <tr><td class="kbd">Ctrl+b Ctrl+o</td><td>Rotate panes forward</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+o</td><td>Rotate panes backward</td></tr>
+                            <tr><td class="kbd">Ctrl+b m</td><td>Mark current pane</td></tr>
+                            <tr><td class="kbd">Ctrl+b M</td><td>Clear marked pane</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Pane Layouts</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key Binding</th><th>Layout</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+b Space</td><td>Cycle through preset layouts</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+1</td><td>Even-horizontal (all panes side by side)</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+2</td><td>Even-vertical (all panes stacked)</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+3</td><td>Main-horizontal (one large on top, rest below)</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+4</td><td>Main-vertical (one large on left, rest right)</td></tr>
+                            <tr><td class="kbd">Ctrl+b Alt+5</td><td>Tiled (all panes equal size)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             4. ALL DEFAULT KEY BINDINGS
+             ========================================== -->
+        <section class="section" id="keybindings">
+            <div class="section-header">
+                <h2 class="section-title">DEFAULT KEY BINDINGS</h2>
+                <span class="section-desc">complete list, prefix: Ctrl+b</span>
+            </div>
+
+            <div class="prefix-note">
+                All key bindings below require pressing <strong>Ctrl+b</strong> first (the prefix), then releasing, then pressing the listed key.
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Help &amp; Info</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">?</td><td>List all key bindings</td></tr>
+                            <tr><td class="kbd">i</td><td>Display window information</td></tr>
+                            <tr><td class="kbd">q</td><td>Display pane numbers (type number to select)</td></tr>
+                            <tr><td class="kbd">t</td><td>Show clock</td></tr>
+                            <tr><td class="kbd">~</td><td>Show previous tmux messages</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Session Controls</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">d</td><td>Detach client</td></tr>
+                            <tr><td class="kbd">D</td><td>Choose client to detach</td></tr>
+                            <tr><td class="kbd">$</td><td>Rename session</td></tr>
+                            <tr><td class="kbd">s</td><td>Choose session interactively</td></tr>
+                            <tr><td class="kbd">(</td><td>Previous session</td></tr>
+                            <tr><td class="kbd">)</td><td>Next session</td></tr>
+                            <tr><td class="kbd">L</td><td>Last session</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Window Controls</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">c</td><td>Create new window</td></tr>
+                            <tr><td class="kbd">,</td><td>Rename current window</td></tr>
+                            <tr><td class="kbd">&amp;</td><td>Kill current window</td></tr>
+                            <tr><td class="kbd">w</td><td>Choose window interactively</td></tr>
+                            <tr><td class="kbd">f</td><td>Find window</td></tr>
+                            <tr><td class="kbd">n</td><td>Next window</td></tr>
+                            <tr><td class="kbd">p</td><td>Previous window</td></tr>
+                            <tr><td class="kbd">l</td><td>Last (previously selected) window</td></tr>
+                            <tr><td class="kbd">0-9</td><td>Select window by number</td></tr>
+                            <tr><td class="kbd">'</td><td>Prompt for window index</td></tr>
+                            <tr><td class="kbd">.</td><td>Move window to new index</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Pane Controls</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">"</td><td>Split pane horizontally (top/bottom)</td></tr>
+                            <tr><td class="kbd">%</td><td>Split pane vertically (left/right)</td></tr>
+                            <tr><td class="kbd">&larr;&rarr;&uarr;&darr;</td><td>Select pane by direction</td></tr>
+                            <tr><td class="kbd">o</td><td>Cycle to next pane</td></tr>
+                            <tr><td class="kbd">;</td><td>Last active pane</td></tr>
+                            <tr><td class="kbd">x</td><td>Kill pane</td></tr>
+                            <tr><td class="kbd">!</td><td>Break pane to new window</td></tr>
+                            <tr><td class="kbd">z</td><td>Toggle zoom (full-screen)</td></tr>
+                            <tr><td class="kbd">{</td><td>Swap pane with previous</td></tr>
+                            <tr><td class="kbd">}</td><td>Swap pane with next</td></tr>
+                            <tr><td class="kbd">Space</td><td>Cycle through layouts</td></tr>
+                            <tr><td class="kbd">Ctrl+o</td><td>Rotate panes forward</td></tr>
+                            <tr><td class="kbd">Alt+o</td><td>Rotate panes backward</td></tr>
+                            <tr><td class="kbd">m</td><td>Mark pane</td></tr>
+                            <tr><td class="kbd">M</td><td>Clear marked pane</td></tr>
+                            <tr><td class="kbd">Alt+1</td><td>Even-horizontal layout</td></tr>
+                            <tr><td class="kbd">Alt+2</td><td>Even-vertical layout</td></tr>
+                            <tr><td class="kbd">Alt+3</td><td>Main-horizontal layout</td></tr>
+                            <tr><td class="kbd">Alt+4</td><td>Main-vertical layout</td></tr>
+                            <tr><td class="kbd">Alt+5</td><td>Tiled layout</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Copy Mode &amp; Buffers</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">[</td><td>Enter copy mode</td></tr>
+                            <tr><td class="kbd">]</td><td>Paste most recent buffer</td></tr>
+                            <tr><td class="kbd">#</td><td>List all paste buffers</td></tr>
+                            <tr><td class="kbd">=</td><td>Choose buffer to paste</td></tr>
+                            <tr><td class="kbd">-</td><td>Delete most recent buffer</td></tr>
+                            <tr><td class="kbd">PgUp</td><td>Enter copy mode and scroll up</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Miscellaneous</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">:</td><td>Enter command prompt</td></tr>
+                            <tr><td class="kbd">r</td><td>Refresh client</td></tr>
+                            <tr><td class="kbd">Ctrl+z</td><td>Suspend client</td></tr>
+                            <tr><td class="kbd">C</td><td>Customize mode (options browser)</td></tr>
+                            <tr><td class="kbd">E</td><td>Spread panes out evenly</td></tr>
+                            <tr><td class="kbd">Ctrl+b</td><td>Send Ctrl+b to the underlying application</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             5. COPY MODE
+             ========================================== -->
+        <section class="section" id="copymode">
+            <div class="section-header">
+                <h2 class="section-title">COPY MODE</h2>
+                <span class="section-desc">scrolling, searching, and copying text</span>
+            </div>
+
+            <p>Copy mode lets you scroll through terminal output, search for text, and copy selections to tmux's paste buffer. Enter with <kbd>Ctrl+b [</kbd>. tmux supports both vi and emacs key bindings in copy mode -- set your preference with <code>setw -g mode-keys vi</code> in your config.</p>
+
+            <div class="alert alert-warning">
+                <div class="alert-msg">To enable vi-style copy mode, add <code>setw -g mode-keys vi</code> to your <code>~/.tmux.conf</code>. Vi mode is strongly recommended for efficient navigation.</div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Vi Mode Key Bindings</h4>
+
+                <h5 style="margin-top: var(--space-md); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Navigation</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">h j k l</td><td>Move left / down / up / right</td></tr>
+                            <tr><td class="kbd">w</td><td>Next word</td></tr>
+                            <tr><td class="kbd">b</td><td>Previous word</td></tr>
+                            <tr><td class="kbd">0</td><td>Start of line</td></tr>
+                            <tr><td class="kbd">$</td><td>End of line</td></tr>
+                            <tr><td class="kbd">^</td><td>First non-blank character</td></tr>
+                            <tr><td class="kbd">gg</td><td>Top of history</td></tr>
+                            <tr><td class="kbd">G</td><td>Bottom of history</td></tr>
+                            <tr><td class="kbd">H</td><td>Top of visible screen</td></tr>
+                            <tr><td class="kbd">M</td><td>Middle of visible screen</td></tr>
+                            <tr><td class="kbd">L</td><td>Bottom of visible screen</td></tr>
+                            <tr><td class="kbd">{</td><td>Previous paragraph</td></tr>
+                            <tr><td class="kbd">}</td><td>Next paragraph</td></tr>
+                            <tr><td class="kbd">%</td><td>Jump to matching bracket</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 style="margin-top: var(--space-lg); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Scrolling</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+f</td><td>Page down</td></tr>
+                            <tr><td class="kbd">Ctrl+b</td><td>Page up</td></tr>
+                            <tr><td class="kbd">Ctrl+d</td><td>Half page down</td></tr>
+                            <tr><td class="kbd">Ctrl+u</td><td>Half page up</td></tr>
+                            <tr><td class="kbd">Ctrl+e</td><td>Scroll down one line</td></tr>
+                            <tr><td class="kbd">Ctrl+y</td><td>Scroll up one line</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 style="margin-top: var(--space-lg); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Searching</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">/</td><td>Search forward</td></tr>
+                            <tr><td class="kbd">?</td><td>Search backward</td></tr>
+                            <tr><td class="kbd">n</td><td>Next search match</td></tr>
+                            <tr><td class="kbd">N</td><td>Previous search match</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 style="margin-top: var(--space-lg); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Selection &amp; Copying</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Space</td><td>Begin selection</td></tr>
+                            <tr><td class="kbd">Enter</td><td>Copy selection and exit copy mode</td></tr>
+                            <tr><td class="kbd">Escape</td><td>Clear selection</td></tr>
+                            <tr><td class="kbd">v</td><td>Toggle rectangle selection</td></tr>
+                            <tr><td class="kbd">V</td><td>Select entire line</td></tr>
+                            <tr><td class="kbd">q</td><td>Exit copy mode</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="subsection">
+                <h4 class="subsection-title">Emacs Mode Key Bindings</h4>
+
+                <h5 style="margin-top: var(--space-md); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Navigation</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">&larr;&rarr;&uarr;&darr;</td><td>Move cursor</td></tr>
+                            <tr><td class="kbd">Ctrl+a</td><td>Start of line</td></tr>
+                            <tr><td class="kbd">Ctrl+e</td><td>End of line</td></tr>
+                            <tr><td class="kbd">Ctrl+f / Ctrl+b</td><td>Move right / left</td></tr>
+                            <tr><td class="kbd">Ctrl+n / Ctrl+p</td><td>Move down / up</td></tr>
+                            <tr><td class="kbd">Alt+f</td><td>Next word end</td></tr>
+                            <tr><td class="kbd">Alt+b</td><td>Previous word</td></tr>
+                            <tr><td class="kbd">Alt+&lt;</td><td>Top of history</td></tr>
+                            <tr><td class="kbd">Alt+&gt;</td><td>Bottom of history</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 style="margin-top: var(--space-lg); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Scrolling</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">PgDn / Ctrl+v</td><td>Page down</td></tr>
+                            <tr><td class="kbd">PgUp / Alt+v</td><td>Page up</td></tr>
+                            <tr><td class="kbd">Alt+Down</td><td>Half page down</td></tr>
+                            <tr><td class="kbd">Alt+Up</td><td>Half page up</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 style="margin-top: var(--space-lg); margin-bottom: var(--space-sm); color: var(--phosphor-dim);">Searching &amp; Selection</h5>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Key</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="kbd">Ctrl+s</td><td>Search forward (incremental)</td></tr>
+                            <tr><td class="kbd">Ctrl+r</td><td>Search backward (incremental)</td></tr>
+                            <tr><td class="kbd">Ctrl+Space</td><td>Begin selection</td></tr>
+                            <tr><td class="kbd">Alt+w</td><td>Copy selection and exit</td></tr>
+                            <tr><td class="kbd">Ctrl+g</td><td>Clear selection</td></tr>
+                            <tr><td class="kbd">q / Escape</td><td>Exit copy mode</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             6. CONFIGURATION
+             ========================================== -->
+        <section class="section" id="config">
+            <div class="section-header">
+                <h2 class="section-title">CONFIGURATION</h2>
+                <span class="section-desc">~/.tmux.conf customization</span>
+            </div>
+
+            <p>tmux reads configuration from <code>~/.tmux.conf</code> on startup. Changes take effect after reloading. There are four types of options: server, session, window, and pane. Use <code>set</code> for session options and <code>setw</code> (or <code>set-window-option</code>) for window options. Add <code>-g</code> to set globally.</p>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Essential Settings</h4>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Change prefix from Ctrl+b to Ctrl+a</span>
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix
+
+<span style="color: var(--phosphor-faded);"># Enable mouse mode</span>
+set -g mouse on
+
+<span style="color: var(--phosphor-faded);"># Start window/pane numbering at 1</span>
+set -g base-index 1
+setw -g pane-base-index 1
+
+<span style="color: var(--phosphor-faded);"># Enable vi mode for copy mode</span>
+setw -g mode-keys vi
+
+<span style="color: var(--phosphor-faded);"># Increase scrollback buffer</span>
+set -g history-limit 10000
+
+<span style="color: var(--phosphor-faded);"># Enable 256 colors</span>
+set -g default-terminal "screen-256color"
+
+<span style="color: var(--phosphor-faded);"># Enable true color (24-bit) support</span>
+set -ga terminal-features ",xterm-256color:RGB"
+
+<span style="color: var(--phosphor-faded);"># Reduce escape time (important for vim users)</span>
+set -sg escape-time 0
+
+<span style="color: var(--phosphor-faded);"># Automatically renumber windows when one is closed</span>
+set -g renumber-windows on
+
+<span style="color: var(--phosphor-faded);"># Monitor activity in windows</span>
+setw -g monitor-activity on
+set -g visual-activity on
+
+<span style="color: var(--phosphor-faded);"># Reload config with prefix+r</span>
+bind r source-file ~/.tmux.conf \; display "Config reloaded!"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Custom Key Bindings</h4>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Intuitive split keys</span>
+bind | split-window -h
+bind - split-window -v
+unbind '"'
+unbind %
+
+<span style="color: var(--phosphor-faded);"># Switch panes with Alt+arrow (no prefix needed)</span>
+bind -n M-Left select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up select-pane -U
+bind -n M-Down select-pane -D
+
+<span style="color: var(--phosphor-faded);"># Vi-style pane navigation with prefix</span>
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
+
+<span style="color: var(--phosphor-faded);"># Vi-style copy mode</span>
+bind -T copy-mode-vi v send-keys -X begin-selection
+bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel
+bind -T copy-mode-vi C-v send-keys -X rectangle-toggle</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Status Bar Customization</h4>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Position</span>
+set -g status-position bottom
+
+<span style="color: var(--phosphor-faded);"># Colors</span>
+set -g status-style 'bg=colour234 fg=colour137'
+
+<span style="color: var(--phosphor-faded);"># Left and right sections</span>
+set -g status-left '#[fg=colour233,bg=colour245,bold] #S '
+set -g status-right '#[fg=colour233,bg=colour245,bold] %d/%m #[fg=colour233,bg=colour245,bold] %H:%M:%S '
+
+<span style="color: var(--phosphor-faded);"># Window status</span>
+setw -g window-status-current-style 'fg=colour1 bg=colour238 bold'
+setw -g window-status-current-format ' #I:#W#F '
+setw -g window-status-style 'fg=colour9 bg=colour236'
+setw -g window-status-format ' #I:#W#F '
+
+<span style="color: var(--phosphor-faded);"># Pane borders</span>
+set -g pane-border-style 'fg=colour238'
+set -g pane-active-border-style 'fg=colour51'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Common Configuration Options</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Option</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="cmd">set -g prefix &lt;key&gt;</td><td>Change prefix key</td></tr>
+                            <tr><td class="cmd">set -g mouse on</td><td>Enable mouse support</td></tr>
+                            <tr><td class="cmd">set -g base-index 1</td><td>Start window numbering at 1</td></tr>
+                            <tr><td class="cmd">setw -g pane-base-index 1</td><td>Start pane numbering at 1</td></tr>
+                            <tr><td class="cmd">setw -g mode-keys vi</td><td>Use vi keys in copy mode</td></tr>
+                            <tr><td class="cmd">set -g history-limit &lt;n&gt;</td><td>Set scrollback buffer size</td></tr>
+                            <tr><td class="cmd">set -g default-terminal &lt;term&gt;</td><td>Set default terminal type</td></tr>
+                            <tr><td class="cmd">set -sg escape-time &lt;ms&gt;</td><td>Set escape key delay</td></tr>
+                            <tr><td class="cmd">set -g renumber-windows on</td><td>Renumber windows on close</td></tr>
+                            <tr><td class="cmd">set -g status-position top|bottom</td><td>Status bar position</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Reloading Configuration</h4>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># From the command line</span>
+tmux source-file ~/.tmux.conf
+
+<span style="color: var(--phosphor-faded);"># From within tmux command prompt (Ctrl+b :)</span>
+source-file ~/.tmux.conf</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Conditional Configuration</h4>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Different settings per tmux version</span>
+%if "#{>=:#{version},3.2}"
+    set -g status-position top
+%else
+    set -g status-position bottom
+%endif
+
+<span style="color: var(--phosphor-faded);"># Different settings per host</span>
+%if "#{==:#{host},laptop}"
+    set -g status-style bg=blue
+%elif "#{==:#{host},desktop}"
+    set -g status-style bg=green
+%endif</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">File Locations</h4>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>Path</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="cmd">~/.tmux.conf</td><td>User configuration file</td></tr>
+                            <tr><td class="cmd">/etc/tmux.conf</td><td>System-wide configuration</td></tr>
+                            <tr><td class="cmd">/tmp/tmux-UID/default</td><td>Server socket</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             7. SCRIPTING & AUTOMATION
+             ========================================== -->
+        <section class="section" id="scripting">
+            <div class="section-header">
+                <h2 class="section-title">SCRIPTING &amp; AUTOMATION</h2>
+                <span class="section-desc">send-keys, capture-pane, session scripts</span>
+            </div>
+
+            <p>tmux can be fully controlled from the command line, making it ideal for scripting automated workspace setups. The two most powerful scripting commands are <code>send-keys</code> (send input to a pane) and <code>capture-pane</code> (read output from a pane).</p>
+
+            <div class="subsection">
+                <h4 class="subsection-title">send-keys</h4>
+                <p>Programmatically send keystrokes to a target pane. Target format: <code>session:window.pane</code></p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Basic usage</span>
+tmux send-keys -t &lt;target&gt; '&lt;command&gt;' Enter
+
+<span style="color: var(--phosphor-faded);"># Send command to specific session:window.pane</span>
+tmux send-keys -t mysession:0.0 'ls -la' Enter
+tmux send-keys -t 0:1 'vim file.txt' Enter
+
+<span style="color: var(--phosphor-faded);"># Send to pane by ID</span>
+tmux send-keys -t %2 'echo hello' Enter
+
+<span style="color: var(--phosphor-faded);"># Send text without pressing Enter</span>
+tmux send-keys -t 0 'text without executing'
+
+<span style="color: var(--phosphor-faded);"># Send literal text (no key interpretation)</span>
+tmux send-keys -l 'text with special chars'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">capture-pane</h4>
+                <p>Capture the visible contents (or history) of a pane for logging or automation.</p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Print pane contents to stdout</span>
+tmux capture-pane -p
+
+<span style="color: var(--phosphor-faded);"># Capture to a named buffer</span>
+tmux capture-pane -b buffer-name
+
+<span style="color: var(--phosphor-faded);"># Capture with scrollback history (last 1000 lines)</span>
+tmux capture-pane -S -1000 -p
+
+<span style="color: var(--phosphor-faded);"># Capture to a file</span>
+tmux capture-pane -p > output.txt
+
+<span style="color: var(--phosphor-faded);"># Capture with ANSI escape sequences</span>
+tmux capture-pane -e -p
+
+<span style="color: var(--phosphor-faded);"># Capture specific line range</span>
+tmux capture-pane -S 0 -E 50 -p</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Session Startup Script</h4>
+                <p>Create a reusable script that sets up your entire workspace.</p>
+                <pre data-label="dev-session.sh"><code>#!/bin/bash
+SESSION="dev"
+
+<span style="color: var(--phosphor-faded);"># Create session (detached)</span>
+tmux new-session -d -s $SESSION
+
+<span style="color: var(--phosphor-faded);"># Window 0: Editor with side terminal</span>
+tmux rename-window -t $SESSION:0 'editor'
+tmux split-window -h -t $SESSION:0
+tmux split-window -v -t $SESSION:0.1
+
+<span style="color: var(--phosphor-faded);"># Send commands to each pane</span>
+tmux send-keys -t $SESSION:0.0 'vim' Enter
+tmux send-keys -t $SESSION:0.1 'npm run dev' Enter
+tmux send-keys -t $SESSION:0.2 'git status' Enter
+
+<span style="color: var(--phosphor-faded);"># Window 1: Server</span>
+tmux new-window -t $SESSION:1 -n 'server'
+tmux send-keys -t $SESSION:1 'cd ~/server && npm start' Enter
+
+<span style="color: var(--phosphor-faded);"># Select starting window and pane</span>
+tmux select-window -t $SESSION:0
+tmux select-pane -t $SESSION:0.0
+
+<span style="color: var(--phosphor-faded);"># Attach</span>
+tmux attach-session -t $SESSION</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Useful Scripting Patterns</h4>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Create or attach (idempotent)</span>
+tmux new-session -A -s mysession
+
+<span style="color: var(--phosphor-faded);"># Check if session exists before creating</span>
+tmux has-session -t mysession 2>/dev/null
+if [ $? != 0 ]; then
+    tmux new-session -s mysession
+fi
+
+<span style="color: var(--phosphor-faded);"># Kill all sessions except one</span>
+tmux kill-session -a -t keep-this-one
+
+<span style="color: var(--phosphor-faded);"># List all panes across all sessions</span>
+tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index}"
+
+<span style="color: var(--phosphor-faded);"># Run command in all panes of current window</span>
+for pane in $(tmux list-panes -F '#P'); do
+    tmux send-keys -t $pane "ls -la" Enter
+done
+
+<span style="color: var(--phosphor-faded);"># Capture output of a command</span>
+tmux send-keys -t mysession:0.0 'date' Enter
+sleep 1
+tmux capture-pane -t mysession:0.0 -p | tail -1</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Format Strings</h4>
+                <p>tmux format strings let you extract structured information from sessions, windows, and panes.</p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Sessions with window count</span>
+tmux list-sessions -F "#{session_name}: #{session_windows} windows"
+
+<span style="color: var(--phosphor-faded);"># Windows with pane count</span>
+tmux list-windows -F "#{window_index}: #{window_name} [#{window_panes} panes]"
+
+<span style="color: var(--phosphor-faded);"># Panes with dimensions and running command</span>
+tmux list-panes -F "Pane #{pane_index}: #{pane_current_command} (#{pane_width}x#{pane_height})"</code></pre>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             8. PRO TIPS
+             ========================================== -->
+        <section class="section" id="protips">
+            <div class="section-header">
+                <h2 class="section-title">PRO TIPS</h2>
+                <span class="section-desc">advanced features and power-user tricks</span>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Synchronize Panes</h4>
+                <p>Type the same command in all panes of a window simultaneously. Extremely useful for running the same command on multiple servers.</p>
+                <pre data-label="tmux command"><code><span style="color: var(--phosphor-faded);"># Toggle on/off from command prompt (Ctrl+b :)</span>
+:setw synchronize-panes on
+:setw synchronize-panes off
+
+<span style="color: var(--phosphor-faded);"># From CLI</span>
+tmux setw synchronize-panes on
+
+<span style="color: var(--phosphor-faded);"># Add toggle binding to .tmux.conf</span>
+bind S setw synchronize-panes</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Hooks</h4>
+                <p>Execute tmux commands automatically when events occur.</p>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Notification when a new window is created</span>
+set-hook -g after-new-window 'display "New window created"'
+
+<span style="color: var(--phosphor-faded);"># Auto-tile after splitting</span>
+set-hook -g after-split-window 'select-layout tiled'
+
+<span style="color: var(--phosphor-faded);"># Refresh after rename</span>
+set-hook -g after-rename-window 'refresh-client -S'
+
+<span style="color: var(--phosphor-faded);"># List all hooks</span>
+show-hooks -g</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Nested tmux Sessions</h4>
+                <p>When running tmux inside tmux (e.g., local + remote), use different prefix keys to avoid conflicts.</p>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Outer session uses Ctrl+a as prefix</span>
+set -g prefix C-a
+
+<span style="color: var(--phosphor-faded);"># Inner session keeps default Ctrl+b</span>
+<span style="color: var(--phosphor-faded);"># To send commands to inner: press Ctrl+a, then Ctrl+b, then the key</span>
+<span style="color: var(--phosphor-faded);"># Or use Ctrl+b Ctrl+b to send prefix to inner app</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Session Groups</h4>
+                <p>Link sessions together so they share the same set of windows. Each session can view different windows independently.</p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Create main session</span>
+tmux new-session -s main
+
+<span style="color: var(--phosphor-faded);"># Create linked session (shares windows with main)</span>
+tmux new-session -t main -s secondary
+
+<span style="color: var(--phosphor-faded);"># Both sessions share windows</span>
+<span style="color: var(--phosphor-faded);"># Each can view a different window independently</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Pipe Pane Output</h4>
+                <p>Log all output from a pane to a file in real time.</p>
+                <pre data-label="tmux command"><code><span style="color: var(--phosphor-faded);"># Start logging pane to file</span>
+:pipe-pane -o 'cat >> ~/output.log'
+
+<span style="color: var(--phosphor-faded);"># Stop logging</span>
+:pipe-pane
+
+<span style="color: var(--phosphor-faded);"># Toggle binding for .tmux.conf</span>
+bind P pipe-pane -o 'cat >> ~/tmux-#I-#P.log' \; display 'Toggled logging'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Clipboard Integration</h4>
+                <p>Copy tmux buffer directly to your system clipboard.</p>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Linux (X11)</span>
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+
+<span style="color: var(--phosphor-faded);"># macOS</span>
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'pbcopy'
+
+<span style="color: var(--phosphor-faded);"># WSL (Windows Subsystem for Linux)</span>
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'clip.exe'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Break &amp; Join Panes</h4>
+                <p>Move panes between windows without losing their state.</p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Break pane out to its own window</span>
+<span style="color: var(--phosphor-faded);"># Key: Ctrl+b !</span>
+
+<span style="color: var(--phosphor-faded);"># Join a pane from another window into current</span>
+tmux join-pane -s 2.0 -t 1.0
+
+<span style="color: var(--phosphor-faded);"># Mark a pane, navigate to destination, then join</span>
+<span style="color: var(--phosphor-faded);"># Ctrl+b m    (mark pane)</span>
+<span style="color: var(--phosphor-faded);"># navigate to target window</span>
+tmux join-pane    <span style="color: var(--phosphor-faded);"># joins the marked pane here</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Display Pane Numbers Longer</h4>
+                <p>Give yourself more time to read pane numbers when using <kbd>Ctrl+b q</kbd>.</p>
+                <pre data-label=".tmux.conf"><code><span style="color: var(--phosphor-faded);"># Show pane numbers for 4 seconds (default is 1s)</span>
+set -g display-panes-time 4000</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Respawn Pane</h4>
+                <p>Restart a dead or exited pane without destroying the layout.</p>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Respawn a specific pane</span>
+tmux respawn-pane -k -t 0
+
+<span style="color: var(--phosphor-faded);"># Add binding to .tmux.conf</span>
+bind R respawn-pane -k</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Monitoring Windows</h4>
+                <pre data-label="tmux command"><code><span style="color: var(--phosphor-faded);"># Alert when a window has activity</span>
+:setw monitor-activity on
+
+<span style="color: var(--phosphor-faded);"># Alert when a window has been silent for 30s</span>
+:setw monitor-silence 30
+
+<span style="color: var(--phosphor-faded);"># Visual notification in status bar</span>
+set -g visual-activity on</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Custom Layouts with Exact Sizing</h4>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Split with specific percentage</span>
+tmux split-window -h -p 30    <span style="color: var(--phosphor-faded);"># 70/30 horizontal split</span>
+tmux split-window -v -p 50    <span style="color: var(--phosphor-faded);"># 50/50 vertical split</span>
+
+<span style="color: var(--phosphor-faded);"># Save and restore layouts</span>
+tmux list-windows -F "#{window_layout}" > ~/tmux-layout.txt
+tmux select-layout "$(cat ~/tmux-layout.txt)"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h4 class="subsection-title">Environment Variables</h4>
+                <pre data-label="shell"><code><span style="color: var(--phosphor-faded);"># Set environment variable for session</span>
+tmux set-environment VAR value
+
+<span style="color: var(--phosphor-faded);"># Show all environment variables</span>
+tmux show-environment
+
+<span style="color: var(--phosphor-faded);"># Use in new window commands</span>
+tmux new-window -n "test" 'echo $VAR'</code></pre>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             FOOTER
+             ========================================== -->
+        <footer class="footer">
+            <p class="bright">/// END OF TRANSMISSION ///</p>
+            <p style="margin-top: var(--space-sm);">tmux complete reference // retro-terminal design system</p>
+            <p style="margin-top: var(--space-xs);"><a href="#cheatsheet" style="border-bottom: none;">Back to top</a></p>
+            <p style="margin-top: var(--space-md);">
+                <span class="cursor"></span>
+            </p>
+        </footer>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Guides — Dark Folio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-display: 'Syne', 'Avenir', sans-serif;
+            --font-body: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --void: #09090b;
+            --surface: #111114;
+            --surface-raised: #19191e;
+            --surface-overlay: #212127;
+            --gold: #c9a84c;
+            --gold-bright: #e8cf6a;
+            --gold-dim: #7a6a30;
+            --gold-glow: rgba(201, 168, 76, 0.12);
+            --silver: #8e8e96;
+            --silver-bright: #b8b8c0;
+            --chrome: #dcdce4;
+            --rule: #28282e;
+            --rule-faint: #1e1e24;
+            --text-primary: #e4e4ec;
+            --text-body: #b0b0b8;
+            --text-muted: #6e6e78;
+            --text-faint: #484850;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 17px; scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-body);
+            background-color: var(--void);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.006) 3px, rgba(255,255,255,0.006) 4px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Back Link */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--silver);
+            text-decoration: none;
+            padding: 24px 0 0;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--gold); }
+
+        /* Masthead */
+        .masthead {
+            text-align: center;
+            padding: 48px 0 24px;
+            border-bottom: 1px solid var(--gold);
+            position: relative;
+            margin-bottom: 48px;
+        }
+        .masthead::after {
+            content: '';
+            display: block;
+            border-bottom: 1px solid var(--gold-dim);
+            margin-top: 4px;
+        }
+
+        .masthead-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .masthead-nameplate {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        .masthead-nameplate span { color: var(--gold); }
+
+        .masthead-motto {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .masthead-stats {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            color: var(--text-faint);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            margin-bottom: 64px;
+        }
+
+        /* Cards */
+        .card {
+            display: block;
+            text-decoration: none;
+            padding: 28px;
+            border: 1px solid var(--rule);
+            background: var(--surface);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: var(--gold-dim);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px -10px rgba(0,0,0,0.5);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-dim));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .card:hover::before { opacity: 1; }
+
+        .card-kicker {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        .card h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--rule-faint);
+        }
+
+        .card-style {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-faint);
+        }
+
+        .card-arrow {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--gold-dim);
+            transition: color 0.2s, transform 0.2s;
+        }
+        .card:hover .card-arrow {
+            color: var(--gold);
+            transform: translateX(4px);
+        }
+
+        /* Themed card accents */
+        .card-retro-terminal { border-left: 3px solid #00ff00; }
+        .card-retro-terminal .card-kicker { color: #00ff00; }
+
+        .card-dark-folio { border-left: 3px solid var(--gold); }
+        .card-dark-folio .card-kicker { color: var(--gold); }
+
+        .card-glassmorphism { border-left: 3px solid #667eea; }
+        .card-glassmorphism .card-kicker { color: #667eea; }
+
+        .card-holographic { border-left: 3px solid #c86bff; }
+        .card-holographic .card-kicker { color: #c86bff; }
+
+        .card-letterpress { border-left: 3px solid #A68B5B; }
+        .card-letterpress .card-kicker { color: #A68B5B; }
+
+        .card-cyberpunk { border-left: 3px solid #05d9e8; }
+        .card-cyberpunk .card-kicker { color: #05d9e8; }
+
+        .card-blueprint { border-left: 3px solid #5bc0eb; }
+        .card-blueprint .card-kicker { color: #5bc0eb; }
+
+        .card-circuit-board { border-left: 3px solid #B87333; }
+        .card-circuit-board .card-kicker { color: #B87333; }
+
+        /* Section Labels */
+        .tier-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--rule-faint);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 32px 0 48px;
+            border-top: 1px solid var(--rule);
+            margin-top: 32px;
+        }
+        .footer-text {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+        .footer-text a {
+            color: var(--silver);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-text a:hover { color: var(--gold); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            html { font-size: 16px; }
+            .grid { grid-template-columns: 1fr; }
+            .masthead-top { flex-direction: column; gap: 4px; }
+            .container { padding: 0 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Style Guides</a>
+
+        <header class="masthead">
+            <div class="masthead-top">
+                <span>Developer Reference</span>
+                <span>February 2026</span>
+            </div>
+            <h1 class="masthead-nameplate">Tech <span>Guides</span></h1>
+            <p class="masthead-motto">Cheat sheets &amp; reference docs styled with design systems</p>
+            <p class="masthead-stats">8 guides &middot; 8 styles &middot; Self-contained HTML</p>
+        </header>
+
+        <div class="tier-label">Tier 1 &mdash; Core Tools</div>
+        <div class="grid">
+
+            <a href="tmux.html" class="card card-retro-terminal">
+                <div class="card-kicker">Retro Terminal</div>
+                <h2>tmux</h2>
+                <p>Terminal multiplexer. Sessions, windows, panes, copy mode, scripting, and configuration.</p>
+                <div class="card-footer">
+                    <span class="card-style">CRT Phosphor Green</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="claude-code.html" class="card card-dark-folio">
+                <div class="card-kicker">Dark Folio</div>
+                <h2>Claude Code</h2>
+                <p>AI coding agent. Commands, shortcuts, permissions, MCP, memory, subagents, and skills.</p>
+                <div class="card-footer">
+                    <span class="card-style">Black + Gold Editorial</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="copilot-cli.html" class="card card-glassmorphism">
+                <div class="card-kicker">Glassmorphism</div>
+                <h2>GitHub Copilot CLI</h2>
+                <p>AI terminal agent. Slash commands, models, MCP, sessions, agents, and permissions.</p>
+                <div class="card-footer">
+                    <span class="card-style">Frosted Glass</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="codex-cli.html" class="card card-holographic">
+                <div class="card-kicker">Holographic</div>
+                <h2>OpenAI Codex CLI</h2>
+                <p>AI coding agent. Sandbox modes, MCP, sessions, profiles, local models, and automation.</p>
+                <div class="card-footer">
+                    <span class="card-style">Rainbow Spectrum</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="git.html" class="card card-letterpress">
+                <div class="card-kicker">Letterpress</div>
+                <h2>Git</h2>
+                <p>Version control. Branches, merging, rebasing, stashing, tags, hooks, and advanced workflows.</p>
+                <div class="card-footer">
+                    <span class="card-style">Craft Paper &amp; Ink</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="docker.html" class="card card-cyberpunk">
+                <div class="card-kicker">Cyberpunk</div>
+                <h2>Docker</h2>
+                <p>Containers. Images, Compose, networking, volumes, Dockerfile, BuildKit, and multi-stage builds.</p>
+                <div class="card-footer">
+                    <span class="card-style">Neon Dystopia</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="kubernetes.html" class="card card-blueprint">
+                <div class="card-kicker">Blueprint</div>
+                <h2>Kubernetes</h2>
+                <p>Container orchestration. Pods, deployments, services, secrets, namespaces, and kubectl mastery.</p>
+                <div class="card-footer">
+                    <span class="card-style">Technical Drawing</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+            <a href="vim.html" class="card card-circuit-board">
+                <div class="card-kicker">Circuit Board</div>
+                <h2>Vim / Neovim</h2>
+                <p>Modal editor. Motions, editing, visual mode, registers, macros, LSP, and Lua configuration.</p>
+                <div class="card-footer">
+                    <span class="card-style">PCB &amp; Copper</span>
+                    <span class="card-arrow">&rarr;</span>
+                </div>
+            </a>
+
+        </div>
+
+        <footer class="footer">
+            <p class="footer-text">Part of <a href="../index.html">HTML Style Guides</a> &middot; Also see <a href="../stories/index.html">Interactive Stories</a></p>
+        </footer>
+    </div>
+</body>
+</html>

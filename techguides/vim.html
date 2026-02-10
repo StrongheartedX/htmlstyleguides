@@ -1,0 +1,2947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIM / NEOVIM // Modal Editor - Complete Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CIRCUIT BOARD / PCB DESIGN SYSTEM
+           Vim / Neovim Tech Guide
+           ============================================ */
+
+        :root {
+            /* PCB SUBSTRATE COLORS */
+            --pcb-green: #1A472A;
+            --pcb-green-light: #2D5A3D;
+            --pcb-green-dark: #0F2D1A;
+
+            /* COPPER TRACES */
+            --copper: #B87333;
+            --copper-light: #D4956A;
+            --copper-bright: #E8B796;
+            --copper-dark: #8B5A2B;
+            --gold: #FFD700;
+            --gold-pale: #DAA520;
+
+            /* SILKSCREEN */
+            --silkscreen: #F5F5F0;
+            --silkscreen-dim: #C8C8C0;
+
+            /* SOLDER & METAL */
+            --solder: #C0C0C0;
+            --solder-bright: #E8E8E8;
+
+            /* COMPONENT COLORS */
+            --led-red: #FF3333;
+            --led-green: #33FF33;
+            --led-amber: #FFBF00;
+
+            /* TYPOGRAPHY */
+            --font-silkscreen: 'Share Tech Mono', 'Courier New', monospace;
+            --font-display: 'Orbitron', 'Arial', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+            /* SPACING */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 40px;
+            --space-2xl: 64px;
+
+            /* BORDERS */
+            --trace-width: 2px;
+            --trace-width-thick: 3px;
+        }
+
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+        body {
+            font-family: var(--font-silkscreen);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--silkscreen);
+            background-color: var(--pcb-green-dark);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* FIBERGLASS WEAVE TEXTURE */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 4px,
+                    rgba(45, 90, 61, 0.15) 4px,
+                    rgba(45, 90, 61, 0.15) 5px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 4px,
+                    rgba(45, 90, 61, 0.15) 4px,
+                    rgba(45, 90, 61, 0.15) 5px
+                );
+        }
+
+        /* COMPONENT GRID (radial dot pattern) */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image: radial-gradient(circle, rgba(184, 115, 51, 0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+
+        .pcb-board {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+        }
+
+        /* GOLD CONTACT FINGERS - TOP */
+        .gold-contacts-top {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 0;
+            background: var(--pcb-green-dark);
+            border-bottom: var(--trace-width) solid var(--copper-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gold-contacts-top::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--copper) 10%,
+                var(--gold) 50%,
+                var(--copper) 90%,
+                transparent 100%
+            );
+        }
+
+        .gold-finger {
+            width: 18px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-pale) 60%, var(--copper) 100%);
+            border-radius: 0 0 3px 3px;
+        }
+
+        /* ============================================
+           BACK LINK
+           ============================================ */
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin: var(--space-lg) 0;
+            color: var(--copper-light);
+            text-decoration: none;
+            font-family: var(--font-silkscreen);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .back-link::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 2px;
+            background: var(--copper);
+            transition: width 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--gold);
+        }
+
+        .back-link:hover::before {
+            width: 30px;
+            background: var(--gold);
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+
+        .pcb-header {
+            text-align: center;
+            padding: var(--space-2xl) 0 var(--space-xl);
+            position: relative;
+            border-bottom: var(--trace-width-thick) solid var(--copper);
+        }
+
+        .pcb-header::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: calc(100% - 40px);
+            border: 1px solid rgba(184, 115, 51, 0.2);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        /* Via decorations around header */
+        .via-decoration {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--pcb-green-dark);
+            border: 2px solid var(--copper);
+            box-shadow: 0 0 0 3px var(--pcb-green-dark), 0 0 0 4px rgba(184, 115, 51, 0.3);
+        }
+
+        .via-decoration.via-tl { top: 12px; left: 12px; }
+        .via-decoration.via-tr { top: 12px; right: 12px; }
+        .via-decoration.via-bl { bottom: 12px; left: 12px; }
+        .via-decoration.via-br { bottom: 12px; right: 12px; }
+
+        .pcb-header .silkscreen-label {
+            display: inline-block;
+            font-family: var(--font-silkscreen);
+            font-size: 0.7rem;
+            color: var(--silkscreen-dim);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-sm);
+        }
+
+        .pcb-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            color: var(--copper-bright);
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(184, 115, 51, 0.3);
+            margin-bottom: var(--space-sm);
+        }
+
+        .pcb-header .subtitle {
+            font-family: var(--font-silkscreen);
+            font-size: 0.9rem;
+            color: var(--silkscreen-dim);
+            letter-spacing: 2px;
+        }
+
+        .pcb-header .version-badge {
+            display: inline-block;
+            margin-top: var(--space-md);
+            padding: 4px 12px;
+            font-family: var(--font-silkscreen);
+            font-size: 0.7rem;
+            color: var(--led-green);
+            border: 1px solid var(--led-green);
+            border-radius: 2px;
+            letter-spacing: 1px;
+        }
+
+        /* LED indicators */
+        .led-cluster {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-top: var(--space-md);
+        }
+
+        .led {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--silkscreen-dim);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .led-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .led-dot.red { background: var(--led-red); color: var(--led-red); }
+        .led-dot.green { background: var(--led-green); color: var(--led-green); animation: led-blink 2s ease-in-out infinite; }
+        .led-dot.amber { background: var(--led-amber); color: var(--led-amber); }
+
+        @keyframes led-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ============================================
+           NAVIGATION - COPPER TRACE STYLE
+           ============================================ */
+
+        .trace-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--pcb-green-dark);
+            border-bottom: var(--trace-width) solid var(--copper);
+            padding: var(--space-sm) 0;
+            backdrop-filter: blur(8px);
+            background: rgba(15, 45, 26, 0.95);
+        }
+
+        .trace-nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .trace-nav-inner::-webkit-scrollbar { display: none; }
+
+        .trace-nav .nav-label {
+            font-family: var(--font-silkscreen);
+            font-size: 0.6rem;
+            color: var(--copper);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .trace-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            font-family: var(--font-silkscreen);
+            font-size: 0.7rem;
+            color: var(--silkscreen-dim);
+            text-decoration: none;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .trace-nav a::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--copper-dark);
+            border: 1px solid var(--copper);
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .trace-nav a:hover {
+            color: var(--copper-bright);
+            border-color: rgba(184, 115, 51, 0.3);
+            background: rgba(184, 115, 51, 0.08);
+        }
+
+        .trace-nav a:hover::before {
+            background: var(--copper-light);
+            box-shadow: 0 0 4px var(--copper);
+        }
+
+        .trace-nav a.active {
+            color: var(--gold);
+            border-color: var(--gold-pale);
+        }
+
+        .trace-nav a.active::before {
+            background: var(--gold);
+            box-shadow: 0 0 6px var(--gold);
+        }
+
+        /* Mobile nav toggle */
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: 1px solid var(--copper);
+            color: var(--copper-light);
+            padding: 6px 12px;
+            font-family: var(--font-silkscreen);
+            font-size: 0.7rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+
+        /* ============================================
+           SEARCH BAR
+           ============================================ */
+
+        .search-container {
+            max-width: 500px;
+            margin: var(--space-lg) auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            font-family: var(--font-silkscreen);
+            font-size: 0.85rem;
+            color: var(--silkscreen);
+            background: var(--pcb-green);
+            border: var(--trace-width) solid var(--copper-dark);
+            border-radius: 3px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input::placeholder {
+            color: var(--silkscreen-dim);
+            opacity: 0.5;
+        }
+
+        .search-input:focus {
+            border-color: var(--copper);
+            box-shadow: 0 0 12px rgba(184, 115, 51, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--copper);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .search-results-count {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--copper-light);
+            margin-top: var(--space-xs);
+            letter-spacing: 1px;
+            min-height: 1.2em;
+        }
+
+        /* ============================================
+           SECTION STYLES
+           ============================================ */
+
+        .pcb-section {
+            margin: var(--space-xl) 0;
+            padding: var(--space-lg) 0;
+            border-top: 1px solid rgba(184, 115, 51, 0.2);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+            position: relative;
+        }
+
+        .section-header::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg,
+                var(--copper) 0%,
+                var(--copper-dark) 50%,
+                transparent 100%
+            );
+        }
+
+        /* Solder pad section number */
+        .solder-pad {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--solder-bright) 30%, var(--solder) 70%);
+            color: var(--pcb-green-dark);
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 3px var(--pcb-green-dark), 0 0 0 5px var(--copper-dark);
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            font-weight: 600;
+            color: var(--copper-bright);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .section-description {
+            color: var(--silkscreen-dim);
+            font-size: 0.85rem;
+            margin-bottom: var(--space-lg);
+            line-height: 1.7;
+            max-width: 800px;
+        }
+
+        /* ============================================
+           TABLES - COPPER TRACE BORDERS
+           ============================================ */
+
+        .pcb-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: var(--space-lg);
+            border: var(--trace-width) solid var(--copper-dark);
+            border-radius: 4px;
+            background: rgba(26, 71, 42, 0.6);
+        }
+
+        .pcb-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .pcb-table caption {
+            padding: var(--space-sm) var(--space-md);
+            text-align: left;
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            color: var(--copper-light);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: rgba(184, 115, 51, 0.08);
+            border-bottom: 1px solid var(--copper-dark);
+        }
+
+        .pcb-table th {
+            padding: var(--space-sm) var(--space-md);
+            text-align: left;
+            font-family: var(--font-silkscreen);
+            font-size: 0.75rem;
+            font-weight: normal;
+            color: var(--copper-bright);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: rgba(184, 115, 51, 0.1);
+            border-bottom: var(--trace-width) solid var(--copper-dark);
+        }
+
+        .pcb-table td {
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: 1px solid rgba(184, 115, 51, 0.1);
+            vertical-align: top;
+        }
+
+        .pcb-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pcb-table tr:hover td {
+            background: rgba(184, 115, 51, 0.05);
+        }
+
+        /* ============================================
+           KEY CAPS (keyboard shortcut styling)
+           ============================================ */
+
+        kbd {
+            display: inline-block;
+            padding: 2px 7px;
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--pcb-green-dark);
+            background: linear-gradient(180deg, var(--solder-bright) 0%, var(--solder) 100%);
+            border: 1px solid #999;
+            border-radius: 3px;
+            box-shadow: 0 2px 0 #888, 0 3px 2px rgba(0,0,0,0.3);
+            line-height: 1.4;
+            white-space: nowrap;
+            vertical-align: baseline;
+        }
+
+        kbd.gold-key {
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-pale) 100%);
+            border-color: var(--copper);
+            box-shadow: 0 2px 0 var(--copper-dark), 0 3px 2px rgba(0,0,0,0.3);
+        }
+
+        kbd.copper-key {
+            background: linear-gradient(180deg, var(--copper-light) 0%, var(--copper) 100%);
+            border-color: var(--copper-dark);
+            box-shadow: 0 2px 0 var(--copper-dark), 0 3px 2px rgba(0,0,0,0.3);
+        }
+
+        /* ============================================
+           CODE BLOCKS - PCB COMPONENT WINDOWS
+           ============================================ */
+
+        .component-block {
+            margin: var(--space-md) 0;
+            border: var(--trace-width) solid var(--copper-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            background: var(--pcb-green-dark);
+        }
+
+        .component-block .component-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 6px var(--space-md);
+            background: rgba(184, 115, 51, 0.12);
+            border-bottom: 1px solid var(--copper-dark);
+        }
+
+        .component-block .component-header .chip-icon {
+            width: 14px;
+            height: 10px;
+            background: var(--copper);
+            border-radius: 1px;
+            position: relative;
+        }
+
+        .component-block .component-header .chip-icon::before,
+        .component-block .component-header .chip-icon::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            height: 1px;
+            background: var(--pcb-green-dark);
+        }
+
+        .component-block .component-header .chip-icon::before { top: 3px; }
+        .component-block .component-header .chip-icon::after { bottom: 3px; }
+
+        .component-block .component-header span {
+            font-family: var(--font-silkscreen);
+            font-size: 0.65rem;
+            color: var(--copper-light);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .component-block pre {
+            padding: var(--space-md);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: var(--silkscreen);
+        }
+
+        .component-block code {
+            font-family: var(--font-mono);
+        }
+
+        /* Inline code */
+        code:not(pre code) {
+            padding: 1px 5px;
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            color: var(--copper-bright);
+            background: rgba(184, 115, 51, 0.1);
+            border: 1px solid rgba(184, 115, 51, 0.2);
+            border-radius: 2px;
+        }
+
+        /* ============================================
+           QUICK REFERENCE GRID
+           ============================================ */
+
+        .quick-ref {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .quick-ref-card {
+            border: var(--trace-width) solid var(--copper-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            background: rgba(26, 71, 42, 0.5);
+        }
+
+        .quick-ref-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: rgba(184, 115, 51, 0.1);
+            border-bottom: 1px solid var(--copper-dark);
+        }
+
+        .quick-ref-card .card-header .via-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--pcb-green-dark);
+            border: 2px solid var(--copper);
+            flex-shrink: 0;
+        }
+
+        .quick-ref-card .card-header h3 {
+            font-family: var(--font-silkscreen);
+            font-size: 0.7rem;
+            color: var(--copper-light);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+
+        .quick-ref-card .card-body {
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .quick-ref-card .card-body .cmd-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(184, 115, 51, 0.06);
+            gap: var(--space-sm);
+        }
+
+        .quick-ref-card .card-body .cmd-row:last-child {
+            border-bottom: none;
+        }
+
+        .quick-ref-card .cmd-key {
+            flex-shrink: 0;
+        }
+
+        .quick-ref-card .cmd-desc {
+            font-size: 0.75rem;
+            color: var(--silkscreen-dim);
+            text-align: right;
+        }
+
+        /* ============================================
+           COLLAPSIBLE SECTIONS
+           ============================================ */
+
+        .collapsible {
+            margin-bottom: var(--space-md);
+            border: 1px solid rgba(184, 115, 51, 0.15);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: rgba(26, 71, 42, 0.4);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(184, 115, 51, 0.08);
+        }
+
+        .collapsible-header .toggle-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid var(--copper-dark);
+            color: var(--copper);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .collapsible.open .collapsible-header .toggle-indicator {
+            transform: rotate(90deg);
+            background: rgba(184, 115, 51, 0.15);
+        }
+
+        .collapsible-header h4 {
+            font-family: var(--font-silkscreen);
+            font-size: 0.8rem;
+            color: var(--silkscreen);
+            font-weight: normal;
+            letter-spacing: 1px;
+        }
+
+        .collapsible-body {
+            display: none;
+            padding: var(--space-md);
+            border-top: 1px solid rgba(184, 115, 51, 0.1);
+        }
+
+        .collapsible.open .collapsible-body {
+            display: block;
+        }
+
+        /* ============================================
+           SUBSECTION HEADINGS
+           ============================================ */
+
+        .subsection-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin: var(--space-lg) 0 var(--space-md);
+            font-family: var(--font-silkscreen);
+            font-size: 0.85rem;
+            color: var(--copper-light);
+            letter-spacing: 1px;
+        }
+
+        .subsection-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--copper);
+            border-radius: 1px;
+            transform: rotate(45deg);
+            flex-shrink: 0;
+        }
+
+        /* Paragraph text */
+        .desc-text {
+            font-size: 0.85rem;
+            color: var(--silkscreen-dim);
+            line-height: 1.7;
+            margin-bottom: var(--space-md);
+        }
+
+        /* Tip/note callouts */
+        .pcb-callout {
+            display: flex;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            margin: var(--space-md) 0;
+            background: rgba(184, 115, 51, 0.06);
+            border-left: 3px solid var(--copper);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .pcb-callout .callout-icon {
+            font-size: 0.7rem;
+            color: var(--led-amber);
+            font-family: var(--font-display);
+            font-weight: 700;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .pcb-callout .callout-text {
+            font-size: 0.82rem;
+            color: var(--silkscreen-dim);
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           COMMAND LIST STYLE
+           ============================================ */
+
+        .cmd-list {
+            list-style: none;
+            margin-bottom: var(--space-md);
+        }
+
+        .cmd-list li {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-md);
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(184, 115, 51, 0.06);
+            font-size: 0.85rem;
+        }
+
+        .cmd-list li:last-child { border-bottom: none; }
+
+        .cmd-list .cmd { flex-shrink: 0; min-width: 140px; }
+        .cmd-list .explanation { color: var(--silkscreen-dim); }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+
+        .pcb-footer {
+            text-align: center;
+            padding: var(--space-xl) 0 var(--space-lg);
+            border-top: var(--trace-width) solid var(--copper-dark);
+            margin-top: var(--space-2xl);
+        }
+
+        .pcb-footer .footer-text {
+            font-size: 0.7rem;
+            color: var(--silkscreen-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .pcb-footer .footer-traces {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: var(--space-md);
+        }
+
+        .pcb-footer .footer-trace {
+            width: 30px;
+            height: 2px;
+            background: var(--copper-dark);
+            border-radius: 1px;
+        }
+
+        /* Gold contacts bottom */
+        .gold-contacts-bottom {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 0;
+            background: var(--pcb-green-dark);
+            border-top: var(--trace-width) solid var(--copper-dark);
+            position: relative;
+        }
+
+        .gold-contacts-bottom::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--copper) 10%,
+                var(--gold) 50%,
+                var(--copper) 90%,
+                transparent 100%
+            );
+        }
+
+        .gold-contacts-bottom .gold-finger {
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+
+        @media (max-width: 768px) {
+            .pcb-board { padding: 0 var(--space-md); }
+
+            .quick-ref {
+                grid-template-columns: 1fr;
+            }
+
+            .trace-nav-inner {
+                flex-wrap: nowrap;
+                gap: var(--space-sm);
+            }
+
+            .trace-nav a {
+                font-size: 0.65rem;
+                padding: 3px 8px;
+            }
+
+            .pcb-table { font-size: 0.78rem; }
+            .pcb-table th, .pcb-table td { padding: 6px 8px; }
+
+            .section-header h2 { font-size: 1rem; }
+
+            .cmd-list li { flex-direction: column; gap: 2px; }
+            .cmd-list .cmd { min-width: unset; }
+        }
+
+        @media (max-width: 480px) {
+            html { font-size: 14px; }
+            .pcb-header h1 { letter-spacing: 2px; }
+            .gold-finger { width: 12px; height: 16px; }
+        }
+
+        /* ============================================
+           UTILITY & ANIMATION
+           ============================================ */
+
+        .hidden { display: none !important; }
+
+        .copper-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--copper-dark), transparent);
+            margin: var(--space-lg) 0;
+        }
+
+        .trace-line {
+            display: block;
+            height: 2px;
+            background: var(--copper-dark);
+            margin: var(--space-sm) 0;
+            border-radius: 1px;
+        }
+
+        /* Searchable element highlight */
+        .search-highlight {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 2px;
+        }
+
+        .search-hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GOLD CONTACT FINGERS - TOP -->
+    <div class="gold-contacts-top">
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+    </div>
+
+    <!-- STICKY NAVIGATION -->
+    <nav class="trace-nav" id="mainNav">
+        <div class="trace-nav-inner">
+            <span class="nav-label">Trace:</span>
+            <a href="#quick-ref">Quick Ref</a>
+            <a href="#modes">Modes</a>
+            <a href="#movement">Movement</a>
+            <a href="#editing">Editing</a>
+            <a href="#text-objects">Text Obj</a>
+            <a href="#visual">Visual</a>
+            <a href="#search">Search</a>
+            <a href="#registers">Registers</a>
+            <a href="#windows">Windows</a>
+            <a href="#files">Files</a>
+            <a href="#command-line">Ex Cmds</a>
+            <a href="#neovim">Neovim</a>
+            <a href="#config">Config</a>
+            <a href="#tips">Pro Tips</a>
+        </div>
+    </nav>
+
+    <div class="pcb-board">
+
+        <!-- BACK LINK -->
+        <a href="index.html" class="back-link">Tech Guides</a>
+
+        <!-- HEADER -->
+        <header class="pcb-header">
+            <div class="via-decoration via-tl"></div>
+            <div class="via-decoration via-tr"></div>
+            <div class="via-decoration via-bl"></div>
+            <div class="via-decoration via-br"></div>
+
+            <div class="silkscreen-label">REF DES: U1 &mdash; Modal Text Editor IC</div>
+            <h1>VIM / NEOVIM</h1>
+            <div class="subtitle">Modal Editor &mdash; Complete Reference</div>
+            <div class="version-badge">Vim 9.x / Neovim 0.10+</div>
+
+            <div class="led-cluster">
+                <div class="led"><span class="led-dot green"></span> Normal</div>
+                <div class="led"><span class="led-dot amber"></span> Insert</div>
+                <div class="led"><span class="led-dot red"></span> Visual</div>
+            </div>
+        </header>
+
+        <!-- SEARCH -->
+        <div class="search-container">
+            <span class="search-icon">&#9906;</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search commands, motions, operations...">
+            <div class="search-results-count" id="searchCount"></div>
+        </div>
+
+        <!-- ============================================
+             QUICK REFERENCE CHEAT SHEET
+             ============================================ -->
+        <section class="pcb-section" id="quick-ref">
+            <div class="section-header">
+                <div class="solder-pad">QR</div>
+                <h2>Quick Reference</h2>
+            </div>
+            <p class="section-description">Essential commands at a glance. The most frequently used Vim operations organized by category.</p>
+
+            <div class="quick-ref">
+
+                <!-- Mode Switching -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Mode Switching</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd></span><span class="cmd-desc">Insert before cursor</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>a</kbd></span><span class="cmd-desc">Insert after cursor</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>o</kbd></span><span class="cmd-desc">New line below</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>v</kbd></span><span class="cmd-desc">Visual (char)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>V</kbd></span><span class="cmd-desc">Visual (line)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>Ctrl</kbd>+<kbd>v</kbd></span><span class="cmd-desc">Visual (block)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:</kbd></span><span class="cmd-desc">Command-line mode</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>R</kbd></span><span class="cmd-desc">Replace mode</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>Esc</kbd></span><span class="cmd-desc">Return to Normal</span></div>
+                    </div>
+                </div>
+
+                <!-- Essential Motions -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Essential Motions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></span><span class="cmd-desc">Left / Down / Up / Right</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>w</kbd> / <kbd>b</kbd> / <kbd>e</kbd></span><span class="cmd-desc">Word fwd / back / end</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>0</kbd> / <kbd>$</kbd></span><span class="cmd-desc">Line start / end</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>^</kbd></span><span class="cmd-desc">First non-blank</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>gg</kbd> / <kbd>G</kbd></span><span class="cmd-desc">File top / bottom</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>{</kbd> / <kbd>}</kbd></span><span class="cmd-desc">Paragraph prev / next</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>%</kbd></span><span class="cmd-desc">Matching bracket</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>f</kbd><kbd>c</kbd> / <kbd>t</kbd><kbd>c</kbd></span><span class="cmd-desc">Find / till char</span></div>
+                    </div>
+                </div>
+
+                <!-- Core Operations -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Core Operations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>d</kbd>{motion}</span><span class="cmd-desc">Delete</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>c</kbd>{motion}</span><span class="cmd-desc">Change (delete + insert)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>y</kbd>{motion}</span><span class="cmd-desc">Yank (copy)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>p</kbd> / <kbd>P</kbd></span><span class="cmd-desc">Paste after / before</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>u</kbd></span><span class="cmd-desc">Undo</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>Ctrl</kbd>+<kbd>r</kbd></span><span class="cmd-desc">Redo</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>.</kbd></span><span class="cmd-desc">Repeat last change</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>x</kbd></span><span class="cmd-desc">Delete char</span></div>
+                    </div>
+                </div>
+
+                <!-- Text Objects -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Text Objects</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>w</kbd> / <kbd>a</kbd><kbd>w</kbd></span><span class="cmd-desc">Inner / around word</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>"</kbd> / <kbd>a</kbd><kbd>"</kbd></span><span class="cmd-desc">Inner / around quotes</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>(</kbd> / <kbd>a</kbd><kbd>(</kbd></span><span class="cmd-desc">Inner / around parens</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>{</kbd> / <kbd>a</kbd><kbd>{</kbd></span><span class="cmd-desc">Inner / around braces</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>t</kbd> / <kbd>a</kbd><kbd>t</kbd></span><span class="cmd-desc">Inner / around tags</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>s</kbd> / <kbd>a</kbd><kbd>s</kbd></span><span class="cmd-desc">Inner / around sentence</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>i</kbd><kbd>p</kbd> / <kbd>a</kbd><kbd>p</kbd></span><span class="cmd-desc">Inner / around paragraph</span></div>
+                    </div>
+                </div>
+
+                <!-- Save & Quit -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Save &amp; Quit</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:w</kbd></span><span class="cmd-desc">Save (write)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:q</kbd></span><span class="cmd-desc">Quit</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:wq</kbd></span><span class="cmd-desc">Save and quit</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:q!</kbd></span><span class="cmd-desc">Quit without saving</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>ZZ</kbd></span><span class="cmd-desc">Save and quit (normal)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>ZQ</kbd></span><span class="cmd-desc">Quit without saving (normal)</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:wa</kbd></span><span class="cmd-desc">Save all buffers</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:qa</kbd></span><span class="cmd-desc">Quit all</span></div>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="quick-ref-card" data-searchable>
+                    <div class="card-header">
+                        <div class="via-icon"></div>
+                        <h3>Search &amp; Replace</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="cmd-row"><span class="cmd-key"><kbd>/</kbd>pattern</span><span class="cmd-desc">Search forward</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>?</kbd>pattern</span><span class="cmd-desc">Search backward</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>n</kbd> / <kbd>N</kbd></span><span class="cmd-desc">Next / previous match</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>*</kbd> / <kbd>#</kbd></span><span class="cmd-desc">Word under cursor fwd / back</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:%s/old/new/g</kbd></span><span class="cmd-desc">Global replace</span></div>
+                        <div class="cmd-row"><span class="cmd-key"><kbd>:%s/old/new/gc</kbd></span><span class="cmd-desc">Replace with confirm</span></div>
+                    </div>
+                </div>
+
+            </div><!-- /quick-ref -->
+        </section>
+
+        <!-- ============================================
+             SECTION 1: MODES
+             ============================================ -->
+        <section class="pcb-section" id="modes">
+            <div class="section-header">
+                <div class="solder-pad">01</div>
+                <h2>Modes</h2>
+            </div>
+            <p class="section-description">Vim is a modal editor. Each mode changes how the keyboard behaves. Mastering mode transitions is the foundation of Vim fluency.</p>
+
+            <div class="pcb-table-wrapper" data-searchable>
+                <table class="pcb-table">
+                    <caption>Mode Reference</caption>
+                    <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>Enter</th>
+                            <th>Exit</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Normal</strong></td>
+                            <td><kbd>Esc</kbd> or <kbd>Ctrl</kbd>+<kbd>[</kbd></td>
+                            <td>(default mode)</td>
+                            <td>Navigate, operate on text, compose commands</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Insert</strong></td>
+                            <td><kbd>i</kbd> <kbd>a</kbd> <kbd>o</kbd> <kbd>I</kbd> <kbd>A</kbd> <kbd>O</kbd> <kbd>s</kbd> <kbd>S</kbd> <kbd>c</kbd>{motion}</td>
+                            <td><kbd>Esc</kbd></td>
+                            <td>Type text into the buffer</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Visual</strong></td>
+                            <td><kbd>v</kbd> (char) <kbd>V</kbd> (line) <kbd>Ctrl</kbd>+<kbd>v</kbd> (block)</td>
+                            <td><kbd>Esc</kbd></td>
+                            <td>Select text for operations</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Command-line</strong></td>
+                            <td><kbd>:</kbd> (Ex) <kbd>/</kbd> (search fwd) <kbd>?</kbd> (search back)</td>
+                            <td><kbd>Esc</kbd> or <kbd>Enter</kbd></td>
+                            <td>Execute Ex commands, search</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Replace</strong></td>
+                            <td><kbd>R</kbd> (overtype) <kbd>r</kbd> (single char)</td>
+                            <td><kbd>Esc</kbd></td>
+                            <td>Overwrite existing text in place</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Insert Mode Entry Points</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>i</kbd></span><span class="explanation">Insert before cursor</span></li>
+                        <li><span class="cmd"><kbd>I</kbd></span><span class="explanation">Insert at beginning of line (first non-blank)</span></li>
+                        <li><span class="cmd"><kbd>a</kbd></span><span class="explanation">Append after cursor</span></li>
+                        <li><span class="cmd"><kbd>A</kbd></span><span class="explanation">Append at end of line</span></li>
+                        <li><span class="cmd"><kbd>o</kbd></span><span class="explanation">Open new line below and enter insert</span></li>
+                        <li><span class="cmd"><kbd>O</kbd></span><span class="explanation">Open new line above and enter insert</span></li>
+                        <li><span class="cmd"><kbd>s</kbd></span><span class="explanation">Substitute character (delete char, enter insert)</span></li>
+                        <li><span class="cmd"><kbd>S</kbd></span><span class="explanation">Substitute line (delete line content, enter insert)</span></li>
+                        <li><span class="cmd"><kbd>c</kbd>{motion}</span><span class="explanation">Change: delete motion target and enter insert</span></li>
+                        <li><span class="cmd"><kbd>C</kbd></span><span class="explanation">Change to end of line</span></li>
+                        <li><span class="cmd"><kbd>gi</kbd></span><span class="explanation">Insert at last insert position</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pcb-callout">
+                <span class="callout-icon">TIP</span>
+                <span class="callout-text">Use <kbd>Ctrl</kbd>+<kbd>[</kbd> as a faster alternative to <kbd>Esc</kbd>. Many Vim users also remap <kbd>Caps Lock</kbd> to <kbd>Esc</kbd> or <kbd>Ctrl</kbd> at the OS level for ergonomics.</span>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 2: MOVEMENT & NAVIGATION
+             ============================================ -->
+        <section class="pcb-section" id="movement">
+            <div class="section-header">
+                <div class="solder-pad">02</div>
+                <h2>Movement &amp; Navigation</h2>
+            </div>
+            <p class="section-description">Movement commands are the building blocks of Vim's composable editing language. Every motion can be combined with operators like <kbd>d</kbd>, <kbd>c</kbd>, and <kbd>y</kbd>.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Character &amp; Word Motion</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Key</th><th>Action</th><th>Notes</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><kbd>h</kbd></td><td>Move left</td><td></td></tr>
+                                <tr><td><kbd>j</kbd></td><td>Move down</td><td></td></tr>
+                                <tr><td><kbd>k</kbd></td><td>Move up</td><td></td></tr>
+                                <tr><td><kbd>l</kbd></td><td>Move right</td><td></td></tr>
+                                <tr><td><kbd>w</kbd></td><td>Next word start</td><td>Punctuation-delimited</td></tr>
+                                <tr><td><kbd>W</kbd></td><td>Next WORD start</td><td>Whitespace-delimited</td></tr>
+                                <tr><td><kbd>b</kbd></td><td>Previous word start</td><td></td></tr>
+                                <tr><td><kbd>B</kbd></td><td>Previous WORD start</td><td></td></tr>
+                                <tr><td><kbd>e</kbd></td><td>End of word</td><td></td></tr>
+                                <tr><td><kbd>E</kbd></td><td>End of WORD</td><td></td></tr>
+                                <tr><td><kbd>ge</kbd></td><td>End of previous word</td><td></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Line Motion</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>0</kbd></span><span class="explanation">Move to first column (absolute start of line)</span></li>
+                        <li><span class="cmd"><kbd>^</kbd></span><span class="explanation">Move to first non-blank character</span></li>
+                        <li><span class="cmd"><kbd>$</kbd></span><span class="explanation">Move to end of line</span></li>
+                        <li><span class="cmd"><kbd>g_</kbd></span><span class="explanation">Move to last non-blank character</span></li>
+                        <li><span class="cmd"><kbd>+</kbd></span><span class="explanation">First non-blank of next line</span></li>
+                        <li><span class="cmd"><kbd>-</kbd></span><span class="explanation">First non-blank of previous line</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>|</kbd></span><span class="explanation">Go to column n</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Paragraph &amp; File Motion</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>{</kbd></span><span class="explanation">Previous blank line (paragraph start)</span></li>
+                        <li><span class="cmd"><kbd>}</kbd></span><span class="explanation">Next blank line (paragraph end)</span></li>
+                        <li><span class="cmd"><kbd>(</kbd></span><span class="explanation">Previous sentence</span></li>
+                        <li><span class="cmd"><kbd>)</kbd></span><span class="explanation">Next sentence</span></li>
+                        <li><span class="cmd"><kbd>gg</kbd></span><span class="explanation">Go to first line of file</span></li>
+                        <li><span class="cmd"><kbd>G</kbd></span><span class="explanation">Go to last line of file</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>G</kbd></span><span class="explanation">Go to line n</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>gg</kbd></span><span class="explanation">Go to line n (alternative)</span></li>
+                        <li><span class="cmd"><kbd>%</kbd></span><span class="explanation">Jump to matching bracket/paren/brace</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Screen Motion</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>H</kbd></span><span class="explanation">Move cursor to top of screen</span></li>
+                        <li><span class="cmd"><kbd>M</kbd></span><span class="explanation">Move cursor to middle of screen</span></li>
+                        <li><span class="cmd"><kbd>L</kbd></span><span class="explanation">Move cursor to bottom of screen</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>f</kbd></span><span class="explanation">Scroll full page down</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>b</kbd></span><span class="explanation">Scroll full page up</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>d</kbd></span><span class="explanation">Scroll half page down</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>u</kbd></span><span class="explanation">Scroll half page up</span></li>
+                        <li><span class="cmd"><kbd>zz</kbd></span><span class="explanation">Center current line on screen</span></li>
+                        <li><span class="cmd"><kbd>zt</kbd></span><span class="explanation">Move current line to top of screen</span></li>
+                        <li><span class="cmd"><kbd>zb</kbd></span><span class="explanation">Move current line to bottom of screen</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Character Search (Within Line)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>f</kbd>{char}</span><span class="explanation">Jump to next occurrence of char on current line</span></li>
+                        <li><span class="cmd"><kbd>F</kbd>{char}</span><span class="explanation">Jump to previous occurrence of char on current line</span></li>
+                        <li><span class="cmd"><kbd>t</kbd>{char}</span><span class="explanation">Jump to just before next occurrence of char</span></li>
+                        <li><span class="cmd"><kbd>T</kbd>{char}</span><span class="explanation">Jump to just after previous occurrence of char</span></li>
+                        <li><span class="cmd"><kbd>;</kbd></span><span class="explanation">Repeat last f/F/t/T search</span></li>
+                        <li><span class="cmd"><kbd>,</kbd></span><span class="explanation">Repeat last f/F/t/T in reverse direction</span></li>
+                    </ul>
+                    <div class="pcb-callout">
+                        <span class="callout-icon">TIP</span>
+                        <span class="callout-text"><kbd>f</kbd> and <kbd>t</kbd> are among Vim's most powerful motions. Use <kbd>dt)</kbd> to delete up to a closing paren, or <kbd>cf"</kbd> to change up to and including the next double quote.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Marks &amp; Jumps</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>m</kbd>{a-z}</span><span class="explanation">Set local mark (within file)</span></li>
+                        <li><span class="cmd"><kbd>m</kbd>{A-Z}</span><span class="explanation">Set global mark (across files)</span></li>
+                        <li><span class="cmd"><kbd>'</kbd>{mark}</span><span class="explanation">Jump to line of mark</span></li>
+                        <li><span class="cmd"><kbd>`</kbd>{mark}</span><span class="explanation">Jump to exact position of mark</span></li>
+                        <li><span class="cmd"><kbd>''</kbd></span><span class="explanation">Jump to last jump position (line)</span></li>
+                        <li><span class="cmd"><kbd>``</kbd></span><span class="explanation">Jump to last jump position (exact)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>o</kbd></span><span class="explanation">Jump to older position in jump list</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>i</kbd></span><span class="explanation">Jump to newer position in jump list</span></li>
+                        <li><span class="cmd"><kbd>g;</kbd></span><span class="explanation">Go to older position in change list</span></li>
+                        <li><span class="cmd"><kbd>g,</kbd></span><span class="explanation">Go to newer position in change list</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 3: EDITING OPERATIONS
+             ============================================ -->
+        <section class="pcb-section" id="editing">
+            <div class="section-header">
+                <div class="solder-pad">03</div>
+                <h2>Editing Operations</h2>
+            </div>
+            <p class="section-description">Vim's editing grammar follows the pattern: <code>[count][operator][count][motion/text-object]</code>. Learn operators and motions separately, then combine them freely.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Delete</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>x</kbd></span><span class="explanation">Delete character under cursor</span></li>
+                        <li><span class="cmd"><kbd>X</kbd></span><span class="explanation">Delete character before cursor</span></li>
+                        <li><span class="cmd"><kbd>dd</kbd></span><span class="explanation">Delete entire line</span></li>
+                        <li><span class="cmd"><kbd>D</kbd></span><span class="explanation">Delete from cursor to end of line</span></li>
+                        <li><span class="cmd"><kbd>d</kbd>{motion}</span><span class="explanation">Delete over motion (e.g., <kbd>dw</kbd>, <kbd>d$</kbd>, <kbd>dgg</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>d</kbd>{text-obj}</span><span class="explanation">Delete text object (e.g., <kbd>diw</kbd>, <kbd>da"</kbd>, <kbd>dip</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>dd</kbd></span><span class="explanation">Delete n lines</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Change</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>cc</kbd></span><span class="explanation">Change entire line (delete and enter insert)</span></li>
+                        <li><span class="cmd"><kbd>C</kbd></span><span class="explanation">Change from cursor to end of line</span></li>
+                        <li><span class="cmd"><kbd>c</kbd>{motion}</span><span class="explanation">Change over motion (e.g., <kbd>cw</kbd>, <kbd>c$</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>c</kbd>{text-obj}</span><span class="explanation">Change text object (e.g., <kbd>ci"</kbd>, <kbd>ca(</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>s</kbd></span><span class="explanation">Substitute character (delete + insert, same as <kbd>cl</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>S</kbd></span><span class="explanation">Substitute line (same as <kbd>cc</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>r</kbd>{char}</span><span class="explanation">Replace single character (stays in normal mode)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Yank &amp; Put (Copy &amp; Paste)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>yy</kbd></span><span class="explanation">Yank (copy) entire line</span></li>
+                        <li><span class="cmd"><kbd>Y</kbd></span><span class="explanation">Yank entire line (same as <kbd>yy</kbd>; Neovim maps to <kbd>y$</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>y</kbd>{motion}</span><span class="explanation">Yank over motion (e.g., <kbd>yw</kbd>, <kbd>y$</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>y</kbd>{text-obj}</span><span class="explanation">Yank text object (e.g., <kbd>yiw</kbd>, <kbd>ya"</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>p</kbd></span><span class="explanation">Put (paste) after cursor / below line</span></li>
+                        <li><span class="cmd"><kbd>P</kbd></span><span class="explanation">Put (paste) before cursor / above line</span></li>
+                        <li><span class="cmd"><kbd>gp</kbd></span><span class="explanation">Put after and move cursor past pasted text</span></li>
+                        <li><span class="cmd"><kbd>gP</kbd></span><span class="explanation">Put before and move cursor past pasted text</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Undo, Redo &amp; Repeat</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>u</kbd></span><span class="explanation">Undo last change</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>r</kbd></span><span class="explanation">Redo (undo the undo)</span></li>
+                        <li><span class="cmd"><kbd>U</kbd></span><span class="explanation">Undo all changes on current line</span></li>
+                        <li><span class="cmd"><kbd>.</kbd></span><span class="explanation">Repeat last change (the dot command)</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>u</kbd></span><span class="explanation">Undo n changes</span></li>
+                    </ul>
+                    <div class="pcb-callout">
+                        <span class="callout-icon">TIP</span>
+                        <span class="callout-text">The <kbd>.</kbd> command is one of Vim's most powerful features. Structure your edits so they are repeatable: for example, <kbd>ciw</kbd>replacement<kbd>Esc</kbd> can be repeated on other words with just <kbd>.</kbd></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Indentation &amp; Formatting</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>>></kbd></span><span class="explanation">Indent current line</span></li>
+                        <li><span class="cmd"><kbd><<</kbd></span><span class="explanation">Outdent current line</span></li>
+                        <li><span class="cmd"><kbd>></kbd>{motion}</span><span class="explanation">Indent over motion</span></li>
+                        <li><span class="cmd"><kbd>=</kbd>{motion}</span><span class="explanation">Auto-indent over motion</span></li>
+                        <li><span class="cmd"><kbd>==</kbd></span><span class="explanation">Auto-indent current line</span></li>
+                        <li><span class="cmd"><kbd>gg=G</kbd></span><span class="explanation">Auto-indent entire file</span></li>
+                        <li><span class="cmd"><kbd>J</kbd></span><span class="explanation">Join current line with next (with space)</span></li>
+                        <li><span class="cmd"><kbd>gJ</kbd></span><span class="explanation">Join lines without space</span></li>
+                        <li><span class="cmd"><kbd>gq</kbd>{motion}</span><span class="explanation">Format/rewrap text over motion</span></li>
+                        <li><span class="cmd"><kbd>~</kbd></span><span class="explanation">Toggle case of character</span></li>
+                        <li><span class="cmd"><kbd>gU</kbd>{motion}</span><span class="explanation">Uppercase over motion</span></li>
+                        <li><span class="cmd"><kbd>gu</kbd>{motion}</span><span class="explanation">Lowercase over motion</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 4: TEXT OBJECTS
+             ============================================ -->
+        <section class="pcb-section" id="text-objects">
+            <div class="section-header">
+                <div class="solder-pad">04</div>
+                <h2>Text Objects</h2>
+            </div>
+            <p class="section-description">Text objects define structured regions of text. They are used with operators (<kbd>d</kbd>, <kbd>c</kbd>, <kbd>y</kbd>, <kbd>v</kbd>) and come in two flavors: <strong>inner</strong> (<kbd>i</kbd>) excludes delimiters, <strong>around</strong> (<kbd>a</kbd>) includes them.</p>
+
+            <div class="pcb-table-wrapper" data-searchable>
+                <table class="pcb-table">
+                    <caption>Text Object Reference</caption>
+                    <thead>
+                        <tr>
+                            <th>Inner</th>
+                            <th>Around</th>
+                            <th>Selects</th>
+                            <th>Example Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><kbd>iw</kbd></td>
+                            <td><kbd>aw</kbd></td>
+                            <td>Word</td>
+                            <td><kbd>ciw</kbd> change inner word, <kbd>daw</kbd> delete word + surrounding space</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>iW</kbd></td>
+                            <td><kbd>aW</kbd></td>
+                            <td>WORD (whitespace-delimited)</td>
+                            <td><kbd>diW</kbd> delete WORD including punctuation</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>is</kbd></td>
+                            <td><kbd>as</kbd></td>
+                            <td>Sentence</td>
+                            <td><kbd>das</kbd> delete sentence and trailing space</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>ip</kbd></td>
+                            <td><kbd>ap</kbd></td>
+                            <td>Paragraph</td>
+                            <td><kbd>yap</kbd> yank paragraph with surrounding blank lines</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i"</kbd></td>
+                            <td><kbd>a"</kbd></td>
+                            <td>Double-quoted string</td>
+                            <td><kbd>ci"</kbd> change text inside double quotes</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i'</kbd></td>
+                            <td><kbd>a'</kbd></td>
+                            <td>Single-quoted string</td>
+                            <td><kbd>di'</kbd> delete text inside single quotes</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i`</kbd></td>
+                            <td><kbd>a`</kbd></td>
+                            <td>Backtick-quoted string</td>
+                            <td><kbd>ci`</kbd> change inside backticks</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i(</kbd> or <kbd>ib</kbd></td>
+                            <td><kbd>a(</kbd> or <kbd>ab</kbd></td>
+                            <td>Parentheses</td>
+                            <td><kbd>di(</kbd> delete inside parens</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i[</kbd></td>
+                            <td><kbd>a[</kbd></td>
+                            <td>Square brackets</td>
+                            <td><kbd>ci[</kbd> change inside brackets</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i{</kbd> or <kbd>iB</kbd></td>
+                            <td><kbd>a{</kbd> or <kbd>aB</kbd></td>
+                            <td>Curly braces</td>
+                            <td><kbd>daB</kbd> delete braces and their content</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>i&lt;</kbd></td>
+                            <td><kbd>a&lt;</kbd></td>
+                            <td>Angle brackets</td>
+                            <td><kbd>ci&lt;</kbd> change inside angle brackets</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>it</kbd></td>
+                            <td><kbd>at</kbd></td>
+                            <td>HTML/XML tags</td>
+                            <td><kbd>cit</kbd> change inner tag content, <kbd>dat</kbd> delete entire tag</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pcb-callout">
+                <span class="callout-icon">TIP</span>
+                <span class="callout-text">Text objects work from anywhere inside the delimiters -- you don't need to position your cursor at the start. <kbd>ci"</kbd> from anywhere inside a quoted string will change its entire content. This is why text objects are often faster than motions.</span>
+            </div>
+
+            <div class="component-block" data-searchable>
+                <div class="component-header">
+                    <div class="chip-icon"></div>
+                    <span>Example: Text Object Combinations</span>
+                </div>
+                <pre><code># Given: function("hello world", 42)
+#                  ^cursor here
+
+ci"         # Changes "hello world" to whatever you type
+da(         # Deletes ("hello world", 42) including parens
+yi(         # Yanks: "hello world", 42
+
+# Given: &lt;div class="box"&gt;content here&lt;/div&gt;
+#                          ^cursor here
+
+cit         # Changes "content here" inside the tags
+dat         # Deletes the entire &lt;div&gt;...&lt;/div&gt;
+vat         # Visually selects the entire tag block</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 5: VISUAL MODE
+             ============================================ -->
+        <section class="pcb-section" id="visual">
+            <div class="section-header">
+                <div class="solder-pad">05</div>
+                <h2>Visual Mode</h2>
+            </div>
+            <p class="section-description">Visual mode lets you select text and then perform operations on the selection. Three sub-modes cover character, line, and block (column) selections.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Entering Visual Mode</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>v</kbd></span><span class="explanation">Character-wise visual mode</span></li>
+                        <li><span class="cmd"><kbd>V</kbd></span><span class="explanation">Line-wise visual mode</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>v</kbd></span><span class="explanation">Block-wise (column) visual mode</span></li>
+                        <li><span class="cmd"><kbd>gv</kbd></span><span class="explanation">Re-select the last visual selection</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Visual Mode Navigation</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>o</kbd></span><span class="explanation">Move to other end of selection</span></li>
+                        <li><span class="cmd"><kbd>O</kbd></span><span class="explanation">Move to other corner of block selection</span></li>
+                        <li><span class="cmd">All motions</span><span class="explanation">h/j/k/l, w/b/e, 0/$, etc. extend the selection</span></li>
+                        <li><span class="cmd">Text objects</span><span class="explanation"><kbd>iw</kbd>, <kbd>a"</kbd>, <kbd>ip</kbd>, etc. expand selection to match</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Operations on Visual Selections</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>d</kbd></span><span class="explanation">Delete selection</span></li>
+                        <li><span class="cmd"><kbd>c</kbd></span><span class="explanation">Change selection (delete + enter insert)</span></li>
+                        <li><span class="cmd"><kbd>y</kbd></span><span class="explanation">Yank (copy) selection</span></li>
+                        <li><span class="cmd"><kbd>></kbd> / <kbd><</kbd></span><span class="explanation">Indent / outdent selection</span></li>
+                        <li><span class="cmd"><kbd>=</kbd></span><span class="explanation">Auto-indent selection</span></li>
+                        <li><span class="cmd"><kbd>~</kbd></span><span class="explanation">Toggle case</span></li>
+                        <li><span class="cmd"><kbd>U</kbd> / <kbd>u</kbd></span><span class="explanation">Uppercase / lowercase selection</span></li>
+                        <li><span class="cmd"><kbd>J</kbd></span><span class="explanation">Join selected lines</span></li>
+                        <li><span class="cmd"><kbd>gq</kbd></span><span class="explanation">Format/rewrap selected text</span></li>
+                        <li><span class="cmd"><kbd>r</kbd>{char}</span><span class="explanation">Replace every character in selection with char</span></li>
+                        <li><span class="cmd"><kbd>:</kbd></span><span class="explanation">Enter command-line with range for selection</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Visual Block Operations</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">Visual Block mode (<kbd>Ctrl</kbd>+<kbd>v</kbd>) enables powerful column editing. Select a rectangular block, then use these commands:</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>I</kbd></span><span class="explanation">Insert before block on every line (type, then <kbd>Esc</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>A</kbd></span><span class="explanation">Append after block on every line</span></li>
+                        <li><span class="cmd"><kbd>c</kbd></span><span class="explanation">Change block content on every line</span></li>
+                        <li><span class="cmd"><kbd>r</kbd>{char}</span><span class="explanation">Replace entire block with char</span></li>
+                        <li><span class="cmd"><kbd>d</kbd></span><span class="explanation">Delete the block</span></li>
+                        <li><span class="cmd"><kbd>$</kbd></span><span class="explanation">Extend block to end of each line (ragged right)</span></li>
+                    </ul>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Example: Add Comment Prefix to Multiple Lines</span>
+                        </div>
+                        <pre><code># 1. Position cursor at start of first line
+# 2. Ctrl+v to enter visual block
+# 3. j j j to extend selection down 3 lines
+# 4. I to insert before block
+# 5. Type "// " (comment prefix)
+# 6. Esc -- all 4 lines now have "// " prepended</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 6: SEARCH & REPLACE
+             ============================================ -->
+        <section class="pcb-section" id="search">
+            <div class="section-header">
+                <div class="solder-pad">06</div>
+                <h2>Search &amp; Replace</h2>
+            </div>
+            <p class="section-description">Vim has powerful search with full regex support, incremental highlighting, and flexible substitution commands.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Basic Search</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>/</kbd>pattern</span><span class="explanation">Search forward for pattern</span></li>
+                        <li><span class="cmd"><kbd>?</kbd>pattern</span><span class="explanation">Search backward for pattern</span></li>
+                        <li><span class="cmd"><kbd>n</kbd></span><span class="explanation">Jump to next match (same direction)</span></li>
+                        <li><span class="cmd"><kbd>N</kbd></span><span class="explanation">Jump to previous match (reverse direction)</span></li>
+                        <li><span class="cmd"><kbd>*</kbd></span><span class="explanation">Search forward for word under cursor</span></li>
+                        <li><span class="cmd"><kbd>#</kbd></span><span class="explanation">Search backward for word under cursor</span></li>
+                        <li><span class="cmd"><kbd>g*</kbd></span><span class="explanation">Search forward (partial word match)</span></li>
+                        <li><span class="cmd"><kbd>g#</kbd></span><span class="explanation">Search backward (partial word match)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Substitution (Find &amp; Replace)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Command</th><th>Scope</th><th>Description</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><kbd>:s/old/new/</kbd></td><td>Current line</td><td>Replace first occurrence on current line</td></tr>
+                                <tr><td><kbd>:s/old/new/g</kbd></td><td>Current line</td><td>Replace all occurrences on current line</td></tr>
+                                <tr><td><kbd>:%s/old/new/g</kbd></td><td>Entire file</td><td>Replace all occurrences in file</td></tr>
+                                <tr><td><kbd>:%s/old/new/gc</kbd></td><td>Entire file</td><td>Replace all with confirmation prompt</td></tr>
+                                <tr><td><kbd>:%s/old/new/gi</kbd></td><td>Entire file</td><td>Replace all, case-insensitive</td></tr>
+                                <tr><td><kbd>:'&lt;,'&gt;s/old/new/g</kbd></td><td>Visual selection</td><td>Replace within visual selection</td></tr>
+                                <tr><td><kbd>:5,20s/old/new/g</kbd></td><td>Lines 5-20</td><td>Replace within line range</td></tr>
+                                <tr><td><kbd>:.,$s/old/new/g</kbd></td><td>Here to end</td><td>Replace from current line to end of file</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Global Command</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">The global command <kbd>:g</kbd> applies an Ex command to all lines matching a pattern. The inverse <kbd>:v</kbd> applies to non-matching lines.</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:g/pattern/d</kbd></span><span class="explanation">Delete all lines matching pattern</span></li>
+                        <li><span class="cmd"><kbd>:g/pattern/y A</kbd></span><span class="explanation">Yank matching lines (append to register a)</span></li>
+                        <li><span class="cmd"><kbd>:v/pattern/d</kbd></span><span class="explanation">Delete all lines NOT matching pattern (keep matches)</span></li>
+                        <li><span class="cmd"><kbd>:g/^$/d</kbd></span><span class="explanation">Delete all blank lines</span></li>
+                        <li><span class="cmd"><kbd>:g/pattern/m$</kbd></span><span class="explanation">Move all matching lines to end of file</span></li>
+                        <li><span class="cmd"><kbd>:g/pattern/norm A;</kbd></span><span class="explanation">Append semicolon to all matching lines</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Search Tips &amp; Regex</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:noh</kbd></span><span class="explanation">Clear search highlighting</span></li>
+                        <li><span class="cmd"><kbd>\v</kbd></span><span class="explanation">"Very magic" mode -- regex closer to PCRE</span></li>
+                        <li><span class="cmd"><kbd>\c</kbd></span><span class="explanation">Force case-insensitive for this search</span></li>
+                        <li><span class="cmd"><kbd>\C</kbd></span><span class="explanation">Force case-sensitive for this search</span></li>
+                        <li><span class="cmd"><kbd>\&lt; \&gt;</kbd></span><span class="explanation">Word boundary anchors</span></li>
+                        <li><span class="cmd"><kbd>\zs \ze</kbd></span><span class="explanation">Set match start/end within pattern</span></li>
+                    </ul>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Useful Regex Examples</span>
+                        </div>
+                        <pre><code># Delete trailing whitespace
+:%s/\s\+$//e
+
+# Convert tabs to 4 spaces
+:%s/\t/    /g
+
+# Wrap each line in quotes
+:%s/.*/"&"/
+
+# Remove duplicate blank lines
+:%s/\n\{3,}/\r\r/g
+
+# Search for whole word "foo" (case-insensitive)
+/\v&lt;foo&gt;\c</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 7: REGISTERS & MACROS
+             ============================================ -->
+        <section class="pcb-section" id="registers">
+            <div class="section-header">
+                <div class="solder-pad">07</div>
+                <h2>Registers &amp; Macros</h2>
+            </div>
+            <p class="section-description">Registers are Vim's named storage slots. They hold yanked/deleted text, macros, and special values. Macros record and replay sequences of keystrokes.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Register Types</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Register</th><th>Name</th><th>Description</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><kbd>""</kbd></td><td>Default (unnamed)</td><td>Last delete or yank goes here</td></tr>
+                                <tr><td><kbd>"0</kbd></td><td>Yank register</td><td>Last yank only (not affected by deletes)</td></tr>
+                                <tr><td><kbd>"1</kbd> - <kbd>"9</kbd></td><td>Numbered</td><td>Delete history (1=most recent, shifts down)</td></tr>
+                                <tr><td><kbd>"a</kbd> - <kbd>"z</kbd></td><td>Named</td><td>User-controlled, explicit storage</td></tr>
+                                <tr><td><kbd>"A</kbd> - <kbd>"Z</kbd></td><td>Append to named</td><td>Append to existing register content</td></tr>
+                                <tr><td><kbd>"+</kbd></td><td>System clipboard</td><td>OS clipboard (requires clipboard support)</td></tr>
+                                <tr><td><kbd>"*</kbd></td><td>Selection clipboard</td><td>X11 primary selection (Linux)</td></tr>
+                                <tr><td><kbd>"_</kbd></td><td>Black hole</td><td>Delete without affecting any register</td></tr>
+                                <tr><td><kbd>"/</kbd></td><td>Last search</td><td>Contains the last search pattern</td></tr>
+                                <tr><td><kbd>":</kbd></td><td>Last command</td><td>Contains the last Ex command</td></tr>
+                                <tr><td><kbd>".</kbd></td><td>Last insert</td><td>Contains text from last insert</td></tr>
+                                <tr><td><kbd>"=</kbd></td><td>Expression</td><td>Evaluate expression and use result</td></tr>
+                                <tr><td><kbd>"%</kbd></td><td>Current filename</td><td>Name of the current file</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Using Registers</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>"</kbd>{reg}<kbd>y</kbd>{motion}</span><span class="explanation">Yank into specific register (e.g., <kbd>"ayiw</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>"</kbd>{reg}<kbd>d</kbd>{motion}</span><span class="explanation">Delete into specific register</span></li>
+                        <li><span class="cmd"><kbd>"</kbd>{reg}<kbd>p</kbd></span><span class="explanation">Paste from specific register</span></li>
+                        <li><span class="cmd"><kbd>"0p</kbd></span><span class="explanation">Paste last yank (unaffected by deletes)</span></li>
+                        <li><span class="cmd"><kbd>"_dd</kbd></span><span class="explanation">Delete line without saving to any register</span></li>
+                        <li><span class="cmd"><kbd>"+y</kbd></span><span class="explanation">Yank to system clipboard</span></li>
+                        <li><span class="cmd"><kbd>"+p</kbd></span><span class="explanation">Paste from system clipboard</span></li>
+                        <li><span class="cmd"><kbd>:reg</kbd></span><span class="explanation">View contents of all registers</span></li>
+                        <li><span class="cmd"><kbd>:reg abc</kbd></span><span class="explanation">View contents of registers a, b, c</span></li>
+                    </ul>
+                    <div class="pcb-callout">
+                        <span class="callout-icon">TIP</span>
+                        <span class="callout-text"><kbd>"0p</kbd> is essential: after yanking then deleting, <kbd>p</kbd> pastes the delete, but <kbd>"0p</kbd> always pastes the last yank. This solves the common "I yanked something, then deleted something else, and now I can't paste what I yanked" problem.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Macros</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">Macros record a sequence of keystrokes into a register, then replay them. They are Vim's most powerful automation tool.</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>q</kbd>{a-z}</span><span class="explanation">Start recording macro into register</span></li>
+                        <li><span class="cmd"><kbd>q</kbd></span><span class="explanation">Stop recording</span></li>
+                        <li><span class="cmd"><kbd>@</kbd>{a-z}</span><span class="explanation">Play macro from register</span></li>
+                        <li><span class="cmd"><kbd>@@</kbd></span><span class="explanation">Replay the last played macro</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>@</kbd>{a-z}</span><span class="explanation">Play macro n times</span></li>
+                        <li><span class="cmd"><kbd>:'&lt;,'&gt;norm @a</kbd></span><span class="explanation">Play macro on each line of visual selection</span></li>
+                        <li><span class="cmd"><kbd>:5,20norm @a</kbd></span><span class="explanation">Play macro on lines 5 through 20</span></li>
+                    </ul>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Macro Recording Example</span>
+                        </div>
+                        <pre><code># Goal: Wrap each word in quotes on a list of words
+# Before: apple, banana, cherry
+# After:  "apple", "banana", "cherry"
+
+# Record macro:
+qa              # Start recording into register a
+f,              # Find next comma (or use w to move)
+i"&lt;Esc&gt;        # Insert quote before word
+ea"&lt;Esc&gt;        # Append quote after word
+q               # Stop recording
+
+# Then: @a to play, or 10@a to repeat 10 times</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 8: WINDOWS, TABS & BUFFERS
+             ============================================ -->
+        <section class="pcb-section" id="windows">
+            <div class="section-header">
+                <div class="solder-pad">08</div>
+                <h2>Windows, Tabs &amp; Buffers</h2>
+            </div>
+            <p class="section-description">Vim uses three layers of view management: buffers (open files), windows (viewport splits), and tabs (collections of windows). A buffer can be displayed in multiple windows.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Window Splits</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>s</kbd></span><span class="explanation">Horizontal split (same file)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>v</kbd></span><span class="explanation">Vertical split (same file)</span></li>
+                        <li><span class="cmd"><kbd>:sp file</kbd></span><span class="explanation">Horizontal split with file</span></li>
+                        <li><span class="cmd"><kbd>:vsp file</kbd></span><span class="explanation">Vertical split with file</span></li>
+                        <li><span class="cmd"><kbd>:new</kbd></span><span class="explanation">Horizontal split with new empty buffer</span></li>
+                        <li><span class="cmd"><kbd>:vnew</kbd></span><span class="explanation">Vertical split with new empty buffer</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Window Navigation</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>h</kbd></span><span class="explanation">Move to window left</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>j</kbd></span><span class="explanation">Move to window below</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>k</kbd></span><span class="explanation">Move to window above</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>l</kbd></span><span class="explanation">Move to window right</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>w</kbd></span><span class="explanation">Cycle through windows</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>p</kbd></span><span class="explanation">Go to previous (last accessed) window</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Window Resizing &amp; Moving</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>=</kbd></span><span class="explanation">Make all windows equal size</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>_</kbd></span><span class="explanation">Maximize height of current window</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>|</kbd></span><span class="explanation">Maximize width of current window</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>+</kbd></span><span class="explanation">Increase height</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>-</kbd></span><span class="explanation">Decrease height</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>></kbd></span><span class="explanation">Increase width</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd><</kbd></span><span class="explanation">Decrease width</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>H</kbd></span><span class="explanation">Move window to far left</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>J</kbd></span><span class="explanation">Move window to bottom</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>K</kbd></span><span class="explanation">Move window to top</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>L</kbd></span><span class="explanation">Move window to far right</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>T</kbd></span><span class="explanation">Move window to new tab</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Window Close</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>q</kbd></span><span class="explanation">Close current window (quit if last)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>c</kbd></span><span class="explanation">Close current window (never quits Vim)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>o</kbd></span><span class="explanation">Close all other windows (only keep current)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Tabs</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:tabnew</kbd></span><span class="explanation">Open new tab</span></li>
+                        <li><span class="cmd"><kbd>:tabnew file</kbd></span><span class="explanation">Open file in new tab</span></li>
+                        <li><span class="cmd"><kbd>:tabc</kbd></span><span class="explanation">Close current tab</span></li>
+                        <li><span class="cmd"><kbd>:tabo</kbd></span><span class="explanation">Close all other tabs</span></li>
+                        <li><span class="cmd"><kbd>gt</kbd></span><span class="explanation">Go to next tab</span></li>
+                        <li><span class="cmd"><kbd>gT</kbd></span><span class="explanation">Go to previous tab</span></li>
+                        <li><span class="cmd"><kbd>{n}</kbd><kbd>gt</kbd></span><span class="explanation">Go to tab n (1-indexed)</span></li>
+                        <li><span class="cmd"><kbd>:tabs</kbd></span><span class="explanation">List all tabs</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Buffers</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:e file</kbd></span><span class="explanation">Open file in current window</span></li>
+                        <li><span class="cmd"><kbd>:ls</kbd></span><span class="explanation">List all open buffers</span></li>
+                        <li><span class="cmd"><kbd>:bn</kbd></span><span class="explanation">Go to next buffer</span></li>
+                        <li><span class="cmd"><kbd>:bp</kbd></span><span class="explanation">Go to previous buffer</span></li>
+                        <li><span class="cmd"><kbd>:b{n}</kbd></span><span class="explanation">Go to buffer number n</span></li>
+                        <li><span class="cmd"><kbd>:b name</kbd></span><span class="explanation">Go to buffer by partial filename match</span></li>
+                        <li><span class="cmd"><kbd>:bd</kbd></span><span class="explanation">Delete (close) current buffer</span></li>
+                        <li><span class="cmd"><kbd>:bd{n}</kbd></span><span class="explanation">Delete buffer number n</span></li>
+                        <li><span class="cmd"><kbd>:bufdo cmd</kbd></span><span class="explanation">Execute command in all buffers</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 9: FILE OPERATIONS
+             ============================================ -->
+        <section class="pcb-section" id="files">
+            <div class="section-header">
+                <div class="solder-pad">09</div>
+                <h2>File Operations</h2>
+            </div>
+            <p class="section-description">Opening, saving, reading, and managing files from within Vim.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Open, Save &amp; Close</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:e file</kbd></span><span class="explanation">Edit (open) file</span></li>
+                        <li><span class="cmd"><kbd>:e!</kbd></span><span class="explanation">Reload current file (discard changes)</span></li>
+                        <li><span class="cmd"><kbd>:e .</kbd></span><span class="explanation">Open file browser (Netrw) in current directory</span></li>
+                        <li><span class="cmd"><kbd>:w</kbd></span><span class="explanation">Write (save) current file</span></li>
+                        <li><span class="cmd"><kbd>:w file</kbd></span><span class="explanation">Write to a different filename (save as)</span></li>
+                        <li><span class="cmd"><kbd>:w!</kbd></span><span class="explanation">Force write (override read-only)</span></li>
+                        <li><span class="cmd"><kbd>:saveas file</kbd></span><span class="explanation">Save as new filename and switch to it</span></li>
+                        <li><span class="cmd"><kbd>:r file</kbd></span><span class="explanation">Read file and insert content below cursor</span></li>
+                        <li><span class="cmd"><kbd>:r !cmd</kbd></span><span class="explanation">Insert output of shell command below cursor</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Netrw (Built-in File Browser)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:Ex</kbd></span><span class="explanation">Open Netrw in current file's directory</span></li>
+                        <li><span class="cmd"><kbd>:Sex</kbd></span><span class="explanation">Open Netrw in horizontal split</span></li>
+                        <li><span class="cmd"><kbd>:Vex</kbd></span><span class="explanation">Open Netrw in vertical split</span></li>
+                        <li><span class="cmd"><kbd>:Lex</kbd></span><span class="explanation">Open Netrw in left sidebar split</span></li>
+                    </ul>
+                    <p class="desc-text">Inside Netrw:</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Enter</kbd></span><span class="explanation">Open file or directory</span></li>
+                        <li><span class="cmd"><kbd>-</kbd></span><span class="explanation">Go up one directory</span></li>
+                        <li><span class="cmd"><kbd>%</kbd></span><span class="explanation">Create new file</span></li>
+                        <li><span class="cmd"><kbd>d</kbd></span><span class="explanation">Create new directory</span></li>
+                        <li><span class="cmd"><kbd>D</kbd></span><span class="explanation">Delete file or directory</span></li>
+                        <li><span class="cmd"><kbd>R</kbd></span><span class="explanation">Rename file</span></li>
+                        <li><span class="cmd"><kbd>i</kbd></span><span class="explanation">Cycle listing style (thin/long/wide/tree)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>File Navigation Shortcuts</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>gf</kbd></span><span class="explanation">Go to file under cursor</span></li>
+                        <li><span class="cmd"><kbd>gF</kbd></span><span class="explanation">Go to file under cursor at line number</span></li>
+                        <li><span class="cmd"><kbd>gd</kbd></span><span class="explanation">Go to local declaration of word under cursor</span></li>
+                        <li><span class="cmd"><kbd>gD</kbd></span><span class="explanation">Go to global declaration of word under cursor</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>^</kbd></span><span class="explanation">Switch to alternate (previous) file</span></li>
+                        <li><span class="cmd"><kbd>:find file</kbd></span><span class="explanation">Search for file in path and open it</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 10: COMMAND-LINE MODE
+             ============================================ -->
+        <section class="pcb-section" id="command-line">
+            <div class="section-header">
+                <div class="solder-pad">10</div>
+                <h2>Command-Line Mode</h2>
+            </div>
+            <p class="section-description">Ex commands accessed with <kbd>:</kbd> provide powerful file-wide and multi-file operations. Most accept ranges to specify which lines to act on.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Ranges</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Range</th><th>Meaning</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><kbd>.</kbd></td><td>Current line</td></tr>
+                                <tr><td><kbd>$</kbd></td><td>Last line of file</td></tr>
+                                <tr><td><kbd>%</kbd></td><td>Entire file (same as <kbd>1,$</kbd>)</td></tr>
+                                <tr><td><kbd>5</kbd></td><td>Line 5</td></tr>
+                                <tr><td><kbd>5,20</kbd></td><td>Lines 5 through 20</td></tr>
+                                <tr><td><kbd>.,+5</kbd></td><td>Current line through 5 lines below</td></tr>
+                                <tr><td><kbd>'&lt;,'&gt;</kbd></td><td>Visual selection (auto-inserted)</td></tr>
+                                <tr><td><kbd>'a,'b</kbd></td><td>From mark a to mark b</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Essential Ex Commands</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:d</kbd></span><span class="explanation">Delete lines (e.g., <kbd>:5,10d</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>:m{dest}</kbd></span><span class="explanation">Move lines to destination (e.g., <kbd>:5,10m$</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>:co{dest}</kbd></span><span class="explanation">Copy lines to destination (e.g., <kbd>:5,10co20</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>:norm {cmds}</kbd></span><span class="explanation">Execute normal mode commands on range (e.g., <kbd>:%norm A;</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>:sort</kbd></span><span class="explanation">Sort lines alphabetically</span></li>
+                        <li><span class="cmd"><kbd>:sort!</kbd></span><span class="explanation">Sort in reverse</span></li>
+                        <li><span class="cmd"><kbd>:sort u</kbd></span><span class="explanation">Sort and remove duplicates</span></li>
+                        <li><span class="cmd"><kbd>:sort n</kbd></span><span class="explanation">Sort numerically</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Shell Integration</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:!</kbd>cmd</span><span class="explanation">Execute shell command (e.g., <kbd>:!ls</kbd>)</span></li>
+                        <li><span class="cmd"><kbd>:r !</kbd>cmd</span><span class="explanation">Insert output of command into buffer</span></li>
+                        <li><span class="cmd"><kbd>:w !</kbd>cmd</span><span class="explanation">Pipe buffer to command as stdin</span></li>
+                        <li><span class="cmd"><kbd>:{range}!</kbd>cmd</span><span class="explanation">Filter range through command (replace lines with output)</span></li>
+                        <li><span class="cmd"><kbd>:sh</kbd> / <kbd>:terminal</kbd></span><span class="explanation">Open a shell / terminal inside Vim</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>z</kbd></span><span class="explanation">Suspend Vim to shell; <kbd>fg</kbd> to return</span></li>
+                    </ul>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Shell Filter Examples</span>
+                        </div>
+                        <pre><code># Sort selected lines through external sort
+:'&lt;,'&gt;!sort
+
+# Format JSON in buffer using jq
+:%!jq .
+
+# Run current Python file
+:!python %
+
+# Insert today's date below cursor
+:r !date
+
+# Pipe visual selection to clipboard
+:'&lt;,'&gt;w !pbcopy</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Command-Line History &amp; Editing</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>q:</kbd></span><span class="explanation">Open command-line history window</span></li>
+                        <li><span class="cmd"><kbd>q/</kbd></span><span class="explanation">Open search history window</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>f</kbd></span><span class="explanation">Switch from : prompt to editable history window</span></li>
+                        <li><span class="cmd"><kbd>Up</kbd> / <kbd>Down</kbd></span><span class="explanation">Cycle through command history</span></li>
+                        <li><span class="cmd"><kbd>@:</kbd></span><span class="explanation">Repeat last Ex command</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 11: NEOVIM SPECIFICS
+             ============================================ -->
+        <section class="pcb-section" id="neovim">
+            <div class="section-header">
+                <div class="solder-pad">11</div>
+                <h2>Neovim Specifics</h2>
+            </div>
+            <p class="section-description">Neovim extends Vim with built-in LSP, Tree-sitter, Lua scripting, and a rich plugin ecosystem. These features make Neovim a full-fledged IDE.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Built-in LSP (Language Server Protocol)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">Neovim's built-in LSP client provides IDE features. Configure with <code>nvim-lspconfig</code> plugin and bind these functions:</p>
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Lua Function</th><th>Action</th><th>Common Binding</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><code>vim.lsp.buf.definition()</code></td><td>Go to definition</td><td><kbd>gd</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.declaration()</code></td><td>Go to declaration</td><td><kbd>gD</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.hover()</code></td><td>Show hover docs</td><td><kbd>K</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.implementation()</code></td><td>Go to implementation</td><td><kbd>gi</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.references()</code></td><td>Find references</td><td><kbd>gr</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.rename()</code></td><td>Rename symbol</td><td><kbd>&lt;leader&gt;rn</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.code_action()</code></td><td>Code actions</td><td><kbd>&lt;leader&gt;ca</kbd></td></tr>
+                                <tr><td><code>vim.lsp.buf.format()</code></td><td>Format buffer/range</td><td><kbd>&lt;leader&gt;f</kbd></td></tr>
+                                <tr><td><code>vim.diagnostic.goto_next()</code></td><td>Next diagnostic</td><td><kbd>]d</kbd></td></tr>
+                                <tr><td><code>vim.diagnostic.goto_prev()</code></td><td>Previous diagnostic</td><td><kbd>[d</kbd></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Tree-sitter</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">Tree-sitter provides fast, incremental parsing for syntax highlighting, code folding, text objects, and more.</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>:TSInstall lang</kbd></span><span class="explanation">Install parser for language</span></li>
+                        <li><span class="cmd"><kbd>:TSUpdate</kbd></span><span class="explanation">Update all installed parsers</span></li>
+                        <li><span class="cmd"><kbd>:InspectTree</kbd></span><span class="explanation">View syntax tree (Neovim 0.10+)</span></li>
+                    </ul>
+                    <p class="desc-text">Tree-sitter enables smart text objects like function parameters, class bodies, and conditionals via <code>nvim-treesitter-textobjects</code>.</p>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Lua API Essentials</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Common Lua API Patterns</span>
+                        </div>
+                        <pre><code>-- Set options
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+
+-- Set keymaps
+vim.keymap.set('n', '&lt;leader&gt;w', ':w&lt;CR&gt;', { desc = 'Save file' })
+vim.keymap.set('n', '&lt;leader&gt;q', ':q&lt;CR&gt;', { desc = 'Quit' })
+vim.keymap.set('n', '&lt;Esc&gt;', ':noh&lt;CR&gt;', { desc = 'Clear highlights' })
+
+-- Set leader key (must be before lazy.nvim setup)
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
+-- Autocommands
+vim.api.nvim_create_autocmd('BufWritePre', {
+    pattern = '*',
+    callback = function()
+        vim.cmd [[%s/\s\+$//e]]
+    end,
+})
+
+-- Run Vim commands from Lua
+vim.cmd('colorscheme habamax')
+vim.cmd.colorscheme('habamax')  -- alternative syntax</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Key Plugins (Neovim Ecosystem)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <thead>
+                                <tr><th>Plugin</th><th>Purpose</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><code>lazy.nvim</code></td><td>Plugin manager (lazy-loading, lockfile, UI)</td></tr>
+                                <tr><td><code>nvim-lspconfig</code></td><td>LSP server configurations</td></tr>
+                                <tr><td><code>nvim-cmp</code></td><td>Autocompletion engine</td></tr>
+                                <tr><td><code>telescope.nvim</code></td><td>Fuzzy finder (files, grep, buffers, etc.)</td></tr>
+                                <tr><td><code>nvim-treesitter</code></td><td>Tree-sitter integration</td></tr>
+                                <tr><td><code>mason.nvim</code></td><td>LSP/DAP/linter/formatter installer</td></tr>
+                                <tr><td><code>gitsigns.nvim</code></td><td>Git integration (hunks, blame, signs)</td></tr>
+                                <tr><td><code>neo-tree.nvim</code></td><td>File explorer sidebar</td></tr>
+                                <tr><td><code>which-key.nvim</code></td><td>Keymap hints popup</td></tr>
+                                <tr><td><code>nvim-dap</code></td><td>Debug Adapter Protocol client</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>lazy.nvim Bootstrap (init.lua)</span>
+                        </div>
+                        <pre><code>-- Bootstrap lazy.nvim
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
+if not vim.loop.fs_stat(lazypath) then
+    vim.fn.system({
+        'git', 'clone', '--filter=blob:none',
+        'https://github.com/folke/lazy.nvim.git',
+        '--branch=stable', lazypath,
+    })
+end
+vim.opt.rtp:prepend(lazypath)
+
+-- Setup plugins
+require('lazy').setup({
+    { 'neovim/nvim-lspconfig' },
+    { 'nvim-telescope/telescope.nvim', dependencies = { 'nvim-lua/plenary.nvim' } },
+    { 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate' },
+    -- Add more plugins here
+})</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 12: CONFIGURATION
+             ============================================ -->
+        <section class="pcb-section" id="config">
+            <div class="section-header">
+                <div class="solder-pad">12</div>
+                <h2>Configuration</h2>
+            </div>
+            <p class="section-description">Essential settings for both Vim (<code>~/.vimrc</code>) and Neovim (<code>~/.config/nvim/init.lua</code>). These form a solid baseline for any setup.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Vimscript (.vimrc)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Essential .vimrc Settings</span>
+                        </div>
+                        <pre><code>" === UI ===
+set number                " Show line numbers
+set relativenumber        " Relative line numbers
+set cursorline            " Highlight current line
+set signcolumn=yes        " Always show sign column
+set scrolloff=8           " Keep 8 lines visible above/below cursor
+set sidescrolloff=8       " Keep 8 columns visible left/right
+set colorcolumn=80        " Show column guide at 80
+set showmode              " Show current mode
+set showcmd               " Show partial command
+set laststatus=2          " Always show status line
+set wildmenu              " Enhanced command-line completion
+set wildmode=longest:full,full
+
+" === Search ===
+set hlsearch              " Highlight search results
+set incsearch             " Incremental search
+set ignorecase            " Case-insensitive search...
+set smartcase             " ...unless uppercase is used
+
+" === Tabs & Indentation ===
+set tabstop=4             " Tab width = 4 spaces
+set shiftwidth=4          " Indent width = 4 spaces
+set expandtab             " Use spaces instead of tabs
+set smartindent           " Smart auto-indentation
+set autoindent            " Copy indent from current line
+
+" === Behavior ===
+set hidden                " Allow hidden buffers with changes
+set mouse=a               " Enable mouse in all modes
+set clipboard=unnamedplus " Use system clipboard
+set splitright            " New vertical splits go right
+set splitbelow            " New horizontal splits go below
+set undofile              " Persistent undo across sessions
+set noswapfile            " Disable swap files
+set updatetime=250        " Faster CursorHold events
+set timeoutlen=300        " Faster key sequence timeout
+
+" === Leader Key ===
+let mapleader = " "       " Space as leader key
+
+" === Key Mappings ===
+nnoremap &lt;leader&gt;w :w&lt;CR&gt;
+nnoremap &lt;leader&gt;q :q&lt;CR&gt;
+nnoremap &lt;Esc&gt; :noh&lt;CR&gt;
+nnoremap &lt;leader&gt;e :Ex&lt;CR&gt;
+
+" Move lines up/down
+vnoremap J :m '&gt;+1&lt;CR&gt;gv=gv
+vnoremap K :m '&lt;-2&lt;CR&gt;gv=gv
+
+" Keep cursor centered on search navigation
+nnoremap n nzzzv
+nnoremap N Nzzzv</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Lua Config (init.lua)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Essential init.lua Settings</span>
+                        </div>
+                        <pre><code>-- Leader key (set before plugins)
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
+-- UI
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.cursorline = true
+vim.opt.signcolumn = 'yes'
+vim.opt.scrolloff = 8
+vim.opt.sidescrolloff = 8
+vim.opt.colorcolumn = '80'
+vim.opt.termguicolors = true
+vim.opt.showmode = false     -- hide mode (use statusline)
+
+-- Search
+vim.opt.hlsearch = true
+vim.opt.incsearch = true
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+
+-- Tabs & Indentation
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+vim.opt.smartindent = true
+
+-- Behavior
+vim.opt.hidden = true
+vim.opt.mouse = 'a'
+vim.opt.clipboard = 'unnamedplus'
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+vim.opt.undofile = true
+vim.opt.swapfile = false
+vim.opt.updatetime = 250
+vim.opt.timeoutlen = 300
+
+-- Keymaps
+local map = vim.keymap.set
+map('n', '&lt;leader&gt;w', ':w&lt;CR&gt;', { desc = 'Save' })
+map('n', '&lt;leader&gt;q', ':q&lt;CR&gt;', { desc = 'Quit' })
+map('n', '&lt;Esc&gt;', ':noh&lt;CR&gt;', { desc = 'Clear search' })
+map('n', '&lt;leader&gt;e', ':Ex&lt;CR&gt;', { desc = 'File explorer' })
+
+-- Move lines in visual mode
+map('v', 'J', ":m '&gt;+1&lt;CR&gt;gv=gv", { desc = 'Move line down' })
+map('v', 'K', ":m '&lt;-2&lt;CR&gt;gv=gv", { desc = 'Move line up' })
+
+-- Keep cursor centered
+map('n', 'n', 'nzzzv')
+map('n', 'N', 'Nzzzv')
+map('n', '&lt;C-d&gt;', '&lt;C-d&gt;zz')
+map('n', '&lt;C-u&gt;', '&lt;C-u&gt;zz')</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             SECTION 13: PRO TIPS
+             ============================================ -->
+        <section class="pcb-section" id="tips">
+            <div class="section-header">
+                <div class="solder-pad">13</div>
+                <h2>Pro Tips</h2>
+            </div>
+            <p class="section-description">Advanced techniques and mental models that separate Vim beginners from power users.</p>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>The Dot Formula</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">The <kbd>.</kbd> command repeats the last change. Structure your edits to maximize repeatability: use one atomic editing command that captures the full intent of your change.</p>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Dot Formula in Action</span>
+                        </div>
+                        <pre><code># BAD: Multiple steps, not repeatable as one unit
+f"lr'f"lr'       # Find quote, replace, find next, replace
+
+# GOOD: Repeatable single change
+f"r'             # Replace one quote...
+;.               # ; repeats f", . repeats r'  --  pure magic!
+
+# BEST: Use :s for bulk, but for scattered edits:
+ciw&lt;new_word&gt;Esc  # Change word, then use n. to find-and-replace
+                   # (after searching with * first)</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>The cgn Trick (Search + Change + Repeat)</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">One of Vim's most powerful patterns. <kbd>gn</kbd> is a motion that selects the next search match. Combined with <kbd>c</kbd>, it becomes a targeted find-and-replace you control with <kbd>.</kbd></p>
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>cgn Workflow</span>
+                        </div>
+                        <pre><code># Step 1: Search for the target
+/oldFunction     # or use * on the word
+
+# Step 2: Change first occurrence
+cgn              # Deletes match and enters insert mode
+newFunction      # Type replacement
+Esc              # Back to normal mode
+
+# Step 3: Repeat selectively
+.                # Changes next match automatically
+.                # And the next...
+n                # Skip one (don't change it)
+.                # Change this one
+
+# Why this is better than :%s/old/new/gc:
+# - You see each change in context before deciding
+# - Works across multiple files with :bufdo
+# - Fully undoable one at a time</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible open" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Operator + Motion Grammar</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">Vim's editing language follows a grammar: <strong>[count] operator [count] motion/text-object</strong>. Learning operators and motions separately gives you multiplicative power.</p>
+                    <div class="pcb-table-wrapper">
+                        <table class="pcb-table">
+                            <caption>Operators x Motions = Combinations</caption>
+                            <thead>
+                                <tr><th></th><th><kbd>w</kbd> word</th><th><kbd>$</kbd> end</th><th><kbd>iw</kbd> inner word</th><th><kbd>i"</kbd> inner quotes</th><th><kbd>ip</kbd> inner para</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><kbd>d</kbd> delete</td><td><kbd>dw</kbd></td><td><kbd>d$</kbd></td><td><kbd>diw</kbd></td><td><kbd>di"</kbd></td><td><kbd>dip</kbd></td></tr>
+                                <tr><td><kbd>c</kbd> change</td><td><kbd>cw</kbd></td><td><kbd>c$</kbd></td><td><kbd>ciw</kbd></td><td><kbd>ci"</kbd></td><td><kbd>cip</kbd></td></tr>
+                                <tr><td><kbd>y</kbd> yank</td><td><kbd>yw</kbd></td><td><kbd>y$</kbd></td><td><kbd>yiw</kbd></td><td><kbd>yi"</kbd></td><td><kbd>yip</kbd></td></tr>
+                                <tr><td><kbd>v</kbd> select</td><td><kbd>vw</kbd></td><td><kbd>v$</kbd></td><td><kbd>viw</kbd></td><td><kbd>vi"</kbd></td><td><kbd>vip</kbd></td></tr>
+                                <tr><td><kbd>></kbd> indent</td><td><kbd>>w</kbd></td><td><kbd>>$</kbd></td><td><kbd>>iw</kbd></td><td><kbd>>i"</kbd></td><td><kbd>>ip</kbd></td></tr>
+                                <tr><td><kbd>gU</kbd> upper</td><td><kbd>gUw</kbd></td><td><kbd>gU$</kbd></td><td><kbd>gUiw</kbd></td><td><kbd>gUi"</kbd></td><td><kbd>gUip</kbd></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pcb-callout">
+                        <span class="callout-icon">KEY</span>
+                        <span class="callout-text">With 6 operators and 20+ motions/text objects, you get 120+ editing commands from memorizing ~26 things. Every new operator works with every existing motion, and vice versa. This composability is Vim's core design insight.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Visual Block Magic</h4>
+                </div>
+                <div class="collapsible-body">
+                    <div class="component-block">
+                        <div class="component-header">
+                            <div class="chip-icon"></div>
+                            <span>Multi-line Editing Patterns</span>
+                        </div>
+                        <pre><code># Add text to multiple lines at once:
+Ctrl+v           # Enter visual block
+jjjj             # Select 5 lines
+I                # Insert mode (at block start)
+const            # Type prefix
+Esc              # Applied to all 5 lines!
+
+# Append to lines of different lengths:
+Ctrl+v           # Enter visual block
+jjjj             # Select lines
+$                # Extend to end of each line
+A                # Append mode
+;                # Type suffix
+Esc              # Applied to all lines!
+
+# Change column of text:
+Ctrl+v           # Enter visual block
+jjjj             # Select block region
+llll             # Extend selection right
+c                # Change block
+newtext          # Type replacement
+Esc              # Applied to all lines!</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Register Power Moves</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>"0p</kbd></span><span class="explanation">Always paste last yank (ignore deletes)</span></li>
+                        <li><span class="cmd"><kbd>"_d</kbd>{motion}</span><span class="explanation">True delete: send to black hole, preserve registers</span></li>
+                        <li><span class="cmd"><kbd>"+y</kbd>{motion}</span><span class="explanation">Yank to system clipboard</span></li>
+                        <li><span class="cmd"><kbd>"ayy</kbd> then <kbd>"Ayy</kbd></span><span class="explanation">Accumulate lines in register a (lowercase sets, uppercase appends)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>r</kbd> {reg}</span><span class="explanation">Insert register contents in insert/command-line mode</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>r</kbd> <kbd>=</kbd></span><span class="explanation">Evaluate expression and insert result (calculator!)</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Useful g Commands</h4>
+                </div>
+                <div class="collapsible-body">
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>gv</kbd></span><span class="explanation">Re-select last visual selection</span></li>
+                        <li><span class="cmd"><kbd>gi</kbd></span><span class="explanation">Enter insert at last insert position</span></li>
+                        <li><span class="cmd"><kbd>gf</kbd></span><span class="explanation">Open file under cursor</span></li>
+                        <li><span class="cmd"><kbd>gd</kbd></span><span class="explanation">Go to local definition</span></li>
+                        <li><span class="cmd"><kbd>gD</kbd></span><span class="explanation">Go to global definition</span></li>
+                        <li><span class="cmd"><kbd>gU</kbd>{motion}</span><span class="explanation">Make uppercase</span></li>
+                        <li><span class="cmd"><kbd>gu</kbd>{motion}</span><span class="explanation">Make lowercase</span></li>
+                        <li><span class="cmd"><kbd>g~</kbd>{motion}</span><span class="explanation">Toggle case</span></li>
+                        <li><span class="cmd"><kbd>gn</kbd></span><span class="explanation">Select next search match (for cgn pattern)</span></li>
+                        <li><span class="cmd"><kbd>g;</kbd></span><span class="explanation">Go to older position in change list</span></li>
+                        <li><span class="cmd"><kbd>g,</kbd></span><span class="explanation">Go to newer position in change list</span></li>
+                        <li><span class="cmd"><kbd>g&</kbd></span><span class="explanation">Repeat last :s on entire file</span></li>
+                        <li><span class="cmd"><kbd>gq</kbd>{motion}</span><span class="explanation">Format/rewrap text</span></li>
+                        <li><span class="cmd"><kbd>ga</kbd></span><span class="explanation">Show ASCII/Unicode value of char under cursor</span></li>
+                        <li><span class="cmd"><kbd>g8</kbd></span><span class="explanation">Show UTF-8 byte sequence of char under cursor</span></li>
+                        <li><span class="cmd"><kbd>gJ</kbd></span><span class="explanation">Join lines without space</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible" data-searchable>
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <span class="toggle-indicator">&#9654;</span>
+                    <h4>Insert Mode Shortcuts</h4>
+                </div>
+                <div class="collapsible-body">
+                    <p class="desc-text">You don't always need to leave insert mode to perform quick actions:</p>
+                    <ul class="cmd-list">
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>w</kbd></span><span class="explanation">Delete word before cursor</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>u</kbd></span><span class="explanation">Delete to start of line</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>h</kbd></span><span class="explanation">Delete character before cursor (same as backspace)</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>t</kbd></span><span class="explanation">Indent current line</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>d</kbd></span><span class="explanation">Outdent current line</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>r</kbd> {reg}</span><span class="explanation">Insert contents of register</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>a</kbd></span><span class="explanation">Re-insert last inserted text</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>o</kbd></span><span class="explanation">Execute one normal mode command, then return to insert</span></li>
+                        <li><span class="cmd"><kbd>Ctrl</kbd>+<kbd>n</kbd> / <kbd>Ctrl</kbd>+<kbd>p</kbd></span><span class="explanation">Autocomplete (next/previous match)</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="pcb-footer">
+            <div class="footer-text">PCB Rev 1.0 // Vim / Neovim Complete Reference // Fabricated with care</div>
+            <div class="footer-traces">
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+                <div class="footer-trace"></div>
+            </div>
+        </footer>
+
+    </div><!-- /pcb-board -->
+
+    <!-- GOLD CONTACT FINGERS - BOTTOM -->
+    <div class="gold-contacts-bottom">
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+        <div class="gold-finger"></div><div class="gold-finger"></div><div class="gold-finger"></div>
+    </div>
+
+    <script>
+        /* ============================================
+           COLLAPSIBLE SECTIONS
+           ============================================ */
+        function toggleCollapsible(header) {
+            const collapsible = header.parentElement;
+            collapsible.classList.toggle('open');
+        }
+
+        /* ============================================
+           STICKY NAV ACTIVE STATE
+           ============================================ */
+        (function() {
+            const nav = document.getElementById('mainNav');
+            const navLinks = nav.querySelectorAll('a[href^="#"]');
+            const sections = [];
+
+            navLinks.forEach(function(link) {
+                const id = link.getAttribute('href').substring(1);
+                const section = document.getElementById(id);
+                if (section) sections.push({ link: link, section: section });
+            });
+
+            function updateActiveNav() {
+                const scrollPos = window.scrollY + 120;
+
+                let current = null;
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    if (sections[i].section.offsetTop <= scrollPos) {
+                        current = sections[i];
+                        break;
+                    }
+                }
+
+                navLinks.forEach(function(link) { link.classList.remove('active'); });
+                if (current) current.link.classList.add('active');
+            }
+
+            window.addEventListener('scroll', updateActiveNav, { passive: true });
+            updateActiveNav();
+        })();
+
+        /* ============================================
+           SEARCH / FILTER
+           ============================================ */
+        (function() {
+            const input = document.getElementById('searchInput');
+            const countEl = document.getElementById('searchCount');
+            const searchableElements = document.querySelectorAll('[data-searchable]');
+
+            input.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+
+                if (!query) {
+                    searchableElements.forEach(function(el) {
+                        el.classList.remove('search-hidden', 'search-highlight');
+                    });
+                    countEl.textContent = '';
+                    return;
+                }
+
+                let visible = 0;
+                let total = searchableElements.length;
+
+                searchableElements.forEach(function(el) {
+                    const text = el.textContent.toLowerCase();
+                    if (text.indexOf(query) !== -1) {
+                        el.classList.remove('search-hidden');
+                        el.classList.add('search-highlight');
+                        visible++;
+                    } else {
+                        el.classList.add('search-hidden');
+                        el.classList.remove('search-highlight');
+                    }
+                });
+
+                countEl.textContent = visible + ' of ' + total + ' sections match';
+            });
+
+            // Allow Escape to clear search
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    this.dispatchEvent(new Event('input'));
+                    this.blur();
+                }
+            });
+
+            // Global keyboard shortcut: / to focus search
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement !== input && !e.ctrlKey && !e.metaKey) {
+                    // Don't intercept if user is typing in an input
+                    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+                    e.preventDefault();
+                    input.focus();
+                }
+            });
+        })();
+
+        /* ============================================
+           SMOOTH SCROLL FOR NAV LINKS
+           ============================================ */
+        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+            anchor.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    history.pushState(null, null, '#' + targetId);
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

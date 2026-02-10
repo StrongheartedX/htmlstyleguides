@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Copilot CLI - Complete Reference Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'Menlo', 'Monaco', 'Cascadia Code', 'Consolas', monospace;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-full: 9999px;
+
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient-1: #0f0c29;
+            --bg-gradient-2: #302b63;
+            --bg-gradient-3: #24243e;
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-bg-hover: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --accent-1: #667eea;
+            --accent-2: #764ba2;
+            --accent-3: #f093fb;
+            --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            --orb-1: rgba(102, 126, 234, 0.6);
+            --orb-2: rgba(240, 147, 251, 0.5);
+            --orb-3: rgba(118, 75, 162, 0.4);
+            --code-bg: rgba(0, 0, 0, 0.35);
+            --code-border: rgba(255, 255, 255, 0.1);
+            --table-stripe: rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="light"] {
+            --bg-gradient-1: #e0c3fc;
+            --bg-gradient-2: #8ec5fc;
+            --bg-gradient-3: #f5f7fa;
+            --text-primary: rgba(0, 0, 0, 0.9);
+            --text-secondary: rgba(0, 0, 0, 0.65);
+            --text-muted: rgba(0, 0, 0, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.5);
+            --glass-bg-hover: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.7);
+            --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            --accent-1: #667eea;
+            --accent-2: #764ba2;
+            --accent-3: #f093fb;
+            --accent-gradient: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            --orb-1: rgba(102, 126, 234, 0.5);
+            --orb-2: rgba(240, 147, 251, 0.4);
+            --orb-3: rgba(142, 197, 252, 0.5);
+            --code-bg: rgba(0, 0, 0, 0.06);
+            --code-border: rgba(0, 0, 0, 0.1);
+            --table-stripe: rgba(0, 0, 0, 0.03);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-gradient-1), var(--bg-gradient-2), var(--bg-gradient-3));
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           FLOATING ORBS BACKGROUND
+           ============================================ */
+        .orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--orb-1);
+            top: -200px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--orb-2);
+            top: 50%;
+            right: -150px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            background: var(--orb-3);
+            bottom: -100px;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        .orb-4 {
+            width: 350px;
+            height: 350px;
+            background: var(--orb-1);
+            top: 30%;
+            left: -150px;
+            animation-delay: -15s;
+            opacity: 0.4;
+        }
+
+        .orb-5 {
+            width: 300px;
+            height: 300px;
+            background: var(--orb-2);
+            bottom: 20%;
+            right: -100px;
+            animation-delay: -8s;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -30px) scale(1.05); }
+            50% { transform: translate(-30px, 50px) scale(0.95); }
+            75% { transform: translate(-50px, -20px) scale(1.02); }
+        }
+
+        /* ============================================
+           GLASS EFFECT
+           ============================================ */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-5);
+        }
+
+        /* ============================================
+           BACK LINK
+           ============================================ */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            margin-bottom: var(--space-6);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            transition: all var(--transition-fast);
+        }
+
+        .back-link:hover {
+            background: var(--glass-bg-hover);
+            color: var(--text-primary);
+            transform: translateX(-4px);
+        }
+
+        /* ============================================
+           THEME TOGGLE
+           ============================================ */
+        .theme-toggle {
+            position: fixed;
+            top: var(--space-5);
+            right: var(--space-5);
+            z-index: 100;
+        }
+
+        .theme-toggle button {
+            padding: var(--space-3) var(--space-5);
+            border-radius: var(--radius-full);
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .theme-toggle button:hover {
+            background: var(--glass-bg-hover);
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-7);
+            padding: var(--space-7) var(--space-6);
+            border-radius: var(--radius-xl);
+        }
+
+        .header-eyebrow {
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-3);
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin-bottom: var(--space-4);
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           JUMP NAV
+           ============================================ */
+        .jump-nav {
+            margin-bottom: var(--space-7);
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            position: sticky;
+            top: var(--space-3);
+            z-index: 50;
+        }
+
+        .jump-nav-inner {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            justify-content: center;
+        }
+
+        .jump-nav a {
+            display: inline-block;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            background: var(--glass-bg);
+            border: 1px solid transparent;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .jump-nav a:hover {
+            color: var(--text-primary);
+            background: var(--glass-bg-hover);
+            border-color: var(--glass-border);
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           SECTIONS
+           ============================================ */
+        .section {
+            margin-bottom: var(--space-7);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-2);
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: var(--space-5);
+            letter-spacing: -0.5px;
+        }
+
+        .section-title .accent {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: var(--space-6);
+            margin-bottom: var(--space-4);
+            letter-spacing: -0.3px;
+        }
+
+        h4 {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            margin-top: var(--space-5);
+            margin-bottom: var(--space-3);
+            color: var(--text-secondary);
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.7;
+            margin-bottom: var(--space-4);
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* ============================================
+           CHEAT SHEET GRID
+           ============================================ */
+        .cheat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .cheat-card {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cheat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .cheat-card:hover {
+            transform: translateY(-4px);
+            background: var(--glass-bg-hover);
+        }
+
+        .cheat-card:hover::before {
+            opacity: 1;
+        }
+
+        .cheat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: var(--space-3);
+        }
+
+        .cheat-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: var(--space-3);
+        }
+
+        .cheat-card .cmd-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .cheat-card .cmd-list li {
+            font-size: 0.8125rem;
+            padding: var(--space-1) 0;
+            color: var(--text-secondary);
+            display: flex;
+            gap: var(--space-2);
+            align-items: baseline;
+        }
+
+        .cheat-card .cmd-list code {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            color: var(--accent-3);
+            white-space: nowrap;
+        }
+
+        .cheat-card .cmd-list .desc {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* ============================================
+           CODE BLOCKS
+           ============================================ */
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        pre code {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.875em;
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent-3);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .code-label {
+            position: absolute;
+            top: var(--space-2);
+            right: var(--space-3);
+            font-size: 0.6875rem;
+            font-family: var(--font-sans);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .comment { color: var(--text-muted); }
+        .flag { color: var(--accent-1); }
+        .string { color: #a5d6ff; }
+        .cmd { color: var(--accent-3); }
+
+        /* ============================================
+           TABLES
+           ============================================ */
+        .table-wrap {
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            border-radius: var(--radius-md);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead th {
+            text-align: left;
+            padding: var(--space-3) var(--space-4);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+
+        tbody tr:nth-child(even) {
+            background: var(--table-stripe);
+        }
+
+        tbody tr:hover {
+            background: var(--glass-bg-hover);
+        }
+
+        tbody td:first-child {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            color: var(--accent-3);
+            white-space: nowrap;
+        }
+
+        /* ============================================
+           BADGES
+           ============================================ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #f59e0b;
+        }
+
+        .badge-info {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            color: var(--accent-1);
+        }
+
+        .badge-glass {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           ALERTS / CALLOUTS
+           ============================================ */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-5);
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-start;
+            font-size: 0.9375rem;
+        }
+
+        .alert-icon {
+            font-size: 1.125rem;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content strong {
+            display: block;
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-content p {
+            margin-bottom: 0;
+            font-size: 0.875rem;
+        }
+
+        .alert-info {
+            background: rgba(102, 126, 234, 0.12);
+            border: 1px solid rgba(102, 126, 234, 0.25);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        /* ============================================
+           MODEL CARDS
+           ============================================ */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .model-card {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+        }
+
+        .model-card:hover {
+            transform: translateY(-4px);
+            background: var(--glass-bg-hover);
+        }
+
+        .model-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-3);
+        }
+
+        .model-card h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .model-card p {
+            font-size: 0.8125rem;
+            margin-bottom: var(--space-2);
+        }
+
+        .model-card .use-for {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* ============================================
+           KEYBOARD SHORTCUTS DISPLAY
+           ============================================ */
+        kbd {
+            display: inline-block;
+            padding: 2px 8px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        /* ============================================
+           LIST STYLES
+           ============================================ */
+        ul, ol {
+            padding-left: var(--space-5);
+            margin-bottom: var(--space-4);
+        }
+
+        li {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: var(--space-2);
+            line-height: 1.6;
+        }
+
+        li code {
+            font-size: 0.8125rem;
+        }
+
+        /* ============================================
+           DIVIDER
+           ============================================ */
+        .divider {
+            height: 1px;
+            background: var(--glass-border);
+            margin: var(--space-6) 0;
+        }
+
+        /* ============================================
+           SLASH COMMANDS TABLE
+           ============================================ */
+        .slash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .slash-item {
+            display: flex;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            background: var(--glass-bg);
+            border: 1px solid transparent;
+            transition: all var(--transition-fast);
+        }
+
+        .slash-item:hover {
+            border-color: var(--glass-border);
+            background: var(--glass-bg-hover);
+        }
+
+        .slash-item code {
+            font-size: 0.8125rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .slash-item span {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           CONFIG TREE
+           ============================================ */
+        .config-tree {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            line-height: 2;
+            color: var(--text-secondary);
+            padding: var(--space-5);
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-5);
+        }
+
+        .config-tree .dir {
+            color: var(--accent-1);
+        }
+
+        .config-tree .file {
+            color: var(--accent-3);
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            padding: var(--space-7) var(--space-5);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-7);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--accent-1);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+            }
+
+            .section {
+                padding: var(--space-5);
+            }
+
+            .header {
+                padding: var(--space-6) var(--space-5);
+            }
+
+            .cheat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .model-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .slash-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .jump-nav {
+                padding: var(--space-3);
+            }
+
+            .jump-nav a {
+                font-size: 0.75rem;
+                padding: var(--space-1) var(--space-3);
+            }
+
+            pre {
+                padding: var(--space-4);
+            }
+
+            pre code {
+                font-size: 0.75rem;
+            }
+
+            table {
+                font-size: 0.8125rem;
+            }
+
+            thead th, tbody td {
+                padding: var(--space-2) var(--space-3);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                letter-spacing: -1px;
+            }
+
+            .cheat-card {
+                padding: var(--space-4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Orbs Background -->
+    <div class="orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="orb orb-5"></div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button onclick="toggleTheme()" id="theme-btn">Light Mode</button>
+    </div>
+
+    <div class="container">
+        <!-- Back Link -->
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- Header -->
+        <header class="header glass">
+            <div class="header-eyebrow">Complete Reference Guide</div>
+            <h1>GitHub Copilot CLI</h1>
+            <p>The AI coding agent in your terminal. Master interactive sessions, model selection, permissions, MCP integration, and automation workflows.</p>
+        </header>
+
+        <!-- Jump Navigation -->
+        <nav class="jump-nav glass">
+            <div class="jump-nav-inner">
+                <a href="#cheat-sheet">Cheat Sheet</a>
+                <a href="#getting-started">Getting Started</a>
+                <a href="#interactive">Interactive Mode</a>
+                <a href="#non-interactive">Non-Interactive</a>
+                <a href="#models">Models</a>
+                <a href="#permissions">Permissions</a>
+                <a href="#mcp">MCP</a>
+                <a href="#sessions">Sessions</a>
+                <a href="#config">Configuration</a>
+                <a href="#flags">CLI Flags</a>
+                <a href="#pro-tips">Pro Tips</a>
+            </div>
+        </nav>
+
+        <!-- ============================================
+             CHEAT SHEET (TOP)
+             ============================================ -->
+        <section id="cheat-sheet" class="section glass">
+            <p class="section-label">Quick Reference</p>
+            <h2 class="section-title"><span class="accent">Cheat Sheet</span></h2>
+
+            <div class="cheat-grid">
+                <!-- Essential Commands -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#9889;</div>
+                    <h3>Essential Commands</h3>
+                    <ul class="cmd-list">
+                        <li><code>copilot</code> <span class="desc">Start interactive session</span></li>
+                        <li><code>copilot -p "..."</code> <span class="desc">Single-shot prompt</span></li>
+                        <li><code>copilot --continue</code> <span class="desc">Resume last session</span></li>
+                        <li><code>copilot --resume</code> <span class="desc">Browse sessions</span></li>
+                        <li><code>copilot login</code> <span class="desc">Authenticate</span></li>
+                        <li><code>copilot update</code> <span class="desc">Update to latest</span></li>
+                    </ul>
+                </div>
+
+                <!-- Slash Commands -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#47;</div>
+                    <h3>Slash Commands</h3>
+                    <ul class="cmd-list">
+                        <li><code>/help</code> <span class="desc">Show commands</span></li>
+                        <li><code>/model</code> <span class="desc">Switch model</span></li>
+                        <li><code>/compact</code> <span class="desc">Compress context</span></li>
+                        <li><code>/clear</code> <span class="desc">Reset context</span></li>
+                        <li><code>/review</code> <span class="desc">Review code changes</span></li>
+                        <li><code>/delegate</code> <span class="desc">Send to coding agent</span></li>
+                        <li><code>/share gist</code> <span class="desc">Export as Gist</span></li>
+                    </ul>
+                </div>
+
+                <!-- Keyboard Shortcuts -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#9000;</div>
+                    <h3>Keyboard Shortcuts</h3>
+                    <ul class="cmd-list">
+                        <li><kbd>Tab</kbd> <span class="desc">Autocomplete paths</span></li>
+                        <li><kbd>Shift+Tab</kbd> <span class="desc">Toggle plan mode</span></li>
+                        <li><kbd>Ctrl+T</kbd> <span class="desc">Toggle reasoning</span></li>
+                        <li><kbd>Ctrl+C</kbd> <span class="desc">Cancel current</span></li>
+                    </ul>
+                </div>
+
+                <!-- Permission Quick Ref -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#128274;</div>
+                    <h3>Permissions</h3>
+                    <ul class="cmd-list">
+                        <li><code>--yolo</code> <span class="desc">All permissions</span></li>
+                        <li><code>--allow-all-tools</code> <span class="desc">Auto-approve tools</span></li>
+                        <li><code>--allow-all-paths</code> <span class="desc">All file access</span></li>
+                        <li><code>--allow-tool "..."</code> <span class="desc">Specific tool (glob)</span></li>
+                        <li><code>--deny-tool "..."</code> <span class="desc">Block tool (precedence)</span></li>
+                    </ul>
+                </div>
+
+                <!-- Models Quick Ref -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#129302;</div>
+                    <h3>Top Models</h3>
+                    <ul class="cmd-list">
+                        <li><code>claude-opus-4.6</code> <span class="desc">Deep reasoning</span></li>
+                        <li><code>claude-sonnet-4.5</code> <span class="desc">Balanced default</span></li>
+                        <li><code>gpt-5.2-codex</code> <span class="desc">Code generation</span></li>
+                        <li><code>gpt-5-mini</code> <span class="desc">Fast &amp; free*</span></li>
+                        <li><code>gemini-3-pro-preview</code> <span class="desc">Data &amp; analytics</span></li>
+                    </ul>
+                </div>
+
+                <!-- MCP Quick Ref -->
+                <div class="cheat-card glass">
+                    <div class="cheat-card-icon">&#128268;</div>
+                    <h3>MCP &amp; Context</h3>
+                    <ul class="cmd-list">
+                        <li><code>--enable-all-github-mcp-tools</code> <span class="desc">GitHub tools</span></li>
+                        <li><code>--add-dir [path]</code> <span class="desc">Add directory</span></li>
+                        <li><code>--additional-mcp-config</code> <span class="desc">Custom MCP</span></li>
+                        <li><code>/add-dir</code> <span class="desc">Add dir in session</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             1. GETTING STARTED
+             ============================================ -->
+        <section id="getting-started" class="section glass">
+            <p class="section-label">01 / Setup</p>
+            <h2 class="section-title">Getting <span class="accent">Started</span></h2>
+
+            <h3>Installation</h3>
+            <p>Install GitHub Copilot CLI via npm:</p>
+            <pre><code>npm install -g @github/copilot</code></pre>
+
+            <p>Alternatively, install as a GitHub CLI extension:</p>
+            <pre><code>gh extension install github/gh-copilot
+gh copilot</code></pre>
+
+            <h3>Authentication</h3>
+            <p>Authenticate with your GitHub account:</p>
+            <pre><code>copilot login</code></pre>
+
+            <h4>Non-Interactive / CI Authentication</h4>
+            <p>For automated environments, use a Personal Access Token with the "Copilot Requests" permission:</p>
+            <pre><code><span class="comment"># Set token as environment variable</span>
+export GH_TOKEN=your_token_here
+<span class="comment"># or</span>
+export GITHUB_TOKEN=your_token_here
+
+<span class="comment"># For credential managers</span>
+export GITHUB_ASKPASS=/path/to/executable/that/returns/token</code></pre>
+
+            <div class="alert alert-info">
+                <span class="alert-icon">&#8505;&#65039;</span>
+                <div class="alert-content">
+                    <strong>Enterprise Authentication</strong>
+                    <p>Non-interactive workflows respect the <code>GH_HOST</code> environment variable for GitHub Enterprise Server authentication.</p>
+                </div>
+            </div>
+
+            <h3>Initial Setup</h3>
+            <pre><code>copilot init           <span class="comment"># Initialize configuration</span>
+copilot version        <span class="comment"># Check installed version</span>
+copilot update         <span class="comment"># Update to latest version</span>
+copilot help           <span class="comment"># View available commands</span></code></pre>
+        </section>
+
+        <!-- ============================================
+             2. INTERACTIVE MODE
+             ============================================ -->
+        <section id="interactive" class="section glass">
+            <p class="section-label">02 / Core Experience</p>
+            <h2 class="section-title"><span class="accent">Interactive</span> Mode</h2>
+
+            <h3>Starting a Session</h3>
+            <pre><code>copilot                <span class="comment"># Start interactive session (default)</span>
+copilot --continue     <span class="comment"># Resume most recent session</span>
+copilot --resume       <span class="comment"># Browse and resume sessions</span></code></pre>
+
+            <h3>Slash Commands</h3>
+            <p>Type <code>/</code> during an interactive session to see all available commands. Here is the full reference:</p>
+
+            <h4>Session Management</h4>
+            <div class="slash-grid">
+                <div class="slash-item"><code>/help</code> <span>Display command help and descriptions</span></div>
+                <div class="slash-item"><code>/clear</code> <span>Reset conversation context</span></div>
+                <div class="slash-item"><code>/exit</code> <span>End session cleanly</span></div>
+                <div class="slash-item"><code>/session</code> <span>Show session metrics (duration, changes)</span></div>
+                <div class="slash-item"><code>/usage</code> <span>Display token usage statistics</span></div>
+                <div class="slash-item"><code>/resume ID</code> <span>Resume a specific session by ID</span></div>
+                <div class="slash-item"><code>/compact</code> <span>Manually compress context</span></div>
+            </div>
+
+            <h4>Directory &amp; File Access</h4>
+            <div class="slash-grid">
+                <div class="slash-item"><code>/cwd</code> <span>Display or change working directory</span></div>
+                <div class="slash-item"><code>/cd</code> <span>Change directory (tab completion)</span></div>
+                <div class="slash-item"><code>/add-dir</code> <span>Grant access to a directory</span></div>
+                <div class="slash-item"><code>/list-dirs</code> <span>Show directory permissions</span></div>
+            </div>
+
+            <h4>Code, Models &amp; Agents</h4>
+            <div class="slash-grid">
+                <div class="slash-item"><code>/model</code> <span>Switch AI model mid-session</span></div>
+                <div class="slash-item"><code>/review</code> <span>Analyze staged/unstaged changes</span></div>
+                <div class="slash-item"><code>/delegate</code> <span>Push to Copilot coding agent (opens draft PR)</span></div>
+                <div class="slash-item"><code>/agent NAME</code> <span>Invoke a custom agent</span></div>
+            </div>
+
+            <h4>Sharing</h4>
+            <div class="slash-grid">
+                <div class="slash-item"><code>/share</code> <span>Export session to markdown</span></div>
+                <div class="slash-item"><code>/share gist</code> <span>Create GitHub Gist (prompts for visibility)</span></div>
+                <div class="slash-item"><code>/feedback</code> <span>Submit product feedback</span></div>
+            </div>
+
+            <h3>Keyboard Shortcuts</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><kbd>Tab</kbd></td><td>Autocomplete paths in <code>/cwd</code> and <code>/add-dir</code></td></tr>
+                        <tr><td><kbd>Shift+Tab</kbd></td><td>Toggle plan mode (collaborative planning before implementation)</td></tr>
+                        <tr><td><kbd>Ctrl+T</kbd></td><td>Toggle model reasoning visibility (supported models)</td></tr>
+                        <tr><td><kbd>Ctrl+C</kbd></td><td>Cancel current operation</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Plan Mode</h3>
+            <p>Press <kbd>Shift+Tab</kbd> to enter plan mode. Copilot will analyze your request, ask clarifying questions, and build a structured implementation plan before writing any code. This is ideal for major refactors or complex features.</p>
+
+            <div class="alert alert-success">
+                <span class="alert-icon">&#10024;</span>
+                <div class="alert-content">
+                    <strong>New in 2026</strong>
+                    <p>"Plan before you build, steer as you go." Plan mode enables collaborative planning with step-by-step approval before any code changes are made.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             3. NON-INTERACTIVE MODE
+             ============================================ -->
+        <section id="non-interactive" class="section glass">
+            <p class="section-label">03 / Automation</p>
+            <h2 class="section-title"><span class="accent">Non-Interactive</span> Mode</h2>
+
+            <p>Use the <code>-p</code> (or <code>--prompt</code>) flag for single-shot execution, perfect for scripting and CI/CD pipelines.</p>
+
+            <h3>Basic Usage</h3>
+            <pre><code>copilot -p "your prompt here"
+copilot --prompt "your prompt here"</code></pre>
+
+            <h3>Examples</h3>
+            <pre><code><span class="comment"># Find information</span>
+copilot -p "List all open issues assigned to me in OWNER/REPO"
+
+<span class="comment"># Code generation</span>
+copilot -p "Generate unit tests for main.js"
+
+<span class="comment"># Code analysis</span>
+copilot -p "Find all TODO comments in src/ directory"</code></pre>
+
+            <h3>Piping &amp; Chaining</h3>
+            <pre><code><span class="comment"># Pipe input to Copilot</span>
+echo "Explain this code" | copilot -p
+
+<span class="comment"># Chain with other tools</span>
+copilot -p "Run tests" --allow-all-tools
+
+<span class="comment"># Export results to file</span>
+copilot -p "Analyze code quality" --share > report.md</code></pre>
+
+            <h3>CI/CD Integration</h3>
+            <pre><code><span class="comment"># Automated quality check in pipeline</span>
+copilot -p "Run full test suite and generate coverage report" \
+  --allow-all-tools \
+  --share-gist \
+  --model gpt-5-mini</code></pre>
+
+            <div class="alert alert-warning">
+                <span class="alert-icon">&#9888;&#65039;</span>
+                <div class="alert-content">
+                    <strong>Automation Tip</strong>
+                    <p>Always use <code>--allow-all-tools</code> or specific <code>--allow-tool</code> patterns in automated contexts to bypass interactive approval prompts.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             4. MODEL SELECTION
+             ============================================ -->
+        <section id="models" class="section glass">
+            <p class="section-label">04 / Models</p>
+            <h2 class="section-title">Model <span class="accent">Selection</span></h2>
+
+            <p>Choose the right model for your task. Switch at launch with <code>--model</code> or mid-session with <code>/model</code>.</p>
+
+            <h3>Available Models</h3>
+
+            <h4>Claude (Anthropic)</h4>
+            <div class="model-grid">
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>claude-opus-4.6</h4>
+                        <span class="badge badge-primary">Premium</span>
+                    </div>
+                    <p>Deep reasoning, complex system design, architecture decisions, greenfield projects.</p>
+                    <div class="use-for">Best for: Complex refactors, system architecture, design work</div>
+                </div>
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>claude-sonnet-4.5</h4>
+                        <span class="badge badge-success">Default</span>
+                    </div>
+                    <p>Balanced speed and capability. Great general-purpose development model.</p>
+                    <div class="use-for">Best for: Everyday coding, routine tasks, balanced performance</div>
+                </div>
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>claude-haiku-4.5</h4>
+                        <span class="badge badge-glass">Light</span>
+                    </div>
+                    <p>Lightweight Claude variant for quick, simple tasks.</p>
+                    <div class="use-for">Best for: Quick lookups, simple edits, fast responses</div>
+                </div>
+            </div>
+
+            <h4>GPT (OpenAI)</h4>
+            <div class="model-grid">
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>gpt-5.2-codex</h4>
+                        <span class="badge badge-primary">Premium</span>
+                    </div>
+                    <p>Latest high-performance code generation model.</p>
+                    <div class="use-for">Best for: High-volume code generation</div>
+                </div>
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>gpt-5.1-codex-max</h4>
+                        <span class="badge badge-primary">Premium</span>
+                    </div>
+                    <p>Maximum capability codex variant for demanding workloads.</p>
+                    <div class="use-for">Best for: Complex generation, maximum accuracy</div>
+                </div>
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>gpt-5-mini</h4>
+                        <span class="badge badge-success">Free*</span>
+                    </div>
+                    <p>Fast and lightweight. Does not consume premium requests on paid plans.</p>
+                    <div class="use-for">Best for: Quick iterations, high-volume simple tasks</div>
+                </div>
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>gpt-4.1</h4>
+                        <span class="badge badge-success">Free*</span>
+                    </div>
+                    <p>Reliable GPT-4.1. Does not consume premium requests.</p>
+                    <div class="use-for">Best for: Cost-conscious standard work</div>
+                </div>
+            </div>
+
+            <p style="font-size: 0.8125rem; color: var(--text-muted);">Other available models: <code>gpt-5.2</code>, <code>gpt-5.1-codex</code>, <code>gpt-5.1</code>, <code>gpt-5</code>, <code>gpt-5.1-codex-mini</code></p>
+
+            <h4>Google</h4>
+            <div class="model-grid">
+                <div class="model-card glass">
+                    <div class="model-card-header">
+                        <h4>gemini-3-pro-preview</h4>
+                        <span class="badge badge-info">Preview</span>
+                    </div>
+                    <p>Data transformation, analytics, and multimodal tasks.</p>
+                    <div class="use-for">Best for: Data-heavy workflows, analytics, multimodal input</div>
+                </div>
+            </div>
+
+            <h3>Model Selection Strategy</h3>
+            <div class="alert alert-info">
+                <span class="alert-icon">&#128161;</span>
+                <div class="alert-content">
+                    <strong>Recommended Approach</strong>
+                    <p>Start with <code>claude-sonnet-4.5</code> for balanced performance. Switch to <code>claude-opus-4.6</code> for architecture decisions. Use <code>gpt-5-mini</code> for high-volume simple tasks. Try <code>gemini-3-pro-preview</code> for data-heavy work. Use <code>/model</code> to switch mid-session as task complexity changes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             5. PERMISSION SYSTEM
+             ============================================ -->
+        <section id="permissions" class="section glass">
+            <p class="section-label">05 / Security</p>
+            <h2 class="section-title"><span class="accent">Permission</span> System</h2>
+
+            <p>Copilot CLI uses a layered permission system. By default, each tool execution requires interactive approval. Use flags to grant broader access.</p>
+
+            <h3>Tool Permissions</h3>
+            <pre><code><span class="comment"># Allow specific tools (glob patterns supported)</span>
+--allow-tool "shell(npm run test:*)"
+--allow-tool "read"
+
+<span class="comment"># Deny specific tools (takes precedence over allow)</span>
+--deny-tool "shell"
+--deny-tool "write(*.env)"
+
+<span class="comment"># Auto-approve all tool executions</span>
+--allow-all-tools</code></pre>
+
+            <h3>Path Permissions</h3>
+            <pre><code><span class="comment"># Allow access to all file paths</span>
+--allow-all-paths
+
+<span class="comment"># Grant directory access in session</span>
+/add-dir /path/to/directory</code></pre>
+
+            <h3>URL Permissions</h3>
+            <pre><code><span class="comment"># Allow specific URL patterns</span>
+--allow-url "https://api.example.com/*"
+
+<span class="comment"># Deny URL patterns</span>
+--deny-url "https://internal.corp/*"</code></pre>
+
+            <div class="alert alert-warning">
+                <span class="alert-icon">&#9888;&#65039;</span>
+                <div class="alert-content">
+                    <strong>URL rules apply to shell commands too</strong>
+                    <p>URL permission rules also affect commands like <code>curl</code> and <code>wget</code> executed through the shell tool.</p>
+                </div>
+            </div>
+
+            <h3>Convenience Flags</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Effect</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--allow-all</td><td>Enable all permissions at once</td></tr>
+                        <tr><td>--yolo</td><td>Same as <code>--allow-all</code> (trust Copilot to run freely)</td></tr>
+                        <tr><td>--allow-all-tools</td><td>Auto-approve all tool executions</td></tr>
+                        <tr><td>--allow-all-paths</td><td>Allow access to any file path</td></tr>
+                        <tr><td>--allow-all-urls</td><td>Allow all URL access</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Permission Examples</h3>
+            <pre><code><span class="comment"># Secure code review (read-only, no shell)</span>
+copilot -p "Review security in auth module" \
+  --allow-tool "read" \
+  --deny-tool "shell" \
+  --allow-all-paths
+
+<span class="comment"># Enterprise-safe automation (specific tools only)</span>
+copilot -p "Deploy to staging" \
+  --allow-tool "shell(kubectl *)" \
+  --allow-tool "shell(docker *)" \
+  --deny-url "*" \
+  --config-dir /etc/copilot
+
+<span class="comment"># Fast prototyping (full trust)</span>
+copilot --yolo --model claude-opus-4.6</code></pre>
+        </section>
+
+        <!-- ============================================
+             6. MCP INTEGRATION
+             ============================================ -->
+        <section id="mcp" class="section glass">
+            <p class="section-label">06 / Extensibility</p>
+            <h2 class="section-title"><span class="accent">MCP</span> Integration</h2>
+
+            <p>Model Context Protocol (MCP) is an industry-standard protocol that allows Copilot CLI to integrate with custom context providers and external tools.</p>
+
+            <h3>Configuration</h3>
+            <p>MCP servers are configured in <code>~/.copilot/mcp-config.json</code>:</p>
+            <pre><code>{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["-y", "my-mcp-server"],
+      "env": {
+        "API_KEY": "your-key"
+      }
+    }
+  }
+}</code></pre>
+
+            <h3>GitHub MCP Server</h3>
+            <p>The built-in GitHub MCP server provides tools for issues, PRs, repositories, and Copilot Spaces:</p>
+            <pre><code><span class="comment"># Enable all GitHub MCP tools</span>
+copilot --enable-all-github-mcp-tools
+
+<span class="comment"># Add a specific tool</span>
+copilot --add-github-mcp-tool github_search_code
+
+<span class="comment"># Add a toolset (e.g., all issue-related tools)</span>
+copilot --add-github-mcp-toolset issues</code></pre>
+
+            <h3>MCP Flags Reference</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--additional-mcp-config [path]</td><td>Load additional MCP config file</td></tr>
+                        <tr><td>--add-github-mcp-tool [tool]</td><td>Add specific GitHub MCP tool</td></tr>
+                        <tr><td>--add-github-mcp-toolset [set]</td><td>Add GitHub MCP toolset</td></tr>
+                        <tr><td>--enable-all-github-mcp-tools</td><td>Enable all GitHub MCP tools</td></tr>
+                        <tr><td>--disable-builtin-mcps</td><td>Disable built-in MCP servers</td></tr>
+                        <tr><td>--disable-mcp-server [name]</td><td>Disable specific MCP server</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Custom MCP Servers</h3>
+            <p>Define custom servers at the user level (<code>~/.copilot/mcp-config.json</code>), in organization/enterprise agent profiles, or via the <code>--additional-mcp-config</code> flag.</p>
+
+            <div class="alert alert-info">
+                <span class="alert-icon">&#128268;</span>
+                <div class="alert-content">
+                    <strong>Best Practice</strong>
+                    <p>Start with the GitHub MCP toolset for common needs. Add custom MCP servers for specialized tools. Test configurations with simple prompts first before using in automation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             7. SESSION MANAGEMENT
+             ============================================ -->
+        <section id="sessions" class="section glass">
+            <p class="section-label">07 / Continuity</p>
+            <h2 class="section-title"><span class="accent">Session</span> Management</h2>
+
+            <h3>Continuing Sessions</h3>
+            <pre><code><span class="comment"># Resume the most recently closed session</span>
+copilot --continue
+
+<span class="comment"># Browse and pick from local and remote sessions</span>
+copilot --resume
+
+<span class="comment"># Resume a specific session by ID (in interactive mode)</span>
+/resume SESSION-ID</code></pre>
+
+            <h3>Session Storage</h3>
+            <ul>
+                <li><strong>Local sessions</strong> are stored in <code>~/.copilot/session-state/</code></li>
+                <li><strong>Remote sessions</strong> can be loaded for collaboration (since v0.0.376, January 2026)</li>
+            </ul>
+
+            <h3>Context Management</h3>
+            <p><strong>Automatic compression:</strong> When approaching 95% of the token limit, Copilot automatically compresses history in the background without interruption. This enables virtually infinite sessions.</p>
+            <pre><code><span class="comment"># Manually compress context anytime</span>
+/compact
+
+<span class="comment"># Reset context completely</span>
+/clear</code></pre>
+
+            <h3>Sharing Sessions</h3>
+            <h4>Export to Markdown</h4>
+            <pre><code><span class="comment"># In interactive mode</span>
+/share
+
+<span class="comment"># As a CLI flag (exports on completion)</span>
+copilot -p "..." --share</code></pre>
+
+            <h4>Export to GitHub Gist</h4>
+            <pre><code><span class="comment"># In interactive mode (prompts for visibility, description, filename)</span>
+/share gist
+
+<span class="comment"># As a CLI flag</span>
+copilot -p "..." --share-gist</code></pre>
+
+            <p>Exports include timestamp, model used, token usage, and full conversation history with formatting preserved.</p>
+
+            <div class="alert alert-info">
+                <span class="alert-icon">&#128203;</span>
+                <div class="alert-content">
+                    <strong>Enterprise Note</strong>
+                    <p>With GitHub Enterprise Cloud and data residency enabled, Gist creation may be restricted by organization policy.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             8. CONFIGURATION
+             ============================================ -->
+        <section id="config" class="section glass">
+            <p class="section-label">08 / Customization</p>
+            <h2 class="section-title"><span class="accent">Configuration</span></h2>
+
+            <h3>Config Directory Structure</h3>
+            <div class="config-tree">
+                <span class="dir">~/.copilot/</span><br>
+                &nbsp;&nbsp;&#9500;&#9472; <span class="file">copilot-instructions.md</span>&nbsp;&nbsp;<span style="color: var(--text-muted);">&larr; User-level instructions</span><br>
+                &nbsp;&nbsp;&#9500;&#9472; <span class="file">mcp-config.json</span>&nbsp;&nbsp;<span style="color: var(--text-muted);">&larr; MCP server config</span><br>
+                &nbsp;&nbsp;&#9500;&#9472; <span class="file">config</span><br>
+                &nbsp;&nbsp;&#9500;&#9472; <span class="dir">session-state/</span>&nbsp;&nbsp;<span style="color: var(--text-muted);">&larr; Local session storage</span><br>
+                &nbsp;&nbsp;&#9492;&#9472; <span class="dir">agents/</span>&nbsp;&nbsp;<span style="color: var(--text-muted);">&larr; Custom agent profiles</span>
+            </div>
+
+            <h3>Custom Instructions</h3>
+            <p>Copilot CLI loads instructions from multiple sources, in order of priority:</p>
+
+            <h4>User-Level</h4>
+            <pre><code>$HOME/.copilot/copilot-instructions.md</code></pre>
+
+            <h4>Repository-Level</h4>
+            <pre><code>.github/copilot-instructions.md
+.github/instructions/**/*.instructions.md
+CLAUDE.md                   <span class="comment"># Claude-specific</span>
+GEMINI.md                   <span class="comment"># Gemini-specific</span>
+AGENTS.md                   <span class="comment"># Agent definitions</span></code></pre>
+
+            <h4>Custom Directories</h4>
+            <pre><code><span class="comment"># Set via environment variable (comma-separated)</span>
+export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="/path/to/dir1,/path/to/dir2"</code></pre>
+
+            <p>Repository-level instructions take precedence and enforce team conventions. Instructions are cached; restart CLI or use <code>/resume</code> after editing.</p>
+
+            <h3>Custom Agents</h3>
+            <p>Create specialized agents using Markdown files with YAML frontmatter:</p>
+            <pre><code><span class="comment"># ~/.copilot/agents/test-agent.md</span>
+---
+name: test-agent
+description: Runs tests and analyzes failures
+tools:
+  - shell
+  - read
+---
+
+Always run tests with verbose output.
+If failures occur, analyze stack traces and suggest fixes.</code></pre>
+
+            <h4>Agent Locations</h4>
+            <ul>
+                <li><code>~/.copilot/agents/</code> &mdash; User-level agents</li>
+                <li><code>.github/agents/</code> &mdash; Repository-level agents</li>
+                <li><code>{org}/.github/agents/</code> &mdash; Organization-level agents</li>
+            </ul>
+
+            <h4>Built-in Agents (2026)</h4>
+            <ul>
+                <li><strong>Explore</strong> &mdash; Fast codebase analysis without cluttering main context</li>
+                <li><strong>Task</strong> &mdash; Run commands like tests and builds</li>
+            </ul>
+
+            <pre><code><span class="comment"># Invoke a custom agent in interactive mode</span>
+/agent my-agent
+
+<span class="comment"># Invoke the explore agent</span>
+/agent explore</code></pre>
+
+            <h3>Plugin System</h3>
+            <p>Plugins extend Copilot CLI with custom agents, MCP servers, skills, and LSP configurations.</p>
+            <pre><code><span class="comment"># Manage plugins</span>
+copilot plugin [command]</code></pre>
+            <p>Plugin sources include GitHub repositories, direct URLs, and local file paths. The <code>copilot-plugins</code> repository serves as a centralized registry.</p>
+
+            <h3>Disabling Custom Instructions</h3>
+            <pre><code><span class="comment"># Ignore all custom instruction files for this session</span>
+copilot --no-custom-instructions</code></pre>
+        </section>
+
+        <!-- ============================================
+             9. CLI FLAGS REFERENCE
+             ============================================ -->
+        <section id="flags" class="section glass">
+            <p class="section-label">09 / Reference</p>
+            <h2 class="section-title">CLI Flags <span class="accent">Reference</span></h2>
+
+            <h3>Core Commands</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>copilot login</td><td>Authenticate with GitHub</td></tr>
+                        <tr><td>copilot help</td><td>Display help information</td></tr>
+                        <tr><td>copilot init</td><td>Initialize configuration</td></tr>
+                        <tr><td>copilot update</td><td>Update to latest version</td></tr>
+                        <tr><td>copilot version</td><td>Show version information</td></tr>
+                        <tr><td>copilot plugin</td><td>Manage plugins</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Operating Modes</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>-i, --interactive</td><td>Start interactive session (default)</td></tr>
+                        <tr><td>-p, --prompt [text]</td><td>Non-interactive mode with single prompt</td></tr>
+                        <tr><td>--agent</td><td>Agent mode (orchestrator with system prompt)</td></tr>
+                        <tr><td>--acp</td><td>Start as ACP (Agent Client Protocol) server</td></tr>
+                        <tr><td>--acp --port [num]</td><td>Start ACP server in TCP mode on port</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Model &amp; Session</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--model [name]</td><td>Specify AI model to use</td></tr>
+                        <tr><td>--continue</td><td>Resume most recently closed local session</td></tr>
+                        <tr><td>--resume</td><td>Cycle through and resume local/remote sessions</td></tr>
+                        <tr><td>--share</td><td>Export session to markdown on completion</td></tr>
+                        <tr><td>--share-gist</td><td>Export session to GitHub Gist on completion</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Permission Flags</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--allow-tool [tools...]</td><td>Allow specific tools (glob patterns supported)</td></tr>
+                        <tr><td>--deny-tool [tools...]</td><td>Deny specific tools (takes precedence)</td></tr>
+                        <tr><td>--allow-all-tools</td><td>Auto-approve all tool executions</td></tr>
+                        <tr><td>--allow-all-paths</td><td>Allow access to any file path</td></tr>
+                        <tr><td>--allow-url [patterns...]</td><td>Allow URL patterns</td></tr>
+                        <tr><td>--deny-url [patterns...]</td><td>Deny URL patterns</td></tr>
+                        <tr><td>--allow-all-urls</td><td>Allow all URL access</td></tr>
+                        <tr><td>--allow-all</td><td>Enable all permissions</td></tr>
+                        <tr><td>--yolo</td><td>Enable all permissions (alias)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>MCP Configuration</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--additional-mcp-config [path]</td><td>Load additional MCP config file</td></tr>
+                        <tr><td>--add-github-mcp-tool [tool]</td><td>Add specific GitHub MCP tool</td></tr>
+                        <tr><td>--add-github-mcp-toolset [set]</td><td>Add GitHub MCP toolset</td></tr>
+                        <tr><td>--enable-all-github-mcp-tools</td><td>Enable all GitHub MCP tools</td></tr>
+                        <tr><td>--disable-builtin-mcps</td><td>Disable built-in MCP servers</td></tr>
+                        <tr><td>--disable-mcp-server [name]</td><td>Disable specific MCP server</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Directory, Context &amp; Misc</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>--add-dir [path]</td><td>Grant access to specific directory</td></tr>
+                        <tr><td>--config-dir [path]</td><td>Specify config directory (default: ~/.copilot)</td></tr>
+                        <tr><td>--no-custom-instructions</td><td>Ignore custom instruction files</td></tr>
+                        <tr><td>--experimental</td><td>Enable experimental features</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ============================================
+             10. PRO TIPS
+             ============================================ -->
+        <section id="pro-tips" class="section glass">
+            <p class="section-label">10 / Mastery</p>
+            <h2 class="section-title">Pro <span class="accent">Tips</span></h2>
+
+            <h3>Effective Usage Patterns</h3>
+
+            <h4>1. Break Down Complex Tasks</h4>
+            <p>Be specific about requirements and provide examples:</p>
+            <pre><code>copilot -p "Refactor AuthService to use dependency injection. \
+Current implementation uses singletons. Preserve existing test coverage."</code></pre>
+
+            <h4>2. Use Plan Mode for Major Changes</h4>
+            <p>Press <kbd>Shift+Tab</kbd> before implementing major features. Copilot asks clarifying questions, builds a structured plan, and you approve before execution.</p>
+
+            <h4>3. Switch Models Based on Task Complexity</h4>
+            <pre><code><span class="comment"># Start fast with sonnet</span>
+copilot --model claude-sonnet-4.5
+
+<span class="comment"># Switch mid-session when hitting complex decisions</span>
+/model
+<span class="comment"># Select claude-opus-4.6</span>
+
+<span class="comment"># Back to fast model for iterations</span>
+/model
+<span class="comment"># Select gpt-5-mini</span></code></pre>
+
+            <h4>4. Leverage Custom Agents</h4>
+            <p>Create specialized agents for recurring workflows:</p>
+            <pre><code><span class="comment"># ~/.copilot/agents/security-review.md</span>
+---
+name: security-review
+description: Reviews code for security vulnerabilities
+tools:
+  - read
+---
+
+Analyze code for OWASP Top 10 vulnerabilities.
+Focus on authentication, input validation, and data exposure.
+Report findings with severity levels.</code></pre>
+
+            <h4>5. Use Memory Features</h4>
+            <p>As you work, Copilot stores coding standards, project structure insights, and your preferred approaches. This makes future sessions progressively more productive.</p>
+
+            <div class="divider"></div>
+
+            <h3>Scripting Recipes</h3>
+
+            <h4>Automated Code Quality Check</h4>
+            <pre><code>#!/bin/bash
+copilot -p "
+1. Run eslint on src/
+2. Run prettier --check
+3. Run unit tests
+4. Generate summary report
+" --allow-all-tools --share > quality-report.md</code></pre>
+
+            <h4>Interactive Development Loop</h4>
+            <pre><code>#!/bin/bash
+while true; do
+  copilot --continue --model claude-sonnet-4.5
+  read -p "Continue? (y/n) " choice
+  [[ "$choice" != "y" ]] &amp;&amp; break
+done</code></pre>
+
+            <h4>Collaborative Review &amp; Share</h4>
+            <pre><code>#!/bin/bash
+copilot -p "Review changes in $(git diff --name-only)" \
+  --model claude-opus-4.6 \
+  --share-gist > review-url.txt
+
+echo "Review shared at: $(cat review-url.txt)"</code></pre>
+
+            <div class="divider"></div>
+
+            <h3>Best Practices</h3>
+
+            <h4>Context Management</h4>
+            <ul>
+                <li>Use <code>/compact</code> before starting major new tasks within a session</li>
+                <li>Use <code>/clear</code> to reset context when switching projects</li>
+                <li>Let auto-compaction handle long sessions (triggers at 95% token limit)</li>
+            </ul>
+
+            <h4>Permission Safety</h4>
+            <ul>
+                <li>Start restrictive, grant permissions as needed</li>
+                <li>Use <code>--allow-tool</code> patterns for specific commands rather than blanket access</li>
+                <li>Reserve <code>--yolo</code> for trusted local environments only</li>
+                <li>Review tool usage with <code>/session</code> periodically</li>
+            </ul>
+
+            <h4>Custom Instructions Hierarchy</h4>
+            <ul>
+                <li><strong>User-level</strong> (<code>~/.copilot/copilot-instructions.md</code>) for personal preferences</li>
+                <li><strong>Repository-level</strong> (<code>.github/copilot-instructions.md</code>) for team standards</li>
+                <li><strong>Agent-specific</strong> (<code>AGENTS.md</code>) for specialized workflows</li>
+            </ul>
+
+            <h4>Session Workflow</h4>
+            <ul>
+                <li>Use <code>--continue</code> to resume work immediately after breaks</li>
+                <li>Use <code>/share</code> to document important sessions for future reference</li>
+                <li>Use <code>/share gist</code> for sharing discoveries with your team</li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <h3>Advanced Patterns</h3>
+
+            <h4>Delegate to Copilot Coding Agent</h4>
+            <pre><code><span class="comment"># In interactive mode - pushes session to GitHub,</span>
+<span class="comment"># opens draft PR, makes changes in background</span>
+/delegate</code></pre>
+
+            <h4>Explore Without Context Pollution</h4>
+            <pre><code><span class="comment"># Use the explore agent to ask questions</span>
+<span class="comment"># without cluttering your main context</span>
+/agent explore
+"How is authentication implemented?"
+"Find all database queries in services/"</code></pre>
+
+            <h4>ACP Server for Third-Party Integration</h4>
+            <pre><code><span class="comment"># Start as Agent Client Protocol server</span>
+copilot --acp
+
+<span class="comment"># Or with TCP mode on a specific port</span>
+copilot --acp --port 3000</code></pre>
+            <p>This allows third-party tools, IDEs, and automation systems to integrate with Copilot's agentic capabilities.</p>
+
+            <h4>Enterprise Configuration Management</h4>
+            <pre><code><span class="comment"># Central config for team</span>
+export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="/opt/company/copilot-config"
+
+<span class="comment"># Run with enterprise settings</span>
+copilot --config-dir /etc/copilot \
+  --additional-mcp-config /etc/copilot/enterprise-mcp.json</code></pre>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer glass">
+            <p>GitHub Copilot CLI Reference Guide</p>
+            <p style="margin-top: var(--space-2);">Built with the <a href="../styles/glassmorphism.html">Glassmorphism</a> design system</p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const btn = document.getElementById('theme-btn');
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.setAttribute('data-theme', 'light');
+                btn.textContent = 'Dark Mode';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                btn.textContent = 'Light Mode';
+            }
+        }
+    </script>
+</body>
+</html>

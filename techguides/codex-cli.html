@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Codex CLI - Tech Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-full: 9999px;
+
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+            --bg-dark: #0a0a0f;
+            --bg-surface: #12121a;
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.45);
+
+            --holo-pink: #ff6bd6;
+            --holo-purple: #c86bff;
+            --holo-blue: #6bb3ff;
+            --holo-cyan: #6bffe0;
+            --holo-green: #a6ff6b;
+            --holo-yellow: #ffe86b;
+            --holo-orange: #ff9f6b;
+            --holo-red: #ff6b8a;
+
+            --chrome-light: #f0f0f5;
+            --chrome-mid: #a8a8b3;
+            --chrome-dark: #5a5a6e;
+
+            --holo-gradient: linear-gradient(135deg, var(--holo-pink) 0%, var(--holo-purple) 14%, var(--holo-blue) 28%, var(--holo-cyan) 42%, var(--holo-green) 56%, var(--holo-yellow) 70%, var(--holo-orange) 84%, var(--holo-pink) 100%);
+            --holo-gradient-animated: linear-gradient(90deg, var(--holo-pink), var(--holo-purple), var(--holo-blue), var(--holo-cyan), var(--holo-green), var(--holo-yellow), var(--holo-orange), var(--holo-red), var(--holo-pink));
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { font-size: 16px; scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background: var(--bg-dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated holographic background */
+        .holo-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .holo-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(255, 107, 214, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(107, 179, 255, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 80%, rgba(107, 255, 224, 0.10) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(200, 107, 255, 0.10) 0%, transparent 50%);
+            animation: holo-drift 20s ease-in-out infinite;
+        }
+        @keyframes holo-drift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(2%, 1%) rotate(1deg); }
+            50% { transform: translate(-1%, 2%) rotate(-1deg); }
+            75% { transform: translate(-2%, -1%) rotate(0.5deg); }
+        }
+
+        /* Prismatic light rays */
+        .light-rays {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+        .light-ray {
+            position: absolute;
+            width: 2px;
+            height: 300vh;
+            transform-origin: top center;
+            animation: ray-shimmer 8s ease-in-out infinite;
+        }
+        .light-ray:nth-child(1) { left: 10%; background: linear-gradient(180deg, transparent, var(--holo-pink), transparent); animation-delay: 0s; transform: rotate(15deg); }
+        .light-ray:nth-child(2) { left: 30%; background: linear-gradient(180deg, transparent, var(--holo-cyan), transparent); animation-delay: -2s; transform: rotate(-10deg); }
+        .light-ray:nth-child(3) { left: 50%; background: linear-gradient(180deg, transparent, var(--holo-purple), transparent); animation-delay: -4s; transform: rotate(5deg); }
+        .light-ray:nth-child(4) { left: 70%; background: linear-gradient(180deg, transparent, var(--holo-green), transparent); animation-delay: -6s; transform: rotate(-15deg); }
+        .light-ray:nth-child(5) { left: 90%; background: linear-gradient(180deg, transparent, var(--holo-yellow), transparent); animation-delay: -1s; transform: rotate(8deg); }
+        @keyframes ray-shimmer {
+            0%, 100% { opacity: 0.2; filter: blur(3px); }
+            50% { opacity: 0.6; filter: blur(1px); }
+        }
+
+        /* Mouse glow */
+        .mouse-glow {
+            position: fixed;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.12;
+            background: radial-gradient(circle, rgba(255, 107, 214, 0.5) 0%, rgba(107, 255, 224, 0.3) 30%, transparent 70%);
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s ease;
+        }
+
+        /* Keyframes */
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes text-shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        @keyframes foil-shine {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        @keyframes float-badge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-7) var(--space-5);
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            transition: all var(--transition-fast);
+            margin-bottom: var(--space-6);
+        }
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* Holographic text */
+        .holo-text {
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: text-shimmer 5s linear infinite;
+        }
+
+        /* Chrome text */
+        .chrome {
+            background: linear-gradient(180deg, var(--chrome-light) 0%, var(--chrome-mid) 40%, var(--chrome-dark) 50%, var(--chrome-mid) 60%, var(--chrome-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Holographic surface */
+        .holo-surface {
+            position: relative;
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        .holo-surface::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--holo-gradient);
+            background-size: 400% 400%;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+            animation: gradient-shift 8s ease infinite;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+        .holo-surface::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), rgba(255,255,255,0.2), rgba(255,255,255,0.08), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.8s ease;
+            pointer-events: none;
+        }
+        .holo-surface:hover::before { opacity: 0.2; }
+        .holo-surface:hover::after { left: 150%; }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+            padding: var(--space-7) var(--space-6);
+            border-radius: var(--radius-xl);
+        }
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            margin-bottom: var(--space-5);
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 4s linear infinite, float-badge 3s ease-in-out infinite;
+            color: var(--bg-dark);
+        }
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 7vw, 4.5rem);
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: var(--space-3);
+            line-height: 1;
+        }
+        .header p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+        .header-version {
+            display: inline-block;
+            margin-top: var(--space-4);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* Jump nav */
+        .jump-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            justify-content: center;
+            margin-bottom: var(--space-8);
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .jump-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+        .jump-link:hover {
+            color: var(--bg-dark);
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 4s linear infinite;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,107,214,0.2);
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: var(--space-7);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+        }
+        .section-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: var(--space-2);
+            font-weight: 500;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: var(--space-5);
+            letter-spacing: -0.5px;
+        }
+        .section-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-5);
+            max-width: 700px;
+            line-height: 1.7;
+        }
+
+        /* Cheat sheet */
+        .cheatsheet {
+            margin-bottom: var(--space-8);
+        }
+        .cheatsheet-header {
+            text-align: center;
+            margin-bottom: var(--space-6);
+        }
+        .cheatsheet-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+        }
+        .cheatsheet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-4);
+        }
+        .cheat-card {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%), var(--bg-surface);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+        .cheat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 3s linear infinite;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        .cheat-card:hover { transform: translateY(-4px); box-shadow: 0 15px 40px -15px rgba(0,0,0,0.5); }
+        .cheat-card:hover::after { opacity: 1; }
+        .cheat-card-title {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .cheat-card-title .icon {
+            width: 28px; height: 28px;
+            border-radius: var(--radius-sm);
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 4s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .cheat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: var(--space-1) 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            gap: var(--space-3);
+        }
+        .cheat-item:last-child { border-bottom: none; }
+        .cheat-cmd {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--holo-cyan);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .cheat-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        /* Code blocks */
+        .code-block {
+            position: relative;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            margin: var(--space-4) 0;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 4s linear infinite;
+            opacity: 0.5;
+        }
+        .code-block .comment { color: var(--text-muted); }
+        .code-block .cmd { color: var(--holo-cyan); }
+        .code-block .flag { color: var(--holo-purple); }
+        .code-block .str { color: var(--holo-green); }
+        .code-block .key { color: var(--holo-yellow); }
+        .code-block .val { color: var(--holo-pink); }
+        .code-label {
+            position: absolute;
+            top: var(--space-3);
+            right: var(--space-3);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-weight: 600;
+        }
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.825rem;
+            background: rgba(107,255,224,0.08);
+            color: var(--holo-cyan);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+            margin: var(--space-4) 0;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        thead {
+            background: rgba(255,255,255,0.04);
+        }
+        th {
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            white-space: nowrap;
+        }
+        td {
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        td:first-child {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--holo-cyan);
+            white-space: nowrap;
+        }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: 2px var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-holo {
+            background: var(--holo-gradient-animated);
+            background-size: 300% 100%;
+            animation: text-shimmer 4s linear infinite;
+            color: var(--bg-dark);
+        }
+        .badge-chrome {
+            background: linear-gradient(180deg, #e8e8e8 0%, #c0c0c0 50%, #e8e8e8 100%);
+            color: #1a1a2e;
+        }
+        .badge-ghost {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+        }
+        .badge-danger {
+            background: rgba(255,107,138,0.15);
+            border: 1px solid rgba(255,107,138,0.3);
+            color: var(--holo-red);
+        }
+        .badge-safe {
+            background: rgba(166,255,107,0.1);
+            border: 1px solid rgba(166,255,107,0.25);
+            color: var(--holo-green);
+        }
+        .badge-warn {
+            background: rgba(255,232,107,0.1);
+            border: 1px solid rgba(255,232,107,0.25);
+            color: var(--holo-yellow);
+        }
+
+        /* Alert boxes */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-md);
+            margin: var(--space-4) 0;
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .alert::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+        }
+        .alert-holo::before { background: var(--holo-gradient); }
+        .alert-warn::before { background: var(--holo-yellow); }
+        .alert-danger::before { background: var(--holo-red); }
+        .alert-icon { font-size: 1.1rem; line-height: 1.4; flex-shrink: 0; }
+        .alert-text { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+        .alert-text strong { color: var(--text-primary); }
+
+        /* Subsection heading */
+        h3.sub-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: var(--space-6) 0 var(--space-4);
+            letter-spacing: -0.3px;
+        }
+        h4.mini-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            margin: var(--space-5) 0 var(--space-3);
+            color: var(--text-secondary);
+        }
+
+        /* Paragraph text */
+        .body-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.7;
+            margin-bottom: var(--space-4);
+        }
+
+        /* Keyboard shortcut display */
+        kbd {
+            display: inline-block;
+            padding: 2px 7px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Foil card for special callouts */
+        .foil-card {
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            background: var(--bg-surface);
+            position: relative;
+            overflow: hidden;
+            margin: var(--space-6) 0;
+        }
+        .foil-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--holo-gradient);
+            background-size: 200% 200%;
+            opacity: 0.35;
+            filter: blur(40px);
+            animation: gradient-shift 8s ease infinite;
+        }
+        .foil-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.08) 35%, rgba(255,255,255,0.15) 38%, rgba(255,255,255,0.08) 41%, transparent 60%);
+            background-size: 200% 100%;
+            animation: foil-shine 4s ease-in-out infinite;
+        }
+        .foil-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Two-column layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        /* Feature grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
+            margin: var(--space-4) 0;
+        }
+        .feature-item {
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all var(--transition-fast);
+        }
+        .feature-item:hover {
+            border-color: rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+        }
+        .feature-item-title {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+        }
+        .feature-item-desc {
+            font-size: 0.825rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Sandbox visual comparison */
+        .sandbox-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+            margin: var(--space-5) 0;
+        }
+        .sandbox-card {
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid;
+            transition: all var(--transition-fast);
+        }
+        .sandbox-card:hover { transform: translateY(-4px); }
+        .sandbox-card.safe { border-color: rgba(166,255,107,0.25); background: rgba(166,255,107,0.03); }
+        .sandbox-card.moderate { border-color: rgba(255,232,107,0.25); background: rgba(255,232,107,0.03); }
+        .sandbox-card.danger { border-color: rgba(255,107,138,0.25); background: rgba(255,107,138,0.03); }
+        .sandbox-card-icon { font-size: 2rem; margin-bottom: var(--space-3); }
+        .sandbox-card-name {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+        }
+        .sandbox-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Approval spectrum */
+        .spectrum-bar {
+            display: flex;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin: var(--space-5) 0;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .spectrum-item {
+            flex: 1;
+            padding: var(--space-4) var(--space-3);
+            text-align: center;
+            transition: all var(--transition-fast);
+            cursor: default;
+        }
+        .spectrum-item:hover { filter: brightness(1.2); }
+        .spectrum-item .spec-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: block;
+            margin-bottom: var(--space-1);
+        }
+        .spectrum-item .spec-desc {
+            font-size: 0.65rem;
+            opacity: 0.7;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-7) var(--space-5);
+            margin-top: var(--space-8);
+            border-radius: var(--radius-lg);
+        }
+        .footer-brand {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+        }
+        .footer p { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: var(--space-5) var(--space-4); }
+            .section { padding: var(--space-5); }
+            .header { padding: var(--space-6) var(--space-4); }
+            .header h1 { font-size: 2.2rem; letter-spacing: -1px; }
+            .cheatsheet-grid { grid-template-columns: 1fr; }
+            .jump-nav { gap: var(--space-1); }
+            .jump-link { font-size: 0.7rem; padding: var(--space-1) var(--space-3); }
+            .sandbox-cards { grid-template-columns: 1fr; }
+            .spectrum-bar { flex-direction: column; }
+            .two-col { grid-template-columns: 1fr; }
+            td:first-child { white-space: normal; }
+            .code-block { font-size: 0.72rem; padding: var(--space-4); }
+        }
+
+        @media (max-width: 480px) {
+            .cheat-item { flex-direction: column; gap: 2px; }
+            .cheat-desc { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <div class="holo-bg"></div>
+    <div class="light-rays">
+        <div class="light-ray"></div>
+        <div class="light-ray"></div>
+        <div class="light-ray"></div>
+        <div class="light-ray"></div>
+        <div class="light-ray"></div>
+    </div>
+    <div class="mouse-glow" id="mouseGlow"></div>
+
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- Header -->
+        <header class="header holo-surface">
+            <div class="header-badge">Terminal AI Agent</div>
+            <h1 class="holo-text">OpenAI Codex CLI</h1>
+            <p>The complete reference guide for OpenAI's open-source terminal coding agent. Interactive sessions, sandbox security, local models, MCP integration, and more.</p>
+            <span class="header-version">npm i -g @openai/codex &middot; v2026</span>
+        </header>
+
+        <!-- Quick Reference / Cheat Sheet -->
+        <div class="cheatsheet">
+            <div class="cheatsheet-header">
+                <h2 class="chrome">Quick Reference</h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">The commands and flags you will reach for most often</p>
+            </div>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">&#9654;</span> Core Commands</div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex</span><span class="cheat-desc">interactive TUI session</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex exec "task"</span><span class="cheat-desc">non-interactive run</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex e "task"</span><span class="cheat-desc">exec alias</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex review</span><span class="cheat-desc">code review mode</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex resume --last</span><span class="cheat-desc">resume last session</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex fork</span><span class="cheat-desc">branch from session</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex apply diff</span><span class="cheat-desc">apply a patch</span></div>
+                </div>
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">&#9881;</span> Essential Flags</div>
+                    <div class="cheat-item"><span class="cheat-cmd">-m MODEL</span><span class="cheat-desc">choose model</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">-s MODE</span><span class="cheat-desc">sandbox mode</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">-a POLICY</span><span class="cheat-desc">approval policy</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">-p PROFILE</span><span class="cheat-desc">config profile</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">-i IMAGE</span><span class="cheat-desc">attach image</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">--full-auto</span><span class="cheat-desc">safe automation</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">--oss</span><span class="cheat-desc">local model mode</span></div>
+                </div>
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">/</span> Slash Commands</div>
+                    <div class="cheat-item"><span class="cheat-cmd">/model</span><span class="cheat-desc">switch model</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/review</span><span class="cheat-desc">review changes</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/mcp</span><span class="cheat-desc">MCP servers</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/resume</span><span class="cheat-desc">resume session</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/fork</span><span class="cheat-desc">fork session</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/status</span><span class="cheat-desc">session info</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">/exit</span><span class="cheat-desc">quit session</span></div>
+                </div>
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">&#9000;</span> Keyboard Shortcuts</div>
+                    <div class="cheat-item"><span class="cheat-cmd">@</span><span class="cheat-desc">fuzzy file search</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Esc Esc</span><span class="cheat-desc">edit prev message</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Alt+M</span><span class="cheat-desc">cycle models</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Alt+E</span><span class="cheat-desc">cycle reasoning</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Enter</span><span class="cheat-desc">inject instruction</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Tab</span><span class="cheat-desc">queue follow-up</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">Ctrl+C</span><span class="cheat-desc">close session</span></div>
+                </div>
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">&#9632;</span> Sandbox Modes</div>
+                    <div class="cheat-item"><span class="cheat-cmd">read-only</span><span class="cheat-desc">no writes at all</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">workspace-write</span><span class="cheat-desc">write in repo only</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">danger-full-access</span><span class="cheat-desc">write anywhere</span></div>
+                    <div class="cheat-item" style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid rgba(255,255,255,0.06);">
+                        <span class="cheat-cmd" style="color: var(--holo-purple);">Approval Policies</span>
+                    </div>
+                    <div class="cheat-item"><span class="cheat-cmd">untrusted</span><span class="cheat-desc">ask for everything</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">on-request</span><span class="cheat-desc">model decides</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">on-failure</span><span class="cheat-desc">ask only on error</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">never</span><span class="cheat-desc">fully automated</span></div>
+                </div>
+                <div class="cheat-card">
+                    <div class="cheat-card-title"><span class="icon">&#9733;</span> Quick Recipes</div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex --full-auto</span><span class="cheat-desc">safe auto mode</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex -a on-failure</span><span class="cheat-desc">fast iteration</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex --oss -m ...</span><span class="cheat-desc">private local AI</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex exec --json</span><span class="cheat-desc">scripted output</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex review --base main</span><span class="cheat-desc">pre-PR review</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex -s read-only</span><span class="cheat-desc">analysis only</span></div>
+                    <div class="cheat-item"><span class="cheat-cmd">codex --add-dir ..</span><span class="cheat-desc">multi-project</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jump Navigation -->
+        <nav class="jump-nav">
+            <a href="#getting-started" class="jump-link">Getting Started</a>
+            <a href="#interactive" class="jump-link">Interactive Mode</a>
+            <a href="#non-interactive" class="jump-link">Non-Interactive</a>
+            <a href="#models" class="jump-link">Model Selection</a>
+            <a href="#sandbox" class="jump-link">Sandbox System</a>
+            <a href="#approvals" class="jump-link">Approval Policies</a>
+            <a href="#mcp" class="jump-link">MCP Integration</a>
+            <a href="#sessions" class="jump-link">Session Management</a>
+            <a href="#config" class="jump-link">Configuration</a>
+            <a href="#flags" class="jump-link">CLI Flags</a>
+            <a href="#pro-tips" class="jump-link">Pro Tips</a>
+        </nav>
+
+        <!-- 1. Getting Started -->
+        <section id="getting-started" class="section holo-surface">
+            <p class="section-label">01 / Setup</p>
+            <h2 class="section-title holo-text">Getting Started</h2>
+            <p class="section-desc">Codex CLI is OpenAI's open-source coding agent built in Rust. It runs locally from your terminal, reads your codebase, makes edits, and executes commands while you review in real time.</p>
+
+            <h3 class="sub-title">Installation</h3>
+            <div class="two-col">
+                <div>
+                    <h4 class="mini-title">npm <span class="badge badge-holo">Recommended</span></h4>
+                    <div class="code-block"><span class="cmd">npm</span> i -g @openai/codex</div>
+                </div>
+                <div>
+                    <h4 class="mini-title">Homebrew (macOS)</h4>
+                    <div class="code-block"><span class="cmd">brew</span> install --cask codex</div>
+                </div>
+            </div>
+            <p class="body-text">You can also download platform-specific binaries directly from <code>github.com/openai/codex/releases</code>.</p>
+
+            <h3 class="sub-title">Platform Support</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="feature-item-title">macOS <span class="badge badge-safe">Full</span></div>
+                    <div class="feature-item-desc">Native support via npm or Homebrew cask.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-item-title">Linux <span class="badge badge-safe">Full</span></div>
+                    <div class="feature-item-desc">Full support including WSL2 environments.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-item-title">Windows <span class="badge badge-warn">Experimental</span></div>
+                    <div class="feature-item-desc">Use WSL workspace for the best experience.</div>
+                </div>
+            </div>
+
+            <h3 class="sub-title">Authentication</h3>
+            <p class="body-text">The first time you run Codex, it will prompt you to sign in. You have two options:</p>
+            <div class="code-block"><span class="code-label">Auth</span>
+<span class="comment"># Option 1: ChatGPT account (Plus, Pro, Business, Edu, Enterprise)</span>
+<span class="cmd">codex</span> login
+
+<span class="comment"># Option 2: OpenAI API key</span>
+<span class="cmd">codex</span> login <span class="flag">--api-key</span>
+
+<span class="comment"># Check status / Logout</span>
+<span class="cmd">codex</span> login <span class="flag">--status</span>
+<span class="cmd">codex</span> logout</div>
+        </section>
+
+        <!-- 2. Interactive Mode -->
+        <section id="interactive" class="section holo-surface">
+            <p class="section-label">02 / TUI</p>
+            <h2 class="section-title holo-text">Interactive Mode</h2>
+            <p class="section-desc">Codex launches into a full-screen terminal UI where you can converse with the agent, review its actions in real time, and iterate on tasks together.</p>
+
+            <div class="code-block"><span class="code-label">Launch</span>
+<span class="comment"># Start in current directory</span>
+<span class="cmd">codex</span>
+
+<span class="comment"># Start with specific model and profile</span>
+<span class="cmd">codex</span> <span class="flag">--model</span> <span class="str">gpt-5-codex</span> <span class="flag">--profile</span> <span class="str">dev</span>
+
+<span class="comment"># Start with an image attachment</span>
+<span class="cmd">codex</span> <span class="flag">-i</span> <span class="str">screenshot.png</span></div>
+
+            <h3 class="sub-title">Slash Commands</h3>
+            <p class="body-text">Type <code>/</code> in the composer to open the slash command popup. These are available during interactive sessions:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Command</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>/model</td><td>Switch between models (gpt-5-codex, gpt-4.1, gpt-4.1-mini, etc.)</td></tr>
+                        <tr><td>/review</td><td>Launch the code reviewer on current changes or against a branch</td></tr>
+                        <tr><td>/mcp</td><td>View and manage active MCP servers</td></tr>
+                        <tr><td>/resume</td><td>Open picker to reload a saved session transcript</td></tr>
+                        <tr><td>/fork</td><td>Branch a new session from a previous one, leaving the original intact</td></tr>
+                        <tr><td>/status</td><td>Show current session info (ID, model, sandbox, etc.)</td></tr>
+                        <tr><td>/help</td><td>List all supported slash commands and shortcuts</td></tr>
+                        <tr><td>/exit</td><td>Exit the interactive session (also <code>/quit</code>)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Keyboard Shortcuts</h3>
+            <div class="two-col">
+                <div>
+                    <h4 class="mini-title">Navigation</h4>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                            <tbody>
+                                <tr><td><kbd>@</kbd></td><td>Fuzzy file search over workspace root</td></tr>
+                                <tr><td><kbd>Up</kbd>/<kbd>Down</kbd></td><td>Navigate draft history in composer</td></tr>
+                                <tr><td><kbd>Esc</kbd> x2</td><td>Edit previous user message; keep pressing to walk back</td></tr>
+                                <tr><td><kbd>Enter</kbd></td><td>Fork from selected point after Esc walkback</td></tr>
+                                <tr><td><kbd>Tab</kbd>/<kbd>Enter</kbd></td><td>Select file from @ search results</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="mini-title">During Active Tasks</h4>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                            <tbody>
+                                <tr><td><kbd>Enter</kbd></td><td>Inject new instructions into current turn</td></tr>
+                                <tr><td><kbd>Tab</kbd></td><td>Queue a follow-up prompt for next turn</td></tr>
+                                <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Stop current task / close session</td></tr>
+                                <tr><td><kbd>Alt</kbd>+<kbd>M</kbd></td><td>Cycle through available models</td></tr>
+                                <tr><td><kbd>Alt</kbd>+<kbd>E</kbd></td><td>Cycle through reasoning effort levels</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Non-Interactive Mode -->
+        <section id="non-interactive" class="section holo-surface">
+            <p class="section-label">03 / Scripting</p>
+            <h2 class="section-title holo-text">Non-Interactive Mode</h2>
+            <p class="section-desc">Use <code>codex exec</code> for scripted or CI-style runs that finish without human interaction. Pipe results to stdout for downstream processing.</p>
+
+            <h3 class="sub-title">The exec Command</h3>
+            <div class="code-block"><span class="code-label">exec</span>
+<span class="comment"># Basic non-interactive execution</span>
+<span class="cmd">codex</span> exec <span class="str">"Add error handling to src/api.js"</span>
+
+<span class="comment"># Short alias</span>
+<span class="cmd">codex</span> e <span class="str">"Run tests and fix any failures"</span>
+
+<span class="comment"># With JSON Lines output for scripting</span>
+<span class="cmd">codex</span> exec <span class="flag">--json</span> <span class="str">"Generate changelog from git log"</span>
+
+<span class="comment"># With structured output schema</span>
+<span class="cmd">codex</span> exec <span class="flag">--output-schema</span> <span class="str">schema.json</span> <span class="str">"Analyze test coverage"</span>
+
+<span class="comment"># Read-only analysis (default for exec)</span>
+<span class="cmd">codex</span> exec <span class="flag">--sandbox</span> <span class="str">read-only</span> <span class="str">"Review code quality"</span></div>
+
+            <div class="alert alert-holo">
+                <span class="alert-icon">&#9432;</span>
+                <span class="alert-text"><strong>Default sandbox for exec is read-only.</strong> In automation, always set the least permissions needed. Use <code>--sandbox workspace-write</code> only when the task requires file changes.</span>
+            </div>
+
+            <h3 class="sub-title">The review Command</h3>
+            <p class="body-text">A dedicated code review mode that analyzes diffs and reports prioritized, actionable findings without modifying code.</p>
+            <div class="code-block"><span class="code-label">review</span>
+<span class="comment"># Review uncommitted changes</span>
+<span class="cmd">codex</span> review
+
+<span class="comment"># Review against a base branch (pre-PR)</span>
+<span class="cmd">codex</span> review <span class="flag">--base</span> <span class="str">main</span>
+
+<span class="comment"># Review specific files</span>
+<span class="cmd">codex</span> review <span class="str">src/api.js</span> <span class="str">src/utils.js</span></div>
+
+            <h3 class="sub-title">CI/CD Integration</h3>
+            <div class="code-block"><span class="code-label">GitHub Action</span>
+<span class="comment"># In your workflow YAML:</span>
+- uses: openai/codex-action@v1
+  with:
+    task: <span class="str">"Review PR for security issues"</span>
+    sandbox: <span class="str">read-only</span></div>
+        </section>
+
+        <!-- 4. Model Selection -->
+        <section id="models" class="section holo-surface">
+            <p class="section-label">04 / Models</p>
+            <h2 class="section-title holo-text">Model Selection</h2>
+            <p class="section-desc">Switch between OpenAI's flagship models, lightweight variants, and open-source models running locally through Ollama or LM Studio.</p>
+
+            <h3 class="sub-title">Available Models</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Model</th><th>Type</th><th>Best For</th></tr></thead>
+                    <tbody>
+                        <tr><td>gpt-5-codex</td><td><span class="badge badge-holo">Flagship</span></td><td>Complex reasoning, large refactors, architecture decisions</td></tr>
+                        <tr><td>gpt-5.3-codex</td><td><span class="badge badge-holo">Enhanced</span></td><td>Improved code generation with latest capabilities</td></tr>
+                        <tr><td>gpt-4.1</td><td><span class="badge badge-chrome">General</span></td><td>Balanced performance for everyday coding tasks</td></tr>
+                        <tr><td>gpt-4.1-mini</td><td><span class="badge badge-ghost">Fast</span></td><td>Quick edits, simple tasks, low latency</td></tr>
+                        <tr><td>gpt-oss:20b</td><td><span class="badge badge-safe">Local</span></td><td>Local inference, privacy-sensitive codebases</td></tr>
+                        <tr><td>gpt-oss:120b</td><td><span class="badge badge-safe">Local</span></td><td>High-quality local inference, larger codebases</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Using Local Models</h3>
+            <p class="body-text">Pass <code>--oss</code> to route inference through a local provider like Ollama or LM Studio. All processing happens on your machine -- no data sent to the cloud.</p>
+            <div class="two-col">
+                <div>
+                    <h4 class="mini-title">Ollama</h4>
+                    <div class="code-block">
+<span class="comment"># Install and start Ollama</span>
+<span class="cmd">curl</span> -fsSL https://ollama.ai/install.sh | sh
+<span class="cmd">ollama</span> serve
+
+<span class="comment"># Pull a model</span>
+<span class="cmd">ollama</span> pull gpt-oss:120b
+
+<span class="comment"># Use with Codex</span>
+<span class="cmd">codex</span> <span class="flag">--oss</span> <span class="flag">-m</span> <span class="str">gpt-oss:120b</span></div>
+                </div>
+                <div>
+                    <h4 class="mini-title">LM Studio</h4>
+                    <div class="code-block">
+<span class="comment"># 1. Load model in LM Studio</span>
+<span class="comment"># 2. Start local server (port 1234)</span>
+
+<span class="comment"># Config:</span>
+<span class="key">[providers.lmstudio]</span>
+<span class="key">type</span> = <span class="str">"openai_compatible"</span>
+<span class="key">api_base</span> = <span class="str">"http://localhost:1234/v1"</span>
+
+<span class="comment"># Use with Codex</span>
+<span class="cmd">codex</span> <span class="flag">--oss</span> <span class="flag">-m</span> <span class="str">local-model</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Sandbox System -->
+        <section id="sandbox" class="section holo-surface">
+            <p class="section-label">05 / Security</p>
+            <h2 class="section-title holo-text">Sandbox System</h2>
+            <p class="section-desc">The OS-enforced sandbox limits what Codex can touch on your filesystem and network. Choose the right level of access for each task.</p>
+
+            <div class="sandbox-cards">
+                <div class="sandbox-card safe">
+                    <div class="sandbox-card-icon">&#128274;</div>
+                    <div class="sandbox-card-name" style="color: var(--holo-green);">read-only</div>
+                    <div class="sandbox-card-desc">Can read files but cannot write anywhere, not even /tmp. Network blocked. Ideal for reviews and analysis.</div>
+                </div>
+                <div class="sandbox-card moderate">
+                    <div class="sandbox-card-icon">&#128221;</div>
+                    <div class="sandbox-card-name" style="color: var(--holo-yellow);">workspace-write</div>
+                    <div class="sandbox-card-desc">Write inside current repo and temp dirs. Network blocked by default. The standard development mode.</div>
+                </div>
+                <div class="sandbox-card danger">
+                    <div class="sandbox-card-icon">&#9888;</div>
+                    <div class="sandbox-card-name" style="color: var(--holo-red);">danger-full-access</div>
+                    <div class="sandbox-card-desc">Write anywhere on system. Network allowed. Use only when absolutely necessary.</div>
+                </div>
+            </div>
+
+            <div class="code-block"><span class="code-label">Sandbox</span>
+<span class="comment"># Set sandbox via flag</span>
+<span class="cmd">codex</span> <span class="flag">--sandbox</span> <span class="str">read-only</span>
+<span class="cmd">codex</span> <span class="flag">-s</span> <span class="str">workspace-write</span>
+
+<span class="comment"># Add extra writable dirs (prefer this over danger-full-access)</span>
+<span class="cmd">codex</span> <span class="flag">--add-dir</span> <span class="str">../backend</span> <span class="flag">--add-dir</span> <span class="str">../shared</span>
+
+<span class="comment"># Multi-project coordination</span>
+<span class="cmd">codex</span> <span class="flag">--cd</span> <span class="str">apps/frontend</span> <span class="flag">--add-dir</span> <span class="str">../backend</span></div>
+
+            <div class="alert alert-warn">
+                <span class="alert-icon">&#9888;</span>
+                <span class="alert-text"><strong>Prefer --add-dir over danger-full-access.</strong> When you need write access to additional directories, grant them individually rather than disabling the sandbox entirely.</span>
+            </div>
+
+            <h3 class="sub-title">Default Sandbox by Command</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Command</th><th>Default Sandbox</th><th>Reasoning</th></tr></thead>
+                    <tbody>
+                        <tr><td>codex</td><td><span class="badge badge-warn">workspace-write</span></td><td>Interactive development needs file edits</td></tr>
+                        <tr><td>codex exec</td><td><span class="badge badge-safe">read-only</span></td><td>Scripted runs should be minimal-permission</td></tr>
+                        <tr><td>codex review</td><td><span class="badge badge-safe">read-only</span></td><td>Reviews should never modify code</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 6. Approval Policies -->
+        <section id="approvals" class="section holo-surface">
+            <p class="section-label">06 / Permissions</p>
+            <h2 class="section-title holo-text">Approval Policies</h2>
+            <p class="section-desc">Control when Codex must stop and ask for permission before executing commands. Match the policy to your trust level and workflow.</p>
+
+            <div class="spectrum-bar">
+                <div class="spectrum-item" style="background: rgba(166,255,107,0.12); color: var(--holo-green);">
+                    <span class="spec-label">untrusted</span>
+                    <span class="spec-desc">Only safe cmds auto-run</span>
+                </div>
+                <div class="spectrum-item" style="background: rgba(107,179,255,0.12); color: var(--holo-blue);">
+                    <span class="spec-label">on-request</span>
+                    <span class="spec-desc">Model decides when to ask</span>
+                </div>
+                <div class="spectrum-item" style="background: rgba(255,232,107,0.12); color: var(--holo-yellow);">
+                    <span class="spec-label">on-failure</span>
+                    <span class="spec-desc">Auto-run, ask on error</span>
+                </div>
+                <div class="spectrum-item" style="background: rgba(255,107,138,0.12); color: var(--holo-red);">
+                    <span class="spec-label">never</span>
+                    <span class="spec-desc">Fully automated</span>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Policy</th><th>Behavior</th><th>Best For</th></tr></thead>
+                    <tbody>
+                        <tr><td>untrusted</td><td>Only known-safe read-only commands (ls, cat, sed) auto-run; everything else prompts</td><td>Unfamiliar codebases, high-security</td></tr>
+                        <tr><td>on-request</td><td>Model decides when to ask for approval (default)</td><td>Balanced interactive work</td></tr>
+                        <tr><td>on-failure</td><td>Auto-run all commands in sandbox; prompt only when a command fails</td><td>Fast iteration with a safety net</td></tr>
+                        <tr><td>never</td><td>Never prompt for approval (risky)</td><td>CI/CD pipelines, trusted automation</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Full-Auto Mode</h3>
+            <div class="foil-card">
+                <div class="foil-content">
+                    <p class="body-text" style="margin-bottom: var(--space-3);"><code>--full-auto</code> is a convenience flag that combines the safest automatic settings:</p>
+                    <div class="code-block" style="margin: 0;">
+<span class="comment"># Equivalent to: -a on-request -s workspace-write</span>
+<span class="cmd">codex</span> <span class="flag">--full-auto</span>
+
+<span class="comment"># Network stays blocked, agent stays within workspace</span>
+<span class="comment"># The safest way to let Codex run autonomously</span></div>
+                </div>
+            </div>
+
+            <div class="alert alert-danger">
+                <span class="alert-icon">&#9888;</span>
+                <span class="alert-text"><strong>Dangerous bypass:</strong> <code>--dangerously-bypass-approvals-and-sandbox</code> disables ALL safety checks. Only use when you fully understand the risks and trust the task completely.</span>
+            </div>
+        </section>
+
+        <!-- 7. MCP Integration -->
+        <section id="mcp" class="section holo-surface">
+            <p class="section-label">07 / Extensibility</p>
+            <h2 class="section-title holo-text">MCP Integration</h2>
+            <p class="section-desc">Model Context Protocol connects Codex to third-party tools and context -- documentation sites, browsers, databases, design tools, and more.</p>
+
+            <h3 class="sub-title">MCP CLI Commands</h3>
+            <div class="code-block"><span class="code-label">MCP</span>
+<span class="comment"># Manage MCP servers</span>
+<span class="cmd">codex</span> mcp list                    <span class="comment"># List all servers</span>
+<span class="cmd">codex</span> mcp get <span class="str">&lt;server-name&gt;</span>       <span class="comment"># Get server details</span>
+<span class="cmd">codex</span> mcp add <span class="str">&lt;server-name&gt;</span>       <span class="comment"># Add new server</span>
+<span class="cmd">codex</span> mcp remove <span class="str">&lt;server-name&gt;</span>    <span class="comment"># Remove server</span>
+
+<span class="comment"># MCP authentication</span>
+<span class="cmd">codex</span> mcp login <span class="str">&lt;server-name&gt;</span>
+<span class="cmd">codex</span> mcp logout <span class="str">&lt;server-name&gt;</span>
+
+<span class="comment"># In-session: use /mcp to view active servers</span></div>
+
+            <h3 class="sub-title">Server Configuration</h3>
+            <div class="two-col">
+                <div>
+                    <h4 class="mini-title">STDIO Server</h4>
+                    <div class="code-block">
+<span class="comment"># In ~/.codex/config.toml</span>
+<span class="key">[mcp.servers.browser]</span>
+<span class="key">type</span> = <span class="str">"stdio"</span>
+<span class="key">command</span> = <span class="str">"npx"</span>
+<span class="key">args</span> = [<span class="str">"@mcp/server-browser"</span>]</div>
+                </div>
+                <div>
+                    <h4 class="mini-title">HTTP Streaming Server</h4>
+                    <div class="code-block">
+<span class="comment"># In ~/.codex/config.toml</span>
+<span class="key">[mcp.servers.remote-api]</span>
+<span class="key">type</span> = <span class="str">"http"</span>
+<span class="key">url</span> = <span class="str">"https://api.example.com/mcp"</span></div>
+                </div>
+            </div>
+
+            <h3 class="sub-title">Running Codex as an MCP Server</h3>
+            <p class="body-text">Codex can itself act as an MCP server, exposing the entire agent as a tool for external applications and multi-agent pipelines.</p>
+            <div class="code-block">
+<span class="comment"># Start Codex as MCP server</span>
+<span class="cmd">codex</span> mcp-server
+
+<span class="comment"># Orchestrate with Agents SDK for multi-agent workflows</span></div>
+
+            <h3 class="sub-title">Popular Integrations</h3>
+            <div class="feature-grid">
+                <div class="feature-item"><div class="feature-item-title">Browser Automation</div><div class="feature-item-desc">Control browsers for web scraping, testing, or data extraction.</div></div>
+                <div class="feature-item"><div class="feature-item-title">Figma</div><div class="feature-item-desc">Access design specs and assets directly from design files.</div></div>
+                <div class="feature-item"><div class="feature-item-title">Linear / GitHub</div><div class="feature-item-desc">Interact with project management and issue tracking tools.</div></div>
+                <div class="feature-item"><div class="feature-item-title">Database Tools</div><div class="feature-item-desc">Query and analyze PostgreSQL, MySQL, and other databases.</div></div>
+            </div>
+        </section>
+
+        <!-- 8. Session Management -->
+        <section id="sessions" class="section holo-surface">
+            <p class="section-label">08 / Sessions</p>
+            <h2 class="section-title holo-text">Session Management</h2>
+            <p class="section-desc">Codex stores session transcripts locally so you can resume, fork, or apply changes across multiple CLI invocations without losing context.</p>
+
+            <h3 class="sub-title">Resume</h3>
+            <div class="code-block"><span class="code-label">Resume</span>
+<span class="cmd">codex</span> resume                  <span class="comment"># Interactive picker of recent sessions</span>
+<span class="cmd">codex</span> resume <span class="flag">--last</span>           <span class="comment"># Jump to most recent session (current dir)</span>
+<span class="cmd">codex</span> resume <span class="flag">--all</span>            <span class="comment"># Show sessions from all directories</span>
+<span class="cmd">codex</span> resume <span class="str">&lt;SESSION_ID&gt;</span>     <span class="comment"># Target a specific session</span></div>
+
+            <h3 class="sub-title">Fork</h3>
+            <p class="body-text">Create a new session branched from a previous one. The original transcript stays untouched while you explore an alternative approach.</p>
+            <div class="code-block"><span class="code-label">Fork</span>
+<span class="cmd">codex</span> fork                    <span class="comment"># Open session picker to fork from</span>
+<span class="cmd">codex</span> fork <span class="flag">--last</span>             <span class="comment"># Fork the most recent session</span>
+<span class="cmd">codex</span> fork <span class="str">&lt;SESSION_ID&gt;</span>       <span class="comment"># Fork a specific session</span></div>
+
+            <h3 class="sub-title">Apply</h3>
+            <p class="body-text">Apply generated patches and diffs from Codex output:</p>
+            <div class="code-block"><span class="code-label">Apply</span>
+<span class="cmd">codex</span> apply <span class="str">changes.diff</span>      <span class="comment"># Apply diff from file</span>
+<span class="cmd">git</span> diff | <span class="cmd">codex</span> apply        <span class="comment"># Apply from stdin</span>
+<span class="cmd">codex</span> a <span class="str">changes.patch</span>         <span class="comment"># Short alias</span></div>
+
+            <h3 class="sub-title">Cloud Tasks</h3>
+            <p class="body-text">Run tasks in the cloud for more compute, longer execution times, and access to larger models:</p>
+            <div class="code-block">
+<span class="cmd">codex</span> cloud exec <span class="str">"Analyze entire codebase for security issues"</span></div>
+
+            <h3 class="sub-title">Session Storage</h3>
+            <p class="body-text">Sessions are stored as JSONL files at <code>~/.codex/sessions/</code>. You can inspect, back up, or clean up old sessions manually.</p>
+        </section>
+
+        <!-- 9. Configuration -->
+        <section id="config" class="section holo-surface">
+            <p class="section-label">09 / Config</p>
+            <h2 class="section-title holo-text">Configuration</h2>
+            <p class="section-desc">Codex reads its configuration from <code>~/.codex/config.toml</code>. Use profiles to maintain different setups for different workflows.</p>
+
+            <h3 class="sub-title">Sample config.toml</h3>
+            <div class="code-block"><span class="code-label">config.toml</span>
+<span class="key">[defaults]</span>
+<span class="key">model</span> = <span class="str">"gpt-5-codex"</span>
+<span class="key">sandbox</span> = <span class="str">"workspace-write"</span>
+<span class="key">approval_policy</span> = <span class="str">"on-request"</span>
+<span class="key">oss_provider</span> = <span class="str">"ollama"</span>
+
+<span class="key">[providers.openai]</span>
+<span class="key">type</span> = <span class="str">"openai"</span>
+
+<span class="key">[providers.ollama]</span>
+<span class="key">type</span> = <span class="str">"ollama"</span>
+<span class="key">api_base</span> = <span class="str">"http://localhost:11434"</span>
+
+<span class="key">[sandbox]</span>
+<span class="key">allow_network</span> = <span class="val">false</span>
+
+<span class="key">[tui]</span>
+<span class="key">alternate_screen</span> = <span class="val">true</span>
+
+<span class="key">[features]</span>
+<span class="key">unified_exec</span> = <span class="val">true</span>
+<span class="key">web_search</span> = <span class="val">true</span>
+<span class="key">auto_context</span> = <span class="val">true</span>
+
+<span class="key">[mcp.servers.browser]</span>
+<span class="key">type</span> = <span class="str">"stdio"</span>
+<span class="key">command</span> = <span class="str">"npx"</span>
+<span class="key">args</span> = [<span class="str">"@mcp/server-browser"</span>]</div>
+
+            <h3 class="sub-title">Profiles</h3>
+            <p class="body-text">Profiles let you define named configuration presets. Load them with <code>--profile</code> or <code>-p</code>.</p>
+            <div class="code-block"><span class="code-label">Profiles</span>
+<span class="key">[profiles.secure]</span>
+<span class="key">sandbox</span> = <span class="str">"read-only"</span>
+<span class="key">approval_policy</span> = <span class="str">"untrusted"</span>
+<span class="key">model</span> = <span class="str">"gpt-4.1-mini"</span>
+
+<span class="key">[profiles.fast]</span>
+<span class="key">model</span> = <span class="str">"gpt-4.1-mini"</span>
+<span class="key">approval_policy</span> = <span class="str">"on-failure"</span>
+<span class="key">sandbox</span> = <span class="str">"workspace-write"</span>
+
+<span class="key">[profiles.local]</span>
+<span class="key">oss_provider</span> = <span class="str">"ollama"</span>
+<span class="key">model</span> = <span class="str">"codellama:34b"</span>
+<span class="key">sandbox</span> = <span class="str">"workspace-write"</span></div>
+            <div class="code-block">
+<span class="comment"># Use a profile</span>
+<span class="cmd">codex</span> <span class="flag">--profile</span> <span class="str">secure</span>
+<span class="cmd">codex</span> <span class="flag">-p</span> <span class="str">fast</span></div>
+
+            <h3 class="sub-title">Feature Flags</h3>
+            <p class="body-text">Feature flags control optional and experimental capabilities. Manage them from the CLI or in config.toml:</p>
+            <div class="code-block"><span class="code-label">Features</span>
+<span class="cmd">codex</span> features list               <span class="comment"># List all features</span>
+<span class="cmd">codex</span> features enable <span class="str">unified_exec</span> <span class="comment"># Enable a feature</span>
+<span class="cmd">codex</span> features disable <span class="str">shell_snapshot</span>
+
+<span class="comment"># Inline flags (session-only)</span>
+<span class="cmd">codex</span> <span class="flag">--enable</span> <span class="str">web_search</span> <span class="flag">--enable</span> <span class="str">auto_context</span>
+<span class="cmd">codex</span> <span class="flag">--disable</span> <span class="str">feature_name</span></div>
+
+            <h3 class="sub-title">Shell Completion</h3>
+            <div class="code-block"><span class="code-label">Completion</span>
+<span class="cmd">codex</span> completion <span class="str">bash</span> > /etc/bash_completion.d/codex
+<span class="cmd">codex</span> completion <span class="str">zsh</span>  > <span class="str">"${fpath[1]}/_codex"</span>
+<span class="cmd">codex</span> completion <span class="str">fish</span> > ~/.config/fish/completions/codex.fish</div>
+        </section>
+
+        <!-- 10. CLI Flags Reference -->
+        <section id="flags" class="section holo-surface">
+            <p class="section-label">10 / Reference</p>
+            <h2 class="section-title holo-text">CLI Flags Reference</h2>
+            <p class="section-desc">Complete reference of every command-line flag organized by category.</p>
+
+            <h3 class="sub-title">Global Flags</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Flag</th><th>Short</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>--help</td><td>-h</td><td>Show help information</td></tr>
+                        <tr><td>--version</td><td>-V</td><td>Display version</td></tr>
+                        <tr><td>--model &lt;MODEL&gt;</td><td>-m</td><td>Override model set in configuration</td></tr>
+                        <tr><td>--profile &lt;NAME&gt;</td><td>-p</td><td>Load configuration profile from config.toml</td></tr>
+                        <tr><td>--config &lt;KEY=VALUE&gt;</td><td>-c</td><td>Override configuration value inline</td></tr>
+                        <tr><td>--cd &lt;PATH&gt;</td><td></td><td>Change working directory before starting</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Sandbox &amp; Security</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Flag</th><th>Short</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>--sandbox &lt;MODE&gt;</td><td>-s</td><td>Set sandbox: read-only, workspace-write, danger-full-access</td></tr>
+                        <tr><td>--ask-for-approval &lt;POLICY&gt;</td><td>-a</td><td>Set approval: untrusted, on-request, on-failure, never</td></tr>
+                        <tr><td>--full-auto</td><td></td><td>Convenience: -a on-request -s workspace-write</td></tr>
+                        <tr><td style="color: var(--holo-red);">--dangerously-bypass-approvals-and-sandbox</td><td></td><td>Disable all safety checks (dangerous)</td></tr>
+                        <tr><td>--add-dir &lt;PATH&gt;</td><td></td><td>Add extra writable directory to sandbox</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Model &amp; Provider</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>--oss</td><td>Use local open-source provider (Ollama, LM Studio)</td></tr>
+                        <tr><td>--provider &lt;NAME&gt;</td><td>Specify model provider</td></tr>
+                        <tr><td>--local-provider</td><td>Use local model provider</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Input &amp; Output</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Flag</th><th>Short</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>--image &lt;PATH&gt;</td><td>-i</td><td>Attach image(s) to prompt</td></tr>
+                        <tr><td>--json</td><td></td><td>Output as JSON Lines (JSONL) for scripting</td></tr>
+                        <tr><td>--output-schema &lt;PATH&gt;</td><td></td><td>Request response conforming to JSON Schema</td></tr>
+                        <tr><td>--search</td><td></td><td>Enable web search during execution</td></tr>
+                        <tr><td>--no-alt-screen</td><td></td><td>Disable alternate screen mode for TUI</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">Features &amp; Session</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>--enable &lt;FEATURE&gt;</td><td>Enable a feature flag for this session</td></tr>
+                        <tr><td>--disable &lt;FEATURE&gt;</td><td>Disable a feature flag for this session</td></tr>
+                        <tr><td>--last</td><td>Resume or fork the most recent session</td></tr>
+                        <tr><td>--all</td><td>Show sessions from all directories (with resume)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="sub-title">All Commands</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Command</th><th>Alias</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>codex</td><td></td><td>Start interactive TUI session</td></tr>
+                        <tr><td>codex exec</td><td>codex e</td><td>Non-interactive execution</td></tr>
+                        <tr><td>codex review</td><td></td><td>Code review mode</td></tr>
+                        <tr><td>codex resume</td><td></td><td>Resume a previous session</td></tr>
+                        <tr><td>codex fork</td><td></td><td>Fork a previous session</td></tr>
+                        <tr><td>codex apply</td><td>codex a</td><td>Apply diffs and patches</td></tr>
+                        <tr><td>codex login</td><td></td><td>Authenticate with OpenAI</td></tr>
+                        <tr><td>codex logout</td><td></td><td>Clear authentication</td></tr>
+                        <tr><td>codex mcp</td><td></td><td>Manage MCP servers (list, get, add, remove)</td></tr>
+                        <tr><td>codex mcp-server</td><td></td><td>Run Codex as an MCP server</td></tr>
+                        <tr><td>codex features</td><td></td><td>Manage feature flags (list, enable, disable)</td></tr>
+                        <tr><td>codex completion</td><td></td><td>Generate shell completion scripts</td></tr>
+                        <tr><td>codex cloud</td><td></td><td>Cloud task management</td></tr>
+                        <tr><td>codex sandbox</td><td>codex debug</td><td>Sandbox debugging</td></tr>
+                        <tr><td>codex app-server</td><td></td><td>Run app server mode</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 11. Pro Tips -->
+        <section id="pro-tips" class="section holo-surface">
+            <p class="section-label">11 / Expert</p>
+            <h2 class="section-title holo-text">Pro Tips</h2>
+            <p class="section-desc">Patterns, aliases, and workflows used by power users to get the most out of Codex CLI.</p>
+
+            <h3 class="sub-title">Workflow Patterns</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="feature-item-title">Safe Exploration</div>
+                    <div class="feature-item-desc">Start with <code>-s read-only</code> for analysis, then switch to <code>--full-auto</code> when ready to implement.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-item-title">Multi-Project</div>
+                    <div class="feature-item-desc">Use <code>--cd apps/frontend --add-dir ../backend</code> to coordinate changes across repos.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-item-title">Fast Iteration</div>
+                    <div class="feature-item-desc">Set <code>-a on-failure</code> to auto-run everything and only stop when something breaks.</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-item-title">Private Local AI</div>
+                    <div class="feature-item-desc">Use <code>--oss -m codellama:34b</code> for sensitive codebases. All inference stays on-device.</div>
+                </div>
+            </div>
+
+            <h3 class="sub-title">Shell Aliases</h3>
+            <div class="code-block"><span class="code-label">~/.bashrc</span>
+<span class="comment"># Quick codex with common settings</span>
+<span class="key">alias</span> cx=<span class="str">'codex --full-auto'</span>
+<span class="key">alias</span> cxr=<span class="str">'codex --sandbox read-only'</span>
+<span class="key">alias</span> cxl=<span class="str">'codex --oss -m codellama:34b'</span>
+
+<span class="comment"># Auto-commit after Codex runs</span>
+cxdo() {
+  <span class="cmd">codex</span> exec <span class="flag">--full-auto</span> <span class="str">"$@"</span> && \
+  <span class="cmd">git</span> add -A && \
+  <span class="cmd">git</span> commit -m <span class="str">"codex: $*"</span>
+}</div>
+
+            <h3 class="sub-title">CI/CD Recipes</h3>
+            <div class="code-block"><span class="code-label">CI/CD</span>
+<span class="comment"># Pre-commit: Check for issues</span>
+<span class="cmd">codex</span> exec <span class="flag">-s</span> <span class="str">read-only</span> <span class="str">"Review staged changes for bugs"</span>
+
+<span class="comment"># Generate commit message from diff</span>
+msg=$(<span class="cmd">codex</span> exec <span class="flag">--json</span> <span class="str">"Generate commit message from git diff --staged"</span> | jq -r .message)
+<span class="cmd">git</span> commit -m <span class="str">"$msg"</span>
+
+<span class="comment"># PR review automation</span>
+<span class="cmd">codex</span> review <span class="flag">--base</span> <span class="str">main</span> <span class="flag">--json</span> > review-results.json
+
+<span class="comment"># Release preparation</span>
+<span class="cmd">codex</span> exec <span class="flag">-a</span> <span class="str">never</span> <span class="flag">-s</span> <span class="str">workspace-write</span> <span class="str">"Update changelog for v2.0"</span></div>
+
+            <h3 class="sub-title">Security Best Practices</h3>
+            <div class="alert alert-holo">
+                <span class="alert-icon">&#9670;</span>
+                <div class="alert-text">
+                    <strong>Security Checklist</strong><br>
+                    &bull; Start reviews with <code>--sandbox read-only</code><br>
+                    &bull; Use <code>--add-dir</code> instead of <code>danger-full-access</code><br>
+                    &bull; Set approval policy appropriate for trust level<br>
+                    &bull; Audit MCP servers before adding them<br>
+                    &bull; Use profiles to enforce security settings per project<br>
+                    &bull; Keep sensitive data out of prompts<br>
+                    &bull; Clean up old sessions in <code>~/.codex/sessions/</code>
+                </div>
+            </div>
+
+            <h3 class="sub-title">Performance Tips</h3>
+            <div class="code-block"><span class="code-label">Speed</span>
+<span class="comment"># Use faster model for simple tasks</span>
+<span class="cmd">codex</span> <span class="flag">-m</span> <span class="str">gpt-4.1-mini</span> <span class="str">"Fix typo in README"</span>
+
+<span class="comment"># Local model to avoid API latency</span>
+<span class="cmd">codex</span> <span class="flag">--oss</span> <span class="flag">-m</span> <span class="str">codellama:13b</span> <span class="str">"Quick formatting"</span>
+
+<span class="comment"># Resume sessions instead of rebuilding context</span>
+<span class="cmd">codex</span> resume <span class="flag">--last</span></div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer holo-surface">
+            <div class="footer-brand holo-text">Codex CLI Reference</div>
+            <p>Built with the Holographic design system. Based on official OpenAI documentation.</p>
+            <p style="margin-top: var(--space-2);">Last updated February 2026 &middot; <a href="https://developers.openai.com/codex/cli/" style="color: var(--holo-cyan); text-decoration: none;">Official Docs</a> &middot; <a href="https://github.com/openai/codex" style="color: var(--holo-cyan); text-decoration: none;">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Mouse-following glow
+        const mouseGlow = document.getElementById('mouseGlow');
+        let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function animateGlow() {
+            glowX += (mouseX - glowX) * 0.08;
+            glowY += (mouseY - glowY) * 0.08;
+            mouseGlow.style.left = glowX + 'px';
+            mouseGlow.style.top = glowY + 'px';
+            requestAnimationFrame(animateGlow);
+        }
+        animateGlow();
+
+        // Smooth scrolling for jump links
+        document.querySelectorAll('.jump-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
