@@ -318,6 +318,8 @@ signal.alarm(0)  # Cancel after success
 
 **Why paragraph-aware gaps:** Without explicit paragraph breaks, titles flow directly into body text with no pause. The script inserts `\n\n` markers at `</p>` and `</div>` boundaries, then uses 1.2s silence between paragraphs and 0.3s between sentence chunks within long paragraphs.
 
+**Writing dialogue for TTS:** Each element in a `text: [...]` array becomes one paragraph. If dialogue and narration are in the same element (e.g. `'"Morrison?" Eddie didn't look up.'`), there's no pause between them — the TTS reads it as one continuous sentence. Split dialogue and narration into separate array elements so the 1.2s paragraph gap gives a natural pause. Also avoid colons in narration text — the TTS can stumble on them. Replace with dashes (the generation script does this automatically).
+
 ### Post-Generation: Convert WAV to MP3
 
 Always convert WAV to MP3 before committing — reduces file size ~3x (82MB → 28MB per story):

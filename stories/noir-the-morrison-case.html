@@ -783,38 +783,140 @@
         }
 
         /* ═══════════════════════════════════════════
-           AUDIO PLACEHOLDER (Phase 2)
+           AUDIO NARRATION PLAYER
         ═══════════════════════════════════════════ */
-        .audio-controls {
-            display: flex;
+        .audio-player {
+            display: none;
             align-items: center;
             gap: 8px;
-            margin-bottom: 1.5rem;
             padding: 8px 12px;
+            margin-bottom: 1.5rem;
             background: var(--bg-secondary);
             border: 1px solid var(--border-subtle);
-            opacity: 0.4;
-            cursor: not-allowed;
+            transition: opacity 0.4s ease, border-color 0.3s ease;
         }
 
-        .audio-controls .audio-icon {
-            width: 20px;
-            height: 20px;
-            border: 1px solid var(--text-muted);
-            border-radius: 50%;
+        .audio-player.visible {
+            display: flex;
+        }
+
+        .audio-player:hover {
+            border-color: var(--noir-mid);
+        }
+
+        .audio-player-label {
+            font-family: var(--font-typewriter);
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-faded);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .audio-play-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.6rem;
-            color: var(--text-muted);
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--blood-red);
+            border-radius: 50%;
+            background: transparent;
+            color: var(--blood-bright);
+            cursor: pointer;
+            font-size: 0.75rem;
             flex-shrink: 0;
+            transition: all 0.3s ease;
+            line-height: 1;
         }
 
-        .audio-controls .audio-label {
+        .audio-play-btn:hover {
+            border-color: var(--cigarette-ember);
+            color: var(--cigarette-ember);
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.2);
+        }
+
+        .audio-progress-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .audio-progress-bar {
+            flex: 1;
+            height: 3px;
+            background: var(--noir-gray);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .audio-progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--blood-red);
+            transition: width 0.1s linear;
+        }
+
+        .audio-progress-bar:hover .audio-progress-fill {
+            height: 5px;
+            top: -1px;
+        }
+
+        .audio-progress-bar:hover {
+            height: 5px;
+        }
+
+        .audio-time {
+            font-family: var(--font-typewriter);
             font-size: 0.65rem;
             color: var(--text-faded);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
+            white-space: nowrap;
+            min-width: 3.5em;
+            text-align: right;
+            letter-spacing: 0.05em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .audio-speed-btn {
+            font-family: var(--font-typewriter);
+            font-size: 0.6rem;
+            color: var(--text-faded);
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            padding: 2px 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+            letter-spacing: 0.05em;
+        }
+
+        .audio-speed-btn:hover {
+            border-color: var(--cigarette-ember);
+            color: var(--cigarette-ember);
+        }
+
+        .audio-player.playing .audio-play-btn {
+            border-color: var(--cigarette-ember);
+            color: var(--cigarette-ember);
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.25);
+        }
+
+        .audio-player.loading .audio-play-btn {
+            opacity: 0.5;
+            cursor: wait;
+        }
+
+        @media (max-width: 600px) {
+            .audio-player { gap: 6px; padding: 6px 10px; }
+            .audio-player-label { display: none; }
+            .audio-play-btn { width: 24px; height: 24px; font-size: 0.65rem; }
         }
 
         /* ═══════════════════════════════════════════
@@ -940,10 +1042,17 @@
                 <span class="scene-case-number">Case #1947-0892</span>
             </div>
 
-            <!-- Audio placeholder for Phase 2 -->
-            <div class="audio-controls" id="audioControls">
-                <div class="audio-icon">&#9654;</div>
-                <span class="audio-label">Voice narration — coming soon</span>
+            <!-- Audio Narration Player -->
+            <div class="audio-player" id="audioPlayer">
+                <span class="audio-player-label">Listen</span>
+                <button class="audio-play-btn" id="audioPlayBtn" title="Play narration" aria-label="Play narration">&#9654;</button>
+                <div class="audio-progress-wrap">
+                    <div class="audio-progress-bar" id="audioProgressBar">
+                        <div class="audio-progress-fill" id="audioProgressFill"></div>
+                    </div>
+                    <span class="audio-time" id="audioTime">0:00</span>
+                </div>
+                <button class="audio-speed-btn" id="audioSpeedBtn" title="Playback speed">1x</button>
             </div>
 
             <div id="sceneContent"></div>
@@ -1039,7 +1148,8 @@
                 "The Starlight Lounge smelled like cigarettes and broken promises. A jazz trio was murdering something slow in the corner. The clientele looked like they'd come here to forget things they hadn't done yet.",
                 `<div style="margin: 1.5rem 0; text-align: center;"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/52nd_Street%2C_New_York%2C_by_Gottlieb%2C_1948.jpg" alt="52nd Street nightclubs in New York City, 1948" style="max-width: 100%; height: auto; filter: grayscale(100%) contrast(1.15) brightness(0.9); border: 2px solid #333; opacity: 0.80;"><div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.6; font-style: italic;">52nd Street, New York, 1948 — Jazz clubs and neon lights (Photo: William P. Gottlieb)</div></div>`,
                 "The bartender — a thick-necked guy named Eddie — was polishing glasses with the focus of a man avoiding eye contact.",
-                '"Morrison?" Eddie didn\'t look up. "Yeah, he was here Wednesday night. Left around eleven. Wasn\'t alone, though."',
+                '"Morrison?"',
+                'Eddie didn\'t look up. "Yeah, he was here Wednesday night. Left around eleven. Wasn\'t alone, though."',
                 "His hand stopped polishing."
             ],
             choices: [
@@ -1207,10 +1317,23 @@
         clues: [],
         cluesPanelOpen: false,
 
+        // Audio narration state
+        audio: null,
+        audioReady: false,
+        audioPlaying: false,
+        audioUpdateInterval: null,
+        audioSpeedIndex: 0,
+        audioSpeeds: [1, 1.25, 1.5, 2],
+
         init() {
             document.getElementById('startBtn').addEventListener('click', () => this.start());
             document.getElementById('restartBtn').addEventListener('click', () => this.restart());
             document.getElementById('clueToggle').addEventListener('click', () => this.toggleClues());
+
+            // Audio controls
+            document.getElementById('audioPlayBtn').addEventListener('click', () => this.toggleAudio());
+            document.getElementById('audioProgressBar').addEventListener('click', (e) => this.seekAudio(e));
+            document.getElementById('audioSpeedBtn').addEventListener('click', () => this.cycleSpeed());
 
             // Keyboard support
             document.addEventListener('keydown', (e) => {
@@ -1230,6 +1353,7 @@
         },
 
         restart() {
+            this.stopAudio();
             this.currentScene = null;
             this.history = [];
             this.clues = [];
@@ -1273,6 +1397,9 @@
         },
 
         renderScene(sceneId, scene) {
+            this.stopAudio();
+            this.loadAudio(sceneId);
+
             const container = document.getElementById('sceneContent');
             const gameControls = document.querySelector('.game-controls');
             if (gameControls) gameControls.style.display = sceneId.startsWith('ending') ? 'none' : '';
@@ -1412,6 +1539,139 @@
         toggleClues() {
             this.cluesPanelOpen = !this.cluesPanelOpen;
             document.getElementById('cluePanel').classList.toggle('open', this.cluesPanelOpen);
+        },
+
+        // ── Audio Narration Methods ──────────────────────────
+
+        loadAudio(sceneId) {
+            const player = document.getElementById('audioPlayer');
+            const playBtn = document.getElementById('audioPlayBtn');
+            const progressFill = document.getElementById('audioProgressFill');
+            const timeDisplay = document.getElementById('audioTime');
+
+            player.classList.remove('visible', 'playing', 'loading');
+            playBtn.innerHTML = '&#9654;';
+            playBtn.title = 'Play narration';
+            playBtn.setAttribute('aria-label', 'Play narration');
+            progressFill.style.width = '0%';
+            timeDisplay.textContent = '0:00';
+            this.audioReady = false;
+            this.audioPlaying = false;
+            this.audioSpeedIndex = 0;
+            document.getElementById('audioSpeedBtn').textContent = '1x';
+
+            const audioSrc = 'audio/noir/' + sceneId + '.mp3';
+            this.audio = new Audio();
+
+            player.classList.add('visible', 'loading');
+
+            this.audio.addEventListener('canplaythrough', () => {
+                this.audioReady = true;
+                player.classList.remove('loading');
+                timeDisplay.textContent = this.formatTime(this.audio.duration);
+            }, { once: true });
+
+            this.audio.addEventListener('error', () => {
+                this.audioReady = false;
+                player.classList.remove('visible', 'loading');
+                this.audio = null;
+            });
+
+            this.audio.addEventListener('ended', () => {
+                this.audioPlaying = false;
+                player.classList.remove('playing');
+                playBtn.innerHTML = '&#9654;';
+                playBtn.title = 'Play narration';
+                playBtn.setAttribute('aria-label', 'Play narration');
+                this.stopProgressUpdates();
+            });
+
+            this.audio.preload = 'auto';
+            this.audio.src = audioSrc;
+        },
+
+        stopAudio() {
+            if (this.audio) {
+                this.audio.pause();
+                this.audio.removeAttribute('src');
+                this.audio.load();
+                this.audio = null;
+            }
+            this.audioReady = false;
+            this.audioPlaying = false;
+            this.stopProgressUpdates();
+
+            const player = document.getElementById('audioPlayer');
+            if (player) {
+                player.classList.remove('visible', 'playing', 'loading');
+            }
+        },
+
+        toggleAudio() {
+            if (!this.audio || !this.audioReady) return;
+
+            if (this.audioPlaying) {
+                this.audio.pause();
+                this.audioPlaying = false;
+                document.getElementById('audioPlayer').classList.remove('playing');
+                document.getElementById('audioPlayBtn').innerHTML = '&#9654;';
+                document.getElementById('audioPlayBtn').title = 'Play narration';
+                document.getElementById('audioPlayBtn').setAttribute('aria-label', 'Play narration');
+                this.stopProgressUpdates();
+            } else {
+                this.audio.play().then(() => {
+                    this.audioPlaying = true;
+                    document.getElementById('audioPlayer').classList.add('playing');
+                    document.getElementById('audioPlayBtn').innerHTML = '&#9208;';
+                    document.getElementById('audioPlayBtn').title = 'Pause narration';
+                    document.getElementById('audioPlayBtn').setAttribute('aria-label', 'Pause narration');
+                    this.startProgressUpdates();
+                }).catch(() => {});
+            }
+        },
+
+        seekAudio(e) {
+            if (!this.audio || !this.audioReady) return;
+            const bar = document.getElementById('audioProgressBar');
+            const rect = bar.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            this.audio.currentTime = ratio * this.audio.duration;
+            this.updateProgress();
+        },
+
+        cycleSpeed() {
+            if (!this.audio) return;
+            this.audioSpeedIndex = (this.audioSpeedIndex + 1) % this.audioSpeeds.length;
+            const speed = this.audioSpeeds[this.audioSpeedIndex];
+            this.audio.playbackRate = speed;
+            document.getElementById('audioSpeedBtn').textContent = speed + 'x';
+        },
+
+        startProgressUpdates() {
+            this.stopProgressUpdates();
+            this.audioUpdateInterval = setInterval(() => this.updateProgress(), 250);
+        },
+
+        stopProgressUpdates() {
+            if (this.audioUpdateInterval) {
+                clearInterval(this.audioUpdateInterval);
+                this.audioUpdateInterval = null;
+            }
+        },
+
+        updateProgress() {
+            if (!this.audio || !this.audio.duration) return;
+            const pct = (this.audio.currentTime / this.audio.duration) * 100;
+            document.getElementById('audioProgressFill').style.width = pct + '%';
+            const remaining = this.audio.duration - this.audio.currentTime;
+            document.getElementById('audioTime').textContent = this.formatTime(remaining);
+        },
+
+        formatTime(seconds) {
+            if (!seconds || !isFinite(seconds)) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return m + ':' + (s < 10 ? '0' : '') + s;
         }
     };
 
