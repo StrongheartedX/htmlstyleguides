@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostgreSQL & MySQL - Relational Database Systems</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Work+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           ARCHITECTURAL DRAWING / TECHNICAL DESIGN SYSTEM
+           ============================================
+           Technical plan aesthetic. Fine line work on
+           white/off-white. Section hatching, dimension
+           annotations, scale bars, plan/elevation/section
+           views. Precise. Measured. Drafting-authentic.
+           ============================================ */
+
+        :root {
+            /* PAPER & INK */
+            --paper: #FAFAF7;
+            --paper-warm: #F5F3EE;
+            --paper-grid: #F0EDE6;
+            --ink-black: #1A1A1A;
+            --ink-dark: #2C2C2C;
+            --ink-medium: #555555;
+            --ink-light: #888888;
+            --ink-faint: #BBBBBB;
+            --ink-hairline: #D5D5D5;
+            /* LINE COLORS */
+            --line-center: #AA4444;
+            --line-dimension: #555555;
+            /* MARKUP & CORRECTIONS */
+            --red-markup: #C23B22;
+            --red-faint: rgba(194, 59, 34, 0.08);
+            --blue-reference: #2B5797;
+            --blue-faint: rgba(43, 87, 151, 0.08);
+            --green-approved: #3A7D44;
+            --green-faint: rgba(58, 125, 68, 0.08);
+            --amber-caution: #B8860B;
+            --amber-faint: rgba(184, 134, 11, 0.08);
+            /* TYPOGRAPHY */
+            --font-heading: 'Barlow', 'Helvetica Neue', sans-serif;
+            --font-body: 'Work Sans', 'Helvetica', sans-serif;
+            --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+            /* SPACING (4px base) */
+            --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
+            --space-4: 16px;  --space-5: 20px;  --space-6: 24px;
+            --space-7: 32px;  --space-8: 40px;  --space-9: 48px;
+            --space-10: 64px;
+            /* LINE WEIGHTS */
+            --weight-hairline: 0.5px;
+            --weight-thin: 1px;
+            --weight-medium: 2px;
+            --weight-bold: 3px;
+            --weight-profile: 4px;
+            /* HATCHING */
+            --hatch-color: rgba(26, 26, 26, 0.12);
+            --hatch-heavy: rgba(26, 26, 26, 0.22);
+        }
+
+        /* RESET */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 300;
+            line-height: 1.7;
+            color: var(--ink-dark);
+            background: var(--paper-grid);
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           HATCHING PATTERNS
+           ============================================ */
+        .hatch-diagonal {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 7px, var(--hatch-color) 7px, var(--hatch-color) 8px);
+        }
+        .hatch-cross {
+            background-image:
+                repeating-linear-gradient(45deg, transparent, transparent 7px, var(--hatch-color) 7px, var(--hatch-color) 8px),
+                repeating-linear-gradient(-45deg, transparent, transparent 7px, var(--hatch-color) 7px, var(--hatch-color) 8px);
+        }
+        .hatch-dense {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--hatch-heavy) 3px, var(--hatch-heavy) 4px);
+        }
+
+        /* ============================================
+           DIMENSION LINES & SCALE BAR
+           ============================================ */
+        .dimension {
+            display: flex;
+            align-items: center;
+            color: var(--line-dimension);
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            padding: var(--space-2) 0;
+        }
+        .dimension::before, .dimension::after {
+            content: '';
+            flex: 1;
+            height: var(--weight-hairline);
+            background: var(--line-dimension);
+        }
+        .dimension::before { margin-right: var(--space-2); }
+        .dimension::after { margin-left: var(--space-2); }
+        .dimension-value {
+            white-space: nowrap;
+            padding: 0 var(--space-2);
+            background: var(--paper);
+        }
+
+        /* ============================================
+           PAGE STRUCTURE & DRAWING FRAME
+           ============================================ */
+        .page-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--paper);
+        }
+        .drawing-frame {
+            border: var(--weight-profile) solid var(--ink-black);
+            margin: var(--space-4);
+            position: relative;
+        }
+        .drawing-frame::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border: var(--weight-thin) solid var(--ink-light);
+            pointer-events: none;
+        }
+
+        /* ============================================
+           TITLE BLOCK
+           ============================================ */
+        .title-block {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            border-top: var(--weight-medium) solid var(--ink-black);
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+        }
+        .title-block-main {
+            padding: var(--space-4) var(--space-6);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: var(--space-1);
+            border-right: var(--weight-thin) solid var(--ink-medium);
+        }
+        .title-block-info {
+            padding: var(--space-3) var(--space-4);
+            min-width: 200px;
+        }
+        .title-block-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-1) 0;
+            border-bottom: var(--weight-hairline) solid var(--ink-hairline);
+        }
+        .title-block-row:last-child { border-bottom: none; }
+        .title-block-label {
+            font-size: 0.5625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-light);
+        }
+        .title-block-value { font-weight: 500; color: var(--ink-dark); }
+        @media (max-width: 768px) {
+            .drawing-frame { margin: var(--space-2); }
+            .title-block { grid-template-columns: 1fr; }
+            .title-block-main {
+                grid-template-columns: 1fr;
+                border-right: none;
+                border-bottom: var(--weight-thin) solid var(--ink-medium);
+            }
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .site-header {
+            position: relative;
+            padding: var(--space-10) var(--space-7) var(--space-8);
+            border-bottom: var(--weight-medium) solid var(--ink-black);
+            background:
+                linear-gradient(var(--ink-hairline) var(--weight-hairline), transparent var(--weight-hairline)),
+                linear-gradient(90deg, var(--ink-hairline) var(--weight-hairline), transparent var(--weight-hairline)),
+                var(--paper);
+            background-size: 20px 20px, 20px 20px, 100% 100%;
+        }
+        /* Center lines */
+        .site-header::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            border-left: var(--weight-hairline) dashed var(--line-center);
+            opacity: 0.4;
+        }
+        .site-header::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; top: 50%;
+            border-top: var(--weight-hairline) dashed var(--line-center);
+            opacity: 0.4;
+        }
+        .header-content { position: relative; z-index: 1; }
+        .site-header h1 {
+            font-family: var(--font-heading);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 300;
+            color: var(--ink-black);
+            text-transform: uppercase;
+            letter-spacing: 0.35em;
+            margin-bottom: var(--space-3);
+            line-height: 1;
+        }
+        .site-header .tagline {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            margin-bottom: var(--space-6);
+        }
+        .header-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            color: var(--ink-medium);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border: var(--weight-thin) solid var(--ink-light);
+            padding: var(--space-2) var(--space-4);
+        }
+        .header-meta span {
+            padding-right: var(--space-4);
+            border-right: var(--weight-hairline) solid var(--ink-light);
+        }
+        .header-meta span:last-child { padding-right: 0; border-right: none; }
+
+        /* Back link */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--ink-medium);
+            text-decoration: none;
+            padding: var(--space-3) var(--space-5);
+            border: var(--weight-thin) solid var(--ink-light);
+            margin-bottom: var(--space-6);
+            transition: all 0.15s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .back-link:hover {
+            background: var(--ink-black);
+            color: var(--paper);
+            border-color: var(--ink-black);
+        }
+
+        /* ============================================
+           NAVIGATION
+           ============================================ */
+        .nav-bar {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: var(--weight-medium) solid var(--ink-black);
+        }
+        .nav-bar a {
+            flex: 1 1 auto;
+            padding: var(--space-4) var(--space-5);
+            font-family: var(--font-heading);
+            font-size: 0.6875rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ink-medium);
+            text-decoration: none;
+            text-align: center;
+            border-right: var(--weight-hairline) solid var(--ink-hairline);
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .nav-bar a:last-child { border-right: none; }
+        .nav-bar a:hover { background: var(--ink-black); color: var(--paper); }
+        .nav-bar a::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 0;
+            background: var(--red-markup);
+            transition: height 0.15s ease;
+        }
+        .nav-bar a:hover::after { height: 2px; }
+        @media (max-width: 768px) {
+            .nav-bar a { flex: 1 1 33.33%; padding: var(--space-3); font-size: 0.5625rem; }
+        }
+
+        /* ============================================
+           SECTIONS
+           ============================================ */
+        .section {
+            padding: var(--space-9) var(--space-7);
+            border-bottom: var(--weight-thin) solid var(--ink-medium);
+            position: relative;
+            background: var(--paper);
+        }
+        /* Hatching strip on left */
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 24px; height: 100%;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--hatch-color) 3px, var(--hatch-color) 4px);
+            border-right: var(--weight-thin) solid var(--ink-hairline);
+        }
+        .section::after {
+            content: '';
+            position: absolute;
+            top: var(--space-6); left: 6px;
+            width: 12px; height: 12px;
+            background: var(--paper);
+            border: var(--weight-thin) solid var(--ink-medium);
+            border-radius: 50%;
+        }
+        .section-header {
+            margin-bottom: var(--space-7);
+            padding-bottom: var(--space-5);
+            border-bottom: var(--weight-hairline) solid var(--ink-hairline);
+            padding-left: var(--space-4);
+        }
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 0.5625rem;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: block;
+            margin-bottom: var(--space-1);
+        }
+        .section-number::before { content: 'DWG '; color: var(--ink-faint); }
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.375rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--ink-black);
+            margin-bottom: var(--space-2);
+        }
+        .section-description {
+            font-size: 0.8125rem;
+            font-weight: 300;
+            color: var(--ink-medium);
+            max-width: 680px;
+            line-height: 1.8;
+        }
+        .section-content {
+            padding-left: var(--space-4);
+        }
+        @media (max-width: 768px) {
+            .section { padding: var(--space-7) var(--space-4) var(--space-7) var(--space-8); }
+        }
+
+        /* ============================================
+           CODE BLOCKS
+           ============================================ */
+        pre {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            line-height: 1.6;
+            background: var(--paper-warm);
+            border: var(--weight-thin) solid var(--ink-light);
+            border-left: var(--weight-bold) solid var(--ink-medium);
+            padding: var(--space-5);
+            margin: var(--space-5) 0;
+            overflow-x: auto;
+            position: relative;
+        }
+        pre::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: var(--space-2);
+            right: var(--space-3);
+            font-size: 0.5625rem;
+            color: var(--ink-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            background: var(--paper-warm);
+            padding: var(--space-1) var(--space-2);
+            border: var(--weight-hairline) solid var(--ink-hairline);
+            color: var(--ink-dark);
+        }
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.75rem;
+        }
+
+        /* ============================================
+           COMPARISON TABLE (Side-by-side)
+           ============================================ */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            margin: var(--space-6) 0;
+            border: var(--weight-medium) solid var(--ink-black);
+        }
+        .comparison-table thead {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, var(--hatch-color) 5px, var(--hatch-color) 6px);
+            background-color: var(--paper-warm);
+        }
+        .comparison-table th {
+            padding: var(--space-4) var(--space-4);
+            text-align: left;
+            font-family: var(--font-heading);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            border-bottom: var(--weight-medium) solid var(--ink-black);
+            border-right: var(--weight-thin) solid var(--ink-hairline);
+        }
+        .comparison-table th:last-child { border-right: none; }
+        .comparison-table td {
+            padding: var(--space-3) var(--space-4);
+            border-bottom: var(--weight-hairline) solid var(--ink-hairline);
+            border-right: var(--weight-thin) solid var(--ink-hairline);
+            vertical-align: top;
+        }
+        .comparison-table td:last-child { border-right: none; }
+        .comparison-table tbody tr:hover {
+            background: var(--paper-grid);
+        }
+        .comparison-table td.label {
+            font-family: var(--font-heading);
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: var(--ink-dark);
+        }
+
+        /* ============================================
+           SUBSECTIONS
+           ============================================ */
+        .subsection {
+            margin: var(--space-7) 0;
+        }
+        .subsection-title {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-2);
+            border-bottom: var(--weight-hairline) solid var(--ink-hairline);
+            position: relative;
+        }
+        .subsection-title::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 60px;
+            height: var(--weight-medium);
+            background: var(--ink-dark);
+        }
+
+        /* ============================================
+           LISTS
+           ============================================ */
+        ul, ol {
+            margin: var(--space-4) 0;
+            padding-left: var(--space-7);
+        }
+        li {
+            margin-bottom: var(--space-2);
+            font-weight: 300;
+        }
+        li code {
+            font-size: 0.75rem;
+        }
+
+        /* ============================================
+           BADGES
+           ============================================ */
+        .badge {
+            font-family: var(--font-heading);
+            font-size: 0.5625rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-1) var(--space-3);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            border: var(--weight-thin) solid;
+            margin-right: var(--space-2);
+        }
+        .badge-postgres {
+            background: var(--blue-faint);
+            color: var(--blue-reference);
+            border-color: var(--blue-reference);
+        }
+        .badge-mysql {
+            background: var(--amber-faint);
+            color: var(--amber-caution);
+            border-color: var(--amber-caution);
+        }
+        .badge-both {
+            background: var(--green-faint);
+            color: var(--green-approved);
+            border-color: var(--green-approved);
+        }
+
+        /* ============================================
+           ALERTS
+           ============================================ */
+        .alert {
+            padding: var(--space-5);
+            padding-left: var(--space-8);
+            margin: var(--space-5) 0;
+            border: var(--weight-thin) solid var(--ink-light);
+            position: relative;
+            background: var(--paper);
+        }
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 20px; height: 100%;
+        }
+        .alert-title {
+            font-family: var(--font-heading);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: var(--space-2);
+        }
+        .alert-body {
+            font-size: 0.8125rem;
+            font-weight: 300;
+            color: var(--ink-medium);
+            line-height: 1.7;
+        }
+        .alert-info {
+            border-color: var(--blue-reference);
+        }
+        .alert-info::before {
+            background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(43,87,151,0.15) 3px, rgba(43,87,151,0.15) 4px);
+            border-right: var(--weight-medium) solid var(--blue-reference);
+        }
+        .alert-info .alert-title {
+            color: var(--blue-reference);
+        }
+        .alert-caution {
+            border-color: var(--amber-caution);
+        }
+        .alert-caution::before {
+            background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(184,134,11,0.15) 3px, rgba(184,134,11,0.15) 4px);
+            border-right: var(--weight-medium) solid var(--amber-caution);
+        }
+        .alert-caution .alert-title {
+            color: var(--amber-caution);
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .site-footer {
+            padding: var(--space-6) var(--space-7);
+            border-top: var(--weight-medium) solid var(--ink-black);
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--ink-light);
+            text-align: center;
+            background: var(--paper-warm);
+        }
+        .site-footer a {
+            color: var(--ink-dark);
+            text-decoration: none;
+            border-bottom: var(--weight-hairline) solid var(--ink-light);
+            transition: all 0.15s ease;
+        }
+        .site-footer a:hover {
+            color: var(--ink-black);
+            border-bottom-color: var(--ink-black);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .comparison-table {
+                font-size: 0.6875rem;
+            }
+            .comparison-table th,
+            .comparison-table td {
+                padding: var(--space-2) var(--space-3);
+            }
+            pre {
+                font-size: 0.6875rem;
+                padding: var(--space-4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="drawing-frame">
+            <!-- HEADER -->
+            <header class="site-header">
+                <div class="header-content">
+                    <a href="index.html" class="back-link">← Tech Guides</a>
+                    <h1>SQL DATABASE SYSTEMS</h1>
+                    <div class="tagline">PostgreSQL & MySQL — Relational Database Management</div>
+                    <div class="header-meta">
+                        <span>SPEC: RDBMS-2026</span>
+                        <span>REV: 02.09</span>
+                        <span>SCALE: 1:1</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- NAVIGATION -->
+            <nav class="nav-bar">
+                <a href="#quick-reference">Quick Reference</a>
+                <a href="#connection">Connection</a>
+                <a href="#database-mgmt">Database Mgmt</a>
+                <a href="#tables">Tables</a>
+                <a href="#queries">Queries</a>
+                <a href="#data-manip">Data Manip</a>
+                <a href="#advanced">Advanced</a>
+                <a href="#indexing">Indexing</a>
+                <a href="#json">JSON & FTS</a>
+                <a href="#admin">Administration</a>
+                <a href="#tips">Pro Tips</a>
+            </nav>
+
+            <!-- SECTION 1: QUICK REFERENCE -->
+            <section id="quick-reference" class="section">
+                <div class="section-header">
+                    <span class="section-number">01</span>
+                    <h2 class="section-title">Quick Reference</h2>
+                    <p class="section-description">Essential CLI commands and meta-commands for PostgreSQL (psql) and MySQL (mysql) client interfaces.</p>
+                </div>
+                <div class="section-content">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">PostgreSQL (psql)</th>
+                                <th style="width: 40%;">MySQL (mysql)</th>
+                                <th style="width: 20%;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>psql -h host -p 5432 -U user -d db</code></td>
+                                <td><code>mysql -h host -P 3306 -u user -p db</code></td>
+                                <td class="label">Connect to database</td>
+                            </tr>
+                            <tr>
+                                <td><code>\l</code></td>
+                                <td><code>SHOW DATABASES;</code></td>
+                                <td class="label">List databases</td>
+                            </tr>
+                            <tr>
+                                <td><code>\c dbname</code></td>
+                                <td><code>USE dbname;</code></td>
+                                <td class="label">Switch database</td>
+                            </tr>
+                            <tr>
+                                <td><code>\dt</code></td>
+                                <td><code>SHOW TABLES;</code></td>
+                                <td class="label">List tables</td>
+                            </tr>
+                            <tr>
+                                <td><code>\d tablename</code></td>
+                                <td><code>DESCRIBE tablename;</code></td>
+                                <td class="label">Describe table</td>
+                            </tr>
+                            <tr>
+                                <td><code>\du</code></td>
+                                <td><code>SELECT * FROM mysql.user;</code></td>
+                                <td class="label">List users</td>
+                            </tr>
+                            <tr>
+                                <td><code>\timing</code></td>
+                                <td><code>-- No built-in equivalent</code></td>
+                                <td class="label">Toggle timing</td>
+                            </tr>
+                            <tr>
+                                <td><code>\x</code></td>
+                                <td><code>\G</code> (at end of query)</td>
+                                <td class="label">Vertical display</td>
+                            </tr>
+                            <tr>
+                                <td><code>\i filename.sql</code></td>
+                                <td><code>SOURCE filename.sql;</code></td>
+                                <td class="label">Execute SQL file</td>
+                            </tr>
+                            <tr>
+                                <td><code>\q</code></td>
+                                <td><code>\q</code> or <code>exit</code></td>
+                                <td class="label">Quit client</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Additional psql Meta-Commands</h3>
+                        <pre data-lang="bash"><code># PostgreSQL-specific commands
+\dt+                  # List tables with size info
+\d+ tablename         # Describe table with extra details
+\dn                   # List schemas
+\df                   # List functions
+\dv                   # List views
+\dx                   # List installed extensions
+\o filename           # Redirect output to file
+\h COMMAND            # SQL command help
+\?                    # List all psql commands</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Additional MySQL Commands</h3>
+                        <pre data-lang="sql"><code>-- MySQL-specific commands
+SHOW COLUMNS FROM tablename;       # Show column details
+SHOW CREATE TABLE tablename;       # Show CREATE statement
+SHOW FULL TABLES;                  # List tables with type (BASE/VIEW)
+SHOW PROCESSLIST;                  # Show running queries
+SHOW VARIABLES LIKE 'pattern%';    # Show server variables
+SHOW STATUS LIKE 'pattern%';       # Show server status</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: CONNECTION -->
+            <section id="connection" class="section">
+                <div class="section-header">
+                    <span class="section-number">02</span>
+                    <h2 class="section-title">Connection</h2>
+                    <p class="section-description">Connection strings, environment variables, and configuration files for both database systems.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-postgres">PostgreSQL</span> Connection Setup</h3>
+
+                        <pre data-lang="bash"><code># Standard connection format
+psql "postgresql://username:password@hostname:port/dbname"
+
+# With SSL
+psql "postgresql://username:password@hostname:port/dbname?sslmode=require"
+
+# Command-line options
+psql -h hostname -p 5432 -U username -d dbname</code></pre>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;">Environment Variables:</p>
+                        <pre data-lang="bash"><code>export PGHOST=localhost
+export PGPORT=5432
+export PGUSER=myuser
+export PGPASSWORD=mypass        # Not recommended for security
+export PGDATABASE=mydb
+export PGSSLMODE=require
+export PGPASSFILE=~/.pgpass     # Path to password file</code></pre>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;">~/.pgpass Password File:</p>
+                        <pre data-lang="text"><code># Format: hostname:port:database:username:password
+localhost:5432:mydb:myuser:secret123
+*:5432:*:myuser:secret123       # Wildcard support
+
+# Set permissions (required)
+chmod 0600 ~/.pgpass</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-mysql">MySQL</span> Connection Setup</h3>
+
+                        <pre data-lang="bash"><code># Standard format
+mysql -h hostname -P 3306 -u username -p dbname
+
+# URI format (MySQL 8.0+)
+mysql mysql://username:password@hostname:port/dbname</code></pre>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;">~/.my.cnf Configuration File:</p>
+                        <pre data-lang="ini"><code>[client]
+user=myuser
+password=secret123
+host=localhost
+port=3306
+database=mydb
+
+[mysql]
+no-auto-rehash
+connect_timeout=2
+
+# Set permissions (required)
+chmod 700 ~/.my.cnf</code></pre>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <div class="alert-title">Connection Security</div>
+                        <div class="alert-body">Never hardcode passwords in scripts or store them in version control. Use environment variables, config files with proper permissions (0600/0700), or password management tools. For PostgreSQL, prefer <code>~/.pgpass</code>; for MySQL, use <code>~/.my.cnf</code>.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: DATABASE MANAGEMENT -->
+            <section id="database-mgmt" class="section">
+                <div class="section-header">
+                    <span class="section-number">03</span>
+                    <h2 class="section-title">Database Management</h2>
+                    <p class="section-description">Creating, dropping, and managing databases, users, roles, and permissions.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">Create & Drop Databases</h3>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>CREATE DATABASE mydb;
+CREATE DATABASE mydb
+  WITH ENCODING 'UTF8'
+  LC_COLLATE='en_US.UTF-8';
+CREATE DATABASE mydb
+  OWNER myuser
+  TEMPLATE template0;</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>CREATE DATABASE mydb;
+CREATE DATABASE mydb
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;</code></pre></td>
+                                </tr>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>DROP DATABASE mydb;
+DROP DATABASE IF EXISTS mydb;</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>DROP DATABASE mydb;
+DROP DATABASE IF EXISTS mydb;</code></pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Users, Roles & Permissions</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> User Management:</p>
+                        <pre data-lang="sql"><code>-- Create user/role (users and roles are the same in PostgreSQL)
+CREATE USER myuser WITH PASSWORD 'secret123';
+CREATE ROLE myrole WITH LOGIN PASSWORD 'secret123';
+CREATE ROLE admin WITH CREATEDB CREATEROLE;
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;
+GRANT SELECT, INSERT, UPDATE ON TABLE users TO myuser;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+GRANT USAGE ON SCHEMA public TO myuser;
+GRANT EXECUTE ON FUNCTION myfunc() TO myuser;
+
+-- Revoke privileges
+REVOKE ALL PRIVILEGES ON DATABASE mydb FROM myuser;
+REVOKE INSERT ON TABLE users FROM myuser CASCADE;
+
+-- Role membership (group roles)
+CREATE ROLE developers;
+GRANT developers TO alice, bob;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO developers;
+
+-- Alter user
+ALTER USER myuser WITH PASSWORD 'newpass';
+ALTER ROLE myuser WITH SUPERUSER;
+
+-- Drop user
+DROP USER myuser;
+DROP ROLE IF EXISTS myrole;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> User Management:</p>
+                        <pre data-lang="sql"><code>-- Create user
+CREATE USER 'myuser'@'localhost' IDENTIFIED BY 'secret123';
+CREATE USER 'myuser'@'%' IDENTIFIED BY 'secret123';  -- Any host
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON mydb.* TO 'myuser'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON mydb.users TO 'myuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE mydb.myproc TO 'myuser'@'localhost';
+
+-- Revoke privileges
+REVOKE ALL PRIVILEGES ON mydb.* FROM 'myuser'@'localhost';
+REVOKE INSERT ON mydb.users FROM 'myuser'@'localhost';
+
+-- Alter user
+ALTER USER 'myuser'@'localhost' IDENTIFIED BY 'newpass';
+
+-- Drop user
+DROP USER 'myuser'@'localhost';
+DROP USER IF EXISTS 'myuser'@'localhost';
+
+-- View privileges
+SHOW GRANTS FOR 'myuser'@'localhost';
+
+-- Apply privilege changes
+FLUSH PRIVILEGES;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Backup & Restore</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> pg_dump / pg_restore:</p>
+                        <pre data-lang="bash"><code># Dump database (SQL format)
+pg_dump -U username -h localhost dbname > backup.sql
+pg_dump -U username -d dbname -F p -f backup.sql
+
+# Dump database (custom format - compressed)
+pg_dump -U username -d dbname -F c -f backup.dump
+
+# Dump specific tables
+pg_dump -U username -d dbname -t table1 -t table2 > tables.sql
+
+# Dump schema only
+pg_dump -U username -d dbname --schema-only > schema.sql
+
+# Dump data only
+pg_dump -U username -d dbname --data-only > data.sql
+
+# Dump all databases
+pg_dumpall -U postgres > all_databases.sql
+
+# Restore from SQL dump
+psql -U username -d dbname < backup.sql
+
+# Restore from custom format
+pg_restore -U username -d dbname backup.dump
+pg_restore -U username -d dbname -C backup.dump  # Create database
+pg_restore -U username -d dbname -j 4 backup.dump  # Parallel (4 jobs)</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> mysqldump:</p>
+                        <pre data-lang="bash"><code># Dump database
+mysqldump -u username -p dbname > backup.sql
+mysqldump -u username -p --databases db1 db2 > backup.sql
+
+# Dump all databases
+mysqldump -u username -p --all-databases > all_databases.sql
+
+# Dump specific tables
+mysqldump -u username -p dbname table1 table2 > tables.sql
+
+# Dump schema only
+mysqldump -u username -p --no-data dbname > schema.sql
+
+# Dump data only
+mysqldump -u username -p --no-create-info dbname > data.sql
+
+# Dump with additional options
+mysqldump -u username -p --single-transaction --routines --triggers dbname > backup.sql
+
+# Ignore specific tables
+mysqldump -u username -p dbname --ignore-table=dbname.table1 > backup.sql
+
+# Restore from dump
+mysql -u username -p dbname < backup.sql
+mysql -u username -p < all_databases.sql</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: TABLE OPERATIONS -->
+            <section id="tables" class="section">
+                <div class="section-header">
+                    <span class="section-number">04</span>
+                    <h2 class="section-title">Table Operations</h2>
+                    <p class="section-description">Creating tables, data types, constraints, and schema modifications.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">Create Tables</h3>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;">Table with Constraints:</p>
+                        <pre data-lang="sql"><code>-- PostgreSQL
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    total NUMERIC(10, 2) NOT NULL CHECK (total >= 0),
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT valid_status CHECK (status IN ('pending', 'paid', 'shipped'))
+);
+
+-- MySQL
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    total DECIMAL(10, 2) NOT NULL CHECK (total >= 0),
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT valid_status CHECK (status IN ('pending', 'paid', 'shipped'))
+) ENGINE=InnoDB;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Data Types Comparison</h3>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">Category</th>
+                                    <th style="width: 35%;">PostgreSQL</th>
+                                    <th style="width: 40%;">MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="label">Integer</td>
+                                    <td>SMALLINT, INTEGER, BIGINT</td>
+                                    <td>TINYINT, SMALLINT, MEDIUMINT, INT, BIGINT</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Auto-increment</td>
+                                    <td>SERIAL, BIGSERIAL</td>
+                                    <td>AUTO_INCREMENT</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Decimal</td>
+                                    <td>NUMERIC, DECIMAL</td>
+                                    <td>DECIMAL, NUMERIC</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Float</td>
+                                    <td>REAL, DOUBLE PRECISION</td>
+                                    <td>FLOAT, DOUBLE</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">String</td>
+                                    <td>VARCHAR(n), CHAR(n), TEXT</td>
+                                    <td>VARCHAR(n), CHAR(n), TEXT, TINYTEXT, MEDIUMTEXT, LONGTEXT</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Binary</td>
+                                    <td>BYTEA</td>
+                                    <td>BLOB, TINYBLOB, MEDIUMBLOB, LONGBLOB</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Boolean</td>
+                                    <td>BOOLEAN (TRUE/FALSE)</td>
+                                    <td>BOOLEAN (alias for TINYINT(1))</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Date/Time</td>
+                                    <td>DATE, TIME, TIMESTAMP, TIMESTAMPTZ</td>
+                                    <td>DATE, TIME, DATETIME, TIMESTAMP</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">JSON</td>
+                                    <td>JSON, JSONB</td>
+                                    <td>JSON</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Array</td>
+                                    <td>INTEGER[], TEXT[], etc.</td>
+                                    <td>N/A</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">UUID</td>
+                                    <td>UUID</td>
+                                    <td>CHAR(36) or BINARY(16)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">PostgreSQL-Specific Types</div>
+                            <div class="alert-body">PostgreSQL supports advanced types: Arrays (INTEGER[], TEXT[]), Range types (INT4RANGE, TSRANGE, DATERANGE), JSONB (binary JSON with indexing), HSTORE (key-value pairs), Network types (INET, CIDR, MACADDR), and native XML support.</div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Alter Tables</h3>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;">Operation</th>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="label">Add Column</td>
+                                    <td><code>ALTER TABLE users ADD COLUMN phone VARCHAR(20);</code></td>
+                                    <td><code>ALTER TABLE users ADD COLUMN phone VARCHAR(20);</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Drop Column</td>
+                                    <td><code>ALTER TABLE users DROP COLUMN phone;</code></td>
+                                    <td><code>ALTER TABLE users DROP COLUMN phone;</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Rename Column</td>
+                                    <td><code>ALTER TABLE users RENAME COLUMN username TO user_name;</code></td>
+                                    <td><code>ALTER TABLE users RENAME COLUMN username TO user_name;</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Change Type</td>
+                                    <td><code>ALTER TABLE users ALTER COLUMN age TYPE BIGINT;</code></td>
+                                    <td><code>ALTER TABLE users MODIFY COLUMN age BIGINT;</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Add NOT NULL</td>
+                                    <td><code>ALTER TABLE users ALTER COLUMN email SET NOT NULL;</code></td>
+                                    <td><code>ALTER TABLE users MODIFY email VARCHAR(100) NOT NULL;</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Set Default</td>
+                                    <td><code>ALTER TABLE users ALTER COLUMN is_active SET DEFAULT TRUE;</code></td>
+                                    <td><code>ALTER TABLE users ALTER COLUMN is_active SET DEFAULT TRUE;</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Rename Table</td>
+                                    <td><code>ALTER TABLE users RENAME TO app_users;</code></td>
+                                    <td><code>RENAME TABLE users TO app_users;</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: QUERY ESSENTIALS -->
+            <section id="queries" class="section">
+                <div class="section-header">
+                    <span class="section-number">05</span>
+                    <h2 class="section-title">Query Essentials</h2>
+                    <p class="section-description">SELECT statements, JOINs, GROUP BY, aggregates, and fundamental query patterns.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">SELECT Statements <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Basic SELECT
+SELECT * FROM users;
+SELECT id, username, email FROM users;
+SELECT DISTINCT country FROM users;
+
+-- WHERE clause
+SELECT * FROM users WHERE age >= 18;
+SELECT * FROM users WHERE country = 'USA' AND is_active = TRUE;
+SELECT * FROM users WHERE username LIKE 'john%';
+SELECT * FROM users WHERE age BETWEEN 18 AND 65;
+SELECT * FROM users WHERE country IN ('USA', 'Canada', 'UK');
+SELECT * FROM users WHERE phone IS NULL;
+
+-- ORDER BY
+SELECT * FROM users ORDER BY created_at DESC;
+SELECT * FROM users ORDER BY country ASC, username ASC;
+
+-- LIMIT and OFFSET
+SELECT * FROM users LIMIT 10;
+SELECT * FROM users LIMIT 10 OFFSET 20;  -- Skip 20, get next 10</code></pre>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">Case-Insensitive Search</div>
+                            <div class="alert-body">PostgreSQL: Use <code>ILIKE</code> for case-insensitive pattern matching: <code>WHERE email ILIKE '%@gmail.com'</code>. MySQL is case-insensitive by default for <code>LIKE</code> unless using a case-sensitive collation.</div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">JOIN Operations <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- INNER JOIN
+SELECT u.username, o.total, o.created_at
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+
+-- LEFT JOIN (LEFT OUTER JOIN)
+SELECT u.username, COUNT(o.id) as order_count
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.username;
+
+-- RIGHT JOIN
+SELECT u.username, o.total
+FROM orders o
+RIGHT JOIN users u ON o.user_id = u.id;
+
+-- CROSS JOIN
+SELECT u.username, p.product_name
+FROM users u
+CROSS JOIN products p;
+
+-- Self JOIN
+SELECT e.name as employee, m.name as manager
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.id;
+
+-- Multiple JOINs
+SELECT u.username, o.total, p.product_name
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id
+INNER JOIN order_items oi ON o.id = oi.order_id
+INNER JOIN products p ON oi.product_id = p.id;</code></pre>
+
+                        <div class="alert alert-caution">
+                            <div class="alert-title">FULL OUTER JOIN</div>
+                            <div class="alert-body">PostgreSQL supports <code>FULL OUTER JOIN</code> natively. MySQL does not support it directly; you must use a combination of <code>LEFT JOIN</code> and <code>RIGHT JOIN</code> with <code>UNION</code>.</div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">GROUP BY & Aggregates <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- GROUP BY
+SELECT country, COUNT(*) as user_count
+FROM users
+GROUP BY country;
+
+-- Multiple grouping columns
+SELECT country, city, COUNT(*) as count
+FROM users
+GROUP BY country, city;
+
+-- GROUP BY with aggregates
+SELECT
+    user_id,
+    COUNT(*) as order_count,
+    SUM(total) as total_spent,
+    AVG(total) as avg_order,
+    MAX(total) as max_order,
+    MIN(total) as min_order
+FROM orders
+GROUP BY user_id;
+
+-- HAVING clause (filter after grouping)
+SELECT country, COUNT(*) as user_count
+FROM users
+GROUP BY country
+HAVING COUNT(*) > 100;
+
+-- HAVING with multiple conditions
+SELECT user_id, SUM(total) as total_spent
+FROM orders
+GROUP BY user_id
+HAVING SUM(total) > 1000 AND COUNT(*) > 5
+ORDER BY total_spent DESC;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;">String Aggregation:</p>
+                        <pre data-lang="sql"><code>-- PostgreSQL
+SELECT STRING_AGG(username, ', ') FROM users;
+
+-- MySQL
+SELECT GROUP_CONCAT(username SEPARATOR ', ') FROM users;</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: DATA MANIPULATION -->
+            <section id="data-manip" class="section">
+                <div class="section-header">
+                    <span class="section-number">06</span>
+                    <h2 class="section-title">Data Manipulation</h2>
+                    <p class="section-description">INSERT, UPDATE, DELETE, UPSERT operations, and bulk data loading.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">INSERT</h3>
+
+                        <pre data-lang="sql"><code>-- Single row (both databases)
+INSERT INTO users (username, email) VALUES ('john', 'john@example.com');
+
+-- Multiple rows
+INSERT INTO users (username, email) VALUES
+    ('alice', 'alice@example.com'),
+    ('bob', 'bob@example.com'),
+    ('charlie', 'charlie@example.com');
+
+-- INSERT from SELECT
+INSERT INTO users_archive
+SELECT * FROM users WHERE created_at < '2020-01-01';</code></pre>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>-- INSERT with RETURNING
+INSERT INTO users (username, email)
+VALUES ('dave', 'dave@example.com')
+RETURNING id, username, created_at;</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>-- Get last inserted ID
+INSERT INTO users (username, email)
+VALUES ('dave', 'dave@example.com');
+SELECT LAST_INSERT_ID();</code></pre></td>
+                                </tr>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>-- INSERT with DEFAULT values
+INSERT INTO users DEFAULT VALUES;</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>-- INSERT IGNORE (skip duplicates)
+INSERT IGNORE INTO users (username, email)
+VALUES ('john', 'john@example.com');</code></pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">UPDATE <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Basic UPDATE
+UPDATE users SET email = 'newemail@example.com' WHERE id = 1;
+
+-- Update multiple columns
+UPDATE users
+SET email = 'new@example.com', is_active = FALSE
+WHERE id = 1;
+
+-- Update with calculation
+UPDATE products SET price = price * 1.1 WHERE category = 'electronics';</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;">Update with JOIN:</p>
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>UPDATE orders o
+SET status = 'completed'
+FROM users u
+WHERE o.user_id = u.id
+  AND u.country = 'USA';</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>UPDATE orders o
+INNER JOIN users u ON o.user_id = u.id
+SET o.status = 'completed'
+WHERE u.country = 'USA';</code></pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">DELETE <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Basic DELETE
+DELETE FROM users WHERE id = 1;
+
+-- Delete with condition
+DELETE FROM users WHERE created_at < '2020-01-01';
+
+-- Delete all rows
+DELETE FROM users;
+TRUNCATE TABLE users;  -- Faster, resets auto-increment</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">UPSERT (Insert or Update)</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> ON CONFLICT:</p>
+                        <pre data-lang="sql"><code>-- Insert or do nothing
+INSERT INTO users (id, username, email)
+VALUES (1, 'john', 'john@example.com')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert or update (UPSERT)
+INSERT INTO users (id, username, email)
+VALUES (1, 'john', 'newemail@example.com')
+ON CONFLICT (id)
+DO UPDATE SET
+    email = EXCLUDED.email,
+    updated_at = CURRENT_TIMESTAMP;
+
+-- UPSERT with WHERE clause
+INSERT INTO users (username, email)
+VALUES ('john', 'john@example.com')
+ON CONFLICT (username)
+DO UPDATE SET email = EXCLUDED.email
+WHERE users.email != EXCLUDED.email;
+
+-- UPSERT with RETURNING
+INSERT INTO users (username, email)
+VALUES ('john', 'john@example.com')
+ON CONFLICT (username)
+DO UPDATE SET email = EXCLUDED.email
+RETURNING id, username, email;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> ON DUPLICATE KEY UPDATE:</p>
+                        <pre data-lang="sql"><code>-- Insert or update
+INSERT INTO users (id, username, email)
+VALUES (1, 'john', 'newemail@example.com')
+ON DUPLICATE KEY UPDATE
+    email = VALUES(email),
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Using aliases (MySQL 8.0.19+)
+INSERT INTO products (id, name, stock)
+VALUES (1, 'Widget', 10) AS new
+ON DUPLICATE KEY UPDATE
+    stock = stock + new.stock;
+
+-- INSERT IGNORE (insert or skip)
+INSERT IGNORE INTO users (username, email)
+VALUES ('john', 'john@example.com');
+
+-- REPLACE (delete and insert)
+REPLACE INTO users (id, username, email)
+VALUES (1, 'john', 'john@example.com');</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Bulk Data Loading</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> COPY:</p>
+                        <pre data-lang="sql"><code>-- Export to CSV
+COPY users TO '/tmp/users.csv' CSV HEADER;
+COPY (SELECT * FROM users WHERE country = 'USA') TO '/tmp/usa_users.csv' CSV;
+
+-- Import from CSV
+COPY users FROM '/tmp/users.csv' CSV HEADER;
+COPY users (username, email) FROM '/tmp/users.csv' CSV;
+
+-- psql meta-command (client-side COPY)
+\copy users TO 'users.csv' CSV HEADER
+\copy users FROM 'users.csv' CSV HEADER</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> LOAD DATA:</p>
+                        <pre data-lang="sql"><code>-- Import from CSV
+LOAD DATA INFILE '/tmp/users.csv'
+INTO TABLE users
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
+
+-- Import with column mapping
+LOAD DATA INFILE '/tmp/users.csv'
+INTO TABLE users
+FIELDS TERMINATED BY ','
+(username, email, @created)
+SET created_at = STR_TO_DATE(@created, '%Y-%m-%d');</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 7: ADVANCED QUERIES -->
+            <section id="advanced" class="section">
+                <div class="section-header">
+                    <span class="section-number">07</span>
+                    <h2 class="section-title">Advanced Queries</h2>
+                    <p class="section-description">Common Table Expressions (CTEs), window functions, subqueries, and set operations.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">Common Table Expressions (CTEs) <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Simple CTE
+WITH active_users AS (
+    SELECT * FROM users WHERE is_active = TRUE
+)
+SELECT * FROM active_users WHERE country = 'USA';
+
+-- Multiple CTEs
+WITH
+    active_users AS (
+        SELECT * FROM users WHERE is_active = TRUE
+    ),
+    recent_orders AS (
+        SELECT * FROM orders WHERE created_at > CURRENT_DATE - INTERVAL '30 days'
+    )
+SELECT u.username, COUNT(o.id) as order_count
+FROM active_users u
+LEFT JOIN recent_orders o ON u.id = o.user_id
+GROUP BY u.id, u.username;
+
+-- Recursive CTE (organizational hierarchy)
+WITH RECURSIVE employee_hierarchy AS (
+    -- Base case: top-level employees
+    SELECT id, name, manager_id, 1 as level
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    -- Recursive case: employees reporting to previous level
+    SELECT e.id, e.name, e.manager_id, eh.level + 1
+    FROM employees e
+    INNER JOIN employee_hierarchy eh ON e.manager_id = eh.id
+)
+SELECT * FROM employee_hierarchy ORDER BY level, name;</code></pre>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">CTE Support</div>
+                            <div class="alert-body">PostgreSQL has supported CTEs since version 8.4. MySQL added CTE support in version 8.0. Both support recursive CTEs for hierarchical queries.</div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Window Functions <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- ROW_NUMBER: unique sequential number
+SELECT
+    username,
+    email,
+    ROW_NUMBER() OVER (ORDER BY created_at) as row_num
+FROM users;
+
+-- RANK & DENSE_RANK: ranking with gaps / without gaps
+SELECT
+    username,
+    score,
+    RANK() OVER (ORDER BY score DESC) as rank,
+    DENSE_RANK() OVER (ORDER BY score DESC) as dense_rank
+FROM users;
+
+-- PARTITION BY: window per group
+SELECT
+    country,
+    username,
+    score,
+    RANK() OVER (PARTITION BY country ORDER BY score DESC) as country_rank
+FROM users;
+
+-- Running totals
+SELECT
+    date,
+    amount,
+    SUM(amount) OVER (ORDER BY date) as running_total
+FROM transactions;
+
+-- Moving average (last 7 rows)
+SELECT
+    date,
+    price,
+    AVG(price) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) as moving_avg_7
+FROM stock_prices;
+
+-- LAG & LEAD: access previous/next rows
+SELECT
+    date,
+    price,
+    LAG(price, 1) OVER (ORDER BY date) as prev_price,
+    LEAD(price, 1) OVER (ORDER BY date) as next_price,
+    price - LAG(price, 1) OVER (ORDER BY date) as price_change
+FROM stock_prices;
+
+-- NTILE: divide into buckets
+SELECT
+    username,
+    score,
+    NTILE(4) OVER (ORDER BY score DESC) as quartile
+FROM users;</code></pre>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">Window Function Support</div>
+                            <div class="alert-body">PostgreSQL has supported window functions since version 8.4. MySQL added window function support in version 8.0.</div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Subqueries <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Scalar subquery (returns single value)
+SELECT username, email
+FROM users
+WHERE id = (SELECT user_id FROM orders ORDER BY total DESC LIMIT 1);
+
+-- IN subquery
+SELECT * FROM users
+WHERE id IN (SELECT DISTINCT user_id FROM orders WHERE total > 1000);
+
+-- EXISTS subquery
+SELECT * FROM users u
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+
+-- NOT EXISTS
+SELECT * FROM users u
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+
+-- Correlated subquery
+SELECT
+    u.username,
+    (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) as order_count
+FROM users u;
+
+-- Subquery in FROM clause
+SELECT country, AVG(user_count) as avg_users_per_city
+FROM (
+    SELECT country, city, COUNT(*) as user_count
+    FROM users
+    GROUP BY country, city
+) AS city_counts
+GROUP BY country;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Set Operations</h3>
+
+                        <pre data-lang="sql"><code>-- UNION (remove duplicates) - Both databases
+SELECT username FROM users WHERE country = 'USA'
+UNION
+SELECT username FROM users WHERE country = 'Canada';
+
+-- UNION ALL (keep duplicates) - Both databases
+SELECT username FROM users WHERE country = 'USA'
+UNION ALL
+SELECT username FROM users WHERE country = 'Canada';</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> Set Operations:</p>
+                        <pre data-lang="sql"><code>-- INTERSECT (PostgreSQL only)
+SELECT username FROM users WHERE is_active = TRUE
+INTERSECT
+SELECT username FROM users WHERE country = 'USA';
+
+-- EXCEPT (PostgreSQL only)
+SELECT username FROM users
+EXCEPT
+SELECT username FROM banned_users;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> Alternatives:</p>
+                        <pre data-lang="sql"><code>-- INTERSECT alternative (MySQL)
+SELECT DISTINCT u1.username
+FROM users u1
+INNER JOIN users u2 ON u1.username = u2.username
+WHERE u1.is_active = TRUE AND u2.country = 'USA';
+
+-- EXCEPT alternative (MySQL)
+SELECT u1.username
+FROM users u1
+LEFT JOIN banned_users bu ON u1.username = bu.username
+WHERE bu.username IS NULL;</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 8: INDEXING -->
+            <section id="indexing" class="section">
+                <div class="section-header">
+                    <span class="section-number">08</span>
+                    <h2 class="section-title">Indexing</h2>
+                    <p class="section-description">Index types, creation strategies, management, and query optimization with EXPLAIN.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-postgres">PostgreSQL</span> Index Types</h3>
+
+                        <pre data-lang="sql"><code>-- B-tree index (default, most common)
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_name ON users(username);
+CREATE INDEX idx_orders_created ON orders(created_at DESC);
+
+-- Unique index
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+
+-- Multi-column index
+CREATE INDEX idx_users_country_city ON users(country, city);
+
+-- Partial index (index subset of rows)
+CREATE INDEX idx_active_users_email ON users(email) WHERE is_active = TRUE;
+CREATE INDEX idx_recent_orders ON orders(user_id)
+    WHERE created_at > '2023-01-01';
+
+-- Expression index
+CREATE INDEX idx_users_lower_email ON users(LOWER(email));
+CREATE INDEX idx_users_year ON users(EXTRACT(YEAR FROM created_at));
+
+-- GIN index (for arrays, JSONB, full-text search)
+CREATE INDEX idx_users_tags ON users USING GIN(tags);  -- tags is an array
+CREATE INDEX idx_products_data ON products USING GIN(data);  -- data is JSONB
+CREATE INDEX idx_documents_search ON documents USING GIN(to_tsvector('english', content));
+
+-- GiST index (for geometric data, full-text search)
+CREATE INDEX idx_locations_point ON locations USING GIST(coordinates);
+
+-- Hash index (equality comparisons only)
+CREATE INDEX idx_users_id_hash ON users USING HASH(id);
+
+-- BRIN index (block range index, for very large tables)
+CREATE INDEX idx_logs_created ON logs USING BRIN(created_at);
+
+-- Covering index (include non-key columns)
+CREATE INDEX idx_users_username_incl ON users(username) INCLUDE (email, created_at);
+
+-- Concurrent index creation (doesn't lock table)
+CREATE INDEX CONCURRENTLY idx_users_email ON users(email);
+
+-- Drop index
+DROP INDEX idx_users_email;
+DROP INDEX CONCURRENTLY idx_users_email;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-mysql">MySQL</span> Index Types</h3>
+
+                        <pre data-lang="sql"><code>-- B-tree index (default, most common)
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_name ON users(username);
+CREATE INDEX idx_orders_created ON orders(created_at DESC);
+
+-- Unique index
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+ALTER TABLE users ADD UNIQUE KEY idx_email (email);
+
+-- Multi-column index
+CREATE INDEX idx_users_country_city ON users(country, city);
+
+-- Prefix index (index first N characters)
+CREATE INDEX idx_users_email_prefix ON users(email(10));
+
+-- FULLTEXT index (for full-text search)
+CREATE FULLTEXT INDEX idx_products_description ON products(description);
+CREATE FULLTEXT INDEX idx_articles_content ON articles(title, content);
+
+-- Spatial index (for geometric data)
+CREATE SPATIAL INDEX idx_locations_point ON locations(coordinates);
+
+-- Descending index (MySQL 8.0+)
+CREATE INDEX idx_orders_created_desc ON orders(created_at DESC);
+
+-- Invisible index (MySQL 8.0+, index exists but not used)
+CREATE INDEX idx_users_phone ON users(phone) INVISIBLE;
+ALTER TABLE users ALTER INDEX idx_users_phone VISIBLE;
+
+-- Drop index
+DROP INDEX idx_users_email ON users;
+ALTER TABLE users DROP INDEX idx_users_email;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Index Management</h3>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>PostgreSQL</th>
+                                    <th>MySQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><pre style="margin: 0; border: none;"><code>-- List indexes
+\di  -- In psql
+SELECT * FROM pg_indexes
+WHERE tablename = 'users';
+
+-- Index size
+SELECT
+    indexname,
+    pg_size_pretty(pg_relation_size(indexname::regclass)) as size
+FROM pg_indexes
+WHERE tablename = 'users';
+
+-- Rebuild index
+REINDEX INDEX idx_users_email;
+REINDEX TABLE users;
+
+-- Check index usage
+SELECT
+    schemaname,
+    tablename,
+    indexname,
+    idx_scan,
+    idx_tup_read
+FROM pg_stat_user_indexes
+WHERE tablename = 'users';</code></pre></td>
+                                    <td><pre style="margin: 0; border: none;"><code>-- List indexes
+SHOW INDEXES FROM users;
+
+-- Index statistics
+SELECT
+    INDEX_NAME,
+    SEQ_IN_INDEX,
+    COLUMN_NAME,
+    CARDINALITY
+FROM INFORMATION_SCHEMA.STATISTICS
+WHERE TABLE_NAME = 'users';
+
+-- Analyze table (update index statistics)
+ANALYZE TABLE users;
+
+-- Optimize table (rebuild indexes)
+OPTIMIZE TABLE users;</code></pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">EXPLAIN & Query Optimization</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> EXPLAIN ANALYZE:</p>
+                        <pre data-lang="sql"><code>-- Basic EXPLAIN
+EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
+
+-- EXPLAIN ANALYZE (actually runs the query)
+EXPLAIN ANALYZE
+SELECT * FROM users WHERE email = 'test@example.com';
+
+-- EXPLAIN with more details
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+SELECT u.username, COUNT(o.id) as order_count
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.username;
+
+-- JSON output
+EXPLAIN (FORMAT JSON) SELECT * FROM users;</code></pre>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">Key things to look for in EXPLAIN</div>
+                            <div class="alert-body">
+                                <strong>Seq Scan</strong> (full table scan) - consider adding an index.
+                                <strong>Index Scan / Index Only Scan</strong> - good, using indexes efficiently.
+                                <strong>Rows estimate vs actual</strong> - large differences indicate stale statistics (run ANALYZE).
+                            </div>
+                        </div>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> EXPLAIN:</p>
+                        <pre data-lang="sql"><code>-- Basic EXPLAIN
+EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
+
+-- EXPLAIN ANALYZE (MySQL 8.0.18+, actually runs query)
+EXPLAIN ANALYZE
+SELECT * FROM users WHERE email = 'test@example.com';
+
+-- Extended EXPLAIN
+EXPLAIN FORMAT=JSON SELECT * FROM users WHERE email = 'test@example.com';</code></pre>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">Key columns in MySQL EXPLAIN output</div>
+                            <div class="alert-body">
+                                <strong>type:</strong> ALL (full scan) is worst; const/eq_ref/ref/range are good.
+                                <strong>possible_keys:</strong> indexes considered.
+                                <strong>key:</strong> index actually used (NULL means no index).
+                                <strong>rows:</strong> estimated rows to examine.
+                                <strong>Extra:</strong> additional info (Using filesort, Using temporary).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 9: JSON & FULL-TEXT SEARCH -->
+            <section id="json" class="section">
+                <div class="section-header">
+                    <span class="section-number">09</span>
+                    <h2 class="section-title">JSON & Full-Text</h2>
+                    <p class="section-description">JSON/JSONB operations and full-text search capabilities in both database systems.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-postgres">PostgreSQL</span> JSON/JSONB</h3>
+
+                        <pre data-lang="sql"><code>-- Create table with JSONB
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    data JSONB
+);
+
+-- Insert JSON data
+INSERT INTO products (name, data) VALUES
+    ('Widget', '{"price": 19.99, "tags": ["electronics", "gadget"], "stock": 100}'),
+    ('Gadget', '{"price": 29.99, "tags": ["electronics"], "stock": 50}');
+
+-- Query JSON fields
+SELECT * FROM products WHERE data->>'price' = '19.99';
+SELECT * FROM products WHERE (data->>'stock')::int > 50;
+
+-- JSON operators
+-- -> : Get JSON object field (returns JSON)
+-- ->> : Get JSON object field as text
+-- #> : Get JSON object at path (returns JSON)
+-- #>> : Get JSON object at path as text
+-- @> : Contains (left JSON contains right)
+-- ? : Key exists
+
+SELECT name, data->'price' FROM products;  -- Returns JSON
+SELECT name, data->>'price' FROM products;  -- Returns text
+SELECT name, data#>'{tags,0}' FROM products;  -- First tag
+
+-- Check if key exists
+SELECT * FROM products WHERE data ? 'price';
+SELECT * FROM products WHERE data ?& ARRAY['price', 'stock'];
+
+-- Contains queries
+SELECT * FROM products WHERE data @> '{"tags": ["electronics"]}';
+SELECT * FROM products WHERE data->'tags' @> '["gadget"]';
+
+-- Update JSON
+UPDATE products
+SET data = data || '{"featured": true}'
+WHERE name = 'Widget';
+
+UPDATE products
+SET data = jsonb_set(data, '{price}', '24.99')
+WHERE name = 'Widget';
+
+-- Delete JSON key
+UPDATE products SET data = data - 'featured';
+
+-- Create index for JSON queries
+CREATE INDEX idx_products_data ON products USING GIN(data);
+CREATE INDEX idx_products_price ON products ((data->>'price'));</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-postgres">PostgreSQL</span> Full-Text Search</h3>
+
+                        <pre data-lang="sql"><code>-- Create table with text search
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    title TEXT,
+    content TEXT,
+    search_vector TSVECTOR
+);
+
+-- Basic full-text search
+SELECT * FROM documents
+WHERE to_tsvector('english', content) @@ to_tsquery('english', 'postgresql & database');
+
+-- Create tsvector column and index
+UPDATE documents
+SET search_vector = to_tsvector('english', title || ' ' || content);
+
+CREATE INDEX idx_documents_search ON documents USING GIN(search_vector);
+
+-- Query with tsvector column
+SELECT * FROM documents
+WHERE search_vector @@ to_tsquery('english', 'postgresql & database');
+
+-- Ranking results
+SELECT
+    title,
+    ts_rank(search_vector, query) as rank
+FROM documents,
+     to_tsquery('english', 'postgresql & database') query
+WHERE search_vector @@ query
+ORDER BY rank DESC;
+
+-- Prefix search
+SELECT * FROM documents
+WHERE search_vector @@ to_tsquery('english', 'postgre:*');
+
+-- Auto-update search_vector with trigger
+CREATE FUNCTION documents_search_trigger() RETURNS trigger AS $$
+BEGIN
+    NEW.search_vector := to_tsvector('english', NEW.title || ' ' || NEW.content);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tsvector_update BEFORE INSERT OR UPDATE
+ON documents FOR EACH ROW EXECUTE FUNCTION documents_search_trigger();</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-mysql">MySQL</span> JSON</h3>
+
+                        <pre data-lang="sql"><code>-- Create table with JSON
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    data JSON
+);
+
+-- Insert JSON data
+INSERT INTO products (name, data) VALUES
+    ('Widget', '{"price": 19.99, "tags": ["electronics", "gadget"], "stock": 100}'),
+    ('Gadget', '{"price": 29.99, "tags": ["electronics"], "stock": 50}');
+
+-- Query JSON fields
+SELECT * FROM products WHERE JSON_EXTRACT(data, '$.price') = 19.99;
+SELECT * FROM products WHERE data->>'$.price' = '19.99';  -- MySQL 5.7+
+SELECT * FROM products WHERE JSON_UNQUOTE(data->'$.stock') > 50;
+
+-- JSON operators (MySQL 5.7+)
+-- -> : Get JSON value (returns JSON with quotes)
+-- ->> : Get JSON value and unquote
+
+SELECT name, data->'$.price' FROM products;
+SELECT name, data->>'$.price' FROM products;
+
+-- JSON functions
+SELECT JSON_KEYS(data) FROM products;
+SELECT JSON_LENGTH(data->'$.tags') FROM products;
+SELECT JSON_TYPE(data->'$.price') FROM products;
+
+-- JSON array operations
+SELECT * FROM products WHERE JSON_CONTAINS(data->'$.tags', '"electronics"');
+
+-- Update JSON
+UPDATE products
+SET data = JSON_SET(data, '$.featured', TRUE)
+WHERE name = 'Widget';
+
+UPDATE products
+SET data = JSON_INSERT(data, '$.discount', 10)
+WHERE name = 'Widget';
+
+UPDATE products
+SET data = JSON_REPLACE(data, '$.price', 24.99)
+WHERE name = 'Widget';
+
+-- Remove JSON key
+UPDATE products
+SET data = JSON_REMOVE(data, '$.featured')
+WHERE name = 'Widget';
+
+-- Create index (functional index on JSON path, MySQL 8.0.13+)
+CREATE INDEX idx_products_price ON products ((CAST(data->>'$.price' AS DECIMAL(10,2))));
+
+-- Virtual generated column (alternative for indexing)
+ALTER TABLE products ADD COLUMN price DECIMAL(10,2) AS (data->>'$.price');
+CREATE INDEX idx_products_price ON products(price);</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-mysql">MySQL</span> Full-Text Search</h3>
+
+                        <pre data-lang="sql"><code>-- Create FULLTEXT index
+CREATE TABLE articles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200),
+    content TEXT,
+    FULLTEXT KEY idx_fulltext (title, content)
+) ENGINE=InnoDB;
+
+-- Natural language search
+SELECT * FROM articles
+WHERE MATCH(title, content) AGAINST('MySQL database');
+
+-- Boolean search
+SELECT * FROM articles
+WHERE MATCH(title, content) AGAINST('+MySQL -Oracle' IN BOOLEAN MODE);
+
+-- Boolean operators:
+-- + : Must be present
+-- - : Must not be present
+-- * : Wildcard
+-- " " : Phrase
+
+-- Wildcard search
+SELECT * FROM articles
+WHERE MATCH(title, content) AGAINST('data*' IN BOOLEAN MODE);
+
+-- Phrase search
+SELECT * FROM articles
+WHERE MATCH(title, content) AGAINST('"MySQL database"' IN BOOLEAN MODE);
+
+-- Ranking results
+SELECT
+    title,
+    MATCH(title, content) AGAINST('MySQL database') as relevance
+FROM articles
+WHERE MATCH(title, content) AGAINST('MySQL database')
+ORDER BY relevance DESC;</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 10: ADMINISTRATION -->
+            <section id="admin" class="section">
+                <div class="section-header">
+                    <span class="section-number">10</span>
+                    <h2 class="section-title">Administration</h2>
+                    <p class="section-description">Database maintenance, monitoring, replication, and performance tuning.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-postgres">PostgreSQL</span> Administration</h3>
+
+                        <pre data-lang="sql"><code>-- VACUUM (reclaim space from dead tuples)
+VACUUM;                      -- All tables
+VACUUM users;                -- Specific table
+VACUUM VERBOSE users;        -- With progress
+VACUUM FULL users;           -- Aggressive, locks table, rewrites entire table
+VACUUM ANALYZE users;        -- Vacuum + update statistics
+
+-- ANALYZE (update statistics for query planner)
+ANALYZE;                     -- All tables
+ANALYZE users;               -- Specific table
+
+-- Active connections
+SELECT
+    pid,
+    usename,
+    application_name,
+    client_addr,
+    state,
+    query,
+    query_start
+FROM pg_stat_activity
+WHERE state = 'active';
+
+-- Kill connection
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid = 12345;
+
+-- Database size
+SELECT pg_size_pretty(pg_database_size('mydb'));
+
+-- Table sizes
+SELECT
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+-- Cache hit ratio
+SELECT
+    sum(blks_hit) / (sum(blks_hit) + sum(blks_read)) as cache_hit_ratio
+FROM pg_stat_database;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title"><span class="badge badge-mysql">MySQL</span> Administration</h3>
+
+                        <pre data-lang="sql"><code>-- SHOW STATUS (server statistics)
+SHOW STATUS;
+SHOW STATUS LIKE 'Threads%';
+SHOW STATUS LIKE 'Innodb_buffer_pool%';
+
+-- Key status variables
+SHOW STATUS LIKE 'Connections';              -- Total connection attempts
+SHOW STATUS LIKE 'Threads_connected';        -- Current connections
+SHOW STATUS LIKE 'Slow_queries';             -- Slow query count
+SHOW STATUS LIKE 'Uptime';                   -- Server uptime in seconds
+
+-- SHOW VARIABLES (server configuration)
+SHOW VARIABLES;
+SHOW VARIABLES LIKE 'max_connections';
+SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
+
+-- SHOW PROCESSLIST (active connections)
+SHOW FULL PROCESSLIST;
+
+-- Kill connection
+KILL 12345;  -- Kill query
+KILL CONNECTION 12345;  -- Kill connection
+
+-- Database size
+SELECT
+    table_schema as 'Database',
+    ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as 'Size (MB)'
+FROM information_schema.TABLES
+GROUP BY table_schema;
+
+-- Table sizes
+SELECT
+    table_name,
+    ROUND(((data_length + index_length) / 1024 / 1024), 2) as 'Size (MB)',
+    table_rows
+FROM information_schema.TABLES
+WHERE table_schema = 'mydb'
+ORDER BY (data_length + index_length) DESC;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Performance Diagnostics</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> Long-running queries:</p>
+                        <pre data-lang="sql"><code>SELECT
+    pid,
+    now() - query_start as duration,
+    state,
+    query
+FROM pg_stat_activity
+WHERE state != 'idle'
+AND query_start < now() - interval '5 minutes'
+ORDER BY duration DESC;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> Long-running queries:</p>
+                        <pre data-lang="sql"><code>SELECT
+    ID,
+    USER,
+    HOST,
+    DB,
+    COMMAND,
+    TIME,
+    STATE,
+    INFO
+FROM information_schema.PROCESSLIST
+WHERE COMMAND != 'Sleep'
+AND TIME > 300
+ORDER BY TIME DESC;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Replication</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> Streaming Replication:</p>
+                        <pre data-lang="sql"><code>-- Create replication user
+CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD 'secret';
+
+-- Check replication status (on primary)
+SELECT * FROM pg_stat_replication;
+
+-- Check replication lag
+SELECT
+    client_addr,
+    state,
+    pg_wal_lsn_diff(pg_current_wal_lsn(), sent_lsn) as send_lag,
+    pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) as replay_lag
+FROM pg_stat_replication;</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> Replication:</p>
+                        <pre data-lang="sql"><code>-- Create replication user (on master)
+CREATE USER 'replicator'@'%' IDENTIFIED BY 'secret123';
+GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%';
+
+-- Get master status
+SHOW MASTER STATUS;
+
+-- Start replication (on slave)
+START SLAVE;
+
+-- Check replication status
+SHOW SLAVE STATUS\G
+
+-- Stop replication
+STOP SLAVE;</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 11: PRO TIPS -->
+            <section id="tips" class="section">
+                <div class="section-header">
+                    <span class="section-number">11</span>
+                    <h2 class="section-title">Pro Tips</h2>
+                    <p class="section-description">Best practices, performance tuning, common pitfalls, and enhanced tooling.</p>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3 class="subsection-title">Performance Tuning</h3>
+
+                        <p style="margin: var(--space-4) 0; font-weight: 400;"><span class="badge badge-postgres">PostgreSQL</span> Configuration Tips:</p>
+                        <pre data-lang="bash"><code># postgresql.conf recommendations
+shared_buffers = 25% of RAM (up to 40%)
+effective_cache_size = 50-75% of RAM
+work_mem = Total RAM / max_connections / 2-4
+maintenance_work_mem = RAM / 16
+max_connections = Based on application needs (use pgbouncer for pooling)
+random_page_cost = 1.1 for SSD, 4.0 for HDD</code></pre>
+
+                        <p style="margin: var(--space-6) 0 var(--space-4) 0; font-weight: 400;"><span class="badge badge-mysql">MySQL</span> Configuration Tips:</p>
+                        <pre data-lang="bash"><code># my.cnf recommendations
+innodb_buffer_pool_size = 70-80% of RAM
+innodb_log_file_size = 256M - 2G
+max_connections = Based on application needs
+innodb_flush_log_at_trx_commit = 2 (for better performance, less durability)
+query_cache_type = OFF (deprecated in MySQL 5.7.20, removed in 8.0)</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Common Pitfalls</h3>
+
+                        <div class="alert alert-caution">
+                            <div class="alert-title">Avoid These Common Mistakes</div>
+                            <div class="alert-body">
+                                <ol style="margin: var(--space-3) 0 0 var(--space-6);">
+                                    <li><strong>N+1 Query Problem:</strong> Use JOINs or batch loading instead of querying in loops</li>
+                                    <li><strong>Missing Indexes:</strong> Add indexes on foreign keys and WHERE/ORDER BY columns</li>
+                                    <li><strong>Over-indexing:</strong> Too many indexes slow down writes</li>
+                                    <li><strong>SELECT *:</strong> Only select columns you need</li>
+                                    <li><strong>No Connection Pooling:</strong> Use pgbouncer (PG) or MySQL connection pooling</li>
+                                    <li><strong>Not Using EXPLAIN:</strong> Always analyze slow queries</li>
+                                    <li><strong>Ignoring Statistics:</strong> Run ANALYZE/OPTIMIZE regularly</li>
+                                    <li><strong>No Backup Strategy:</strong> Automate regular backups and test restores</li>
+                                    <li><strong>Storing JSON as TEXT:</strong> Use native JSON types</li>
+                                    <li><strong>Not Monitoring:</strong> Set up monitoring for connections, queries, locks, disk space</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Enhanced CLI Tools</h3>
+
+                        <pre data-lang="bash"><code># pgcli (PostgreSQL) - Enhanced CLI with auto-completion
+pip install pgcli
+pgcli -h localhost -U username -d dbname
+
+# mycli (MySQL) - Enhanced CLI with auto-completion
+pip install mycli
+mycli -h localhost -u username -D dbname
+
+# Features for both:
+# - Auto-completion (tables, columns, keywords)
+# - Syntax highlighting
+# - Multi-line editing
+# - Query history
+# - Pretty formatting</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Connection Pooling with PgBouncer</h3>
+
+                        <pre data-lang="bash"><code># Install (Ubuntu/Debian)
+sudo apt-get install pgbouncer
+
+# Configure /etc/pgbouncer/pgbouncer.ini
+[databases]
+mydb = host=localhost port=5432 dbname=mydb
+
+[pgbouncer]
+listen_port = 6432
+listen_addr = *
+auth_type = md5
+auth_file = /etc/pgbouncer/userlist.txt
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 20
+
+# Connect through PgBouncer
+psql -h localhost -p 6432 -U username -d mydb
+
+# Pool modes:
+# - session: Connection held until client disconnects
+# - transaction: Connection held during transaction
+# - statement: Connection held during statement (not recommended)</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Transaction Management <span class="badge badge-both">Both</span></h3>
+
+                        <pre data-lang="sql"><code>-- Basic transaction (both databases)
+BEGIN;
+    UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+    UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;
+
+-- Rollback on error
+BEGIN;
+    UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+    -- Error occurs
+ROLLBACK;
+
+-- Savepoints
+BEGIN;
+    UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+    SAVEPOINT my_savepoint;
+    UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+    ROLLBACK TO my_savepoint;
+COMMIT;
+
+-- Transaction isolation levels (PostgreSQL)
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;  -- Default
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- Transaction isolation levels (MySQL)
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;  -- Default
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;</code></pre>
+                    </div>
+
+                    <div class="subsection">
+                        <h3 class="subsection-title">Migration Tools</h3>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">Database Migration Options</div>
+                            <div class="alert-body">
+                                <p style="margin-bottom: var(--space-3);"><strong>MySQL to PostgreSQL:</strong></p>
+                                <ul style="margin: 0 0 var(--space-4) var(--space-6);">
+                                    <li><strong>pgLoader:</strong> Most popular, handles schema and data conversion automatically</li>
+                                    <li><strong>pg_chameleon:</strong> MySQL to PostgreSQL replication</li>
+                                    <li><strong>Airbyte:</strong> Data integration platform with 350+ connectors</li>
+                                </ul>
+                                <pre data-lang="bash" style="margin-bottom: var(--space-4);"><code>pgloader mysql://user:pass@localhost/mydb postgresql://user:pass@localhost/mydb</code></pre>
+                                <p style="margin-bottom: var(--space-3);"><strong>PostgreSQL to MySQL:</strong></p>
+                                <ul style="margin: 0 0 0 var(--space-6);">
+                                    <li><strong>pgLoader:</strong> Can also migrate PG to MySQL</li>
+                                    <li><strong>DBConvert:</strong> GUI tool for conversion</li>
+                                    <li><strong>Estuary:</strong> Real-time replication</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TITLE BLOCK (Bottom) -->
+            <div class="title-block">
+                <div class="title-block-main">
+                    <div class="title-block-row">
+                        <span class="title-block-label">Project</span>
+                        <span class="title-block-value">PostgreSQL & MySQL Reference</span>
+                    </div>
+                    <div class="title-block-row">
+                        <span class="title-block-label">Type</span>
+                        <span class="title-block-value">RDBMS Tech Guide</span>
+                    </div>
+                    <div class="title-block-row">
+                        <span class="title-block-label">Coverage</span>
+                        <span class="title-block-value">CLI, SQL, Admin, Optimization</span>
+                    </div>
+                </div>
+                <div class="title-block-info">
+                    <div class="title-block-row">
+                        <span class="title-block-label">Drawing</span>
+                        <span class="title-block-value">SQL-001</span>
+                    </div>
+                    <div class="title-block-row">
+                        <span class="title-block-label">Revision</span>
+                        <span class="title-block-value">02.09.26</span>
+                    </div>
+                    <div class="title-block-row">
+                        <span class="title-block-label">Scale</span>
+                        <span class="title-block-value">1:1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <footer class="site-footer">
+                Built with the <a href="../styles/architectural.html">Architectural</a> design system
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

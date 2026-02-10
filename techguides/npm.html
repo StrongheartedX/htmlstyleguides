@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>npm / Yarn / pnpm // Package Manager Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           MEMPHIS DESIGN SYSTEM
+           npm/yarn/pnpm Tech Guide
+           ============================================ */
+
+        :root {
+            --font-display: 'Rubik', sans-serif;
+            --font-body: 'Space Grotesk', sans-serif;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            --hot-pink: #ff3399;
+            --electric-blue: #00ccff;
+            --sunshine-yellow: #ffee00;
+            --teal: #00b894;
+            --coral-red: #ff6b6b;
+            --purple: #a855f7;
+            --orange: #ff9500;
+            --black: #1a1a2e;
+            --cream: #fff8e7;
+            --terrazzo-bg: #f5f0e8;
+
+            --shadow-hard: 6px 6px 0 var(--black);
+            --shadow-pink: 6px 6px 0 var(--hot-pink);
+            --shadow-blue: 6px 6px 0 var(--electric-blue);
+            --shadow-teal: 6px 6px 0 var(--teal);
+
+            --border-thick: 4px solid var(--black);
+            --border-medium: 3px solid var(--black);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--black);
+            background: var(--terrazzo-bg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Terrazzo Pattern Background */
+        .terrazzo-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+            background-image:
+                radial-gradient(circle at 15% 25%, var(--hot-pink) 3px, transparent 3px),
+                radial-gradient(circle at 85% 15%, var(--electric-blue) 4px, transparent 4px),
+                radial-gradient(circle at 45% 65%, var(--sunshine-yellow) 2px, transparent 2px),
+                radial-gradient(circle at 75% 45%, var(--teal) 3px, transparent 3px),
+                radial-gradient(circle at 25% 85%, var(--coral-red) 2px, transparent 2px),
+                radial-gradient(circle at 55% 35%, var(--purple) 4px, transparent 4px),
+                radial-gradient(circle at 35% 15%, var(--orange) 2px, transparent 2px),
+                radial-gradient(circle at 95% 55%, var(--hot-pink) 3px, transparent 3px),
+                radial-gradient(circle at 5% 75%, var(--electric-blue) 2px, transparent 2px),
+                radial-gradient(ellipse at 20% 45%, var(--sunshine-yellow) 6px 2px, transparent 6px 2px),
+                radial-gradient(ellipse at 80% 65%, var(--coral-red) 4px 8px, transparent 4px 8px),
+                radial-gradient(ellipse at 60% 85%, var(--purple) 8px 3px, transparent 8px 3px);
+            background-size: 200px 200px;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-6) var(--space-5);
+        }
+
+        /* Back Link */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--black);
+            text-decoration: none;
+            margin-bottom: var(--space-6);
+            padding: var(--space-2) var(--space-4);
+            background: var(--sunshine-yellow);
+            border: var(--border-medium);
+            box-shadow: 4px 4px 0 var(--black);
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: var(--space-8) var(--space-5);
+            margin-bottom: var(--space-8);
+            position: relative;
+            background: var(--cream);
+            border: var(--border-thick);
+            box-shadow: var(--shadow-hard);
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: var(--space-4);
+        }
+
+        .header h1 .word1 { color: var(--hot-pink); }
+        .header h1 .word2 { color: var(--electric-blue); }
+        .header h1 .word3 { color: var(--teal); }
+
+        .header p {
+            font-size: 1.25rem;
+            max-width: 50ch;
+            margin: 0 auto;
+            color: var(--black);
+            opacity: 0.9;
+        }
+
+        /* Geometric Decorations */
+        .geo-shape {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: var(--space-4);
+            left: var(--space-5);
+            width: 30px;
+            height: 30px;
+            background: var(--coral-red);
+            border: 3px solid var(--black);
+            transform: rotate(45deg);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: var(--space-4);
+            right: var(--space-5);
+            width: 40px;
+            height: 40px;
+            background: var(--purple);
+            border: 3px solid var(--black);
+            border-radius: 50%;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: var(--space-9);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            flex-wrap: wrap;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 900;
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--hot-pink);
+            color: var(--cream);
+            border: var(--border-medium);
+            transform: rotate(-5deg);
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 4vw, 2.25rem);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .section-line {
+            flex: 1;
+            min-width: 50px;
+            height: 6px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--black) 0,
+                var(--black) 15px,
+                transparent 15px,
+                transparent 25px
+            );
+        }
+
+        /* Content Card */
+        .content-card {
+            background: var(--cream);
+            padding: var(--space-6);
+            border: var(--border-thick);
+            box-shadow: var(--shadow-hard);
+            margin-bottom: var(--space-6);
+        }
+
+        .content-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--electric-blue);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 3px solid var(--black);
+        }
+
+        .content-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-top: var(--space-5);
+            margin-bottom: var(--space-3);
+        }
+
+        .content-card p {
+            margin-bottom: var(--space-4);
+            line-height: 1.7;
+        }
+
+        .content-card ul {
+            margin-left: var(--space-5);
+            margin-bottom: var(--space-4);
+        }
+
+        .content-card li {
+            margin-bottom: var(--space-2);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--black);
+            color: var(--sunshine-yellow);
+            padding: var(--space-5);
+            border: var(--border-medium);
+            box-shadow: var(--shadow-pink);
+            overflow-x: auto;
+            margin-bottom: var(--space-4);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        code {
+            background: var(--electric-blue);
+            color: var(--black);
+            padding: 2px 6px;
+            border: 2px solid var(--black);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre code {
+            background: transparent;
+            color: var(--sunshine-yellow);
+            padding: 0;
+            border: none;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: var(--space-6);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--cream);
+            border: var(--border-thick);
+            box-shadow: var(--shadow-hard);
+        }
+
+        thead {
+            background: var(--hot-pink);
+            color: var(--cream);
+        }
+
+        th {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            border: var(--border-medium);
+        }
+
+        td {
+            padding: var(--space-3) var(--space-4);
+            border: 2px solid var(--black);
+        }
+
+        tbody tr:nth-child(odd) {
+            background: var(--terrazzo-bg);
+        }
+
+        tbody tr:hover {
+            background: var(--sunshine-yellow);
+        }
+
+        td code {
+            background: var(--black);
+            color: var(--sunshine-yellow);
+            border: 2px solid var(--black);
+        }
+
+        /* Highlight Boxes */
+        .highlight-box {
+            background: var(--electric-blue);
+            padding: var(--space-5);
+            border: var(--border-thick);
+            box-shadow: var(--shadow-pink);
+            margin-bottom: var(--space-6);
+        }
+
+        .highlight-box.warning {
+            background: var(--sunshine-yellow);
+            box-shadow: var(--shadow-hard);
+        }
+
+        .highlight-box.success {
+            background: var(--teal);
+            color: var(--cream);
+            box-shadow: var(--shadow-hard);
+        }
+
+        .highlight-box.info {
+            background: var(--purple);
+            color: var(--cream);
+            box-shadow: var(--shadow-blue);
+        }
+
+        .highlight-box strong {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: var(--space-1) var(--space-3);
+            border: 2px solid var(--black);
+            margin: 0 var(--space-2) var(--space-2) 0;
+        }
+
+        .badge-npm {
+            background: var(--coral-red);
+            color: var(--cream);
+        }
+
+        .badge-yarn {
+            background: var(--electric-blue);
+            color: var(--black);
+        }
+
+        .badge-pnpm {
+            background: var(--sunshine-yellow);
+            color: var(--black);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-7);
+            margin-top: var(--space-9);
+            background: var(--cream);
+            border: var(--border-thick);
+            box-shadow: var(--shadow-hard);
+        }
+
+        .footer p {
+            font-size: 1rem;
+            margin-bottom: var(--space-3);
+        }
+
+        .footer a {
+            color: var(--hot-pink);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid var(--hot-pink);
+        }
+
+        .footer a:hover {
+            color: var(--electric-blue);
+            border-bottom-color: var(--electric-blue);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-6) var(--space-4);
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .section-line {
+                width: 100%;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: var(--space-2) var(--space-3);
+            }
+
+            pre {
+                font-size: 0.8rem;
+                padding: var(--space-4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terrazzo-bg"></div>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← Tech Guides</a>
+
+        <header class="header">
+            <h1>
+                <span class="word1">npm</span> / <span class="word2">Yarn</span> / <span class="word3">pnpm</span>
+            </h1>
+            <p>Complete reference guide for JavaScript package managers</p>
+        </header>
+
+        <!-- Section 1: Quick Reference -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">1</div>
+                <h2 class="section-title">Quick Reference</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Essential Commands Side-by-Side</h3>
+                <p>The most common package manager operations across npm, Yarn, and pnpm.</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th><span class="badge badge-npm">npm</span></th>
+                                <th><span class="badge badge-yarn">yarn</span></th>
+                                <th><span class="badge badge-pnpm">pnpm</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Install all dependencies</strong></td>
+                                <td><code>npm install</code></td>
+                                <td><code>yarn install</code></td>
+                                <td><code>pnpm install</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Install package</strong></td>
+                                <td><code>npm install &lt;pkg&gt;</code></td>
+                                <td><code>yarn add &lt;pkg&gt;</code></td>
+                                <td><code>pnpm add &lt;pkg&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Install dev dependency</strong></td>
+                                <td><code>npm install -D &lt;pkg&gt;</code></td>
+                                <td><code>yarn add -D &lt;pkg&gt;</code></td>
+                                <td><code>pnpm add -D &lt;pkg&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Install globally</strong></td>
+                                <td><code>npm install -g &lt;pkg&gt;</code></td>
+                                <td><code>yarn global add &lt;pkg&gt;</code></td>
+                                <td><code>pnpm add -g &lt;pkg&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Remove package</strong></td>
+                                <td><code>npm uninstall &lt;pkg&gt;</code></td>
+                                <td><code>yarn remove &lt;pkg&gt;</code></td>
+                                <td><code>pnpm remove &lt;pkg&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Update packages</strong></td>
+                                <td><code>npm update</code></td>
+                                <td><code>yarn upgrade</code></td>
+                                <td><code>pnpm update</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Update interactive</strong></td>
+                                <td><code>npx npm-check-updates -u</code></td>
+                                <td><code>yarn upgrade-interactive</code></td>
+                                <td><code>pnpm update -i</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>List packages</strong></td>
+                                <td><code>npm list</code></td>
+                                <td><code>yarn list</code></td>
+                                <td><code>pnpm list</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Check outdated</strong></td>
+                                <td><code>npm outdated</code></td>
+                                <td><code>yarn outdated</code></td>
+                                <td><code>pnpm outdated</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Run script</strong></td>
+                                <td><code>npm run &lt;script&gt;</code></td>
+                                <td><code>yarn &lt;script&gt;</code></td>
+                                <td><code>pnpm &lt;script&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Execute package</strong></td>
+                                <td><code>npx &lt;pkg&gt;</code></td>
+                                <td><code>yarn dlx &lt;pkg&gt;</code></td>
+                                <td><code>pnpm dlx &lt;pkg&gt;</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Security audit</strong></td>
+                                <td><code>npm audit</code></td>
+                                <td><code>yarn audit</code></td>
+                                <td><code>pnpm audit</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Clean cache</strong></td>
+                                <td><code>npm cache clean --force</code></td>
+                                <td><code>yarn cache clean</code></td>
+                                <td><code>pnpm store prune</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Link local package</strong></td>
+                                <td><code>npm link</code></td>
+                                <td><code>yarn link</code></td>
+                                <td><code>pnpm link</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Initialize project</strong></td>
+                                <td><code>npm init</code></td>
+                                <td><code>yarn init</code></td>
+                                <td><code>pnpm init</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>CI install</strong></td>
+                                <td><code>npm ci</code></td>
+                                <td><code>yarn install --frozen-lockfile</code></td>
+                                <td><code>pnpm install --frozen-lockfile</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Installation & Setup -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">2</div>
+                <h2 class="section-title">Installation &amp; Setup</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Installing npm</h3>
+                <p>npm comes bundled with Node.js. Install Node.js from <a href="https://nodejs.org" target="_blank">nodejs.org</a>.</p>
+
+<pre><code># Check npm version
+npm --version
+
+# Update npm to latest version
+npm install -g npm@latest</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Installing Yarn</h3>
+
+                <h4>Yarn Classic (v1)</h4>
+<pre><code>npm install -g yarn
+
+# Verify installation
+yarn --version</code></pre>
+
+                <h4>Yarn Berry (v2+)</h4>
+<pre><code># Enable Corepack (bundled with Node.js 14.19+)
+corepack enable
+
+# Set version for project
+yarn set version stable</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Installing pnpm</h3>
+
+<pre><code># Via npm
+npm install -g pnpm
+
+# Via standalone script (recommended)
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+# Via Corepack
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# Verify installation
+pnpm --version</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Corepack - Package Manager Manager</h3>
+                <p>Corepack is a zero-runtime-dependency Node.js script that acts as a bridge between Node.js projects and package managers. It's distributed with Node.js from version 14.19.0+.</p>
+
+                <h4>Enable Corepack</h4>
+<pre><code>corepack enable</code></pre>
+
+                <h4>Configure package manager in package.json</h4>
+<pre><code>{
+  "packageManager": "pnpm@9.1.4"
+}</code></pre>
+
+                <p>This ensures everyone on your team uses the exact same package manager version without manual synchronization.</p>
+            </div>
+
+            <div class="content-card">
+                <h3>Version Management</h3>
+
+                <h4>npm</h4>
+<pre><code>npm install -g npm@8.19.0    # Install specific version
+npm install -g npm@latest    # Latest stable
+npm view npm versions        # List all versions</code></pre>
+
+                <h4>Yarn</h4>
+<pre><code>yarn set version 3.6.0       # Set specific version
+yarn set version stable      # Latest stable
+yarn set version berry       # Latest v2+</code></pre>
+
+                <h4>pnpm</h4>
+<pre><code>pnpm env use --global 18     # Use Node.js 18
+pnpm env use --global lts    # Use LTS version
+pnpm env list               # List installed versions</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 3: Package Management -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">3</div>
+                <h2 class="section-title">Package Management</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Installing Packages</h3>
+
+                <h4>Install all dependencies</h4>
+<pre><code>npm install              # npm
+yarn install             # yarn
+pnpm install            # pnpm
+
+# Alternative short forms
+npm i
+yarn
+pnpm i</code></pre>
+
+                <h4>Install specific package</h4>
+<pre><code>npm install react react-dom
+yarn add react react-dom
+pnpm add react react-dom
+
+# With version specifiers
+npm install lodash@4.17.21
+yarn add lodash@4.17.21
+pnpm add lodash@4.17.21
+
+# Latest version
+npm install lodash@latest
+yarn add lodash@latest
+pnpm add lodash@latest</code></pre>
+
+                <h4>Install as dev dependency</h4>
+<pre><code>npm install -D eslint prettier
+yarn add -D eslint prettier
+pnpm add -D eslint prettier
+
+# Long form
+npm install --save-dev eslint</code></pre>
+
+                <h4>Install globally</h4>
+<pre><code>npm install -g typescript
+yarn global add typescript
+pnpm add -g typescript
+
+# List global packages
+npm list -g --depth=0
+yarn global list
+pnpm list -g</code></pre>
+
+                <h4>Install from different sources</h4>
+<pre><code># GitHub repository
+npm install user/repo
+pnpm add user/repo
+
+# Git URL
+npm install git+https://github.com/user/repo.git
+pnpm add git+https://github.com/user/repo.git
+
+# Local file path
+npm install file:../local-package
+pnpm add file:../local-package
+
+# Tarball URL
+npm install https://example.com/package.tgz</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Removing Packages</h3>
+
+<pre><code>npm uninstall lodash
+yarn remove lodash
+pnpm remove lodash
+
+# Remove global package
+npm uninstall -g typescript
+yarn global remove typescript
+pnpm remove -g typescript
+
+# Remove and update lock file
+npm uninstall --package-lock-only lodash</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Updating Packages</h3>
+
+                <h4>Update within semver range</h4>
+<pre><code>npm update                    # Update all packages
+yarn upgrade                 # Update all packages
+pnpm update                  # Update all packages
+
+# Update specific package
+npm update react
+yarn upgrade react
+pnpm update react</code></pre>
+
+                <h4>Update to latest (breaking semver)</h4>
+<pre><code>npm install react@latest
+yarn upgrade react@latest
+pnpm update react@latest
+
+# Interactive update (choose which to update)
+yarn upgrade-interactive
+pnpm update -i
+
+# Using npm-check-updates
+npx npm-check-updates -u     # Update package.json
+npm install                  # Install updated versions</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Listing Packages</h3>
+
+<pre><code># List installed packages
+npm list
+yarn list
+pnpm list
+
+# List top-level only
+npm list --depth=0
+yarn list --depth=0
+pnpm list --depth=0
+
+# List specific package
+npm list react
+pnpm list react
+
+# List in JSON format
+npm list --json
+pnpm list --json</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Checking Outdated Packages</h3>
+
+<pre><code>npm outdated
+yarn outdated
+pnpm outdated</code></pre>
+
+                <p>Shows table with:</p>
+                <ul>
+                    <li>Package name</li>
+                    <li>Current version</li>
+                    <li>Wanted version (max in semver range)</li>
+                    <li>Latest version (most recent)</li>
+                    <li>Location in dependency tree</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <h3>Security Audit</h3>
+
+                <h4>npm</h4>
+<pre><code>npm audit                    # View vulnerabilities
+npm audit --json            # JSON output
+npm audit fix               # Auto-fix compatible updates
+npm audit fix --force       # Force major version updates
+npm audit signatures        # Verify package signatures</code></pre>
+
+                <h4>Yarn</h4>
+<pre><code>yarn audit                   # View vulnerabilities
+yarn audit --json
+yarn npm audit              # Yarn Berry</code></pre>
+
+                <h4>pnpm</h4>
+<pre><code>pnpm audit                   # View vulnerabilities
+pnpm audit --json
+pnpm audit --fix            # Auto-fix vulnerabilities</code></pre>
+
+                <div class="highlight-box warning">
+                    <strong>Important:</strong> <code>npm audit fix</code> only updates packages within your declared semver ranges. For major version upgrades, use <code>--force</code> (use with caution).
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Package Funding Information</h3>
+
+<pre><code>npm fund                     # Show funding info for all packages
+npm fund &lt;package&gt;          # Open funding URL for specific package
+
+# Suppress funding messages
+npm install --no-fund
+npm set fund=false          # Disable globally in .npmrc</code></pre>
+
+                <p>The <code>npm fund</code> command displays packages looking for funding and links to support pages (GitHub Sponsors, Open Collective, etc.).</p>
+            </div>
+        </section>
+
+        <!-- Section 4: Scripts & Running -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">4</div>
+                <h2 class="section-title">Scripts &amp; Running</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Defining Scripts</h3>
+                <p>In <strong>package.json</strong>:</p>
+
+<pre><code>{
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "webpack --mode production",
+    "test": "jest",
+    "lint": "eslint src/",
+    "format": "prettier --write src/"
+  }
+}</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Running Scripts</h3>
+
+<pre><code># npm requires 'run' for custom scripts
+npm run dev
+npm run build
+
+# Some scripts don't need 'run'
+npm start
+npm test
+
+# yarn doesn't require 'run'
+yarn dev
+yarn build
+yarn start
+yarn test
+
+# pnpm similar to npm
+pnpm dev
+pnpm run build
+pnpm start
+pnpm test</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Passing Arguments to Scripts</h3>
+
+<pre><code>npm run test -- --watch
+yarn test --watch
+pnpm test -- --watch
+
+# Example with environment variables
+npm run build -- --env production</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Execute Package Binaries</h3>
+
+                <h4>npx (npm)</h4>
+<pre><code>npx create-react-app my-app
+npx eslint src/
+npx -p typescript tsc --init
+
+# Execute specific version
+npx cowsay@1.5.0 "Hello"
+
+# Execute from URL
+npx https://gist.github.com/user/script.js
+
+# Execute local binary
+npx -c 'tsc && node dist/index.js'</code></pre>
+
+                <h4>yarn dlx (Yarn Berry)</h4>
+<pre><code>yarn dlx create-react-app my-app
+yarn dlx eslint src/
+
+# Execute package without installation
+yarn dlx -p typescript tsc --init</code></pre>
+
+                <h4>pnpm dlx</h4>
+<pre><code>pnpm dlx create-react-app my-app
+pnpm dlx eslint src/
+
+# Execute with specific version
+pnpm dlx cowsay@1.5.0 "Hello"</code></pre>
+
+                <p>All three (<code>npx</code>, <code>yarn dlx</code>, <code>pnpm dlx</code>) download and execute packages in a temporary environment without globally installing them.</p>
+            </div>
+
+            <div class="content-card">
+                <h3>Lifecycle Scripts &amp; Hooks</h3>
+                <p>npm runs lifecycle scripts at various stages. Any script can have <code>pre</code> and <code>post</code> versions.</p>
+
+                <h4>Available lifecycle scripts</h4>
+                <ul>
+                    <li><code>prepare</code> - Runs after <code>npm install</code> and before <code>npm publish</code></li>
+                    <li><code>prepublish</code> - <strong>Deprecated</strong>, use <code>prepublishOnly</code></li>
+                    <li><code>prepublishOnly</code> - Runs BEFORE package is prepared/packed, ONLY on <code>npm publish</code></li>
+                    <li><code>prepack</code> - Runs BEFORE tarball is packed</li>
+                    <li><code>postpack</code> - Runs AFTER tarball is generated</li>
+                    <li><code>preinstall</code> - Runs before package is installed</li>
+                    <li><code>postinstall</code> - Runs after package is installed</li>
+                </ul>
+
+                <h4>Pre and Post hooks</h4>
+<pre><code>{
+  "scripts": {
+    "pretest": "eslint src/",
+    "test": "jest",
+    "posttest": "echo 'Tests complete'",
+
+    "prebuild": "npm run clean",
+    "build": "webpack",
+    "postbuild": "npm run deploy"
+  }
+}</code></pre>
+
+                <p>When you run <code>npm test</code>, it automatically runs:</p>
+                <ol>
+                    <li><code>pretest</code></li>
+                    <li><code>test</code></li>
+                    <li><code>posttest</code></li>
+                </ol>
+
+                <h4>Publishing lifecycle</h4>
+<pre><code># When running: npm publish
+# Execution order:
+prepublishOnly → prepare → prepack → pack → postpack → publish → postpublish</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 5: Dependencies -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">5</div>
+                <h2 class="section-title">Dependencies</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Dependency Types</h3>
+
+                <h4>dependencies</h4>
+                <p>Packages required for your code to run in production:</p>
+<pre><code>{
+  "dependencies": {
+    "react": "^18.2.0",
+    "express": "^4.18.2"
+  }
+}</code></pre>
+
+                <p>Installed with:</p>
+<pre><code>npm install react
+yarn add react
+pnpm add react</code></pre>
+
+                <h4>devDependencies</h4>
+                <p>Packages needed only during development (testing, building, linting):</p>
+<pre><code>{
+  "devDependencies": {
+    "eslint": "^8.45.0",
+    "jest": "^29.6.0",
+    "webpack": "^5.88.0"
+  }
+}</code></pre>
+
+                <p>Installed with:</p>
+<pre><code>npm install -D eslint
+yarn add -D eslint
+pnpm add -D eslint</code></pre>
+
+                <p>To skip devDependencies during install:</p>
+<pre><code>npm install --production
+yarn install --production
+pnpm install --prod</code></pre>
+
+                <h4>peerDependencies</h4>
+                <p>Packages your library expects to be installed by the consumer:</p>
+<pre><code>{
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}</code></pre>
+
+                <div class="highlight-box warning">
+                    <strong>Important:</strong><br>
+                    • npm v3-v6: peerDependencies were NOT auto-installed<br>
+                    • npm v7+: peerDependencies ARE auto-installed by default<br>
+                    • Use <code>--legacy-peer-deps</code> to revert to old behavior<br>
+                    • pnpm handles peer dependencies strictly by default
+                </div>
+
+                <h4>optionalDependencies</h4>
+                <p>Packages that enhance functionality but aren't required:</p>
+<pre><code>{
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
+  }
+}</code></pre>
+
+                <p>Skip installing:</p>
+<pre><code>npm install --no-optional
+pnpm install --no-optional</code></pre>
+
+                <h4>bundledDependencies</h4>
+                <p>Array of package names bundled with your package when published:</p>
+<pre><code>{
+  "bundledDependencies": ["package-a", "package-b"]
+}</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Dependency Installation Flags</h3>
+
+<pre><code># Omit specific dependency types
+npm install --omit=dev              # Skip devDependencies
+npm install --omit=optional         # Skip optionalDependencies
+npm install --omit=peer            # Skip peerDependencies
+
+# Legacy peer dependency handling
+npm install --legacy-peer-deps     # Ignore peer dependency conflicts
+
+# Force install (bypass cache and conflicts)
+npm install --force
+
+# Production only
+npm install --production
+npm install --omit=dev</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Overrides &amp; Resolutions</h3>
+                <p>Force specific versions of nested dependencies.</p>
+
+                <h4>npm (v8.3+)</h4>
+<pre><code>{
+  "overrides": {
+    "lodash": "4.17.21",
+    "foo": {
+      "bar": "1.0.0"
+    },
+    "bar@2.0.0": "3.0.0"
+  }
+}</code></pre>
+
+                <h4>Yarn</h4>
+<pre><code>{
+  "resolutions": {
+    "lodash": "4.17.21",
+    "**/lodash": "4.17.21",
+    "foo/**/bar": "1.0.0"
+  }
+}</code></pre>
+
+                <h4>pnpm</h4>
+<pre><code>{
+  "pnpm": {
+    "overrides": {
+      "lodash": "4.17.21",
+      "foo>bar": "1.0.0"
+    }
+  }
+}</code></pre>
+
+                <p>pnpm also supports <code>resolutions</code> for Yarn migration compatibility. If both exist, <code>pnpm.overrides</code> takes precedence.</p>
+
+                <div class="highlight-box warning">
+                    <strong>Important:</strong> After changing overrides, delete <code>node_modules</code> and lock files, then reinstall to recalculate the dependency graph.
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Lock Files</h3>
+                <p>Lock files ensure deterministic, reproducible installs across environments.</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Package Manager</th>
+                                <th>Lock File</th>
+                                <th>Format</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>npm</td>
+                                <td><code>package-lock.json</code></td>
+                                <td>JSON</td>
+                            </tr>
+                            <tr>
+                                <td>Yarn Classic</td>
+                                <td><code>yarn.lock</code></td>
+                                <td>Custom</td>
+                            </tr>
+                            <tr>
+                                <td>Yarn Berry</td>
+                                <td><code>yarn.lock</code></td>
+                                <td>YAML-like</td>
+                            </tr>
+                            <tr>
+                                <td>pnpm</td>
+                                <td><code>pnpm-lock.yaml</code></td>
+                                <td>YAML</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Best practices</h4>
+                <ul>
+                    <li><strong>Always commit</strong> lock files to version control</li>
+                    <li><strong>Never</strong> mix package managers (causes version mismatches)</li>
+                    <li><strong>Don't</strong> manually edit lock files</li>
+                    <li>Use <code>npm ci</code> / <code>pnpm install --frozen-lockfile</code> in CI/CD</li>
+                </ul>
+
+                <h4>Lock file integrity</h4>
+                <p>All lock files include cryptographic hashes (checksums) to verify package integrity:</p>
+                <ul>
+                    <li>npm uses SHA-512 hashes</li>
+                    <li>Yarn uses SHA-512 hashes</li>
+                    <li>pnpm uses SHA-512 hashes</li>
+                </ul>
+
+                <p>If downloaded package hash doesn't match the lock file, installation fails (prevents malicious code injection).</p>
+
+                <h4>Handling integrity check failures</h4>
+<pre><code># Yarn
+yarn install --update-checksums
+
+# Delete lock file and reinstall (last resort)
+rm package-lock.json
+npm install</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 6: Workspaces & Monorepos -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">6</div>
+                <h2 class="section-title">Workspaces &amp; Monorepos</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>npm Workspaces</h3>
+                <p><strong>package.json</strong> (root):</p>
+
+<pre><code>{
+  "name": "my-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}</code></pre>
+
+                <h4>Commands</h4>
+<pre><code># Install all workspace dependencies
+npm install
+
+# Run script in specific workspace
+npm run build --workspace=packages/ui
+
+# Run script in all workspaces
+npm run test --workspaces
+
+# Add dependency to specific workspace
+npm install react --workspace=packages/ui
+
+# Add dependency to root
+npm install -D typescript -w</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Yarn Workspaces</h3>
+                <p><strong>package.json</strong> (root):</p>
+
+<pre><code>{
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}</code></pre>
+
+                <h4>Commands</h4>
+<pre><code># Install all dependencies
+yarn install
+
+# Run command in workspace
+yarn workspace @myorg/ui build
+
+# Run command in all workspaces
+yarn workspaces run build
+
+# Add dependency to workspace
+yarn workspace @myorg/ui add react
+
+# List workspaces
+yarn workspaces list</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>pnpm Workspaces</h3>
+                <p><strong>pnpm-workspace.yaml</strong> (root):</p>
+
+<pre><code>packages:
+  - 'packages/*'
+  - 'apps/*'
+  - '!**/test/**'</code></pre>
+
+                <p><strong>package.json</strong> (workspace package):</p>
+<pre><code>{
+  "name": "@myorg/ui",
+  "dependencies": {
+    "@myorg/utils": "workspace:*"
+  }
+}</code></pre>
+
+                <h4>Commands</h4>
+<pre><code># Install all workspace dependencies
+pnpm install
+
+# Run command in specific workspace
+pnpm --filter @myorg/ui build
+
+# Run command in all workspaces
+pnpm -r build
+
+# Add dependency to workspace
+pnpm --filter @myorg/ui add react
+
+# Add local workspace dependency
+pnpm --filter @myorg/ui add @myorg/utils@workspace:*
+
+# List workspaces
+pnpm list -r --depth -1</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Workspace Protocol</h3>
+                <p>pnpm introduced the <code>workspace:</code> protocol for linking local packages:</p>
+
+<pre><code>{
+  "dependencies": {
+    "@myorg/shared": "workspace:*",
+    "@myorg/utils": "workspace:^1.0.0"
+  }
+}</code></pre>
+
+                <h4>Benefits</h4>
+                <ul>
+                    <li>Local packages linked during development</li>
+                    <li>Published packages use actual version numbers (not <code>workspace:*</code>)</li>
+                    <li>Prevents accidental publishing with local paths</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <h3>Hoisting in Monorepos</h3>
+
+                <p><strong>npm:</strong> Automatically hoists common dependencies to root <code>node_modules</code></p>
+
+                <p><strong>Yarn:</strong> Berry uses Plug'n'Play by default (no hoisting needed)</p>
+
+                <p><strong>pnpm:</strong> Uses symlinks; hoisting configuration in <code>.npmrc</code>:</p>
+<pre><code>hoist=true
+hoist-pattern[]=*eslint*
+hoist-pattern[]=*prettier*</code></pre>
+
+                <h4>Best practices for monorepos</h4>
+                <ul>
+                    <li>Prefer <code>workspace:*</code> for internal links</li>
+                    <li>Hoist common devDependencies to root</li>
+                    <li>Pin critical versions (e.g., React)</li>
+                    <li>Use peer dependencies for shared libraries</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Section 7: Publishing -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">7</div>
+                <h2 class="section-title">Publishing</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Preparing to Publish</h3>
+
+                <h4>1. Create npm account</h4>
+<pre><code>npm adduser
+# or
+npm login</code></pre>
+
+                <h4>2. Configure package.json</h4>
+<pre><code>{
+  "name": "my-package",
+  "version": "1.0.0",
+  "description": "A useful package",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": ["javascript", "utility"],
+  "author": "Your Name &lt;you@example.com&gt;",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/repo.git"
+  },
+  "bugs": "https://github.com/user/repo/issues",
+  "homepage": "https://github.com/user/repo#readme"
+}</code></pre>
+
+                <h4>3. Test package locally</h4>
+<pre><code>npm pack
+# Creates: my-package-1.0.0.tgz</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Semantic Versioning</h3>
+                <p>Version format: <strong>MAJOR.MINOR.PATCH</strong></p>
+
+                <ul>
+                    <li><strong>MAJOR</strong> (1.x.x): Breaking changes</li>
+                    <li><strong>MINOR</strong> (x.1.x): New features (backward compatible)</li>
+                    <li><strong>PATCH</strong> (x.x.1): Bug fixes (backward compatible)</li>
+                </ul>
+
+                <h4>Bumping versions</h4>
+<pre><code>npm version patch       # 1.0.0 → 1.0.1
+npm version minor       # 1.0.1 → 1.1.0
+npm version major       # 1.1.0 → 2.0.0
+
+# Pre-release versions
+npm version prerelease  # 1.0.0 → 1.0.1-0
+npm version prepatch    # 1.0.0 → 1.0.1-0
+npm version preminor    # 1.0.0 → 1.1.0-0
+npm version premajor    # 1.0.0 → 2.0.0-0
+
+# With custom pre-release identifier
+npm version prerelease --preid=alpha  # 1.0.0 → 1.0.1-alpha.0
+npm version prerelease --preid=beta   # 1.0.1-alpha.0 → 1.0.1-beta.0</code></pre>
+
+                <p>The <code>npm version</code> command:</p>
+                <ul>
+                    <li>Updates <code>version</code> in <code>package.json</code> and <code>package-lock.json</code></li>
+                    <li>Creates a git commit</li>
+                    <li>Creates a git tag (e.g., <code>v1.0.1</code>)</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <h3>Publishing Packages</h3>
+
+                <h4>Public package</h4>
+<pre><code>npm publish</code></pre>
+
+                <h4>Scoped package (public)</h4>
+<pre><code>npm publish --access public</code></pre>
+
+                <p><strong>Scoped packages</strong> use format <code>@username/package-name</code> or <code>@org/package-name</code>:</p>
+<pre><code>{
+  "name": "@myorg/my-package"
+}</code></pre>
+
+                <h4>Pre-release publishing</h4>
+<pre><code># Publish with 'beta' tag
+npm publish --tag beta
+
+# Users install with:
+npm install my-package@beta</code></pre>
+
+                <h4>Distribution tags</h4>
+<pre><code># Add tag
+npm dist-tag add my-package@1.0.1 stable
+
+# Remove tag
+npm dist-tag rm my-package beta
+
+# List tags
+npm dist-tag ls my-package</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Unpublishing</h3>
+
+<pre><code># Unpublish specific version
+npm unpublish my-package@1.0.0
+
+# Unpublish entire package (within 72 hours)
+npm unpublish my-package --force</code></pre>
+
+                <div class="highlight-box warning">
+                    <strong>Important:</strong> You can only unpublish packages within 72 hours of publishing. After that, deprecate instead:
+                </div>
+
+<pre><code>npm deprecate my-package@1.0.0 "This version has critical bugs"</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>npm link - Local Development</h3>
+                <p>Test package locally before publishing:</p>
+
+<pre><code># In package directory
+cd ~/projects/my-package
+npm link
+
+# In project using the package
+cd ~/projects/my-app
+npm link my-package
+
+# Unlink
+npm unlink my-package
+
+# Unlink global
+npm unlink -g my-package</code></pre>
+
+                <h4>Yarn link</h4>
+<pre><code>yarn link
+yarn link my-package
+yarn unlink my-package</code></pre>
+
+                <h4>pnpm link</h4>
+<pre><code>pnpm link --global
+pnpm link --global my-package
+
+# Or direct directory link
+pnpm link ~/projects/my-package</code></pre>
+
+                <div class="highlight-box info">
+                    <strong>Important:</strong> <code>npm link</code> can cause issues with peer dependencies and package duplication. For more stable local testing, consider:<br>
+                    • <code>file:</code> protocol: <code>npm install file:../my-package</code><br>
+                    • Tools like <a href="https://github.com/wclr/yalc" style="color: var(--cream);">yalc</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Configuration -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">8</div>
+                <h2 class="section-title">Configuration</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>.npmrc Configuration Files</h3>
+                <p>npm config files use INI format with <code>key=value</code> pairs.</p>
+
+                <h4>File locations (priority order)</h4>
+                <ol>
+                    <li><strong>Project</strong> <code>.npmrc</code> (repo root, next to <code>package.json</code>)</li>
+                    <li><strong>User</strong> <code>~/.npmrc</code></li>
+                    <li><strong>Global</strong> <code>/etc/npmrc</code></li>
+                    <li><strong>Built-in</strong> npm defaults</li>
+                </ol>
+
+                <h4>Common settings</h4>
+<pre><code># Registry
+registry=https://registry.npmjs.org/
+
+# Scoped registry
+@myorg:registry=https://npm.pkg.github.com/
+
+# Authentication token (use environment variable)
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+
+# Save exact versions (no ^ or ~)
+save-exact=true
+
+# Disable package-lock.json
+package-lock=false
+
+# Disable funding messages
+fund=false
+
+# Set log level
+loglevel=warn
+
+# Proxy settings
+proxy=http://proxy.example.com:8080/
+https-proxy=http://proxy.example.com:8080/
+
+# Cache location
+cache=/path/to/cache
+
+# Node version engine-strict
+engine-strict=true</code></pre>
+
+                <h4>Scoping authentication to registries</h4>
+<pre><code>//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+@mycompany:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}</code></pre>
+
+                <h4>Comments in .npmrc</h4>
+<pre><code>; This is a comment
+# This is also a comment
+registry=https://registry.npmjs.org/</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>.yarnrc.yml Configuration (Yarn Berry)</h3>
+
+<pre><code>nodeLinker: node-modules
+# or
+nodeLinker: pnp
+
+yarnPath: .yarn/releases/yarn-3.6.0.cjs
+
+npmRegistryServer: "https://registry.npmjs.org"
+
+npmScopes:
+  myorg:
+    npmRegistryServer: "https://npm.pkg.github.com"
+    npmAuthToken: "${GITHUB_TOKEN}"
+
+enableGlobalCache: false
+
+compressionLevel: mixed
+
+enableTelemetry: false</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>pnpm Configuration</h3>
+                <p>pnpm uses <code>.npmrc</code> with additional pnpm-specific settings:</p>
+
+<pre><code># Store location
+store-dir=~/.pnpm-store
+
+# Symlink handling
+symlink=true
+
+# Strict peer dependencies
+strict-peer-dependencies=true
+
+# Shamefully hoist (like npm)
+shamefully-hoist=false
+
+# Auto install peers
+auto-install-peers=true
+
+# Lockfile version
+lockfile-version=6.0</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>package.json Configuration Fields</h3>
+
+                <h4>Essential fields</h4>
+<pre><code>{
+  "name": "my-package",
+  "version": "1.0.0",
+  "description": "Package description",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}</code></pre>
+
+                <h4>Engine requirements</h4>
+<pre><code>{
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}</code></pre>
+
+                <h4>Package manager enforcement (Corepack)</h4>
+<pre><code>{
+  "packageManager": "pnpm@9.1.4"
+}</code></pre>
+
+                <h4>Publishing configuration</h4>
+<pre><code>{
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Setting Config Values via CLI</h3>
+
+<pre><code># npm
+npm config set registry https://registry.npmjs.org/
+npm config get registry
+npm config delete registry
+npm config list
+npm config edit
+
+# Yarn
+yarn config set npmRegistryServer "https://registry.npmjs.org"
+yarn config get npmRegistryServer
+
+# pnpm
+pnpm config set registry https://registry.npmjs.org/
+pnpm config get registry
+pnpm config list</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 9: Security -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">9</div>
+                <h2 class="section-title">Security</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>npm audit</h3>
+                <p>Check for known vulnerabilities:</p>
+
+<pre><code>npm audit                     # Display vulnerabilities
+npm audit --json             # JSON output
+npm audit --parseable        # Machine-readable output
+
+# Filter by severity
+npm audit --audit-level=moderate
+npm audit --audit-level=high
+
+# Fix vulnerabilities
+npm audit fix                # Auto-fix (semver compatible)
+npm audit fix --force        # Force major version updates
+
+# Verify package signatures
+npm audit signatures</code></pre>
+
+                <h4>Output categories</h4>
+                <ul>
+                    <li><strong>Low:</strong> Minimal risk</li>
+                    <li><strong>Moderate:</strong> Some risk</li>
+                    <li><strong>High:</strong> Significant risk</li>
+                    <li><strong>Critical:</strong> Immediate action required</li>
+                </ul>
+
+                <h4>Important limitations</h4>
+                <ul>
+                    <li><code>npm audit fix</code> only updates within semver ranges</li>
+                    <li>Won't detect newly compromised packages</li>
+                    <li>Only checks against public vulnerability database (CVE)</li>
+                    <li>May show false positives for devDependencies</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <h3>Yarn audit</h3>
+
+<pre><code>yarn audit                    # Check vulnerabilities
+yarn audit --json
+yarn npm audit               # Yarn Berry
+
+# No auto-fix in Yarn Classic
+# Use yarn upgrade for manual fixes</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>pnpm audit</h3>
+
+<pre><code>pnpm audit                    # Check vulnerabilities
+pnpm audit --json
+pnpm audit --fix             # Auto-fix vulnerabilities
+pnpm audit --audit-level=high</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Lock File Integrity</h3>
+                <p>Lock files verify package integrity using SHA-512 checksums.</p>
+
+                <h4>How it works</h4>
+                <ol>
+                    <li>Package downloaded from registry</li>
+                    <li>SHA-512 hash calculated</li>
+                    <li>Hash compared to lock file</li>
+                    <li>Install fails if mismatch</li>
+                </ol>
+
+                <h4>Handling checksum failures</h4>
+<pre><code># Yarn
+yarn install --update-checksums
+
+# npm/pnpm - delete lock file and reinstall
+rm package-lock.json
+npm install</code></pre>
+            </div>
+
+            <div class="content-card">
+                <h3>Supply Chain Security Best Practices</h3>
+
+                <ol>
+                    <li><strong>Always commit lock files</strong> - Ensures reproducible builds</li>
+                    <li><strong>Enable 2FA on npm account</strong> - Prevents account takeover</li>
+                    <li><strong>Use <code>npm ci</code> in CI/CD</strong> - Installs exact versions from lock file</li>
+                    <li><strong>Review dependency updates</strong> - Don't blindly update</li>
+                    <li><strong>Monitor for vulnerabilities</strong> - Integrate <code>npm audit</code> in CI</li>
+                    <li><strong>Verify package ownership</strong> - Check package author/maintainer</li>
+                    <li><strong>Use scoped packages</strong> - Better control over namespace</li>
+                    <li><strong>Audit build artifacts</strong> - Review what gets published</li>
+                </ol>
+            </div>
+
+            <div class="content-card">
+                <h3>Software Bill of Materials (SBOM)</h3>
+                <p>An SBOM is a nested inventory listing all components, libraries, and modules in software.</p>
+
+                <h4>Purpose</h4>
+                <ul>
+                    <li>Track software elements</li>
+                    <li>Identify vulnerabilities</li>
+                    <li>Mitigate supply chain risks</li>
+                    <li>Regulatory compliance</li>
+                </ul>
+
+                <h4>Standard formats</h4>
+                <ul>
+                    <li><strong>SPDX</strong> - License tracking</li>
+                    <li><strong>CycloneDX</strong> - Security and vulnerability analysis</li>
+                    <li><strong>SWID</strong> - IT asset management</li>
+                </ul>
+
+                <h4>Generate SBOM</h4>
+<pre><code># Using CycloneDX
+npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+
+# Using SPDX
+npm install -g @spdx/spdx-sbom-generator
+spdx-sbom-generator -p .</code></pre>
+
+                <h4>Why SBOMs matter</h4>
+                <ul>
+                    <li>Required by U.S. federal agencies</li>
+                    <li>Transparency into nested dependencies</li>
+                    <li>Faster vulnerability remediation</li>
+                    <li>Supply chain attack prevention</li>
+                </ul>
+
+                <div class="highlight-box warning">
+                    <strong>High-profile supply chain attacks:</strong><br>
+                    • <strong>SolarWinds (2020)</strong> - Malicious code in software updates, 18,000+ orgs affected<br>
+                    • <strong>Log4j (2021)</strong> - Vulnerability in widely-used library, hundreds of millions of devices affected
+                </div>
+
+                <p>SBOMs help map all components, including deeply nested libraries, enabling faster vulnerability discovery and remediation.</p>
+            </div>
+        </section>
+
+        <!-- Section 10: Pro Tips -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">10</div>
+                <h2 class="section-title">Pro Tips</h2>
+                <div class="section-line"></div>
+            </div>
+
+            <div class="content-card">
+                <h3>Performance Comparison (2026)</h3>
+
+                <h4>Installation Speed (cold install, React + TypeScript project)</h4>
+                <ul>
+                    <li><strong>Bun:</strong> 18x faster than npm</li>
+                    <li><strong>pnpm:</strong> 3.4x faster than npm</li>
+                    <li><strong>Yarn:</strong> 2.1x faster than npm</li>
+                    <li><strong>npm:</strong> Baseline</li>
+                </ul>
+
+                <h4>Real-world benchmarks</h4>
+                <ul>
+                    <li>pnpm: 70% faster installs, 48% faster CI builds vs npm</li>
+                    <li>First installs: pnpm 30-50% faster</li>
+                    <li>Repeat installs: pnpm shows even greater speed (efficient caching)</li>
+                </ul>
+
+                <h4>Disk Space Savings</h4>
+                <ul>
+                    <li>pnpm: 70-80% reduction in multi-project setups</li>
+                    <li>npm/Yarn: Each project has full copy of dependencies</li>
+                    <li>pnpm: Global content-addressable store + hard links</li>
+                </ul>
+
+                <div class="highlight-box success">
+                    <strong>Example:</strong><br>
+                    100 projects using lodash<br>
+                    • npm: 100 copies of lodash on disk<br>
+                    • pnpm: 1 copy in global store, 100 hard links
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>When to Use Which Package Manager</h3>
+
+                <h4>Use npm when:</h4>
+                <ul>
+                    <li>Working on existing npm projects</li>
+                    <li>Need maximum compatibility</li>
+                    <li>Prefer official, conservative tooling</li>
+                    <li>Simple single-package projects</li>
+                </ul>
+
+                <h4>Use Yarn when:</h4>
+                <ul>
+                    <li>Using Plug'n'Play for zero-install workflows</li>
+                    <li>Need advanced workspace features</li>
+                    <li>Prefer Yarn's UX and error messages</li>
+                    <li>Working on Yarn projects</li>
+                </ul>
+
+                <h4>Use pnpm when:</h4>
+                <ul>
+                    <li>Managing monorepos</li>
+                    <li>Need maximum performance</li>
+                    <li>Want disk space savings</li>
+                    <li>Strict dependency management required</li>
+                    <li>Multi-project development environments</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <strong>Summary:</strong><br>
+                    • <strong>npm:</strong> Most compatible, most conservative<br>
+                    • <strong>Yarn:</strong> Best UX, Plug'n'Play innovation<br>
+                    • <strong>pnpm:</strong> Fastest, most efficient, best for monorepos
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Caching &amp; Offline Mode</h3>
+
+                <h4>npm</h4>
+<pre><code># Check cache
+npm cache verify
+
+# Clean cache
+npm cache clean --force
+
+# Use cache only (offline)
+npm install --prefer-offline
+
+# Strict offline mode
+npm install --offline</code></pre>
+
+                <h4>Yarn</h4>
+<pre><code># Cache location
+yarn cache dir
+
+# Clean cache
+yarn cache clean
+
+# Offline mirror (commit to Git)
+# .yarnrc.yml
+yarn-offline-mirror "./yarn-offline-mirror"</code></pre>
+
+                <h4>pnpm</h4>
+<pre><code># Verify store
+pnpm store status
+
+# Prune unreferenced packages
+pnpm store prune
+
+# pnpm automatically uses cache when offline
+pnpm install</code></pre>
+
+                <h4>Cache locations</h4>
+                <ul>
+                    <li>npm: <code>~/.npm</code></li>
+                    <li>Yarn: <code>~/.yarn/berry/cache</code> (Berry) or <code>~/.cache/yarn</code> (Classic)</li>
+                    <li>pnpm: <code>~/.pnpm-store</code></li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <h3>CI/CD Best Practices</h3>
+
+                <h4>Use exact lock file installations</h4>
+<pre><code># npm
+npm ci                                    # Fast, clean install from lock file
+
+# Yarn
+yarn install --frozen-lockfile           # Fail if lock file is outdated
+yarn install --immutable                 # Yarn Berry
+
+# pnpm
+pnpm install --frozen-lockfile           # Fail if lock file needs update</code></pre>
+
+                <h4>Cache package manager stores</h4>
+<pre><code># GitHub Actions example
+- name: Setup Node
+  uses: actions/setup-node@v3
+  with:
+    node-version: '18'
+    cache: 'pnpm'
+
+# Manual cache
+- uses: actions/cache@v3
+  with:
+    path: ~/.pnpm-store
+    key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}</code></pre>
+
+                <h4>Speed up CI with pnpm</h4>
+                <ul>
+                    <li>Content-addressable cache shared across CI runs</li>
+                    <li>Hard links eliminate duplicate downloads</li>
+                    <li>Dramatically faster than npm/Yarn in CI</li>
+                </ul>
+
+                <h4>Commit offline cache (Yarn Berry)</h4>
+<pre><code># .yarnrc.yml
+enableGlobalCache: false</code></pre>
+
+                <p>Then commit <code>.yarn/cache</code> to Git for zero-install workflows (no <code>yarn install</code> needed in CI).</p>
+            </div>
+
+            <div class="content-card">
+                <h3>Advanced Tips &amp; Tricks</h3>
+
+                <h4>Alias npm commands</h4>
+<pre><code># Add to ~/.bashrc or ~/.zshrc
+alias ni="npm install"
+alias nid="npm install -D"
+alias nig="npm install -g"
+alias nt="npm test"
+alias nb="npm run build"</code></pre>
+
+                <h4>Check package size before installing</h4>
+<pre><code>npm info lodash
+npx package-size lodash</code></pre>
+
+                <h4>Find which package depends on a package</h4>
+<pre><code>npm ls react
+pnpm why react
+yarn why react</code></pre>
+
+                <h4>Interactive dependency updates</h4>
+<pre><code># Yarn
+yarn upgrade-interactive --latest
+
+# pnpm
+pnpm update -i --latest
+
+# npm (using ncm)
+npx npm-check-updates -i</code></pre>
+
+                <h4>Generate package-lock.json from yarn.lock (or vice versa)</h4>
+<pre><code>npx synp --source-file yarn.lock
+npx synp --source-file package-lock.json</code></pre>
+
+                <h4>Prevent accidental publishing</h4>
+<pre><code>{
+  "private": true
+}</code></pre>
+
+                <h4>Run script before every install</h4>
+<pre><code>{
+  "scripts": {
+    "preinstall": "node check-node-version.js"
+  }
+}</code></pre>
+
+                <h4>Workspace-specific commands</h4>
+<pre><code># npm
+npm run test --workspace=@myorg/ui
+
+# pnpm
+pnpm --filter @myorg/ui test
+
+# Run in all workspaces matching pattern
+pnpm --filter "./packages/**" build</code></pre>
+
+                <h4>Parallel execution in workspaces</h4>
+<pre><code># pnpm (parallel by default)
+pnpm -r build
+
+# npm (sequential by default, use --workspaces)
+npm run build --workspaces</code></pre>
+
+                <h4>Deduplicate dependencies</h4>
+<pre><code>npm dedupe
+yarn dedupe
+pnpm dedupe</code></pre>
+
+                <h4>Check for duplicate dependencies</h4>
+<pre><code>npx depcheck
+npx npm-check</code></pre>
+
+                <h4>Analyze bundle size impact</h4>
+<pre><code>npx bundlephobia lodash
+npx cost-of-modules</code></pre>
+
+                <h4>Global package locations</h4>
+<pre><code>npm root -g          # Global node_modules location
+npm list -g --depth=0    # List global packages
+npm bin -g           # Global bin location</code></pre>
+
+                <h4>Use newer package manager features</h4>
+<pre><code># Corepack (comes with Node.js 14.19+)
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# Now pnpm is available without global install
+pnpm --version</code></pre>
+
+                <h4>Migrate from npm to pnpm</h4>
+<pre><code>pnpm import          # Generates pnpm-lock.yaml from package-lock.json
+rm package-lock.json
+rm -rf node_modules
+pnpm install</code></pre>
+
+                <h4>Migrate from Yarn to pnpm</h4>
+<pre><code>pnpm import          # Also works with yarn.lock
+rm yarn.lock
+rm -rf node_modules
+pnpm install</code></pre>
+
+                <h4>Check package health</h4>
+<pre><code>npx snyk test        # Security vulnerabilities
+npx license-checker  # License compliance
+npx depcheck        # Unused dependencies</code></pre>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p><strong>npm / Yarn / pnpm Package Manager Guide</strong></p>
+            <p>Last Updated: 2026-02-09 | Version 1.0.0</p>
+            <p>Built with the <a href="../styles/memphis.html">Memphis</a> design system</p>
+        </footer>
+    </div>
+</body>
+</html>

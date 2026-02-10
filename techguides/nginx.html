@@ -1,0 +1,2877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nginx // High-Performance Web Server - Industrial Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&family=Stencil+One&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           INDUSTRIAL DESIGN SYSTEM
+           nginx Tech Guide
+           Factory floor. Steel. Rust. Power.
+           ============================================ */
+
+        :root {
+            /* METAL PALETTE */
+            --steel-dark: #2C3033;
+            --steel-mid: #4A5459;
+            --steel-light: #7A8489;
+            --brushed-steel: #9BA3A9;
+            --bright-steel: #C5CED4;
+
+            /* RUST & OXIDATION */
+            --rust-deep: #8B3A1D;
+            --rust-mid: #B54A24;
+            --rust-light: #D4652F;
+            --rust-accent: #E8823A;
+            --oxidation: #6B4423;
+
+            /* WARNING COLORS */
+            --hazard-yellow: #FFB800;
+            --hazard-orange: #FF6B00;
+            --caution-red: #D42C2C;
+            --safety-green: #2D8B47;
+
+            /* INDUSTRIAL BLACKS */
+            --iron-black: #1A1D1F;
+            --oil-black: #0D0F10;
+            --carbon: #252829;
+
+            /* SURFACE TONES */
+            --concrete: #B5AFA7;
+            --dirty-white: #E8E4DC;
+            --grime: #3D3832;
+
+            /* TYPOGRAPHY */
+            --font-stencil: 'Stencil One', 'Impact', sans-serif;
+            --font-display: 'Oswald', 'Impact', sans-serif;
+            --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+
+            /* SPACING */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-xxl: 48px;
+            --space-huge: 64px;
+
+            /* BORDERS */
+            --border-thin: 1px solid var(--steel-mid);
+            --border-thick: 3px solid var(--steel-dark);
+            --border-heavy: 6px solid var(--iron-black);
+        }
+
+        /* RESET */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 20px;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--dirty-white);
+            background: var(--iron-black);
+            min-height: 100vh;
+        }
+
+        /* PAGE STRUCTURE */
+        .page-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--carbon);
+            border-left: var(--border-heavy);
+            border-right: var(--border-heavy);
+            box-shadow:
+                -20px 0 40px rgba(0,0,0,0.5),
+                20px 0 40px rgba(0,0,0,0.5);
+        }
+
+        /* CONTAINER */
+        .container {
+            padding: var(--space-lg);
+        }
+
+        /* BACK LINK */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--brushed-steel);
+            text-decoration: none;
+            border-bottom: 2px solid var(--steel-mid);
+            margin-bottom: var(--space-xl);
+            padding: var(--space-xs) 0;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .back-link:hover {
+            color: var(--hazard-yellow);
+            border-bottom-color: var(--hazard-yellow);
+        }
+
+        /* HEADER */
+        .site-header {
+            position: relative;
+            padding: var(--space-huge) var(--space-xl) var(--space-xl);
+            background:
+                linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234A5459' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+                linear-gradient(135deg, var(--steel-dark) 0%, var(--iron-black) 100%);
+            border-bottom: var(--border-heavy);
+        }
+
+        .site-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--rust-mid),
+                var(--rust-mid) 3px,
+                var(--rust-deep) 3px,
+                var(--rust-deep) 6px
+            );
+        }
+
+        .site-header h1 {
+            font-family: var(--font-stencil);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 400;
+            color: var(--hazard-yellow);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            text-shadow:
+                4px 4px 0 var(--iron-black),
+                -1px -1px 0 var(--rust-mid),
+                2px 2px 8px rgba(0,0,0,0.8);
+            margin-bottom: var(--space-md);
+            line-height: 1;
+        }
+
+        .site-header .tagline {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--brushed-steel);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-lg);
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--rust-deep);
+            color: var(--dirty-white);
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 2px solid var(--rust-light);
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* SECTION */
+        .section {
+            padding: var(--space-xxl) var(--space-xl);
+            border-bottom: var(--border-thick);
+            position: relative;
+        }
+
+        .section:nth-child(odd) {
+            background:
+                linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.2) 100%),
+                var(--carbon);
+        }
+
+        .section:nth-child(even) {
+            background:
+                linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.3) 100%),
+                var(--steel-dark);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-lg);
+            border-bottom: 4px solid var(--rust-mid);
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 120px;
+            height: 4px;
+            background: var(--hazard-yellow);
+        }
+
+        .section-number {
+            font-family: var(--font-stencil);
+            font-size: 3.5rem;
+            color: var(--rust-light);
+            text-shadow: 3px 3px 0 var(--iron-black);
+            display: block;
+            margin-bottom: var(--space-sm);
+            line-height: 1;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--dirty-white);
+            margin-bottom: var(--space-sm);
+        }
+
+        .section-description {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--brushed-steel);
+            max-width: 700px;
+            line-height: 1.7;
+        }
+
+        /* SUBSECTION */
+        .subsection {
+            margin-bottom: var(--space-xxl);
+        }
+
+        .subsection-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--hazard-yellow);
+            margin-bottom: var(--space-lg);
+            padding-left: var(--space-md);
+            border-left: 4px solid var(--hazard-yellow);
+        }
+
+        /* CONTENT BLOCK */
+        .content-block {
+            margin-bottom: var(--space-xl);
+            background: rgba(0,0,0,0.3);
+            padding: var(--space-lg);
+            border-left: 3px solid var(--steel-mid);
+        }
+
+        .content-block h4 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--brushed-steel);
+            margin-bottom: var(--space-md);
+        }
+
+        .content-block p {
+            color: var(--concrete);
+            margin-bottom: var(--space-md);
+            line-height: 1.7;
+        }
+
+        .content-block p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* CODE BLOCKS */
+        pre {
+            background: var(--iron-black);
+            border: 2px solid var(--steel-mid);
+            border-left: 4px solid var(--hazard-orange);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--dirty-white);
+            position: relative;
+        }
+
+        pre::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--hazard-orange);
+            color: var(--iron-black);
+            font-family: var(--font-display);
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 8px;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+        }
+
+        pre code {
+            color: var(--dirty-white);
+        }
+
+        /* Inline code */
+        p code,
+        li code,
+        td code {
+            background: var(--steel-dark);
+            color: var(--hazard-yellow);
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 0.9em;
+        }
+
+        /* Syntax highlighting */
+        .comment { color: var(--steel-light); font-style: italic; }
+        .keyword { color: var(--hazard-yellow); font-weight: 600; }
+        .string { color: var(--safety-green); }
+        .number { color: var(--rust-accent); }
+        .function { color: var(--bright-steel); }
+        .operator { color: var(--brushed-steel); }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: var(--space-xl);
+            border: 3px solid var(--steel-dark);
+            background: var(--iron-black);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        thead {
+            background: var(--steel-dark);
+        }
+
+        thead th {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--hazard-yellow);
+            padding: var(--space-md);
+            text-align: left;
+            border-bottom: 3px solid var(--hazard-yellow);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--steel-mid);
+        }
+
+        tbody tr:nth-child(odd) {
+            background: rgba(0,0,0,0.2);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 184, 0, 0.1);
+        }
+
+        tbody td {
+            padding: var(--space-md);
+            color: var(--concrete);
+            vertical-align: top;
+        }
+
+        tbody td:first-child {
+            color: var(--bright-steel);
+            font-weight: 500;
+        }
+
+        /* LISTS */
+        ul, ol {
+            margin-bottom: var(--space-lg);
+            padding-left: var(--space-xl);
+        }
+
+        li {
+            margin-bottom: var(--space-sm);
+            color: var(--concrete);
+            line-height: 1.7;
+        }
+
+        ul li::marker {
+            color: var(--hazard-yellow);
+        }
+
+        ol li::marker {
+            color: var(--hazard-yellow);
+            font-weight: 700;
+        }
+
+        /* WARNING BOXES */
+        .warning-box {
+            background: var(--steel-dark);
+            border: 3px solid var(--hazard-yellow);
+            border-left: 6px solid var(--hazard-yellow);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+            position: relative;
+        }
+
+        .warning-box::before {
+            content: '⚠';
+            position: absolute;
+            top: var(--space-lg);
+            left: -30px;
+            font-size: 2rem;
+            color: var(--hazard-yellow);
+        }
+
+        .warning-box-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--hazard-yellow);
+            margin-bottom: var(--space-sm);
+        }
+
+        .warning-box p {
+            color: var(--dirty-white);
+            margin-bottom: var(--space-sm);
+        }
+
+        .warning-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* INFO BOXES */
+        .info-box {
+            background: rgba(45, 139, 71, 0.1);
+            border: 2px solid var(--safety-green);
+            border-left: 4px solid var(--safety-green);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+
+        .info-box-title {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--safety-green);
+            margin-bottom: var(--space-sm);
+        }
+
+        .info-box p {
+            color: var(--concrete);
+            margin-bottom: var(--space-sm);
+        }
+
+        .info-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* FOOTER */
+        .site-footer {
+            padding: var(--space-xl);
+            background: var(--iron-black);
+            border-top: var(--border-heavy);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--steel-light);
+        }
+
+        .site-footer a {
+            color: var(--rust-light);
+            text-decoration: none;
+            border-bottom: 1px solid var(--rust-light);
+            transition: all 0.2s ease;
+        }
+
+        .site-footer a:hover {
+            color: var(--hazard-yellow);
+            border-bottom-color: var(--hazard-yellow);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-md);
+            }
+
+            .site-header {
+                padding: var(--space-xl) var(--space-md) var(--space-md);
+            }
+
+            .site-header h1 {
+                font-size: 2rem;
+            }
+
+            .section {
+                padding: var(--space-xl) var(--space-md);
+            }
+
+            .section-number {
+                font-size: 2.5rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            pre {
+                font-size: 0.75rem;
+                padding: var(--space-md);
+            }
+
+            table {
+                font-size: 0.75rem;
+            }
+
+            thead th,
+            tbody td {
+                padding: var(--space-sm);
+            }
+        }
+
+        /* SCROLL BAR */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--iron-black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--steel-mid);
+            border: 2px solid var(--iron-black);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--hazard-yellow);
+        }
+
+        /* SELECTION */
+        ::selection {
+            background: var(--hazard-yellow);
+            color: var(--iron-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="container">
+            <a href="index.html" class="back-link">← Tech Guides</a>
+
+            <header class="site-header">
+                <h1>NGINX</h1>
+                <p class="tagline">High-Performance Web Server & Reverse Proxy</p>
+                <div class="header-badge">Industrial Strength Infrastructure</div>
+            </header>
+
+            <!-- Quick Reference -->
+            <section class="section" id="quick-reference">
+                <div class="section-header">
+                    <span class="section-number">01</span>
+                    <h2 class="section-title">Quick Reference</h2>
+                    <p class="section-description">Essential commands and common patterns for rapid deployment.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Essential Commands</h3>
+
+                    <pre data-lang="bash">nginx -t                          <span class="comment"># Test configuration syntax</span>
+nginx -s reload                   <span class="comment"># Reload configuration (graceful)</span>
+sudo systemctl reload nginx       <span class="comment"># Reload via systemd</span>
+
+nginx                             <span class="comment"># Start nginx</span>
+sudo systemctl start nginx        <span class="comment"># Start via systemd</span>
+
+nginx -s quit                     <span class="comment"># Stop nginx (graceful)</span>
+nginx -s stop                     <span class="comment"># Stop nginx (fast)</span>
+sudo systemctl stop nginx         <span class="comment"># Stop via systemd</span>
+
+sudo systemctl restart nginx      <span class="comment"># Restart nginx</span>
+
+nginx -v                          <span class="comment"># Check version</span>
+nginx -V                          <span class="comment"># Check version with compile options</span>
+
+nginx -T                          <span class="comment"># View complete config dump</span></pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Common Config Patterns</h3>
+
+                    <div class="content-block">
+                        <h4>Simple Static Site</h4>
+                        <pre data-lang="nginx">server {
+    listen 80;
+    server_name example.com;
+    root /var/www/example;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Reverse Proxy</h4>
+                        <pre data-lang="nginx">location /api/ {
+    proxy_pass http://localhost:3000/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>HTTPS with HTTP/2</h4>
+                        <pre data-lang="nginx">server {
+    listen 443 ssl http2;
+    server_name example.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Load Balancing</h4>
+                        <pre data-lang="nginx">upstream backend {
+    least_conn;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com backup;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Rate Limiting</h4>
+                        <pre data-lang="nginx">limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+
+location /api/ {
+    limit_req zone=api_limit burst=20 nodelay;
+    proxy_pass http://backend;
+}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Installation & Control -->
+            <section class="section" id="installation">
+                <div class="section-header">
+                    <span class="section-number">02</span>
+                    <h2 class="section-title">Installation & Control</h2>
+                    <p class="section-description">Deploy and manage nginx processes on your infrastructure.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Installation</h3>
+
+                    <pre data-lang="bash"><span class="comment"># Ubuntu/Debian</span>
+sudo apt update
+sudo apt install nginx
+
+<span class="comment"># CentOS/RHEL</span>
+sudo yum install epel-release
+sudo yum install nginx
+
+<span class="comment"># Verify installation</span>
+nginx -v</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Systemd Integration</h3>
+
+                    <pre data-lang="bash"><span class="comment"># Enable nginx to start on boot</span>
+sudo systemctl enable nginx
+
+<span class="comment"># Check status</span>
+sudo systemctl status nginx
+
+<span class="comment"># View logs via journalctl</span>
+sudo journalctl -u nginx --since today
+
+<span class="comment"># Reload after config changes (graceful, zero downtime)</span>
+sudo systemctl reload nginx
+
+<span class="comment"># Restart (brief downtime)</span>
+sudo systemctl restart nginx
+
+<span class="comment"># Stop</span>
+sudo systemctl stop nginx</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Signal Handling</h3>
+
+                    <div class="content-block">
+                        <p>NGINX responds to Unix signals for process control:</p>
+                    </div>
+
+                    <pre data-lang="bash"><span class="comment"># Get master process PID</span>
+cat /var/run/nginx.pid
+
+<span class="comment"># Send signals directly</span>
+kill -s SIGNAL PID
+
+<span class="comment"># Common signals:</span>
+<span class="comment"># TERM, INT - fast shutdown</span>
+<span class="comment"># QUIT      - graceful shutdown</span>
+<span class="comment"># HUP       - reload configuration</span>
+<span class="comment"># USR1      - reopen log files (for log rotation)</span>
+<span class="comment"># USR2      - upgrade executable on the fly</span>
+<span class="comment"># WINCH     - graceful shutdown of worker processes</span></pre>
+
+                    <div class="content-block">
+                        <h4>Example: Graceful Reload</h4>
+                        <pre data-lang="bash">nginx -s reload
+<span class="comment"># OR</span>
+kill -HUP $(cat /var/run/nginx.pid)</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Example: Log Rotation</h4>
+                        <pre data-lang="bash"><span class="comment"># After rotating log files</span>
+nginx -s reopen
+<span class="comment"># OR</span>
+kill -USR1 $(cat /var/run/nginx.pid)</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Configuration Testing</h3>
+
+                    <div class="info-box">
+                        <div class="info-box-title">Best Practice</div>
+                        <p>Always test configuration before reloading. Configuration reload is safer than restart because old worker processes continue serving requests during reload, and if new config has syntax errors, reload is aborted with no downtime.</p>
+                    </div>
+
+                    <pre data-lang="bash"><span class="comment"># Test and show errors</span>
+sudo nginx -t
+
+<span class="comment"># Test and show full parsed config</span>
+sudo nginx -T
+
+<span class="comment"># If test passes, then reload</span>
+sudo nginx -t && sudo systemctl reload nginx</pre>
+                </div>
+            </section>
+
+            <!-- Config Structure -->
+            <section class="section" id="config-structure">
+                <div class="section-header">
+                    <span class="section-number">03</span>
+                    <h2 class="section-title">Config Structure</h2>
+                    <p class="section-description">Understanding nginx's hierarchical configuration architecture.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Configuration Hierarchy</h3>
+
+                    <div class="content-block">
+                        <p>NGINX configuration uses a hierarchical structure with contexts (blocks):</p>
+                    </div>
+
+                    <pre data-lang="text">main (global)
+├── events
+└── http
+    ├── upstream
+    ├── server
+    │   └── location
+    │       └── location (nested)
+    └── server
+        └── location</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Main Context (Global)</h3>
+
+                    <div class="content-block">
+                        <p>Top-level directives affecting entire NGINX process:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># /etc/nginx/nginx.conf</span>
+
+user www-data;
+worker_processes auto;  <span class="comment"># Set to CPU core count</span>
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log warn;
+
+<span class="comment"># Load dynamic modules</span>
+load_module modules/ngx_http_brotli_filter_module.so;
+
+events {
+    worker_connections 1024;
+    use epoll;  <span class="comment"># Linux: efficient event model</span>
+}
+
+http {
+    <span class="comment"># HTTP-specific configuration</span>
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    <span class="comment"># Include virtual host configs</span>
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Events Context</h3>
+
+                    <div class="content-block">
+                        <p>Connection processing configuration:</p>
+                    </div>
+
+                    <pre data-lang="nginx">events {
+    <span class="comment"># Max simultaneous connections per worker</span>
+    worker_connections 2048;
+
+    <span class="comment"># Connection processing method (Linux: epoll, BSD: kqueue)</span>
+    use epoll;
+
+    <span class="comment"># Accept as many connections as possible</span>
+    multi_accept on;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">HTTP Context</h3>
+
+                    <div class="content-block">
+                        <p>Contains all HTTP/HTTPS configuration:</p>
+                    </div>
+
+                    <pre data-lang="nginx">http {
+    <span class="comment"># MIME types</span>
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    <span class="comment"># Logging</span>
+    log_format main '$remote_addr - $remote_user [$time_local] '
+                    '"$request" $status $body_bytes_sent '
+                    '"$http_referer" "$http_user_agent"';
+
+    access_log /var/log/nginx/access.log main;
+
+    <span class="comment"># Performance</span>
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+
+    <span class="comment"># Compression</span>
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript;
+
+    <span class="comment"># Virtual hosts</span>
+    include /etc/nginx/conf.d/*.conf;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Include Directive</h3>
+
+                    <div class="content-block">
+                        <p>Organize configuration across multiple files:</p>
+                    </div>
+
+                    <pre data-lang="nginx">http {
+    <span class="comment"># Include all .conf files in conf.d/</span>
+    include /etc/nginx/conf.d/*.conf;
+
+    <span class="comment"># Include MIME types</span>
+    include /etc/nginx/mime.types;
+
+    <span class="comment"># Include custom configs</span>
+    include /etc/nginx/custom/*.conf;
+}
+
+server {
+    <span class="comment"># Include common security headers</span>
+    include /etc/nginx/snippets/security-headers.conf;
+
+    <span class="comment"># Include SSL config</span>
+    include /etc/nginx/snippets/ssl-params.conf;
+}</pre>
+
+                    <div class="content-block">
+                        <h4>File Organization Example</h4>
+                        <pre data-lang="text">/etc/nginx/
+├── nginx.conf                 # Main config
+├── conf.d/
+│   └── default.conf          # Default server
+├── sites-available/
+│   ├── example.com.conf
+│   └── api.example.com.conf
+├── sites-enabled/            # Symlinks to sites-available
+│   └── example.com.conf -> ../sites-available/example.com.conf
+└── snippets/
+    ├── ssl-params.conf
+    └── security-headers.conf</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Directive Inheritance</h3>
+
+                    <div class="content-block">
+                        <p>Directives inherit from parent contexts and can be overridden in child contexts:</p>
+                    </div>
+
+                    <pre data-lang="nginx">http {
+    <span class="comment"># Applies to all servers</span>
+    gzip on;
+
+    server {
+        <span class="comment"># Inherits gzip on</span>
+        listen 80;
+
+        location / {
+            <span class="comment"># Inherits gzip on</span>
+            <span class="comment"># Can override: gzip off;</span>
+        }
+
+        location /api/ {
+            <span class="comment"># Override for this location</span>
+            gzip off;
+        }
+    }
+}</pre>
+                </div>
+            </section>
+
+            <!-- Server Blocks -->
+            <section class="section" id="server-blocks">
+                <div class="section-header">
+                    <span class="section-number">04</span>
+                    <h2 class="section-title">Server Blocks</h2>
+                    <p class="section-description">Virtual hosts defining request handling for different domains.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Basic Server Block</h3>
+
+                    <pre data-lang="nginx">server {
+    listen 80;                          <span class="comment"># Port</span>
+    listen [::]:80;                     <span class="comment"># IPv6</span>
+    server_name example.com www.example.com;
+    root /var/www/example.com;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Listen Directive</h3>
+
+                    <div class="content-block">
+                        <p>Specifies IP address and port to listen on:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Listen on all interfaces, port 80</span>
+listen 80;
+
+<span class="comment"># Listen on specific IP</span>
+listen 192.168.1.10:80;
+
+<span class="comment"># IPv6</span>
+listen [::]:80;
+
+<span class="comment"># HTTPS</span>
+listen 443 ssl;
+listen 443 ssl http2;  <span class="comment"># With HTTP/2</span>
+
+<span class="comment"># Unix socket</span>
+listen unix:/var/run/nginx.sock;
+
+<span class="comment"># Default server for this port</span>
+listen 80 default_server;
+
+<span class="comment"># Set socket options</span>
+listen 80 reuseport;  <span class="comment"># SO_REUSEPORT for load balancing</span></pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">server_name Directive</h3>
+
+                    <div class="content-block">
+                        <p>Defines which server block handles which requests:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Exact match (highest priority)</span>
+server_name example.com;
+
+<span class="comment"># Multiple names</span>
+server_name example.com www.example.com;
+
+<span class="comment"># Wildcard at start</span>
+server_name *.example.com;
+server_name .example.com;  <span class="comment"># Matches example.com and *.example.com</span>
+
+<span class="comment"># Wildcard at end</span>
+server_name mail.*;
+
+<span class="comment"># Regular expression (must start with ~)</span>
+server_name ~^www\d+\.example\.com$;
+
+<span class="comment"># Catch-all / default (lowest priority)</span>
+server_name _;</pre>
+
+                    <div class="content-block">
+                        <h4>Request Matching Order</h4>
+                        <ol>
+                            <li>Exact name</li>
+                            <li>Longest wildcard starting with <code>*</code></li>
+                            <li>Longest wildcard ending with <code>*</code></li>
+                            <li>First matching regular expression (in config order)</li>
+                            <li>Default server (if specified)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Default Server</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Explicitly set default server</span>
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;  <span class="comment"># Catch-all name</span>
+
+    <span class="comment"># Return 444 (close connection) for undefined hosts</span>
+    return 444;
+}
+
+<span class="comment"># OR return a generic page</span>
+server {
+    listen 80 default_server;
+    server_name _;
+    root /var/www/default;
+
+    location / {
+        return 403 "Access denied\n";
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Root and Index</h3>
+
+                    <pre data-lang="nginx">server {
+    server_name example.com;
+
+    <span class="comment"># Document root</span>
+    root /var/www/example.com/public;
+
+    <span class="comment"># Index files (checked in order)</span>
+    index index.html index.htm index.php;
+
+    <span class="comment"># Override in location</span>
+    location /docs/ {
+        root /var/www/documentation;  <span class="comment"># Serves /var/www/documentation/docs/</span>
+        index README.html;
+    }
+
+    <span class="comment"># Use alias instead of root</span>
+    location /images/ {
+        alias /data/images/;  <span class="comment"># Serves /data/images/ (not /data/images/images/)</span>
+    }
+}</pre>
+
+                    <div class="warning-box">
+                        <div class="warning-box-title">Root vs Alias</div>
+                        <p><strong>root</strong> appends the location path to the filesystem path.</p>
+                        <p><strong>alias</strong> replaces the location path with the filesystem path.</p>
+                        <p>Use alias when you want to serve files from a different directory structure than your URL structure.</p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Virtual Host Examples</h3>
+
+                    <div class="content-block">
+                        <h4>Multiple Sites on Same Server</h4>
+                        <pre data-lang="nginx"><span class="comment"># Site 1</span>
+server {
+    listen 80;
+    server_name example.com www.example.com;
+    root /var/www/example.com;
+    index index.html;
+}
+
+<span class="comment"># Site 2</span>
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+    }
+}
+
+<span class="comment"># Site 3</span>
+server {
+    listen 80;
+    server_name blog.example.com;
+    root /var/www/blog;
+    index index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        include fastcgi_params;
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>HTTP to HTTPS Redirect</h4>
+                        <pre data-lang="nginx">server {
+    listen 80;
+    server_name example.com www.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name example.com www.example.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    root /var/www/example.com;
+    index index.html;
+}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Location Blocks -->
+            <section class="section" id="location-blocks">
+                <div class="section-header">
+                    <span class="section-number">05</span>
+                    <h2 class="section-title">Location Blocks</h2>
+                    <p class="section-description">Precise URI matching and request routing configuration.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Location Syntax</h3>
+
+                    <pre data-lang="nginx">location [modifier] pattern {
+    <span class="comment"># Configuration</span>
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Modifiers and Priority</h3>
+
+                    <div class="content-block">
+                        <h4>Priority Order (highest to lowest)</h4>
+                        <ol>
+                            <li><code>=</code> - Exact match (stops searching immediately)</li>
+                            <li><code>^~</code> - Preferential prefix (skips regex if matched)</li>
+                            <li><code>~</code> - Case-sensitive regex</li>
+                            <li><code>~*</code> - Case-insensitive regex</li>
+                            <li>(none) - Prefix match (longest wins)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Exact Match (=)</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Matches ONLY /favicon.ico</span>
+location = /favicon.ico {
+    access_log off;
+    log_not_found off;
+    expires 30d;
+}
+
+<span class="comment"># Matches ONLY / (not /index.html or /about)</span>
+location = / {
+    try_files /index.html =404;
+}</pre>
+
+                    <div class="info-box">
+                        <div class="info-box-title">Use For</div>
+                        <p>Specific endpoints like <code>/favicon.ico</code>, <code>/robots.txt</code>, <code>/health</code>, <code>/api/v1/status</code></p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Preferential Prefix (^~)</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># If URI starts with /images/, use this block (skip regex checks)</span>
+location ^~ /images/ {
+    root /data;
+    expires 30d;
+}
+
+<span class="comment"># Skip regex for static files directory</span>
+location ^~ /static/ {
+    alias /var/www/static/;
+    add_header Cache-Control "public, max-age=31536000";
+}</pre>
+
+                    <div class="info-box">
+                        <div class="info-box-title">Use For</div>
+                        <p>Static file directories where you want to avoid regex overhead</p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Case-Sensitive Regex (~)</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Match .php files (case-sensitive)</span>
+location ~ \.php$ {
+    fastcgi_pass unix:/var/run/php/php-fpm.sock;
+    include fastcgi_params;
+}
+
+<span class="comment"># Match files with specific extensions</span>
+location ~ \.(jpg|jpeg|png|gif|ico|svg)$ {
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+}
+
+<span class="comment"># Match paths with version numbers</span>
+location ~ ^/api/v[0-9]+/ {
+    proxy_pass http://api_backend;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Case-Insensitive Regex (~*)</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Match image files (any case)</span>
+location ~* \.(jpg|jpeg|png|gif|ico|svg|webp)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+
+<span class="comment"># Match CSS and JS files</span>
+location ~* \.(css|js)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+
+<span class="comment"># Block access to hidden files (. prefix)</span>
+location ~* /\. {
+    deny all;
+    access_log off;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Prefix Match (no modifier)</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Matches anything starting with /api/</span>
+location /api/ {
+    proxy_pass http://backend;
+}
+
+<span class="comment"># Matches anything starting with /downloads/</span>
+location /downloads/ {
+    root /data;
+    autoindex on;
+}
+
+<span class="comment"># Root location (matches everything, lowest priority)</span>
+location / {
+    try_files $uri $uri/ =404;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Complete Priority Example</h3>
+
+                    <pre data-lang="nginx">server {
+    listen 80;
+    server_name example.com;
+    root /var/www/example;
+
+    <span class="comment"># Priority 1: Exact match for /</span>
+    location = / {
+        try_files /index.html =404;
+    }
+
+    <span class="comment"># Priority 2: Exact match for /health</span>
+    location = /health {
+        access_log off;
+        return 200 "OK\n";
+    }
+
+    <span class="comment"># Priority 3: Preferential prefix (skips regex)</span>
+    location ^~ /static/ {
+        alias /var/cache/static/;
+        expires max;
+    }
+
+    <span class="comment"># Priority 4: Regex (checked in order)</span>
+    location ~ \.php$ {
+        fastcgi_pass php_backend;
+    }
+
+    location ~* \.(jpg|png|gif)$ {
+        expires 30d;
+    }
+
+    <span class="comment"># Priority 5: Prefix match (longest wins)</span>
+    location /api/v2/ {
+        proxy_pass http://api_v2;
+    }
+
+    location /api/ {
+        proxy_pass http://api_v1;
+    }
+
+    <span class="comment"># Fallback (matches everything)</span>
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}</pre>
+
+                    <div class="info-box">
+                        <div class="info-box-title">Example Matching</div>
+                        <p>Request <code>/api/v2/users</code> matches:</p>
+                        <ul>
+                            <li>❌ <code>= /</code> (not exact match)</li>
+                            <li>❌ <code>^~ /static/</code> (doesn't start with /static/)</li>
+                            <li>❌ <code>~ \.php$</code> (no .php extension)</li>
+                            <li>❌ <code>~* \.(jpg|png|gif)$</code> (no image extension)</li>
+                            <li>✅ <code>/api/v2/</code> (longest prefix match wins over /api/)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">try_files Directive</h3>
+
+                    <div class="content-block">
+                        <p>Attempts to serve files in order, with fallback:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Try file, then directory, then 404</span>
+location / {
+    try_files $uri $uri/ =404;
+}
+
+<span class="comment"># Try file, then pass to PHP</span>
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+
+<span class="comment"># Try file, then named location</span>
+location / {
+    try_files $uri $uri/ @proxy;
+}
+
+location @proxy {
+    proxy_pass http://backend;
+}
+
+<span class="comment"># SPA (Single Page Application) pattern</span>
+location / {
+    try_files $uri $uri/ /index.html;
+}
+
+<span class="comment"># Static files with backend fallback</span>
+location /media/ {
+    try_files $uri @backend;
+}
+
+location @backend {
+    proxy_pass http://app_server;
+}</pre>
+                </div>
+            </section>
+
+            <!-- Reverse Proxy -->
+            <section class="section" id="reverse-proxy">
+                <div class="section-header">
+                    <span class="section-number">06</span>
+                    <h2 class="section-title">Reverse Proxy</h2>
+                    <p class="section-description">Load balancing and backend request forwarding infrastructure.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Basic Reverse Proxy</h3>
+
+                    <pre data-lang="nginx">server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        <span class="comment"># Forward to backend</span>
+        proxy_pass http://localhost:3000;
+
+        <span class="comment"># Preserve host header</span>
+        proxy_set_header Host $host;
+
+        <span class="comment"># Forward client IP</span>
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        <span class="comment"># Forward protocol (http/https)</span>
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        <span class="comment"># WebSocket support</span>
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">proxy_pass Trailing Slash</h3>
+
+                    <div class="warning-box">
+                        <div class="warning-box-title">Important Behavior</div>
+                        <p>Trailing slash behavior differs significantly:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># WITHOUT trailing slash - appends location path</span>
+location /api/ {
+    proxy_pass http://backend;
+    <span class="comment"># Request: /api/users</span>
+    <span class="comment"># Proxied to: http://backend/api/users</span>
+}
+
+<span class="comment"># WITH trailing slash - replaces location path</span>
+location /api/ {
+    proxy_pass http://backend/;
+    <span class="comment"># Request: /api/users</span>
+    <span class="comment"># Proxied to: http://backend/users (note: /api/ removed)</span>
+}
+
+<span class="comment"># With path in proxy_pass</span>
+location /api/ {
+    proxy_pass http://backend/v2/;
+    <span class="comment"># Request: /api/users</span>
+    <span class="comment"># Proxied to: http://backend/v2/users</span>
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Upstream Blocks</h3>
+
+                    <div class="content-block">
+                        <p>Define groups of backend servers for load balancing:</p>
+                    </div>
+
+                    <pre data-lang="nginx">upstream backend {
+    <span class="comment"># Default: round-robin load balancing</span>
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+
+server {
+    location / {
+        proxy_pass http://backend;
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Load Balancing Methods</h3>
+
+                    <div class="content-block">
+                        <h4>Round Robin (default)</h4>
+                        <pre data-lang="nginx">upstream backend {
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+<span class="comment"># Distributes requests evenly across servers</span></pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Least Connections</h4>
+                        <pre data-lang="nginx">upstream backend {
+    least_conn;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+<span class="comment"># Sends to server with fewest active connections</span></pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>IP Hash (session persistence)</h4>
+                        <pre data-lang="nginx">upstream backend {
+    ip_hash;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+<span class="comment"># Same client IP always goes to same server</span></pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Random</h4>
+                        <pre data-lang="nginx">upstream backend {
+    random;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+<span class="comment"># Randomly selects server</span></pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Random with Two Choices</h4>
+                        <pre data-lang="nginx">upstream backend {
+    random two least_conn;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+}
+<span class="comment"># Picks two random servers, chooses one with fewer connections</span></pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Server Weights</h3>
+
+                    <pre data-lang="nginx">upstream backend {
+    server backend1.example.com weight=5;  <span class="comment"># Receives 5/8 of traffic</span>
+    server backend2.example.com weight=2;  <span class="comment"># Receives 2/8 of traffic</span>
+    server backend3.example.com weight=1;  <span class="comment"># Receives 1/8 of traffic</span>
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Health Checks and Failover</h3>
+
+                    <pre data-lang="nginx">upstream backend {
+    server backend1.example.com max_fails=3 fail_timeout=30s;
+    server backend2.example.com max_fails=3 fail_timeout=30s;
+    server backend3.example.com backup;  <span class="comment"># Only used if others fail</span>
+    server backend4.example.com down;    <span class="comment"># Temporarily disabled</span>
+}
+
+<span class="comment"># max_fails=3: Mark as down after 3 failed attempts</span>
+<span class="comment"># fail_timeout=30s: Try again after 30 seconds</span>
+<span class="comment"># backup: Only receives traffic if primary servers are down</span>
+<span class="comment"># down: Permanently disabled</span></pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Advanced Upstream Configuration</h3>
+
+                    <pre data-lang="nginx">upstream backend {
+    least_conn;
+
+    <span class="comment"># Server parameters</span>
+    server backend1.example.com:8080 weight=5 max_fails=3 fail_timeout=30s;
+    server backend2.example.com:8080 weight=3;
+    server 192.168.1.100:8080;
+    server unix:/tmp/backend.sock;
+    server backend3.example.com backup;
+
+    <span class="comment"># Connection pooling</span>
+    keepalive 32;
+    keepalive_requests 100;
+    keepalive_timeout 60s;
+}
+
+server {
+    location / {
+        proxy_pass http://backend;
+
+        <span class="comment"># Required for keepalive</span>
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Proxy Headers</h3>
+
+                    <pre data-lang="nginx">location / {
+    proxy_pass http://backend;
+
+    <span class="comment"># Standard proxy headers</span>
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+
+    <span class="comment"># WebSocket support</span>
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    <span class="comment"># Preserve original request URI</span>
+    proxy_set_header X-Original-URI $request_uri;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Proxy Timeouts and Buffering</h3>
+
+                    <pre data-lang="nginx">location / {
+    proxy_pass http://backend;
+
+    <span class="comment"># Timeouts</span>
+    proxy_connect_timeout 60s;      <span class="comment"># Time to establish connection</span>
+    proxy_send_timeout 60s;         <span class="comment"># Time between successive writes</span>
+    proxy_read_timeout 60s;         <span class="comment"># Time between successive reads</span>
+
+    <span class="comment"># Buffering (enabled by default)</span>
+    proxy_buffering on;
+    proxy_buffer_size 4k;
+    proxy_buffers 8 4k;
+    proxy_busy_buffers_size 8k;
+
+    <span class="comment"># Disable buffering for streaming</span>
+    <span class="comment"># proxy_buffering off;</span>
+}</pre>
+                </div>
+            </section>
+
+            <!-- SSL/TLS -->
+            <section class="section" id="ssl-tls">
+                <div class="section-header">
+                    <span class="section-number">07</span>
+                    <h2 class="section-title">SSL/TLS</h2>
+                    <p class="section-description">Secure communications with HTTPS and modern cryptography.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Basic HTTPS Configuration</h3>
+
+                    <pre data-lang="nginx">server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name example.com www.example.com;
+
+    <span class="comment"># Certificate files</span>
+    ssl_certificate /etc/ssl/certs/example.com.crt;
+    ssl_certificate_key /etc/ssl/private/example.com.key;
+
+    <span class="comment"># Root and locations</span>
+    root /var/www/example.com;
+    index index.html;
+}
+
+<span class="comment"># HTTP to HTTPS redirect</span>
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    return 301 https://$server_name$request_uri;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">SSL Protocols and Ciphers</h3>
+
+                    <div class="content-block">
+                        <h4>Modern Configuration (TLS 1.2 and 1.3)</h4>
+                        <pre data-lang="nginx"><span class="comment"># Protocols</span>
+ssl_protocols TLSv1.2 TLSv1.3;
+
+<span class="comment"># Cipher suites (Mozilla Intermediate profile)</span>
+ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+
+<span class="comment"># Prefer server ciphers</span>
+ssl_prefer_server_ciphers on;
+
+<span class="comment"># DH parameters (generate with: openssl dhparam -out /etc/ssl/dhparam.pem 2048)</span>
+ssl_dhparam /etc/ssl/dhparam.pem;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Mozilla Modern Profile (TLS 1.3 only, highest security)</h4>
+                        <pre data-lang="nginx">ssl_protocols TLSv1.3;</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">SSL Session Optimization</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># SSL session cache (shared across workers)</span>
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+
+<span class="comment"># Session tickets (for resumption)</span>
+ssl_session_tickets on;</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">OCSP Stapling</h3>
+
+                    <div class="content-block">
+                        <p>Improves SSL handshake performance by including certificate status in TLS handshake:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Enable OCSP stapling</span>
+ssl_stapling on;
+ssl_stapling_verify on;
+
+<span class="comment"># Intermediate certificate chain (required for verification)</span>
+ssl_trusted_certificate /etc/ssl/certs/chain.pem;
+
+<span class="comment"># DNS resolver for OCSP responder lookup</span>
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;</pre>
+
+                    <div class="content-block">
+                        <h4>Test OCSP Stapling</h4>
+                        <pre data-lang="bash">openssl s_client -connect example.com:443 -status -tlsextdebug < /dev/null 2>&1 | grep -A 17 "OCSP response"</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">HTTP/2 Configuration</h3>
+
+                    <div class="content-block">
+                        <p>HTTP/2 requires HTTPS:</p>
+                    </div>
+
+                    <pre data-lang="nginx">server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    <span class="comment"># HTTP/2 specific settings</span>
+    http2_max_field_size 16k;
+    http2_max_header_size 32k;
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Let's Encrypt Integration</h3>
+
+                    <div class="content-block">
+                        <h4>Using Certbot (recommended)</h4>
+                        <pre data-lang="bash"><span class="comment"># Install certbot</span>
+sudo apt install certbot python3-certbot-nginx
+
+<span class="comment"># Obtain certificate</span>
+sudo certbot --nginx -d example.com -d www.example.com
+
+<span class="comment"># Test automatic renewal</span>
+sudo certbot renew --dry-run
+
+<span class="comment"># View certificates</span>
+sudo certbot certificates</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Manual Configuration with Let's Encrypt</h4>
+                        <pre data-lang="nginx">server {
+    listen 80;
+    server_name example.com www.example.com;
+
+    <span class="comment"># ACME challenge for Let's Encrypt</span>
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    <span class="comment"># Redirect other requests to HTTPS</span>
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name example.com www.example.com;
+
+    <span class="comment"># Let's Encrypt certificates</span>
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/example.com/chain.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Complete SSL Configuration Snippet</h3>
+
+                    <div class="content-block">
+                        <p>Create <code>/etc/nginx/snippets/ssl-params.conf</code>:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Modern SSL configuration</span>
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+ssl_prefer_server_ciphers off;
+
+<span class="comment"># Session optimization</span>
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+ssl_session_tickets off;
+
+<span class="comment"># DH parameters</span>
+ssl_dhparam /etc/ssl/dhparam.pem;
+
+<span class="comment"># OCSP stapling</span>
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;</pre>
+
+                    <div class="content-block">
+                        <h4>Use in Server Blocks</h4>
+                        <pre data-lang="nginx">server {
+    listen 443 ssl http2;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    include snippets/ssl-params.conf;
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing SSL Configuration</h3>
+
+                    <pre data-lang="bash"><span class="comment"># Test with OpenSSL</span>
+openssl s_client -connect example.com:443 -tls1_2
+
+<span class="comment"># Check protocols and ciphers</span>
+nmap --script ssl-enum-ciphers -p 443 example.com
+
+<span class="comment"># Online test (recommended)</span>
+<span class="comment"># Visit: https://www.ssllabs.com/ssltest/</span></pre>
+                </div>
+            </section>
+
+            <!-- Headers & Security -->
+            <section class="section" id="headers-security">
+                <div class="section-header">
+                    <span class="section-number">08</span>
+                    <h2 class="section-title">Headers & Security</h2>
+                    <p class="section-description">Hardening infrastructure with security headers and access control.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Security Headers</h3>
+
+                    <div class="content-block">
+                        <p>Create <code>/etc/nginx/snippets/security-headers.conf</code>:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Strict Transport Security (HSTS)</span>
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+<span class="comment"># Prevent clickjacking</span>
+add_header X-Frame-Options "SAMEORIGIN" always;
+
+<span class="comment"># Prevent MIME type sniffing</span>
+add_header X-Content-Type-Options "nosniff" always;
+
+<span class="comment"># XSS protection (legacy, but still useful)</span>
+add_header X-XSS-Protection "1; mode=block" always;
+
+<span class="comment"># Referrer policy</span>
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+<span class="comment"># Permissions policy (formerly Feature-Policy)</span>
+add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;</pre>
+
+                    <div class="content-block">
+                        <h4>Use in Server Block</h4>
+                        <pre data-lang="nginx">server {
+    listen 443 ssl http2;
+    server_name example.com;
+
+    include snippets/security-headers.conf;
+
+    location / {
+        <span class="comment"># ...</span>
+    }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Content Security Policy (CSP)</h3>
+
+                    <div class="content-block">
+                        <h4>Strict CSP (breaks inline scripts/styles)</h4>
+                        <pre data-lang="nginx">add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'" always;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Moderate CSP (allows inline with nonce)</h4>
+                        <pre data-lang="nginx">add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-$request_id'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.example.com" always;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Report-Only Mode (testing)</h4>
+                        <pre data-lang="nginx">add_header Content-Security-Policy-Report-Only "default-src 'self'; report-uri /csp-report" always;</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">CORS Configuration</h3>
+
+                    <div class="content-block">
+                        <h4>Allow Specific Origin</h4>
+                        <pre data-lang="nginx">location /api/ {
+    <span class="comment"># Simple CORS</span>
+    add_header Access-Control-Allow-Origin "https://app.example.com" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+
+    <span class="comment"># Handle preflight</span>
+    if ($request_method = OPTIONS) {
+        return 204;
+    }
+
+    proxy_pass http://backend;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Allow Multiple Origins</h4>
+                        <pre data-lang="nginx">map $http_origin $cors_origin {
+    default "";
+    "https://app.example.com" $http_origin;
+    "https://admin.example.com" $http_origin;
+    "https://mobile.example.com" $http_origin;
+}
+
+server {
+    location /api/ {
+        add_header Access-Control-Allow-Origin $cors_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Rate Limiting</h3>
+
+                    <div class="content-block">
+                        <h4>Basic Rate Limiting</h4>
+                        <pre data-lang="nginx"><span class="comment"># Define rate limit zone (10 req/sec per IP)</span>
+limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+
+server {
+    location / {
+        <span class="comment"># Apply rate limit</span>
+        limit_req zone=general burst=20 nodelay;
+
+        <span class="comment"># Custom error response</span>
+        limit_req_status 429;
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Multiple Rate Limit Zones</h4>
+                        <pre data-lang="nginx">http {
+    <span class="comment"># Different limits for different endpoints</span>
+    limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
+    limit_req_zone $binary_remote_addr zone=api:10m rate=100r/s;
+    limit_req_zone $binary_remote_addr zone=search:10m rate=10r/s;
+
+    server {
+        <span class="comment"># Strict limit on login</span>
+        location /login {
+            limit_req zone=login burst=5 nodelay;
+            limit_req_status 429;
+            proxy_pass http://backend;
+        }
+
+        <span class="comment"># Higher limit for API</span>
+        location /api/ {
+            limit_req zone=api burst=200 nodelay;
+            proxy_pass http://backend;
+        }
+
+        <span class="comment"># Moderate limit for search</span>
+        location /search {
+            limit_req zone=search burst=20 nodelay;
+            proxy_pass http://backend;
+        }
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Connection Limiting</h4>
+                        <pre data-lang="nginx"><span class="comment"># Limit concurrent connections per IP</span>
+limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+server {
+    <span class="comment"># Max 10 concurrent connections per IP</span>
+    limit_conn addr 10;
+
+    location /downloads/ {
+        <span class="comment"># Max 1 connection per IP for downloads</span>
+        limit_conn addr 1;
+
+        <span class="comment"># Rate limit bandwidth after 1MB</span>
+        limit_rate_after 1m;
+        limit_rate 500k;  <span class="comment"># 500 KB/s</span>
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Advanced Rate Limiting</h4>
+                        <pre data-lang="nginx"><span class="comment"># Combine multiple conditions</span>
+map $http_user_agent $limit_bots {
+    default "";
+    ~*(bot|crawler|spider) $binary_remote_addr;
+}
+
+limit_req_zone $limit_bots zone=bots:10m rate=1r/s;
+
+<span class="comment"># Whitelist IPs</span>
+geo $limit_ip {
+    default 1;
+    192.168.1.0/24 0;  <span class="comment"># Internal network</span>
+    10.0.0.0/8 0;      <span class="comment"># Office network</span>
+}
+
+map $limit_ip $limit_key {
+    0 "";
+    1 $binary_remote_addr;
+}
+
+limit_req_zone $limit_key zone=general:10m rate=10r/s;
+
+server {
+    location / {
+        limit_req zone=general burst=20 nodelay;
+        limit_req zone=bots burst=5;
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Caching & Performance -->
+            <section class="section" id="caching-performance">
+                <div class="section-header">
+                    <span class="section-number">09</span>
+                    <h2 class="section-title">Caching & Performance</h2>
+                    <p class="section-description">Maximize throughput with intelligent caching and optimization.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Proxy Cache</h3>
+
+                    <div class="content-block">
+                        <h4>Basic Configuration</h4>
+                        <pre data-lang="nginx"><span class="comment"># Define cache path and settings</span>
+proxy_cache_path /var/cache/nginx/proxy
+    levels=1:2
+    keys_zone=my_cache:10m
+    max_size=1g
+    inactive=60m
+    use_temp_path=off;
+
+<span class="comment"># Cache key</span>
+proxy_cache_key "$scheme$request_method$host$request_uri";
+
+server {
+    location / {
+        proxy_cache my_cache;
+
+        <span class="comment"># Cache for different status codes</span>
+        proxy_cache_valid 200 302 10m;
+        proxy_cache_valid 404 1m;
+
+        <span class="comment"># Add cache status to response header</span>
+        add_header X-Cache-Status $upstream_cache_status;
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Advanced Proxy Caching</h4>
+                        <pre data-lang="nginx">proxy_cache_path /var/cache/nginx/proxy
+    levels=1:2
+    keys_zone=proxy_cache:100m
+    max_size=10g
+    inactive=1h
+    use_temp_path=off;
+
+<span class="comment"># Cache bypass conditions</span>
+map $request_method $skip_cache {
+    default 0;
+    POST 1;
+    PUT 1;
+    DELETE 1;
+}
+
+map $http_cookie $skip_cache {
+    default 0;
+    ~*session 1;
+}
+
+server {
+    location / {
+        proxy_cache proxy_cache;
+        proxy_cache_valid 200 302 10m;
+        proxy_cache_valid 404 1m;
+        proxy_cache_valid any 1m;
+
+        <span class="comment"># Bypass cache</span>
+        proxy_cache_bypass $skip_cache;
+        proxy_no_cache $skip_cache;
+
+        <span class="comment"># Cache lock (prevent stampede)</span>
+        proxy_cache_lock on;
+        proxy_cache_lock_timeout 5s;
+
+        <span class="comment"># Use stale cache during updates</span>
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+        proxy_cache_background_update on;
+
+        <span class="comment"># Revalidate stale content</span>
+        proxy_cache_revalidate on;
+
+        <span class="comment"># Headers</span>
+        add_header X-Cache-Status $upstream_cache_status;
+        proxy_ignore_headers Cache-Control Expires;
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Microcaching</h3>
+
+                    <div class="content-block">
+                        <p>Cache dynamic content for very short periods (1-5 seconds) to absorb traffic spikes:</p>
+                    </div>
+
+                    <pre data-lang="nginx">proxy_cache_path /var/cache/nginx/micro
+    levels=1:2
+    keys_zone=microcache:10m
+    max_size=1g
+    inactive=1h;
+
+server {
+    location / {
+        proxy_cache microcache;
+        proxy_cache_valid 200 1s;  <span class="comment"># Cache for 1 second</span>
+        proxy_cache_use_stale updating;
+        proxy_cache_background_update on;
+        proxy_cache_lock on;
+
+        add_header X-Cache-Status $upstream_cache_status;
+
+        proxy_pass http://backend;
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Static File Caching</h3>
+
+                    <pre data-lang="nginx">location ~* \.(jpg|jpeg|png|gif|ico|svg|webp)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+}
+
+location ~* \.(css|js)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+}
+
+location ~* \.(woff|woff2|ttf|otf|eot)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+}
+
+location ~* \.(pdf|doc|docx|xls|xlsx)$ {
+    expires 30d;
+    add_header Cache-Control "public";
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Gzip Compression</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Enable gzip</span>
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;  <span class="comment"># 1-9, higher = more CPU, smaller files</span>
+gzip_min_length 256;  <span class="comment"># Don't compress small files</span>
+gzip_types
+    text/plain
+    text/css
+    text/xml
+    text/javascript
+    application/json
+    application/javascript
+    application/xml+rss
+    application/rss+xml
+    application/atom+xml
+    image/svg+xml
+    text/x-component
+    text/x-cross-domain-policy;
+
+<span class="comment"># Don't compress already-compressed formats</span>
+gzip_disable "msie6";</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Brotli Compression</h3>
+
+                    <div class="content-block">
+                        <p>Requires <code>ngx_brotli</code> module:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Enable brotli (better compression than gzip)</span>
+brotli on;
+brotli_comp_level 6;  <span class="comment"># 1-11</span>
+brotli_types
+    text/plain
+    text/css
+    text/xml
+    text/javascript
+    application/json
+    application/javascript
+    application/xml+rss
+    application/rss+xml
+    application/atom+xml
+    image/svg+xml;
+
+<span class="comment"># Static pre-compressed files</span>
+brotli_static on;  <span class="comment"># Serve .br files if available</span>
+gzip_static on;    <span class="comment"># Serve .gz files if available</span></pre>
+
+                    <div class="content-block">
+                        <h4>Pre-Compress Static Files</h4>
+                        <pre data-lang="bash"><span class="comment"># Compress with gzip</span>
+find /var/www -type f \( -name "*.css" -o -name "*.js" \) -exec gzip -k9 {} \;
+
+<span class="comment"># Compress with brotli</span>
+find /var/www -type f \( -name "*.css" -o -name "*.js" \) -exec brotli -k {} \;</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Buffer Settings</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Client buffers</span>
+client_body_buffer_size 128k;
+client_max_body_size 10m;
+client_header_buffer_size 1k;
+large_client_header_buffers 4 8k;
+
+<span class="comment"># Proxy buffers</span>
+proxy_buffer_size 4k;
+proxy_buffers 8 4k;
+proxy_busy_buffers_size 8k;
+proxy_max_temp_file_size 1024m;
+proxy_temp_file_write_size 8k;</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Keepalive Connections</h3>
+
+                    <div class="content-block">
+                        <h4>Client Keepalive</h4>
+                        <pre data-lang="nginx"><span class="comment"># HTTP keepalive</span>
+keepalive_timeout 65s;
+keepalive_requests 100;
+
+<span class="comment"># For HTTPS</span>
+keepalive_timeout 75s;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Upstream Keepalive</h4>
+                        <pre data-lang="nginx">upstream backend {
+    server backend1.example.com:8080;
+    server backend2.example.com:8080;
+
+    <span class="comment"># Keepalive pool (connections per worker)</span>
+    keepalive 32;
+    keepalive_requests 100;
+    keepalive_timeout 60s;
+}
+
+server {
+    location / {
+        proxy_pass http://backend;
+
+        <span class="comment"># Required for upstream keepalive</span>
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Worker Configuration</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Main context</span>
+user www-data;
+worker_processes auto;  <span class="comment"># One per CPU core</span>
+worker_rlimit_nofile 65535;  <span class="comment"># Max open files</span>
+
+events {
+    worker_connections 4096;  <span class="comment"># Max connections per worker</span>
+    use epoll;  <span class="comment"># Linux: efficient event model</span>
+    multi_accept on;
+}
+
+http {
+    <span class="comment"># Optimize file serving</span>
+    sendfile on;
+    tcp_nopush on;  <span class="comment"># Send headers in one packet</span>
+    tcp_nodelay on;  <span class="comment"># Don't buffer small packets</span>
+
+    <span class="comment"># Timeouts</span>
+    keepalive_timeout 65;
+    send_timeout 30;
+    client_body_timeout 12;
+    client_header_timeout 12;
+
+    <span class="comment"># Other optimizations</span>
+    reset_timedout_connection on;
+    open_file_cache max=200000 inactive=20s;
+    open_file_cache_valid 30s;
+    open_file_cache_min_uses 2;
+    open_file_cache_errors on;
+}</pre>
+                </div>
+            </section>
+
+            <!-- Logging -->
+            <section class="section" id="logging">
+                <div class="section-header">
+                    <span class="section-number">10</span>
+                    <h2 class="section-title">Logging</h2>
+                    <p class="section-description">Comprehensive monitoring and diagnostics infrastructure.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Access Log</h3>
+
+                    <div class="content-block">
+                        <h4>Default Format</h4>
+                        <pre data-lang="nginx">access_log /var/log/nginx/access.log;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Custom Log Format</h4>
+                        <pre data-lang="nginx">log_format main '$remote_addr - $remote_user [$time_local] '
+                '"$request" $status $body_bytes_sent '
+                '"$http_referer" "$http_user_agent"';
+
+access_log /var/log/nginx/access.log main;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Detailed Log Format</h4>
+                        <pre data-lang="nginx">log_format detailed '$remote_addr - $remote_user [$time_local] '
+                    '"$request" $status $body_bytes_sent '
+                    '"$http_referer" "$http_user_agent" '
+                    'rt=$request_time uct="$upstream_connect_time" '
+                    'uht="$upstream_header_time" urt="$upstream_response_time"';
+
+access_log /var/log/nginx/access.log detailed;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>JSON Log Format</h4>
+                        <pre data-lang="nginx">log_format json escape=json '{'
+    '"time":"$time_iso8601",'
+    '"remote_addr":"$remote_addr",'
+    '"remote_user":"$remote_user",'
+    '"request":"$request",'
+    '"status":$status,'
+    '"body_bytes_sent":$body_bytes_sent,'
+    '"request_time":$request_time,'
+    '"http_referer":"$http_referer",'
+    '"http_user_agent":"$http_user_agent",'
+    '"http_x_forwarded_for":"$http_x_forwarded_for",'
+    '"upstream_addr":"$upstream_addr",'
+    '"upstream_status":"$upstream_status",'
+    '"upstream_response_time":"$upstream_response_time"'
+'}';
+
+access_log /var/log/nginx/access.log json;</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Error Log</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Main context</span>
+error_log /var/log/nginx/error.log warn;
+
+<span class="comment"># Log levels: debug, info, notice, warn, error, crit, alert, emerg</span>
+error_log /var/log/nginx/error.log error;
+
+<span class="comment"># Server-specific error log</span>
+server {
+    error_log /var/log/nginx/example.com-error.log;
+}
+
+<span class="comment"># Disable error logging</span>
+error_log /dev/null;</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Conditional Logging</h3>
+
+                    <div class="content-block">
+                        <h4>Exclude Specific Requests</h4>
+                        <pre data-lang="nginx"><span class="comment"># Map to determine if request should be logged</span>
+map $request_uri $loggable {
+    default 1;
+    ~^/health$ 0;
+    ~^/ping$ 0;
+    ~^/favicon.ico$ 0;
+}
+
+access_log /var/log/nginx/access.log combined if=$loggable;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Exclude by Status Code</h4>
+                        <pre data-lang="nginx">map $status $loggable {
+    ~^[23] 0;  <span class="comment"># Don't log 2xx and 3xx</span>
+    default 1;
+}
+
+access_log /var/log/nginx/access.log combined if=$loggable;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>Sample Logging (log only 10% of requests)</h4>
+                        <pre data-lang="nginx">map $request_id $loggable {
+    default 0;
+    ~^..........[01]$ 1;  <span class="comment"># Last digit is 0 or 1 (~10%)</span>
+}
+
+access_log /var/log/nginx/access.log combined if=$loggable;</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Multiple Log Destinations</h3>
+
+                    <pre data-lang="nginx">server {
+    <span class="comment"># Multiple access logs</span>
+    access_log /var/log/nginx/access.log combined;
+    access_log /var/log/nginx/json.log json;
+
+    <span class="comment"># Send to syslog</span>
+    access_log syslog:server=logserver.example.com:514,tag=nginx combined;
+
+    <span class="comment"># Different logs for different locations</span>
+    location /api/ {
+        access_log /var/log/nginx/api-access.log;
+        proxy_pass http://backend;
+    }
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Buffer Logging</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Buffer logs to improve I/O performance</span>
+access_log /var/log/nginx/access.log combined buffer=32k flush=5s;</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Disable Logging</h3>
+
+                    <pre data-lang="nginx"><span class="comment"># Disable access log for static files</span>
+location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+    access_log off;
+    log_not_found off;
+}
+
+<span class="comment"># Disable for specific location</span>
+location /health {
+    access_log off;
+    return 200 "OK\n";
+}</pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">stub_status Module</h3>
+
+                    <div class="content-block">
+                        <p>Monitor NGINX in real-time:</p>
+                    </div>
+
+                    <pre data-lang="nginx"><span class="comment"># Enable stub_status module</span>
+server {
+    listen 127.0.0.1:80;
+    server_name localhost;
+
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+}</pre>
+
+                    <div class="content-block">
+                        <h4>Check Status</h4>
+                        <pre data-lang="bash">curl http://127.0.0.1/nginx_status</pre>
+
+                        <p>Output:</p>
+                        <pre data-lang="text">Active connections: 2
+server accepts handled requests
+ 10 10 20
+Reading: 0 Writing: 1 Waiting: 1</pre>
+
+                        <h4>Metrics</h4>
+                        <ul>
+                            <li><strong>Active connections</strong>: Current connections (including waiting)</li>
+                            <li><strong>accepts</strong>: Total accepted connections</li>
+                            <li><strong>handled</strong>: Total handled connections (should equal accepts)</li>
+                            <li><strong>requests</strong>: Total client requests</li>
+                            <li><strong>Reading</strong>: Reading request headers</li>
+                            <li><strong>Writing</strong>: Writing response to client</li>
+                            <li><strong>Waiting</strong>: Idle keepalive connections</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Log Rotation</h3>
+
+                    <div class="content-block">
+                        <p>Create <code>/etc/logrotate.d/nginx</code>:</p>
+                    </div>
+
+                    <pre data-lang="text">/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`
+    endscript
+}</pre>
+
+                    <div class="content-block">
+                        <h4>Manual Log Rotation</h4>
+                        <pre data-lang="bash"><span class="comment"># Move logs</span>
+mv /var/log/nginx/access.log /var/log/nginx/access.log.old
+
+<span class="comment"># Reopen log files</span>
+nginx -s reopen</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pro Tips -->
+            <section class="section" id="pro-tips">
+                <div class="section-header">
+                    <span class="section-number">11</span>
+                    <h2 class="section-title">Pro Tips</h2>
+                    <p class="section-description">Best practices and advanced techniques from the field.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Common Mistakes</h3>
+
+                    <div class="content-block">
+                        <h4>1. Missing Semicolons</h4>
+                        <pre data-lang="nginx"><span class="comment"># WRONG - missing semicolon</span>
+server {
+    listen 80
+    server_name example.com;
+}
+
+<span class="comment"># CORRECT</span>
+server {
+    listen 80;
+    server_name example.com;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>2. Incorrect root vs alias</h4>
+                        <pre data-lang="nginx"><span class="comment"># WRONG - leads to /var/www/images/images/photo.jpg</span>
+location /images/ {
+    root /var/www/images;
+}
+
+<span class="comment"># CORRECT - use alias</span>
+location /images/ {
+    alias /var/www/images/;  <span class="comment"># Note trailing slash</span>
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>3. Missing Proxy Headers</h4>
+                        <pre data-lang="nginx"><span class="comment"># WRONG - backend doesn't know real client IP</span>
+location / {
+    proxy_pass http://backend;
+}
+
+<span class="comment"># CORRECT - forward client info</span>
+location / {
+    proxy_pass http://backend;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>4. Not Testing Before Reload</h4>
+                        <pre data-lang="bash"><span class="comment"># WRONG - might break production</span>
+systemctl reload nginx
+
+<span class="comment"># CORRECT - always test first</span>
+nginx -t && systemctl reload nginx</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>5. Security Header in Wrong Context</h4>
+                        <pre data-lang="nginx"><span class="comment"># WRONG - doesn't apply to proxied responses</span>
+location / {
+    add_header X-Frame-Options DENY;
+    proxy_pass http://backend;
+}
+
+<span class="comment"># CORRECT - use 'always' to include in all responses</span>
+location / {
+    add_header X-Frame-Options DENY always;
+    proxy_pass http://backend;
+}</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Debugging Techniques</h3>
+
+                    <div class="content-block">
+                        <h4>1. Test Configuration Syntax</h4>
+                        <pre data-lang="bash"><span class="comment"># Test and show errors</span>
+nginx -t
+
+<span class="comment"># Test and show full configuration</span>
+nginx -T
+
+<span class="comment"># Check specific config file</span>
+nginx -t -c /etc/nginx/nginx.conf</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>2. Enable Debug Logging</h4>
+                        <pre data-lang="nginx"><span class="comment"># Requires nginx built with --with-debug</span>
+error_log /var/log/nginx/debug.log debug;</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>3. Add Debugging Headers</h4>
+                        <pre data-lang="nginx">location / {
+    add_header X-Debug-Backend $upstream_addr;
+    add_header X-Debug-Cache $upstream_cache_status;
+    add_header X-Debug-Time $request_time;
+    proxy_pass http://backend;
+}</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>4. Monitor Error Log in Real-Time</h4>
+                        <pre data-lang="bash">tail -f /var/log/nginx/error.log</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>5. Check Which Config is Being Used</h4>
+                        <pre data-lang="bash">nginx -V 2>&1 | grep -o '\-\-conf-path=\S*'</pre>
+                    </div>
+
+                    <div class="content-block">
+                        <h4>6. Test with curl</h4>
+                        <pre data-lang="bash"><span class="comment"># Verbose output</span>
+curl -v http://example.com/test
+
+<span class="comment"># Check response headers</span>
+curl -I http://example.com/test
+
+<span class="comment"># Follow redirects</span>
+curl -L http://example.com/test</pre>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Performance Tuning Checklist</h3>
+
+                    <ul>
+                        <li>Set <code>worker_processes</code> to number of CPU cores</li>
+                        <li>Increase <code>worker_rlimit_nofile</code> and <code>worker_connections</code></li>
+                        <li>Enable <code>sendfile</code>, <code>tcp_nopush</code>, <code>tcp_nodelay</code></li>
+                        <li>Configure <code>open_file_cache</code> for frequently accessed files</li>
+                        <li>Enable gzip and brotli compression</li>
+                        <li>Use upstream keepalive connections</li>
+                        <li>Implement caching for static and dynamic content</li>
+                        <li>Set appropriate cache headers with <code>expires</code></li>
+                        <li>Disable access logging for static files</li>
+                        <li>Optimize buffer sizes for your workload</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Security Hardening Checklist</h3>
+
+                    <ul>
+                        <li>Enable HTTPS with modern TLS protocols (TLSv1.2, TLSv1.3)</li>
+                        <li>Configure HSTS with <code>includeSubDomains</code> and <code>preload</code></li>
+                        <li>Add security headers (X-Frame-Options, X-Content-Type-Options, etc.)</li>
+                        <li>Implement Content Security Policy</li>
+                        <li>Configure rate limiting to prevent abuse</li>
+                        <li>Set up connection limiting for resource-intensive endpoints</li>
+                        <li>Hide nginx version with <code>server_tokens off</code></li>
+                        <li>Block access to hidden files (<code>location ~ /\.</code>)</li>
+                        <li>Implement proper CORS policies</li>
+                        <li>Use upstream health checks and failover</li>
+                        <li>Set up a default server to handle undefined hosts</li>
+                        <li>Configure proper SSL session caching and OCSP stapling</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Common Error Messages</h3>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Error Message</th>
+                                    <th>Cause & Solution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>invalid number of arguments</code></td>
+                                    <td>Missing semicolon at end of directive</td>
+                                </tr>
+                                <tr>
+                                    <td><code>unexpected end of file</code></td>
+                                    <td>Missing closing brace <code>}</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>host not found in upstream</code></td>
+                                    <td>DNS lookup failed for upstream server. Use IP address or ensure DNS works.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>bind() failed (98: Address already in use)</code></td>
+                                    <td>Another process is using the port. Check with <code>netstat -tlnp | grep :80</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>conflicting server name</code></td>
+                                    <td>Multiple server blocks have same server_name. One should be default_server.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>proxy_pass cannot have URI part</code></td>
+                                    <td>Using variables with URI in proxy_pass. Remove URI path when using variables.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="site-footer">
+            <p>Built with the <a href="../styles/industrial.html">Industrial</a> design system</p>
+            <p>nginx is high-performance infrastructure. Deploy with precision.</p>
+        </footer>
+    </div>
+</body>
+</html>

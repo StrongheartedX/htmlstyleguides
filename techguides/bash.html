@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bash Scripting - Complete Reference Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Questrial&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           RETRO FUTURISM DESIGN SYSTEM
+           1950s-60s vision of the future - The Jetsons, Googie, Space Age
+           Atomic starbursts, boomerang shapes, optimistic tomorrow
+        ================================================================ */
+
+        /* --- DESIGN TOKENS --- */
+        :root {
+            /* RETRO FUTURISM PALETTE */
+            --atomic-turquoise: #40E0D0;
+            --atomic-turquoise-dark: #2BA8A0;
+            --atomic-turquoise-light: #7EEEE4;
+            --coral-sunset: #FF6B6B;
+            --coral-sunset-dark: #E05555;
+            --coral-sunset-light: #FF9B9B;
+            --mustard-gold: #F4D03F;
+            --mustard-gold-dark: #D4B02F;
+            --mint-fresh: #98D8AA;
+            --mint-fresh-dark: #6BC285;
+            --space-navy: #1A1A3E;
+            --space-navy-deep: #0D0D24;
+            --cream-white: #FFF8E7;
+            --cream-warm: #FFF5DC;
+            --chrome-silver: #C0C0C0;
+            --chrome-highlight: #E8E8E8;
+
+            /* SURFACE COLORS */
+            --bg-primary: var(--cream-white);
+            --bg-secondary: var(--cream-warm);
+            --bg-dark: var(--space-navy);
+            --bg-card: #FFFFFF;
+
+            /* TEXT COLORS */
+            --text-primary: var(--space-navy);
+            --text-secondary: #4A4A6A;
+            --text-muted: #7A7A9A;
+            --text-light: var(--cream-white);
+
+            /* BORDERS */
+            --border-light: rgba(26, 26, 62, 0.1);
+            --border-medium: rgba(26, 26, 62, 0.2);
+            --border-accent: var(--atomic-turquoise);
+
+            /* GRADIENTS */
+            --gradient-sunset: linear-gradient(135deg, var(--coral-sunset) 0%, var(--mustard-gold) 100%);
+            --gradient-ocean: linear-gradient(135deg, var(--atomic-turquoise) 0%, var(--mint-fresh) 100%);
+            --gradient-space: linear-gradient(135deg, var(--space-navy) 0%, #2D2D5A 100%);
+
+            /* TYPOGRAPHY */
+            --font-display: 'Audiowide', cursive;
+            --font-body: 'Questrial', sans-serif;
+
+            /* SPACING */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* SHADOWS */
+            --shadow-soft: 0 4px 20px rgba(26, 26, 62, 0.08);
+            --shadow-medium: 0 8px 30px rgba(26, 26, 62, 0.12);
+            --shadow-strong: 0 12px 40px rgba(26, 26, 62, 0.18);
+            --shadow-glow-turquoise: 0 0 30px rgba(64, 224, 208, 0.4);
+            --shadow-glow-coral: 0 0 30px rgba(255, 107, 107, 0.4);
+
+            /* TRANSITIONS */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+            --transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+            /* BORDER RADIUS */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-pill: 100px;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes starburst-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+            50% { transform: scale(1.1) rotate(15deg); opacity: 0.8; }
+        }
+
+        @keyframes orbit {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes satellite-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* --- RESET --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- BACKGROUND DECORATIONS --- */
+        .retro-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .atomic-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--atomic-turquoise) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.08;
+        }
+
+        .starburst {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .starburst::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--mustard-gold);
+            clip-path: polygon(
+                50% 0%, 61% 35%, 98% 35%, 68% 57%,
+                79% 91%, 50% 70%, 21% 91%, 32% 57%,
+                2% 35%, 39% 35%
+            );
+            animation: starburst-pulse 4s ease-in-out infinite;
+        }
+
+        .starburst-1 {
+            width: 120px;
+            height: 120px;
+            top: 10%;
+            right: 5%;
+        }
+
+        .starburst-2 {
+            width: 80px;
+            height: 80px;
+            top: 40%;
+            left: 3%;
+        }
+
+        .starburst-2::before {
+            background: var(--coral-sunset);
+            animation-delay: 1s;
+        }
+
+        .starburst-3 {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            right: 8%;
+        }
+
+        .starburst-3::before {
+            background: var(--atomic-turquoise);
+            animation-delay: 2s;
+        }
+
+        .orbit-ring {
+            position: absolute;
+            border: 2px solid var(--atomic-turquoise);
+            border-radius: 50%;
+            opacity: 0.15;
+        }
+
+        .orbit-ring-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+            animation: orbit 20s linear infinite;
+        }
+
+        .orbit-ring-2 {
+            width: 400px;
+            height: 200px;
+            bottom: 10%;
+            right: -150px;
+            border-color: var(--coral-sunset);
+            transform: rotate(-20deg);
+        }
+
+        .satellite {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--coral-sunset);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--coral-sunset);
+            animation: satellite-blink 2s ease-in-out infinite;
+        }
+
+        .satellite-1 {
+            top: 15%;
+            left: 20%;
+        }
+
+        .satellite-2 {
+            top: 60%;
+            right: 15%;
+            background: var(--atomic-turquoise);
+            box-shadow: 0 0 10px var(--atomic-turquoise);
+            animation-delay: 0.5s;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- HEADER --- */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: var(--space-6);
+            transition: var(--transition-fast);
+            text-transform: uppercase;
+        }
+
+        .back-link:hover {
+            color: var(--atomic-turquoise);
+            transform: translateX(-4px);
+        }
+
+        .header {
+            text-align: center;
+            padding: var(--space-8) 0 var(--space-9);
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(64, 224, 208, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-5);
+            background: var(--gradient-sunset);
+            color: white;
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border-radius: var(--radius-pill);
+            margin-bottom: var(--space-5);
+            box-shadow: var(--shadow-glow-coral);
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: satellite-blink 1.5s ease-in-out infinite;
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            line-height: 1.1;
+            margin-bottom: var(--space-4);
+            color: var(--space-navy);
+            text-transform: uppercase;
+        }
+
+        .header-title span {
+            display: block;
+            background: var(--gradient-ocean);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        /* --- SECTIONS --- */
+        .section {
+            margin-bottom: var(--space-9);
+            position: relative;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--space-navy);
+            margin-bottom: var(--space-6);
+            text-transform: uppercase;
+            position: relative;
+            padding-bottom: var(--space-3);
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: var(--gradient-ocean);
+            border-radius: var(--radius-pill);
+        }
+
+        .subsection {
+            margin-bottom: var(--space-7);
+        }
+
+        .subsection-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            letter-spacing: 0.03em;
+            color: var(--coral-sunset);
+            margin-bottom: var(--space-4);
+            text-transform: uppercase;
+        }
+
+        /* --- CONTENT CARDS --- */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            margin-bottom: var(--space-5);
+            box-shadow: var(--shadow-soft);
+            border: 2px solid var(--border-light);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-ocean);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+            border-color: var(--atomic-turquoise);
+        }
+
+        /* --- CODE BLOCKS --- */
+        pre {
+            background: var(--space-navy);
+            color: var(--atomic-turquoise);
+            padding: var(--space-5);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            margin: var(--space-4) 0;
+            border: 2px solid var(--space-navy-deep);
+            box-shadow: var(--shadow-medium);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            background: var(--space-navy);
+            color: var(--atomic-turquoise);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9em;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* --- TABLES --- */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: var(--space-5) 0;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+        }
+
+        thead {
+            background: var(--gradient-space);
+        }
+
+        th {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            padding: var(--space-4);
+            text-align: left;
+            border-bottom: 3px solid var(--atomic-turquoise);
+        }
+
+        td {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        tbody tr {
+            transition: var(--transition-fast);
+        }
+
+        tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* --- LISTS --- */
+        ul, ol {
+            margin: var(--space-4) 0;
+            padding-left: var(--space-6);
+        }
+
+        li {
+            margin-bottom: var(--space-2);
+            line-height: 1.7;
+        }
+
+        /* --- DESCRIPTION LISTS --- */
+        dl {
+            margin: var(--space-4) 0;
+        }
+
+        dt {
+            font-weight: 600;
+            color: var(--coral-sunset);
+            margin-top: var(--space-3);
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            letter-spacing: 0.03em;
+        }
+
+        dd {
+            margin-left: var(--space-5);
+            margin-bottom: var(--space-3);
+            color: var(--text-secondary);
+        }
+
+        /* --- BADGES --- */
+        .badge {
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            background: var(--gradient-ocean);
+            color: white;
+            font-size: 0.75rem;
+            font-family: var(--font-display);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-radius: var(--radius-pill);
+            margin-right: var(--space-2);
+            margin-bottom: var(--space-2);
+        }
+
+        .badge-coral {
+            background: var(--gradient-sunset);
+        }
+
+        /* --- NOTES / CALLOUTS --- */
+        .note {
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            margin: var(--space-5) 0;
+            border-left: 4px solid var(--atomic-turquoise);
+            background: linear-gradient(135deg, rgba(64, 224, 208, 0.05) 0%, rgba(152, 216, 170, 0.05) 100%);
+        }
+
+        .note-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            color: var(--atomic-turquoise);
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+        }
+
+        .note p {
+            margin-bottom: 0;
+        }
+
+        .note-warning {
+            border-left-color: var(--coral-sunset);
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(244, 208, 63, 0.05) 100%);
+        }
+
+        .note-warning .note-title {
+            color: var(--coral-sunset);
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            text-align: center;
+            padding: var(--space-8) 0;
+            margin-top: var(--space-9);
+            border-top: 2px solid var(--border-light);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--atomic-turquoise);
+            text-decoration: none;
+            border-bottom: 1px solid var(--atomic-turquoise);
+            transition: var(--transition-fast);
+        }
+
+        .footer a:hover {
+            color: var(--coral-sunset);
+            border-bottom-color: var(--coral-sunset);
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-4);
+            }
+
+            .header {
+                padding: var(--space-6) 0 var(--space-7);
+            }
+
+            .header-title {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .subsection-title {
+                font-size: 1.2rem;
+            }
+
+            pre {
+                font-size: 0.8rem;
+                padding: var(--space-4);
+            }
+
+            .card {
+                padding: var(--space-4);
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: var(--space-3);
+            }
+        }
+
+        /* --- SYNTAX HIGHLIGHTING --- */
+        .comment { color: #7A7A9A; font-style: italic; }
+        .keyword { color: #FF6B6B; font-weight: 600; }
+        .string { color: #98D8AA; }
+        .function { color: #F4D03F; }
+        .variable { color: #40E0D0; }
+        .operator { color: #FFF8E7; }
+    </style>
+</head>
+<body>
+    <!-- Background Decorations -->
+    <div class="retro-bg">
+        <div class="atomic-dots"></div>
+        <div class="starburst starburst-1"></div>
+        <div class="starburst starburst-2"></div>
+        <div class="starburst starburst-3"></div>
+        <div class="orbit-ring orbit-ring-1"></div>
+        <div class="orbit-ring orbit-ring-2"></div>
+        <div class="satellite satellite-1"></div>
+        <div class="satellite satellite-2"></div>
+    </div>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← Tech Guides</a>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-badge">Shell Scripting</div>
+            <h1 class="header-title">
+                Bash
+                <span>Scripting</span>
+            </h1>
+            <p class="header-subtitle">
+                Complete reference guide for Bash shell scripting. Master variables, conditionals, loops, functions, I/O redirection, and advanced scripting patterns.
+            </p>
+        </header>
+
+        <!-- Section 1: Quick Reference -->
+        <section class="section">
+            <h2 class="section-title">Quick Reference</h2>
+            <div class="card">
+                <p>Essential constructs at a glance for quick lookup and daily scripting.</p>
+
+                <pre><code><span class="comment"># Variables</span>
+var=<span class="string">"value"</span>                    <span class="comment"># Assignment (no spaces around =)</span>
+echo <span class="string">"$var"</span>                    <span class="comment"># Use with $</span>
+readonly CONST=<span class="string">"immutable"</span>     <span class="comment"># Read-only variable</span>
+export PATH=<span class="string">"/usr/bin:$PATH"</span>   <span class="comment"># Export to environment</span>
+
+<span class="comment"># Conditionals</span>
+<span class="keyword">if</span> [[ condition ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">elif</span> [[ condition ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">else</span>
+    commands
+<span class="keyword">fi</span>
+
+<span class="comment"># Loops</span>
+<span class="keyword">for</span> item <span class="keyword">in</span> list; <span class="keyword">do</span> commands; <span class="keyword">done</span>
+<span class="keyword">while</span> [[ condition ]]; <span class="keyword">do</span> commands; <span class="keyword">done</span>
+<span class="keyword">until</span> [[ condition ]]; <span class="keyword">do</span> commands; <span class="keyword">done</span>
+
+<span class="comment"># Functions</span>
+<span class="function">function_name</span>() {
+    <span class="keyword">local</span> var=<span class="string">"$1"</span>
+    echo <span class="string">"$var"</span>
+}
+
+<span class="comment"># Common Tests</span>
+[[ -f file ]]      <span class="comment"># File exists</span>
+[[ -d dir ]]       <span class="comment"># Directory exists</span>
+[[ -z <span class="string">"$var"</span> ]]    <span class="comment"># String is empty</span>
+[[ <span class="string">"$a"</span> == <span class="string">"$b"</span> ]] <span class="comment"># String equality</span>
+[[ $num -eq 5 ]]   <span class="comment"># Numeric equality</span>
+
+<span class="comment"># I/O Redirection</span>
+cmd > file         <span class="comment"># Redirect stdout to file</span>
+cmd >> file        <span class="comment"># Append stdout to file</span>
+cmd 2> file        <span class="comment"># Redirect stderr to file</span>
+cmd &> file        <span class="comment"># Redirect both stdout and stderr</span>
+cmd < file         <span class="comment"># Redirect file to stdin</span>
+cmd1 | cmd2        <span class="comment"># Pipe stdout of cmd1 to stdin of cmd2</span></code></pre>
+            </div>
+        </section>
+
+        <!-- Section 2: Variables & Expansion -->
+        <section class="section">
+            <h2 class="section-title">Variables &amp; Expansion</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Variable Declaration</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic assignment (no spaces around =)</span>
+name=<span class="string">"John Doe"</span>
+count=42
+empty=<span class="string">""</span>
+
+<span class="comment"># Command substitution</span>
+current_dir=$(pwd)
+files=$(ls -1)
+date_old=`date`  <span class="comment"># Deprecated style, use $() instead</span>
+
+<span class="comment"># Read-only variables</span>
+readonly PI=3.14159
+declare -r MAX_SIZE=1000
+
+<span class="comment"># Unsetting variables</span>
+unset var_name</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Export and Environment</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Export to child processes</span>
+export PATH=<span class="string">"/usr/local/bin:$PATH"</span>
+export DB_HOST=<span class="string">"localhost"</span>
+
+<span class="comment"># Export with declaration</span>
+export VAR=<span class="string">"value"</span>
+
+<span class="comment"># List all exported variables</span>
+export -p
+
+<span class="comment"># Temporary environment variable (one command only)</span>
+FOO=bar command args</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Parameter Expansion</h3>
+                <div class="card">
+                    <pre><code>var=<span class="string">"hello"</span>
+
+<span class="comment"># Basic expansion</span>
+echo <span class="string">"$var"</span>           <span class="comment"># hello</span>
+echo <span class="string">"${var}"</span>         <span class="comment"># hello (preferred in complex expressions)</span>
+
+<span class="comment"># Default values</span>
+echo <span class="string">"${undefined:-default}"</span>      <span class="comment"># Use default if undefined or empty</span>
+echo <span class="string">"${undefined-default}"</span>       <span class="comment"># Use default only if undefined</span>
+echo <span class="string">"${var:-fallback}"</span>           <span class="comment"># hello (var is set)</span>
+
+<span class="comment"># Assign default</span>
+echo <span class="string">"${new_var:=assigned}"</span>       <span class="comment"># Assigns and returns "assigned"</span>
+
+<span class="comment"># Alternative value (use if set)</span>
+echo <span class="string">"${var:+alternative}"</span>        <span class="comment"># alternative (var is set)</span>
+
+<span class="comment"># Error if undefined</span>
+echo <span class="string">"${must_exist:?Error: variable not set}"</span>
+
+<span class="comment"># String length</span>
+echo <span class="string">"${#var}"</span>                    <span class="comment"># 5</span>
+
+<span class="comment"># Substring extraction</span>
+text=<span class="string">"Hello World"</span>
+echo <span class="string">"${text:0:5}"</span>               <span class="comment"># Hello (offset 0, length 5)</span>
+echo <span class="string">"${text:6}"</span>                 <span class="comment"># World (offset 6 to end)</span>
+echo <span class="string">"${text: -5}"</span>               <span class="comment"># World (last 5 chars, note space)</span>
+
+<span class="comment"># Pattern removal (shortest match)</span>
+path=<span class="string">"/home/user/file.tar.gz"</span>
+echo <span class="string">"${path#*/}"</span>                <span class="comment"># home/user/file.tar.gz</span>
+echo <span class="string">"${path%/*}"</span>                <span class="comment"># /home/user</span>
+
+<span class="comment"># Pattern removal (longest match)</span>
+echo <span class="string">"${path##*/}"</span>               <span class="comment"># file.tar.gz (basename)</span>
+echo <span class="string">"${path%%/*}"</span>               <span class="comment"># (empty)</span>
+
+<span class="comment"># Pattern replacement</span>
+text=<span class="string">"Hello World"</span>
+echo <span class="string">"${text/World/Universe}"</span>    <span class="comment"># Replace first</span>
+echo <span class="string">"${text//o/0}"</span>              <span class="comment"># Replace all</span>
+echo <span class="string">"${text/#Hello/Hi}"</span>         <span class="comment"># Replace at start</span>
+echo <span class="string">"${text/%World/Earth}"</span>      <span class="comment"># Replace at end</span>
+
+<span class="comment"># Case conversion (Bash 4+)</span>
+echo <span class="string">"${text,,}"</span>                 <span class="comment"># hello world (lowercase all)</span>
+echo <span class="string">"${text^^}"</span>                 <span class="comment"># HELLO WORLD (uppercase all)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Arrays (Indexed)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Declaration</span>
+fruits=(<span class="string">"apple"</span> <span class="string">"banana"</span> <span class="string">"cherry"</span>)
+empty_array=()
+
+<span class="comment"># Alternative declaration</span>
+declare -a array
+array[0]=<span class="string">"first"</span>
+array[1]=<span class="string">"second"</span>
+
+<span class="comment"># Access elements</span>
+echo <span class="string">"${fruits[0]}"</span>              <span class="comment"># apple</span>
+echo <span class="string">"${fruits[@]}"</span>              <span class="comment"># All elements</span>
+
+<span class="comment"># Array length</span>
+echo <span class="string">"${#fruits[@]}"</span>             <span class="comment"># 3 (number of elements)</span>
+
+<span class="comment"># Array slicing</span>
+echo <span class="string">"${fruits[@]:1}"</span>            <span class="comment"># banana cherry (from index 1)</span>
+echo <span class="string">"${fruits[@]:1:1}"</span>          <span class="comment"># banana (from index 1, length 1)</span>
+
+<span class="comment"># Append to array</span>
+fruits+=(<span class="string">"date"</span>)
+
+<span class="comment"># Iterate over array</span>
+<span class="keyword">for</span> fruit <span class="keyword">in</span> <span class="string">"${fruits[@]}"</span>; <span class="keyword">do</span>
+    echo <span class="string">"$fruit"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Iterate with indices</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> <span class="string">"${!fruits[@]}"</span>; <span class="keyword">do</span>
+    echo <span class="string">"Index $i: ${fruits[$i]}"</span>
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Associative Arrays (Bash 4+)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Declaration (must declare explicitly)</span>
+declare -A colors
+colors[red]=<span class="string">"#FF0000"</span>
+colors[green]=<span class="string">"#00FF00"</span>
+colors[blue]=<span class="string">"#0000FF"</span>
+
+<span class="comment"># Alternative declaration</span>
+declare -A person=(
+    [name]=<span class="string">"John"</span>
+    [age]=<span class="string">"30"</span>
+    [city]=<span class="string">"NYC"</span>
+)
+
+<span class="comment"># Access elements</span>
+echo <span class="string">"${colors[red]}"</span>            <span class="comment"># #FF0000</span>
+
+<span class="comment"># Check if key exists</span>
+<span class="keyword">if</span> [[ -v colors[red] ]]; <span class="keyword">then</span>
+    echo <span class="string">"Key exists"</span>
+<span class="keyword">fi</span>
+
+<span class="comment"># All keys</span>
+echo <span class="string">"${!colors[@]}"</span>             <span class="comment"># red green blue</span>
+
+<span class="comment"># Iterate over keys and values</span>
+<span class="keyword">for</span> key <span class="keyword">in</span> <span class="string">"${!colors[@]}"</span>; <span class="keyword">do</span>
+    echo <span class="string">"$key: ${colors[$key]}"</span>
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Conditionals -->
+        <section class="section">
+            <h2 class="section-title">Conditionals</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">If/Elif/Else Structure</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic if</span>
+<span class="keyword">if</span> [[ condition ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">fi</span>
+
+<span class="comment"># If-else</span>
+<span class="keyword">if</span> [[ condition ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">else</span>
+    commands
+<span class="keyword">fi</span>
+
+<span class="comment"># If-elif-else</span>
+<span class="keyword">if</span> [[ condition1 ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">elif</span> [[ condition2 ]]; <span class="keyword">then</span>
+    commands
+<span class="keyword">else</span>
+    commands
+<span class="keyword">fi</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">String Comparisons</h3>
+                <div class="card">
+                    <pre><code>str1=<span class="string">"hello"</span>
+str2=<span class="string">"world"</span>
+
+<span class="comment"># Equality</span>
+[[ <span class="string">"$str1"</span> == <span class="string">"hello"</span> ]]         <span class="comment"># True</span>
+[[ <span class="string">"$str1"</span> != <span class="string">"world"</span> ]]         <span class="comment"># True</span>
+
+<span class="comment"># Pattern matching (only with [[)</span>
+[[ <span class="string">"$str1"</span> == h* ]]              <span class="comment"># True (glob pattern)</span>
+
+<span class="comment"># Regex matching (only with [[)</span>
+[[ <span class="string">"$str1"</span> =~ ^he.* ]]           <span class="comment"># True (regex)</span>
+
+<span class="comment"># Lexicographic comparison</span>
+[[ <span class="string">"$str1"</span> < <span class="string">"$str2"</span> ]]          <span class="comment"># True (hello < world)</span>
+
+<span class="comment"># Empty/non-empty</span>
+[[ -z <span class="string">"$empty"</span> ]]                <span class="comment"># True (string is empty)</span>
+[[ -n <span class="string">"$str1"</span> ]]                 <span class="comment"># True (string is not empty)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Numeric Comparisons</h3>
+                <div class="card">
+                    <pre><code>a=10
+b=20
+
+<span class="comment"># Arithmetic comparisons</span>
+[[ $a -eq 10 ]]                  <span class="comment"># Equal</span>
+[[ $a -ne 20 ]]                  <span class="comment"># Not equal</span>
+[[ $a -lt 20 ]]                  <span class="comment"># Less than</span>
+[[ $a -le 10 ]]                  <span class="comment"># Less than or equal</span>
+[[ $a -gt 5 ]]                   <span class="comment"># Greater than</span>
+[[ $a -ge 10 ]]                  <span class="comment"># Greater than or equal</span>
+
+<span class="comment"># Arithmetic evaluation (( ))</span>
+<span class="keyword">if</span> (( a < b )); <span class="keyword">then</span>
+    echo <span class="string">"a is less than b"</span>
+<span class="keyword">fi</span>
+
+<span class="comment"># Arithmetic with assignment</span>
+(( a++ ))                        <span class="comment"># Increment</span>
+(( a += 5 ))                     <span class="comment"># Add 5</span>
+(( result = a * b ))             <span class="comment"># Multiply</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">File Tests</h3>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>-e</code></td>
+                                    <td>Exists (file or directory)</td>
+                                    <td><code>[[ -e "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-f</code></td>
+                                    <td>Regular file exists</td>
+                                    <td><code>[[ -f "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-d</code></td>
+                                    <td>Directory exists</td>
+                                    <td><code>[[ -d "$dir" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-L</code></td>
+                                    <td>Symbolic link exists</td>
+                                    <td><code>[[ -L "$link" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-r</code></td>
+                                    <td>Readable</td>
+                                    <td><code>[[ -r "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-w</code></td>
+                                    <td>Writable</td>
+                                    <td><code>[[ -w "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-x</code></td>
+                                    <td>Executable</td>
+                                    <td><code>[[ -x "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-s</code></td>
+                                    <td>File exists and is not empty</td>
+                                    <td><code>[[ -s "$file" ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-nt</code></td>
+                                    <td>Newer than</td>
+                                    <td><code>[[ file1 -nt file2 ]]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>-ot</code></td>
+                                    <td>Older than</td>
+                                    <td><code>[[ file1 -ot file2 ]]</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Logical Operators</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># AND</span>
+[[ condition1 && condition2 ]]
+[[ -f file.txt && -r file.txt ]]
+
+<span class="comment"># OR</span>
+[[ condition1 || condition2 ]]
+[[ -f file1 || -f file2 ]]
+
+<span class="comment"># NOT</span>
+[[ ! condition ]]
+[[ ! -f file.txt ]]
+
+<span class="comment"># Combining</span>
+[[ ( condition1 || condition2 ) && condition3 ]]</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Case Statement</h3>
+                <div class="card">
+                    <pre><code><span class="keyword">case</span> <span class="string">"$var"</span> <span class="keyword">in</span>
+    pattern1)
+        commands
+        ;;
+    pattern2)
+        commands
+        ;;
+    *)
+        default commands
+        ;;
+<span class="keyword">esac</span>
+
+<span class="comment"># Example with patterns</span>
+<span class="keyword">case</span> <span class="string">"$1"</span> <span class="keyword">in</span>
+    start)
+        echo <span class="string">"Starting..."</span>
+        ;;
+    stop)
+        echo <span class="string">"Stopping..."</span>
+        ;;
+    restart)
+        echo <span class="string">"Restarting..."</span>
+        ;;
+    *)
+        echo <span class="string">"Usage: $0 {start|stop|restart}"</span>
+        exit 1
+        ;;
+<span class="keyword">esac</span>
+
+<span class="comment"># Pattern matching</span>
+<span class="keyword">case</span> <span class="string">"$filename"</span> <span class="keyword">in</span>
+    *.txt)
+        echo <span class="string">"Text file"</span>
+        ;;
+    *.jpg|*.png|*.gif)
+        echo <span class="string">"Image file"</span>
+        ;;
+    [Mm]akefile)
+        echo <span class="string">"Makefile"</span>
+        ;;
+    *)
+        echo <span class="string">"Unknown file type"</span>
+        ;;
+<span class="keyword">esac</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Loops -->
+        <section class="section">
+            <h2 class="section-title">Loops</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">For Loops</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># List iteration</span>
+<span class="keyword">for</span> item <span class="keyword">in</span> one two three; <span class="keyword">do</span>
+    echo <span class="string">"$item"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Array iteration</span>
+fruits=(<span class="string">"apple"</span> <span class="string">"banana"</span> <span class="string">"cherry"</span>)
+<span class="keyword">for</span> fruit <span class="keyword">in</span> <span class="string">"${fruits[@]}"</span>; <span class="keyword">do</span>
+    echo <span class="string">"$fruit"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Glob expansion (files)</span>
+<span class="keyword">for</span> file <span class="keyword">in</span> *.txt; <span class="keyword">do</span>
+    echo <span class="string">"Processing $file"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Brace expansion</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> {1..10}; <span class="keyword">do</span>
+    echo <span class="string">"Number $i"</span>
+<span class="keyword">done</span>
+
+<span class="keyword">for</span> letter <span class="keyword">in</span> {a..z}; <span class="keyword">do</span>
+    echo <span class="string">"$letter"</span>
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">C-Style For Loop</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># C-style syntax</span>
+<span class="keyword">for</span> (( i=0; i<10; i++ )); <span class="keyword">do</span>
+    echo <span class="string">"$i"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Multiple variables</span>
+<span class="keyword">for</span> (( i=0, j=10; i<j; i++, j-- )); <span class="keyword">do</span>
+    echo <span class="string">"i=$i, j=$j"</span>
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">While Loop</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic while</span>
+count=0
+<span class="keyword">while</span> [[ $count -lt 5 ]]; <span class="keyword">do</span>
+    echo <span class="string">"$count"</span>
+    (( count++ ))
+<span class="keyword">done</span>
+
+<span class="comment"># Read from file line by line</span>
+<span class="keyword">while</span> IFS= read -r line; <span class="keyword">do</span>
+    echo <span class="string">"Line: $line"</span>
+<span class="keyword">done</span> < file.txt
+
+<span class="comment"># Infinite loop</span>
+<span class="keyword">while</span> true; <span class="keyword">do</span>
+    echo <span class="string">"Running..."</span>
+    sleep 1
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Until Loop</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Runs until condition becomes true</span>
+count=0
+<span class="keyword">until</span> [[ $count -ge 5 ]]; <span class="keyword">do</span>
+    echo <span class="string">"$count"</span>
+    (( count++ ))
+<span class="keyword">done</span>
+
+<span class="comment"># Wait for file to appear</span>
+<span class="keyword">until</span> [[ -f /tmp/ready ]]; <span class="keyword">do</span>
+    echo <span class="string">"Waiting..."</span>
+    sleep 1
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Loop Control</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Break (exit loop)</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> {1..10}; <span class="keyword">do</span>
+    <span class="keyword">if</span> [[ $i -eq 5 ]]; <span class="keyword">then</span>
+        <span class="keyword">break</span>
+    <span class="keyword">fi</span>
+    echo <span class="string">"$i"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Continue (skip to next iteration)</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> {1..10}; <span class="keyword">do</span>
+    <span class="keyword">if</span> [[ $i -eq 5 ]]; <span class="keyword">then</span>
+        <span class="keyword">continue</span>
+    <span class="keyword">fi</span>
+    echo <span class="string">"$i"</span>  <span class="comment"># Skips 5</span>
+<span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Functions -->
+        <section class="section">
+            <h2 class="section-title">Functions</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Function Declaration</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Method 1: function keyword</span>
+<span class="keyword">function</span> <span class="function">my_function</span> {
+    echo <span class="string">"Hello from function"</span>
+}
+
+<span class="comment"># Method 2: POSIX style (preferred)</span>
+<span class="function">my_function</span>() {
+    echo <span class="string">"Hello from function"</span>
+}
+
+<span class="comment"># Call function</span>
+my_function</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Function Arguments</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Access arguments</span>
+<span class="function">greet</span>() {
+    echo <span class="string">"Hello, $1!"</span>        <span class="comment"># First argument</span>
+    echo <span class="string">"Second arg: $2"</span>    <span class="comment"># Second argument</span>
+}
+
+greet <span class="string">"Alice"</span> <span class="string">"Bob"</span>
+
+<span class="comment"># Special variables</span>
+<span class="function">show_args</span>() {
+    echo <span class="string">"Script name: $0"</span>
+    echo <span class="string">"First arg: $1"</span>
+    echo <span class="string">"All args: $@"</span>
+    echo <span class="string">"Arg count: $#"</span>
+    echo <span class="string">"Last exit code: $?"</span>
+    echo <span class="string">"PID: $$"</span>
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Return Values</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Return exit status (0-255)</span>
+<span class="function">is_even</span>() {
+    <span class="keyword">local</span> num=$1
+    <span class="keyword">if</span> (( num % 2 == 0 )); <span class="keyword">then</span>
+        <span class="keyword">return</span> 0  <span class="comment"># Success (true)</span>
+    <span class="keyword">else</span>
+        <span class="keyword">return</span> 1  <span class="comment"># Failure (false)</span>
+    <span class="keyword">fi</span>
+}
+
+<span class="keyword">if</span> is_even 4; <span class="keyword">then</span>
+    echo <span class="string">"Even"</span>
+<span class="keyword">fi</span>
+
+<span class="comment"># Return string via stdout</span>
+<span class="function">get_user</span>() {
+    echo <span class="string">"john_doe"</span>
+}
+
+user=$(get_user)
+echo <span class="string">"User: $user"</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Local Variables</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># With local (function scope)</span>
+<span class="function">good_function</span>() {
+    <span class="keyword">local</span> var=<span class="string">"I'm local"</span>
+    echo <span class="string">"$var"</span>
+}
+
+good_function   <span class="comment"># I'm local</span>
+echo <span class="string">"$var"</span>     <span class="comment"># (empty, var is local to function)</span>
+
+<span class="comment"># Multiple local declarations</span>
+<span class="function">calculate</span>() {
+    <span class="keyword">local</span> a=$1
+    <span class="keyword">local</span> b=$2
+    <span class="keyword">local</span> result=$(( a + b ))
+    echo <span class="string">"$result"</span>
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Recursion</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Factorial</span>
+<span class="function">factorial</span>() {
+    <span class="keyword">local</span> n=$1
+    <span class="keyword">if</span> (( n <= 1 )); <span class="keyword">then</span>
+        echo 1
+    <span class="keyword">else</span>
+        <span class="keyword">local</span> prev=$(factorial $(( n - 1 )))
+        echo $(( n * prev ))
+    <span class="keyword">fi</span>
+}
+
+result=$(factorial 5)
+echo <span class="string">"5! = $result"</span>  <span class="comment"># 120</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: String Manipulation -->
+        <section class="section">
+            <h2 class="section-title">String Manipulation</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Substring Removal (Pattern Matching)</h3>
+                <div class="card">
+                    <pre><code>path=<span class="string">"/home/user/documents/file.tar.gz"</span>
+
+<span class="comment"># Remove shortest match from beginning (#)</span>
+echo <span class="string">"${path#*/}"</span>        <span class="comment"># home/user/documents/file.tar.gz</span>
+
+<span class="comment"># Remove longest match from beginning (##)</span>
+echo <span class="string">"${path##*/}"</span>       <span class="comment"># file.tar.gz (basename)</span>
+
+<span class="comment"># Remove shortest match from end (%)</span>
+echo <span class="string">"${path%/*}"</span>        <span class="comment"># /home/user/documents (dirname)</span>
+
+<span class="comment"># Remove longest match from end (%%)</span>
+echo <span class="string">"${path%%.*}"</span>       <span class="comment"># /home/user/documents/file</span>
+
+<span class="comment"># Extension manipulation</span>
+filename=<span class="string">"document.txt"</span>
+echo <span class="string">"${filename%.*}"</span>    <span class="comment"># document (remove extension)</span>
+echo <span class="string">"${filename##*.}"</span>   <span class="comment"># txt (get extension)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Pattern Replacement</h3>
+                <div class="card">
+                    <pre><code>text=<span class="string">"Hello World, Hello Universe"</span>
+
+<span class="comment"># Replace first occurrence (/)</span>
+echo <span class="string">"${text/Hello/Hi}"</span>              <span class="comment"># Hi World, Hello Universe</span>
+
+<span class="comment"># Replace all occurrences (//)</span>
+echo <span class="string">"${text//Hello/Hi}"</span>             <span class="comment"># Hi World, Hi Universe</span>
+
+<span class="comment"># Replace at beginning (/#)</span>
+echo <span class="string">"${text/#Hello/Hi}"</span>             <span class="comment"># Hi World, Hello Universe</span>
+
+<span class="comment"># Replace at end (/%)</span>
+echo <span class="string">"${text/%Universe/Galaxy}"</span>      <span class="comment"># Hello World, Hello Galaxy</span>
+
+<span class="comment"># Delete pattern (replace with empty)</span>
+echo <span class="string">"${text//Hello/}"</span>               <span class="comment"># World, Universe</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Substring Extraction</h3>
+                <div class="card">
+                    <pre><code>text=<span class="string">"Hello World"</span>
+
+<span class="comment"># Syntax: ${var:offset:length}</span>
+echo <span class="string">"${text:0:5}"</span>       <span class="comment"># Hello (start at 0, length 5)</span>
+echo <span class="string">"${text:6:5}"</span>       <span class="comment"># World (start at 6, length 5)</span>
+echo <span class="string">"${text:6}"</span>         <span class="comment"># World (start at 6, to end)</span>
+
+<span class="comment"># Negative offset (from end)</span>
+echo <span class="string">"${text: -5}"</span>       <span class="comment"># World (last 5 chars, note space)</span>
+
+<span class="comment"># Get first/last characters</span>
+echo <span class="string">"${text:0:1}"</span>       <span class="comment"># H (first char)</span>
+echo <span class="string">"${text: -1}"</span>       <span class="comment"># d (last char)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Case Conversion (Bash 4+)</h3>
+                <div class="card">
+                    <pre><code>text=<span class="string">"Hello World"</span>
+
+<span class="comment"># Lowercase</span>
+echo <span class="string">"${text,,}"</span>         <span class="comment"># hello world (all lowercase)</span>
+echo <span class="string">"${text,}"</span>          <span class="comment"># hello World (first char lowercase)</span>
+
+<span class="comment"># Uppercase</span>
+echo <span class="string">"${text^^}"</span>         <span class="comment"># HELLO WORLD (all uppercase)</span>
+echo <span class="string">"${text^}"</span>          <span class="comment"># Hello World (first char uppercase)</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">String Splitting</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Using IFS (Internal Field Separator)</span>
+text=<span class="string">"one,two,three"</span>
+IFS=<span class="string">','</span> read -ra parts <<< <span class="string">"$text"</span>
+echo <span class="string">"${parts[0]}"</span>       <span class="comment"># one</span>
+echo <span class="string">"${parts[1]}"</span>       <span class="comment"># two</span>
+
+<span class="comment"># Split into variables</span>
+IFS=<span class="string">':'</span> read -r user pass <<< <span class="string">"john:secret"</span>
+echo <span class="string">"User: $user"</span>       <span class="comment"># john</span>
+echo <span class="string">"Pass: $pass"</span>       <span class="comment"># secret</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: I/O & Redirection -->
+        <section class="section">
+            <h2 class="section-title">I/O &amp; Redirection</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Output Redirection</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Redirect stdout to file (overwrite)</span>
+echo <span class="string">"text"</span> > file.txt
+ls -l > listing.txt
+
+<span class="comment"># Redirect stdout to file (append)</span>
+echo <span class="string">"more text"</span> >> file.txt
+date >> log.txt
+
+<span class="comment"># Redirect stderr to file</span>
+command 2> error.log
+
+<span class="comment"># Redirect both stdout and stderr to file</span>
+command &> output.txt
+command > output.txt 2>&1    <span class="comment"># Equivalent</span>
+
+<span class="comment"># Discard output</span>
+command > /dev/null          <span class="comment"># Discard stdout</span>
+command 2> /dev/null         <span class="comment"># Discard stderr</span>
+command &> /dev/null         <span class="comment"># Discard both</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Input Redirection</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Redirect file to stdin</span>
+command < input.txt
+wc -l < file.txt
+
+<span class="comment"># Read from file</span>
+<span class="keyword">while</span> read -r line; <span class="keyword">do</span>
+    echo <span class="string">"$line"</span>
+<span class="keyword">done</span> < file.txt</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Heredoc (Here Document)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic heredoc</span>
+cat << EOF
+This is a multi-line
+text block that ends
+with EOF
+EOF
+
+<span class="comment"># Variable expansion in heredoc</span>
+name=<span class="string">"Alice"</span>
+cat << EOF
+Hello, $name!
+Current directory: $(pwd)
+EOF
+
+<span class="comment"># Suppress variable expansion (quote delimiter)</span>
+cat << <span class="string">'EOF'</span>
+This is $literal text
+$(pwd) is not expanded
+EOF
+
+<span class="comment"># Heredoc to file</span>
+cat > config.txt << EOF
+setting1=value1
+setting2=value2
+EOF</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Here String (<<<)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Pass string as stdin</span>
+grep <span class="string">"pattern"</span> <<< <span class="string">"text to search"</span>
+wc -w <<< <span class="string">"count these words"</span>
+
+<span class="comment"># With variable</span>
+text=<span class="string">"hello world"</span>
+tr <span class="string">' '</span> <span class="string">'\n'</span> <<< <span class="string">"$text"</span>
+
+<span class="comment"># Read into variable</span>
+read -r var <<< <span class="string">"value"</span>
+echo <span class="string">"$var"</span>              <span class="comment"># value</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Pipes</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Pipe stdout to next command</span>
+ls -l | grep <span class="string">".txt"</span>
+cat file.txt | sort | uniq
+
+<span class="comment"># Multiple pipes</span>
+ps aux | grep python | grep -v grep | awk <span class="string">'{print $2}'</span>
+
+<span class="comment"># Tee (write to file and stdout)</span>
+command | tee output.txt      <span class="comment"># Overwrite</span>
+command | tee -a output.txt   <span class="comment"># Append</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Process Substitution</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Compare output of two commands</span>
+diff <(ls dir1) <(ls dir2)
+
+<span class="comment"># Read command output line by line</span>
+<span class="keyword">while</span> read -r line; <span class="keyword">do</span>
+    echo <span class="string">"$line"</span>
+<span class="keyword">done</span> < <(find . -name <span class="string">"*.txt"</span>)</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Process Management -->
+        <section class="section">
+            <h2 class="section-title">Process Management</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Background Jobs</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Run in background</span>
+command &
+
+<span class="comment"># Get job PID</span>
+sleep 60 &
+echo $!                      <span class="comment"># PID of last background job</span>
+
+<span class="comment"># Store PID</span>
+long_task &
+pid=$!
+echo <span class="string">"Running with PID: $pid"</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Job Control</h3>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Command</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>jobs</code></td>
+                                    <td>List all jobs</td>
+                                </tr>
+                                <tr>
+                                    <td><code>jobs -l</code></td>
+                                    <td>List jobs with PIDs</td>
+                                </tr>
+                                <tr>
+                                    <td><code>fg</code></td>
+                                    <td>Bring last job to foreground</td>
+                                </tr>
+                                <tr>
+                                    <td><code>fg %1</code></td>
+                                    <td>Bring job number 1 to foreground</td>
+                                </tr>
+                                <tr>
+                                    <td><code>bg</code></td>
+                                    <td>Send last stopped job to background</td>
+                                </tr>
+                                <tr>
+                                    <td><code>bg %1</code></td>
+                                    <td>Send job number 1 to background</td>
+                                </tr>
+                                <tr>
+                                    <td><code>kill %1</code></td>
+                                    <td>Kill job number 1</td>
+                                </tr>
+                                <tr>
+                                    <td><code>disown</code></td>
+                                    <td>Remove last job from job table</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Wait for Background Jobs</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Wait for all background jobs</span>
+command1 &
+command2 &
+command3 &
+wait
+echo <span class="string">"All done"</span>
+
+<span class="comment"># Wait for specific PID</span>
+long_task &
+pid=$!
+wait $pid
+echo <span class="string">"Task complete"</span>
+
+<span class="comment"># Parallel execution with wait</span>
+<span class="keyword">for</span> i <span class="keyword">in</span> {1..5}; <span class="keyword">do</span>
+    (
+        echo <span class="string">"Task $i starting"</span>
+        sleep $((RANDOM % 5))
+        echo <span class="string">"Task $i done"</span>
+    ) &
+<span class="keyword">done</span>
+wait</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Trap (Signal Handling)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Trap signal and execute command</span>
+trap <span class="string">'echo "Caught signal"'</span> SIGINT SIGTERM
+
+<span class="comment"># Trap script exit</span>
+trap <span class="string">'echo "Script exiting"'</span> EXIT
+
+<span class="comment"># Cleanup on exit</span>
+<span class="function">cleanup</span>() {
+    echo <span class="string">"Cleaning up..."</span>
+    rm -f /tmp/tempfile.*
+}
+trap cleanup EXIT
+
+<span class="comment"># Common pattern: cleanup temporary files</span>
+tmpfile=$(mktemp)
+trap <span class="string">"rm -f $tmpfile"</span> EXIT</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Signals</h3>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Signal</th>
+                                    <th>Number</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>SIGINT</code></td>
+                                    <td>2</td>
+                                    <td>Interrupt (Ctrl+C)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>SIGTERM</code></td>
+                                    <td>15</td>
+                                    <td>Terminate (default kill)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>SIGKILL</code></td>
+                                    <td>9</td>
+                                    <td>Kill (cannot be caught)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>SIGHUP</code></td>
+                                    <td>1</td>
+                                    <td>Hangup</td>
+                                </tr>
+                                <tr>
+                                    <td><code>SIGQUIT</code></td>
+                                    <td>3</td>
+                                    <td>Quit (Ctrl+\)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <pre><code><span class="comment"># Send signal</span>
+kill -SIGTERM $pid
+kill -15 $pid
+kill $pid                    <span class="comment"># Default: SIGTERM</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Process Information</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Current process ID</span>
+echo $$
+
+<span class="comment"># Parent process ID</span>
+echo $PPID
+
+<span class="comment"># Last background job PID</span>
+command &
+echo $!
+
+<span class="comment"># Exit status of last command</span>
+command
+echo $?</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 9: Script Patterns -->
+        <section class="section">
+            <h2 class="section-title">Script Patterns</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Shebang</h3>
+                <div class="card">
+                    <pre><code><span class="comment">#!/bin/bash</span>                  <span class="comment"># Use bash</span>
+<span class="comment">#!/usr/bin/env bash</span>          <span class="comment"># Find bash in PATH (portable)</span>
+<span class="comment">#!/bin/sh</span>                    <span class="comment"># POSIX shell (limited features)</span>
+<span class="comment">#!/bin/bash -e</span>               <span class="comment"># Exit on error</span>
+<span class="comment">#!/bin/bash -x</span>               <span class="comment"># Debug mode</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Strict Mode (Bash Strict Mode)</h3>
+                <div class="card">
+                    <pre><code><span class="comment">#!/usr/bin/env bash</span>
+set -euo pipefail
+IFS=$<span class="string">'\n\t'</span>
+
+<span class="comment"># -e: Exit on error</span>
+<span class="comment"># -u: Exit on undefined variable</span>
+<span class="comment"># -o pipefail: Pipeline fails if any command fails</span>
+<span class="comment"># IFS: Set safe Internal Field Separator</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Set Options</h3>
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Option</th>
+                                    <th>Short</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>set -e</code></td>
+                                    <td><code>errexit</code></td>
+                                    <td>Exit on error</td>
+                                </tr>
+                                <tr>
+                                    <td><code>set -u</code></td>
+                                    <td><code>nounset</code></td>
+                                    <td>Exit on undefined variable</td>
+                                </tr>
+                                <tr>
+                                    <td><code>set -o pipefail</code></td>
+                                    <td>-</td>
+                                    <td>Pipeline fails if any command fails</td>
+                                </tr>
+                                <tr>
+                                    <td><code>set -x</code></td>
+                                    <td><code>xtrace</code></td>
+                                    <td>Print commands before execution</td>
+                                </tr>
+                                <tr>
+                                    <td><code>set -f</code></td>
+                                    <td><code>noglob</code></td>
+                                    <td>Disable filename expansion</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Script Template</h3>
+                <div class="card">
+                    <pre><code><span class="comment">#!/usr/bin/env bash</span>
+<span class="comment">#</span>
+<span class="comment"># Script: script_name.sh</span>
+<span class="comment"># Description: What this script does</span>
+<span class="comment">#</span>
+
+set -euo pipefail
+IFS=$<span class="string">'\n\t'</span>
+
+<span class="comment"># Constants</span>
+readonly SCRIPT_DIR=<span class="string">"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"</span>
+readonly SCRIPT_NAME=<span class="string">"$(basename "$0")"</span>
+
+<span class="comment"># Variables</span>
+verbose=false
+dry_run=false
+
+<span class="comment"># Functions</span>
+<span class="function">usage</span>() {
+    cat << EOF
+Usage: $SCRIPT_NAME [OPTIONS] ARGS
+
+Description of what the script does.
+
+OPTIONS:
+    -h, --help       Show this help message
+    -v, --verbose    Verbose output
+    -n, --dry-run    Dry run mode
+
+EXAMPLES:
+    $SCRIPT_NAME -v file.txt
+EOF
+    exit 0
+}
+
+<span class="function">log</span>() {
+    echo <span class="string">"[$(date +'%Y-%m-%d %H:%M:%S')] $*"</span> >&2
+}
+
+<span class="function">error</span>() {
+    echo <span class="string">"[ERROR] $*"</span> >&2
+    exit 1
+}
+
+<span class="function">cleanup</span>() {
+    log <span class="string">"Cleaning up..."</span>
+}
+
+trap cleanup EXIT
+
+<span class="comment"># Main script</span>
+<span class="function">main</span>() {
+    log <span class="string">"Script starting"</span>
+    <span class="comment"># Your code here</span>
+    log <span class="string">"Script complete"</span>
+}
+
+main <span class="string">"$@"</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Getopts (Argument Parsing)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic getopts</span>
+<span class="keyword">while</span> getopts <span class="string">"hvo:"</span> opt; <span class="keyword">do</span>
+    <span class="keyword">case</span> $opt <span class="keyword">in</span>
+        h)
+            usage
+            ;;
+        v)
+            verbose=true
+            ;;
+        o)
+            output=<span class="string">"$OPTARG"</span>
+            ;;
+        \?)
+            echo <span class="string">"Invalid option: -$OPTARG"</span> >&2
+            exit 1
+            ;;
+    <span class="keyword">esac</span>
+<span class="keyword">done</span>
+
+<span class="comment"># Shift to positional arguments</span>
+shift $((OPTIND - 1))
+echo <span class="string">"Remaining args: $*"</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Temporary Files</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Create temp file</span>
+tmpfile=$(mktemp)
+echo <span class="string">"Temp file: $tmpfile"</span>
+
+<span class="comment"># Create temp directory</span>
+tmpdir=$(mktemp -d)
+
+<span class="comment"># Cleanup temp file</span>
+trap <span class="string">"rm -f $tmpfile"</span> EXIT
+
+<span class="comment"># Temp file with template</span>
+tmpfile=$(mktemp /tmp/myapp.XXXXXX)</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Error Handling</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Custom error handler</span>
+<span class="function">error_exit</span>() {
+    echo <span class="string">"Error: $1"</span> >&2
+    exit 1
+}
+
+[[ -f <span class="string">"$file"</span> ]] || error_exit <span class="string">"File not found: $file"</span>
+
+<span class="comment"># Try-catch pattern</span>
+<span class="keyword">if</span> ! command; <span class="keyword">then</span>
+    echo <span class="string">"Command failed"</span> >&2
+    exit 1
+<span class="keyword">fi</span>
+
+<span class="comment"># Error trap</span>
+<span class="function">handle_error</span>() {
+    echo <span class="string">"Error on line $1"</span> >&2
+    exit 1
+}
+trap <span class="string">'handle_error $LINENO'</span> ERR</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Checking Prerequisites</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Check if command exists</span>
+command -v git &> /dev/null || {
+    echo <span class="string">"Error: git is not installed"</span> >&2
+    exit 1
+}
+
+<span class="comment"># Check multiple commands</span>
+<span class="keyword">for</span> cmd <span class="keyword">in</span> git curl jq; <span class="keyword">do</span>
+    command -v <span class="string">"$cmd"</span> &> /dev/null || {
+        echo <span class="string">"Error: $cmd is not installed"</span> >&2
+        exit 1
+    }
+<span class="keyword">done</span>
+
+<span class="comment"># Check if root</span>
+[[ $EUID -eq 0 ]] || {
+    echo <span class="string">"Error: This script must be run as root"</span> >&2
+    exit 1
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 10: Text Processing -->
+        <section class="section">
+            <h2 class="section-title">Text Processing</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Grep</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic search</span>
+grep <span class="string">"pattern"</span> file.txt
+
+<span class="comment"># Case-insensitive</span>
+grep -i <span class="string">"pattern"</span> file.txt
+
+<span class="comment"># Show line numbers</span>
+grep -n <span class="string">"pattern"</span> file.txt
+
+<span class="comment"># Invert match (exclude lines)</span>
+grep -v <span class="string">"pattern"</span> file.txt
+
+<span class="comment"># Recursive search</span>
+grep -r <span class="string">"pattern"</span> /path/to/dir
+
+<span class="comment"># Context lines</span>
+grep -A 3 <span class="string">"pattern"</span> file.txt  <span class="comment"># 3 lines after</span>
+grep -B 3 <span class="string">"pattern"</span> file.txt  <span class="comment"># 3 lines before</span>
+grep -C 3 <span class="string">"pattern"</span> file.txt  <span class="comment"># 3 lines before and after</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Sed (Stream Editor)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Substitute (first occurrence per line)</span>
+sed <span class="string">'s/old/new/'</span> file.txt
+
+<span class="comment"># Substitute all occurrences</span>
+sed <span class="string">'s/old/new/g'</span> file.txt
+
+<span class="comment"># In-place edit</span>
+sed -i <span class="string">'s/old/new/g'</span> file.txt
+
+<span class="comment"># Delete lines</span>
+sed <span class="string">'/pattern/d'</span> file.txt        <span class="comment"># Delete matching lines</span>
+sed <span class="string">'5d'</span> file.txt                <span class="comment"># Delete line 5</span>
+sed <span class="string">'$d'</span> file.txt                <span class="comment"># Delete last line</span>
+
+<span class="comment"># Print lines</span>
+sed -n <span class="string">'5p'</span> file.txt             <span class="comment"># Print line 5</span>
+sed -n <span class="string">'/pattern/p'</span> file.txt     <span class="comment"># Print matching lines</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Awk</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Print columns</span>
+awk <span class="string">'{print $1}'</span> file.txt        <span class="comment"># First column</span>
+awk <span class="string">'{print $1, $3}'</span> file.txt    <span class="comment"># Columns 1 and 3</span>
+awk <span class="string">'{print $NF}'</span> file.txt       <span class="comment"># Last column</span>
+
+<span class="comment"># Custom delimiter</span>
+awk -F<span class="string">':'</span> <span class="string">'{print $1}'</span> /etc/passwd
+
+<span class="comment"># Pattern matching</span>
+awk <span class="string">'/pattern/ {print $1}'</span> file.txt
+
+<span class="comment"># Sum column</span>
+awk <span class="string">'{sum += $1} END {print sum}'</span> numbers.txt
+
+<span class="comment"># Count lines</span>
+awk <span class="string">'END {print NR}'</span> file.txt</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Sort & Uniq</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic sort</span>
+sort file.txt
+
+<span class="comment"># Reverse sort</span>
+sort -r file.txt
+
+<span class="comment"># Numeric sort</span>
+sort -n numbers.txt
+
+<span class="comment"># Sort by column</span>
+sort -k2 file.txt                <span class="comment"># Sort by 2nd column</span>
+
+<span class="comment"># Unique sort</span>
+sort -u file.txt                 <span class="comment"># Sort and remove duplicates</span>
+
+<span class="comment"># Remove duplicate consecutive lines</span>
+uniq file.txt
+
+<span class="comment"># Count occurrences</span>
+uniq -c file.txt</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Tr (Translate)</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Character translation</span>
+echo <span class="string">"hello"</span> | tr <span class="string">'a-z'</span> <span class="string">'A-Z'</span>    <span class="comment"># Lowercase to uppercase</span>
+
+<span class="comment"># Delete characters</span>
+echo <span class="string">"hello123"</span> | tr -d <span class="string">'0-9'</span>    <span class="comment"># Remove digits</span>
+
+<span class="comment"># Squeeze repeats</span>
+echo <span class="string">"hello    world"</span> | tr -s <span class="string">' '</span>  <span class="comment"># Single space</span>
+
+<span class="comment"># Replace newlines with spaces</span>
+tr <span class="string">'\n'</span> <span class="string">' '</span> < file.txt</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Xargs</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Basic usage</span>
+echo <span class="string">"file1 file2 file3"</span> | xargs rm
+
+<span class="comment"># One argument at a time</span>
+echo <span class="string">"1 2 3"</span> | xargs -n1 echo
+
+<span class="comment"># Replace string</span>
+echo <span class="string">"file1 file2"</span> | xargs -I {} mv {} {}.bak
+
+<span class="comment"># Parallel execution</span>
+cat urls.txt | xargs -P 4 -n1 curl -O
+
+<span class="comment"># Handle spaces in filenames</span>
+find . -name <span class="string">"*.txt"</span> -print0 | xargs -0 rm</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 11: Pro Tips -->
+        <section class="section">
+            <h2 class="section-title">Pro Tips</h2>
+
+            <div class="subsection">
+                <h3 class="subsection-title">ShellCheck</h3>
+                <div class="card">
+                    <p>ShellCheck is a static analysis tool for shell scripts that finds bugs, security issues, and poor practices.</p>
+                    <pre><code><span class="comment"># Check script</span>
+shellcheck script.sh
+
+<span class="comment"># Ignore specific warnings in script:</span>
+<span class="comment"># shellcheck disable=SC2086</span>
+variable=$unquoted</code></pre>
+                    <div class="note">
+                        <div class="note-title">Install ShellCheck</div>
+                        <p>Ubuntu/Debian: <code>apt install shellcheck</code><br>
+                        macOS: <code>brew install shellcheck</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Debugging</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Print commands before execution</span>
+set -x
+bash -x script.sh
+
+<span class="comment"># Custom debug output</span>
+set -x
+PS4=<span class="string">'+ ${BASH_SOURCE}:${LINENO}: '</span>
+
+<span class="comment"># Debug function</span>
+<span class="function">debug</span>() {
+    [[ $DEBUG ]] && echo <span class="string">"[DEBUG] $*"</span> >&2
+}
+
+<span class="comment"># Usage</span>
+DEBUG=1 bash script.sh
+
+<span class="comment"># DryRun pattern</span>
+DRY_RUN=false
+
+<span class="function">run</span>() {
+    <span class="keyword">if</span> $DRY_RUN; <span class="keyword">then</span>
+        echo <span class="string">"Would run: $*"</span>
+    <span class="keyword">else</span>
+        <span class="string">"$@"</span>
+    <span class="keyword">fi</span>
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Common Gotchas</h3>
+                <div class="card">
+                    <div class="note note-warning">
+                        <div class="note-title">Word Splitting</div>
+                        <p>Always quote variables to prevent word splitting on spaces.</p>
+                    </div>
+                    <pre><code><span class="comment"># WRONG: splits on spaces</span>
+<span class="keyword">for</span> file <span class="keyword">in</span> $files; <span class="keyword">do</span>
+    echo <span class="string">"$file"</span>
+<span class="keyword">done</span>
+
+<span class="comment"># CORRECT:</span>
+<span class="keyword">for</span> file <span class="keyword">in</span> <span class="string">"${files[@]}"</span>; <span class="keyword">do</span>
+    echo <span class="string">"$file"</span>
+<span class="keyword">done</span></code></pre>
+
+                    <div class="note note-warning">
+                        <div class="note-title">Pipe Subshell</div>
+                        <p>Variables set in pipes run in subshells and don't affect the parent.</p>
+                    </div>
+                    <pre><code><span class="comment"># WRONG: read runs in subshell</span>
+echo <span class="string">"value"</span> | read var
+echo <span class="string">"$var"</span>  <span class="comment"># Empty!</span>
+
+<span class="comment"># CORRECT: use here string</span>
+read var <<< <span class="string">"value"</span>
+echo <span class="string">"$var"</span>  <span class="comment"># value</span></code></pre>
+
+                    <div class="note note-warning">
+                        <div class="note-title">Test [ vs [[</div>
+                        <p>Use [[ ]] for modern Bash. It's safer and supports more features.</p>
+                    </div>
+                    <pre><code><span class="comment"># WRONG with [ ]</span>
+[ -f $file ]      <span class="comment"># Breaks if file contains spaces</span>
+
+<span class="comment"># CORRECT with [[ ]]</span>
+[[ -f $file ]]    <span class="comment"># No quotes needed</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Performance Tips</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Use built-ins instead of external commands</span>
+<span class="comment"># SLOW:</span>
+basename=$(basename <span class="string">"$path"</span>)
+dirname=$(dirname <span class="string">"$path"</span>)
+
+<span class="comment"># FAST:</span>
+basename=<span class="string">"${path##*/}"</span>
+dirname=<span class="string">"${path%/*}"</span>
+
+<span class="comment"># SLOW:</span>
+length=$(echo <span class="string">"$var"</span> | wc -c)
+
+<span class="comment"># FAST:</span>
+length=<span class="string">"${#var}"</span>
+
+<span class="comment"># Use mapfile/readarray for large files</span>
+<span class="comment"># FAST:</span>
+mapfile -t lines < file.txt</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Useful One-Liners</h3>
+                <div class="card">
+                    <pre><code><span class="comment"># Find and replace in multiple files</span>
+find . -name <span class="string">"*.txt"</span> -exec sed -i <span class="string">'s/old/new/g'</span> {} +
+
+<span class="comment"># Find large files</span>
+find / -type f -size +100M 2>/dev/null
+
+<span class="comment"># Backup with timestamp</span>
+cp file.txt <span class="string">"file.txt.$(date +%Y%m%d_%H%M%S).bak"</span>
+
+<span class="comment"># Get process using most memory</span>
+ps aux | sort -rk4 | head -1
+
+<span class="comment"># Create directory and cd into it</span>
+<span class="function">mkcd</span>() { mkdir -p <span class="string">"$1"</span> && cd <span class="string">"$1"</span>; }
+
+<span class="comment"># Extract any archive</span>
+<span class="function">extract</span>() {
+    <span class="keyword">case</span> <span class="string">"$1"</span> <span class="keyword">in</span>
+        *.tar.gz) tar xzf <span class="string">"$1"</span> ;;
+        *.zip) unzip <span class="string">"$1"</span> ;;
+        *.tar.bz2) tar xjf <span class="string">"$1"</span> ;;
+        *) echo <span class="string">"Unknown format"</span> ;;
+    <span class="keyword">esac</span>
+}
+
+<span class="comment"># Generate random password</span>
+openssl rand -base64 32
+
+<span class="comment"># Get external IP</span>
+curl -s ifconfig.me
+
+<span class="comment"># Batch rename files</span>
+<span class="keyword">for</span> file <span class="keyword">in</span> *.txt; <span class="keyword">do</span> mv <span class="string">"$file"</span> <span class="string">"${file%.txt}.md"</span>; <span class="keyword">done</span></code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Resources</h3>
+                <div class="card">
+                    <ul>
+                        <li><strong>Bash Manual:</strong> <code>man bash</code></li>
+                        <li><strong>ShellCheck:</strong> <a href="https://www.shellcheck.net/" target="_blank">https://www.shellcheck.net/</a></li>
+                        <li><strong>Bash Guide:</strong> <a href="https://mywiki.wooledge.org/BashGuide" target="_blank">https://mywiki.wooledge.org/BashGuide</a></li>
+                        <li><strong>Advanced Bash Scripting Guide:</strong> <a href="https://tldp.org/LDP/abs/html/" target="_blank">https://tldp.org/LDP/abs/html/</a></li>
+                        <li><strong>explainshell:</strong> <a href="https://explainshell.com/" target="_blank">https://explainshell.com/</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with the <a href="../styles/retro-futurism.html">Retro Futurism</a> design system</p>
+            <p>Last updated: 2026-02-09</p>
+        </footer>
+    </div>
+</body>
+</html>

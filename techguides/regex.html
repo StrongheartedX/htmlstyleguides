@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regular Expressions // Pattern Matching Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           OP ART DESIGN SYSTEM
+           Regular Expressions Tech Guide
+           High Contrast, Geometric Patterns, Optical Illusions
+           ============================================ */
+
+        :root {
+            /* Op Art Core Colors - High Contrast */
+            --black: #000000;
+            --white: #FFFFFF;
+
+            /* Complementary Color Pairs */
+            --op-red: #FF0000;
+            --op-cyan: #00FFFF;
+            --op-blue: #0000FF;
+            --op-orange: #FF6600;
+            --op-violet: #8000FF;
+            --op-lime: #80FF00;
+
+            /* Grayscale for Moire Effects */
+            --gray-10: #1A1A1A;
+            --gray-20: #333333;
+            --gray-30: #4D4D4D;
+            --gray-40: #666666;
+            --gray-50: #808080;
+            --gray-60: #999999;
+            --gray-70: #B3B3B3;
+            --gray-80: #CCCCCC;
+            --gray-90: #E6E6E6;
+
+            /* Semantic Colors */
+            --text-primary: var(--black);
+            --text-inverse: var(--white);
+            --text-muted: var(--gray-50);
+            --bg-primary: var(--white);
+            --bg-dark: var(--black);
+            --border-color: var(--black);
+
+            /* Typography */
+            --font-sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+            --font-code: 'Fira Code', 'Courier New', monospace;
+
+            /* Spacing Scale (8px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.6s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+        }
+
+        /* Op Art Pattern Backgrounds */
+        .pattern-concentric {
+            background: repeating-radial-gradient(
+                circle at center,
+                var(--black) 0px,
+                var(--black) 8px,
+                var(--white) 8px,
+                var(--white) 16px
+            );
+        }
+
+        .pattern-stripes {
+            background: repeating-linear-gradient(
+                45deg,
+                var(--black) 0px,
+                var(--black) 4px,
+                var(--white) 4px,
+                var(--white) 8px
+            );
+        }
+
+        .pattern-waves {
+            background:
+                repeating-radial-gradient(
+                    ellipse at 0% 50%,
+                    transparent 0px,
+                    transparent 10px,
+                    var(--black) 10px,
+                    var(--black) 12px
+                ),
+                repeating-radial-gradient(
+                    ellipse at 100% 50%,
+                    transparent 0px,
+                    transparent 10px,
+                    var(--black) 10px,
+                    var(--black) 12px
+                );
+        }
+
+        .pattern-checkerboard {
+            background:
+                linear-gradient(45deg, var(--black) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--black) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, var(--black) 75%),
+                linear-gradient(-45deg, transparent 75%, var(--black) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .pattern-moire {
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    var(--black) 0px,
+                    var(--black) 2px,
+                    transparent 2px,
+                    transparent 4px
+                ),
+                repeating-linear-gradient(
+                    3deg,
+                    var(--black) 0px,
+                    var(--black) 2px,
+                    transparent 2px,
+                    transparent 4px
+                );
+        }
+
+        .pattern-grid {
+            background-image:
+                repeating-linear-gradient(0deg, var(--black) 0px, var(--black) 1px, transparent 1px, transparent 12px),
+                repeating-linear-gradient(90deg, var(--black) 0px, var(--black) 1px, transparent 1px, transparent 12px);
+        }
+
+        /* Animated Patterns */
+        @keyframes rotate-pattern {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-pattern {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes wave-motion {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-1px); }
+            75% { transform: translateX(1px); }
+        }
+
+        @keyframes moire-shift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(3deg) scale(1.02); }
+        }
+
+        /* Back Link */
+        .back-link {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            border: 2px solid var(--black);
+            padding: var(--space-2) var(--space-4);
+            margin: var(--space-6) 0;
+            transition: all var(--transition-fast);
+            background: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .back-link:hover {
+            background: var(--black);
+            color: var(--white);
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 var(--gray-80);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-10) 0;
+            position: relative;
+            background: var(--black);
+            color: var(--white);
+            overflow: hidden;
+            margin-bottom: var(--space-9);
+        }
+
+        .header-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.15;
+            background: repeating-radial-gradient(
+                circle at 50% 50%,
+                transparent 0px,
+                transparent 30px,
+                var(--white) 30px,
+                var(--white) 32px
+            );
+            animation: pulse-pattern 6s ease-in-out infinite;
+        }
+
+        .header-moire {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 400px;
+            opacity: 0.2;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    var(--white) 0px,
+                    var(--white) 2px,
+                    transparent 2px,
+                    transparent 4px
+                ),
+                repeating-linear-gradient(
+                    3deg,
+                    var(--white) 0px,
+                    var(--white) 2px,
+                    transparent 2px,
+                    transparent 4px
+                );
+            animation: moire-shift 8s ease-in-out infinite;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-4);
+        }
+
+        .header-subtitle {
+            font-size: 1.25rem;
+            font-weight: 500;
+            opacity: 0.9;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-5);
+        }
+
+        .header-desc {
+            font-size: 1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            line-height: 1.7;
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-9) 0;
+            border-bottom: 4px solid var(--black);
+            position: relative;
+        }
+
+        .section:nth-child(odd) {
+            background: var(--white);
+        }
+
+        .section:nth-child(even) {
+            background: var(--gray-90);
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+            position: relative;
+        }
+
+        .section-number {
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--gray-90);
+            position: absolute;
+            top: -30px;
+            left: -10px;
+            z-index: 0;
+            line-height: 1;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            margin-bottom: var(--space-3);
+        }
+
+        .section-desc {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            max-width: 700px;
+        }
+
+        /* Decoration Elements */
+        .section-decoration {
+            position: absolute;
+            right: 0;
+            top: var(--space-7);
+            width: 80px;
+            height: 80px;
+            background: repeating-radial-gradient(
+                circle at center,
+                var(--black) 0px,
+                var(--black) 4px,
+                var(--white) 4px,
+                var(--white) 8px
+            );
+            border: 3px solid var(--black);
+            animation: rotate-pattern 12s linear infinite;
+        }
+
+        /* Subsection */
+        .subsection {
+            margin-bottom: var(--space-7);
+        }
+
+        .subsection-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 3px solid var(--black);
+            position: relative;
+        }
+
+        .subsection-title::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--op-red);
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 70ch;
+        }
+
+        code {
+            font-family: var(--font-code);
+            background: var(--gray-90);
+            padding: 2px 6px;
+            border: 1px solid var(--gray-80);
+            color: var(--op-red);
+            font-size: 0.9em;
+            border-radius: 2px;
+        }
+
+        pre {
+            font-family: var(--font-code);
+            background: var(--black);
+            color: var(--white);
+            border: 3px solid var(--black);
+            padding: var(--space-4);
+            overflow-x: auto;
+            margin-bottom: var(--space-4);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--white);
+            font-size: inherit;
+        }
+
+        pre::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--op-red);
+            color: var(--white);
+            padding: var(--space-1) var(--space-3);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border: 3px solid var(--black);
+            margin-bottom: var(--space-5);
+            background: var(--white);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .table th,
+        .table td {
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            border-bottom: 1px solid var(--gray-80);
+        }
+
+        .table th {
+            font-weight: 700;
+            background: var(--black);
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+            border-bottom: 3px solid var(--black);
+            white-space: nowrap;
+        }
+
+        .table td {
+            color: var(--text-primary);
+        }
+
+        .table tbody tr:hover {
+            background: var(--gray-90);
+        }
+
+        .table tbody tr:nth-child(even) {
+            background: var(--gray-95);
+        }
+
+        .table tbody tr:nth-child(even):hover {
+            background: var(--gray-90);
+        }
+
+        .table td:first-child {
+            font-family: var(--font-code);
+            font-weight: 600;
+            color: var(--op-red);
+            white-space: nowrap;
+        }
+
+        /* Pattern Cards */
+        .pattern-grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .pattern-card {
+            background: var(--white);
+            border: 3px solid var(--black);
+            padding: var(--space-4);
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .pattern-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .pattern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--op-red);
+        }
+
+        .pattern-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .pattern-card-code {
+            font-family: var(--font-code);
+            font-size: 0.875rem;
+            color: var(--op-red);
+            margin-bottom: var(--space-3);
+            font-weight: 600;
+        }
+
+        .pattern-card-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-bottom: var(--space-4);
+            margin-left: var(--space-5);
+        }
+
+        li {
+            margin-bottom: var(--space-2);
+        }
+
+        li code {
+            margin: 0 var(--space-1);
+        }
+
+        /* Example Boxes */
+        .example-box {
+            background: var(--white);
+            border: 3px solid var(--black);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            position: relative;
+        }
+
+        .example-box::before {
+            content: 'EXAMPLE';
+            position: absolute;
+            top: -12px;
+            left: var(--space-4);
+            background: var(--white);
+            padding: 0 var(--space-2);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background: var(--white);
+            border: 3px solid var(--op-orange);
+            border-left-width: 8px;
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .warning-box::before {
+            content: '⚠ WARNING';
+            display: block;
+            font-weight: 700;
+            color: var(--op-orange);
+            margin-bottom: var(--space-2);
+            letter-spacing: 0.05em;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: var(--white);
+            border: 3px solid var(--op-blue);
+            border-left-width: 8px;
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .info-box::before {
+            content: 'ℹ INFO';
+            display: block;
+            font-weight: 700;
+            color: var(--op-blue);
+            margin-bottom: var(--space-2);
+            letter-spacing: 0.05em;
+        }
+
+        /* Quick Reference Grid */
+        .quick-ref-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .quick-ref-card {
+            background: var(--white);
+            border: 3px solid var(--black);
+            padding: var(--space-4);
+            position: relative;
+        }
+
+        .quick-ref-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--op-red) 0px,
+                var(--op-red) 8px,
+                var(--op-cyan) 8px,
+                var(--op-cyan) 16px
+            );
+        }
+
+        .quick-ref-card h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .quick-ref-card pre {
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0;
+            background: var(--black);
+            color: var(--white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.1;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--white) 0px,
+                var(--white) 2px,
+                transparent 2px,
+                transparent 8px
+            );
+        }
+
+        .footer-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer p {
+            margin-bottom: var(--space-2);
+            max-width: 100%;
+        }
+
+        .footer a {
+            color: var(--white);
+            text-decoration: none;
+            border-bottom: 2px solid var(--op-red);
+            transition: var(--transition-fast);
+        }
+
+        .footer a:hover {
+            border-bottom-color: var(--white);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .section-number {
+                font-size: 3rem;
+                top: -20px;
+            }
+
+            .section-decoration {
+                width: 60px;
+                height: 60px;
+            }
+
+            .pattern-grid-layout,
+            .quick-ref-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-moire {
+                width: 300px;
+                height: 300px;
+            }
+        }
+
+        /* Flavor Comparison */
+        .flavor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .flavor-card {
+            background: var(--white);
+            border: 3px solid var(--black);
+            padding: var(--space-4);
+            position: relative;
+        }
+
+        .flavor-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--op-violet);
+        }
+
+        .flavor-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            margin-left: var(--space-3);
+        }
+
+        .flavor-used-by {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-3);
+            margin-left: var(--space-3);
+        }
+
+        .flavor-features {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            margin-left: var(--space-3);
+        }
+
+        /* Highlight */
+        .highlight {
+            background: var(--op-red);
+            color: var(--white);
+            padding: 1px 4px;
+            font-weight: 600;
+        }
+
+        /* Inline Pattern */
+        .inline-pattern {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--black) 0px,
+                var(--black) 2px,
+                var(--white) 2px,
+                var(--white) 4px
+            );
+            border: 1px solid var(--black);
+            margin: 0 2px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Tech Guides</a>
+
+        <header class="header">
+            <div class="header-pattern"></div>
+            <div class="header-moire"></div>
+            <div class="header-content">
+                <h1>Regular Expressions</h1>
+                <p class="header-subtitle">Pattern Matching Reference</p>
+                <p class="header-desc">A comprehensive guide to regex syntax, patterns, and best practices across different flavors and implementations. Master the art of pattern matching.</p>
+            </div>
+        </header>
+
+        <!-- QUICK REFERENCE -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2 class="section-title">Quick Reference</h2>
+                <p class="section-desc">Essential regex syntax at a glance. Your go-to cheat sheet for common patterns and metacharacters.</p>
+            </div>
+
+            <div class="quick-ref-grid">
+                <div class="quick-ref-card">
+                    <h4>Character Classes</h4>
+                    <pre data-label="BASICS"><code>.       Any character except newline
+\d      Digit [0-9]
+\D      Not digit [^0-9]
+\w      Word character [a-zA-Z0-9_]
+\W      Not word character
+\s      Whitespace [ \t\r\n\f\v]
+\S      Not whitespace
+[abc]   Any of a, b, or c
+[^abc]  Not a, b, or c
+[a-z]   Range a through z</code></pre>
+                </div>
+
+                <div class="quick-ref-card">
+                    <h4>Quantifiers</h4>
+                    <pre data-label="REPEAT"><code>*       0 or more (greedy)
++       1 or more (greedy)
+?       0 or 1 (greedy)
+{n}     Exactly n times
+{n,}    n or more times
+{n,m}   Between n and m times
+*?      0 or more (lazy)
++?      1 or more (lazy)
+??      0 or 1 (lazy)
+*+      Possessive (PCRE/Java)</code></pre>
+                </div>
+
+                <div class="quick-ref-card">
+                    <h4>Anchors & Boundaries</h4>
+                    <pre data-label="POSITION"><code>^       Start of string/line
+$       End of string/line
+\b      Word boundary
+\B      Not word boundary
+\A      Start of string (always)
+\Z      End of string (always)
+\z      Absolute end (PCRE/Python)
+\G      Start of search (Perl/PCRE)</code></pre>
+                </div>
+
+                <div class="quick-ref-card">
+                    <h4>Groups & Capturing</h4>
+                    <pre data-label="GROUPS"><code>(...)           Capturing group
+(?:...)         Non-capturing group
+(?&lt;name&gt;...)    Named group (PCRE/.NET)
+(?P&lt;name&gt;...)   Named group (Python)
+\1, \2, ...     Backreference
+\k&lt;name&gt;        Named backreference
+(?>...)         Atomic group</code></pre>
+                </div>
+
+                <div class="quick-ref-card">
+                    <h4>Lookaround</h4>
+                    <pre data-label="ASSERTIONS"><code>(?=...)     Positive lookahead
+(?!...)     Negative lookahead
+(?&lt;=...)    Positive lookbehind
+(?&lt;!...)    Negative lookbehind</code></pre>
+                </div>
+
+                <div class="quick-ref-card">
+                    <h4>Flags/Modifiers</h4>
+                    <pre data-label="MODES"><code>i   Case-insensitive
+g   Global (match all)
+m   Multiline (^ $ match lines)
+s   Dotall (. matches newline)
+x   Extended (ignore whitespace)
+u   Unicode</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- BASIC PATTERNS -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2 class="section-title">Basic Patterns</h2>
+                <p class="section-desc">Foundational regex concepts: literals, metacharacters, and character classes.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Literals</h3>
+                <p>Most characters match themselves literally. Regular text is interpreted character by character:</p>
+                <pre data-label="LITERAL"><code>cat         Matches "cat"
+hello       Matches "hello"
+123         Matches "123"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Metacharacters</h3>
+                <p>Special characters with reserved meanings. Must be escaped with backslash to match literally:</p>
+                <pre data-label="META"><code>. ^ $ * + ? { } [ ] \ | ( )</code></pre>
+                <p>To match these literally, prefix with backslash:</p>
+                <pre data-label="ESCAPED"><code>\.          Matches a literal dot
+\$          Matches a dollar sign
+\(hello\)   Matches "(hello)" literally
+\*          Matches a literal asterisk</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Dot Metacharacter</h3>
+                <p>The dot <code>.</code> matches any single character except newline:</p>
+                <pre data-label="DOT"><code>.           Matches any single character except newline
+a.c         Matches "abc", "a9c", "a c", etc.
+.....       Matches any 5 characters</code></pre>
+                <div class="info-box">
+                    With the <code>/s</code> flag (dotall mode), the dot matches newlines too.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Character Classes</h3>
+                <p>Define a set of characters to match. Use square brackets to create a class:</p>
+                <pre data-label="CLASSES"><code>[abc]           Matches 'a', 'b', or 'c'
+[aeiou]         Matches any vowel
+[0-9]           Matches any digit
+[a-z]           Matches any lowercase letter
+[a-zA-Z]        Matches any letter
+[a-zA-Z0-9]     Matches any alphanumeric character</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Negated Character Classes</h4>
+                <p>Use <code>^</code> at the start to negate:</p>
+                <pre data-label="NEGATED"><code>[^abc]          Matches anything except 'a', 'b', or 'c'
+[^0-9]          Matches anything except digits
+[^\s]           Matches any non-whitespace character</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Predefined Character Classes</h4>
+                <pre data-label="PREDEFINED"><code>\d      Digit [0-9]
+\D      Non-digit [^0-9]
+\w      Word character [a-zA-Z0-9_]
+\W      Non-word character [^a-zA-Z0-9_]
+\s      Whitespace [ \t\r\n\f\v]
+\S      Non-whitespace [^ \t\r\n\f\v]
+\h      Horizontal whitespace (PCRE)
+\v      Vertical whitespace (PCRE)</code></pre>
+            </div>
+        </section>
+
+        <!-- QUANTIFIERS -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2 class="section-title">Quantifiers</h2>
+                <p class="section-desc">Control how many times an element repeats. Understanding greedy vs lazy is essential.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Basic Quantifiers</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Quantifier</th>
+                                <th>Meaning</th>
+                                <th>Example</th>
+                                <th>Matches</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>*</td>
+                                <td>0 or more</td>
+                                <td>a*</td>
+                                <td>"", "a", "aa", "aaa", ...</td>
+                            </tr>
+                            <tr>
+                                <td>+</td>
+                                <td>1 or more</td>
+                                <td>a+</td>
+                                <td>"a", "aa", "aaa", ...</td>
+                            </tr>
+                            <tr>
+                                <td>?</td>
+                                <td>0 or 1</td>
+                                <td>a?</td>
+                                <td>"", "a"</td>
+                            </tr>
+                            <tr>
+                                <td>{n}</td>
+                                <td>Exactly n</td>
+                                <td>a{3}</td>
+                                <td>"aaa"</td>
+                            </tr>
+                            <tr>
+                                <td>{n,}</td>
+                                <td>n or more</td>
+                                <td>a{2,}</td>
+                                <td>"aa", "aaa", "aaaa", ...</td>
+                            </tr>
+                            <tr>
+                                <td>{n,m}</td>
+                                <td>Between n and m</td>
+                                <td>a{2,4}</td>
+                                <td>"aa", "aaa", "aaaa"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Greedy vs Lazy Quantifiers</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">Greedy (Default)</h4>
+                <p>Match as much as possible. Quantifiers are greedy by default:</p>
+                <pre data-label="GREEDY"><code>&lt;.+&gt;        In "&lt;p&gt;Hello&lt;/p&gt;", matches entire "&lt;p&gt;Hello&lt;/p&gt;"
+\d+         In "12345", matches "12345"</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Lazy (Non-Greedy)</h4>
+                <p>Match as little as possible. Add <code>?</code> after quantifier:</p>
+                <pre data-label="LAZY"><code>&lt;.+?&gt;       In "&lt;p&gt;Hello&lt;/p&gt;", matches "&lt;p&gt;" and "&lt;/p&gt;" separately
+\d+?        In "12345" with global flag, matches "1", "2", "3", "4", "5"</code></pre>
+
+                <p style="margin-top: 24px;">Common lazy quantifiers:</p>
+                <pre data-label="LAZY OPS"><code>*?      0 or more (lazy)
++?      1 or more (lazy)
+??      0 or 1 (lazy)
+{n,}?   n or more (lazy)
+{n,m}?  Between n-m (lazy)</code></pre>
+
+                <div class="example-box">
+                    <strong>Practical Example:</strong>
+                    <p style="margin-top: 12px;">Extract text between quotes:</p>
+                    <pre data-label="EXAMPLE"><code>// Greedy - matches from first to last quote
+"(.*)"      In '"Hello" and "World"' → '"Hello" and "World"'
+
+// Lazy - matches each quoted string separately
+"(.*?)"     In '"Hello" and "World"' → '"Hello"' and '"World"'</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Possessive Quantifiers</h3>
+                <p>Available in PCRE, Java, and .NET. Never backtrack once matched:</p>
+                <pre data-label="POSSESSIVE"><code>*+      0 or more (possessive)
+++      1 or more (possessive)
+?+      0 or 1 (possessive)
+{n,}+   n or more (possessive)
+{n,m}+  Between n-m (possessive)</code></pre>
+
+                <div class="warning-box">
+                    <code>\d++\d</code> never matches because possessive <code>++</code> consumes all digits without backtracking. Use for performance optimization and preventing catastrophic backtracking.
+                </div>
+            </div>
+        </section>
+
+        <!-- ANCHORS & BOUNDARIES -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2 class="section-title">Anchors & Boundaries</h2>
+                <p class="section-desc">Match positions, not characters. Zero-width assertions that anchor patterns to specific locations.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Line Anchors</h3>
+                <pre data-label="ANCHORS"><code>^       Start of string (or line in multiline mode)
+$       End of string (or line in multiline mode)</code></pre>
+
+                <p>Examples:</p>
+                <pre data-label="EXAMPLES"><code>^Hello      Matches "Hello" only at start of string
+world$      Matches "world" only at end of string
+^Hello$     Matches entire string "Hello" (nothing before or after)</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Multiline Mode</h3>
+                <p>Without <code>/m</code> flag:</p>
+                <pre data-label="SINGLE"><code>^       Matches start of entire string
+$       Matches end of entire string</code></pre>
+
+                <p>With <code>/m</code> flag:</p>
+                <pre data-label="MULTI"><code>^       Matches start of string AND start of each line
+$       Matches end of string AND end of each line</code></pre>
+
+                <div class="example-box">
+                    <strong>Multiline Text Example:</strong>
+                    <pre data-label="TEXT"><code>Line 1
+Line 2
+Line 3</code></pre>
+                    <pre data-label="REGEX"><code>/^Line/     Matches "Line 1" only (1 match)
+/^Line/m    Matches "Line" at start of each line (3 matches)</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Absolute Anchors</h3>
+                <pre data-label="ABSOLUTE"><code>\A      Start of string (always, ignores multiline mode)
+\Z      End of string before final newline (always)
+\z      Absolute end of string (PCRE/Python)</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Word Boundaries</h3>
+                <pre data-label="BOUNDARY"><code>\b      Word boundary (between \w and \W)
+\B      Not word boundary</code></pre>
+
+                <p>Examples:</p>
+                <pre data-label="EXAMPLES"><code>\bcat\b     Matches "cat" in "the cat sat" but not in "concatenate"
+\Bcat\B     Matches "cat" in "concatenate" but not in "the cat sat"
+\bcat       Matches "cat" at start of word: "cat", "caterpillar"
+cat\b       Matches "cat" at end of word: "cat", "bobcat"</code></pre>
+
+                <div class="info-box">
+                    Word boundary positions occur:
+                    <ul style="margin-top: 8px; margin-bottom: 0;">
+                        <li>Between <code>\w</code> and <code>\W</code></li>
+                        <li>Between start of string and <code>\w</code></li>
+                        <li>Between <code>\w</code> and end of string</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- GROUPS & CAPTURING -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2 class="section-title">Groups & Capturing</h2>
+                <p class="section-desc">Extract and reference matched substrings. Essential for complex pattern matching and replacements.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Capturing Groups</h3>
+                <p>Parentheses create capturing groups that store matched text:</p>
+                <pre data-label="CAPTURE"><code>(abc)           Captures "abc"
+(\d{4})         Captures 4 digits
+([a-z]+)        Captures one or more lowercase letters</code></pre>
+
+                <div class="example-box">
+                    <strong>Date Matching:</strong>
+                    <pre data-label="DATE"><code>(\d{4})-(\d{2})-(\d{2})
+
+Matching "2026-02-09" captures:
+  Group 1: "2026"
+  Group 2: "02"
+  Group 3: "09"</code></pre>
+                </div>
+
+                <p style="margin-top: 24px;">Access captured groups:</p>
+                <ul>
+                    <li>In replacement: <code>$1</code>, <code>$2</code> (JavaScript, Perl) or <code>\1</code>, <code>\2</code> (sed, vim)</li>
+                    <li>In code: <code>match.groups()</code>, <code>match[1]</code>, etc.</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Non-Capturing Groups</h3>
+                <p>Use <code>(?:...)</code> when you need grouping but don't need to capture:</p>
+                <pre data-label="NON-CAPTURE"><code>(?:abc)+        Matches "abc", "abcabc", "abcabcabc", ... (doesn't capture)
+(?:\d{4})-      Matches year followed by dash, doesn't capture year</code></pre>
+
+                <div class="info-box">
+                    Benefits of non-capturing groups:
+                    <ul style="margin-top: 8px; margin-bottom: 0;">
+                        <li>Better performance (no capturing overhead)</li>
+                        <li>Cleaner code when you don't need the value</li>
+                        <li>Group numbering isn't affected</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Named Capturing Groups</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">Python Syntax</h4>
+                <pre data-label="PYTHON"><code>(?P&lt;name&gt;pattern)       Define named group
+(?P=name)               Backreference to named group
+
+# Example
+(?P&lt;year&gt;\d{4})-(?P&lt;month&gt;\d{2})-(?P&lt;day&gt;\d{2})
+# Access: match.group('year'), match.group('month'), match.group('day')</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">PCRE/JavaScript/.NET Syntax</h4>
+                <pre data-label="PCRE"><code>(?&lt;name&gt;pattern)        Define named group
+\k&lt;name&gt;                Backreference to named group
+
+// JavaScript Example
+/(?&lt;year&gt;\d{4})-(?&lt;month&gt;\d{2})-(?&lt;day&gt;\d{2})/
+// Access: match.groups.year, match.groups.month, match.groups.day</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Backreferences</h3>
+                <p>Reference previously captured groups within the same pattern:</p>
+                <pre data-label="BACKREF"><code>\1, \2, \3, ...         Reference groups 1, 2, 3, ...
+\k&lt;name&gt;                Reference named group (PCRE/JavaScript)
+(?P=name)               Reference named group (Python)</code></pre>
+
+                <p>Examples:</p>
+                <pre data-label="EXAMPLES"><code>(\w+)\s+\1              Matches repeated words: "the the", "hello hello"
+(["'])(.*?)\1           Matches quoted strings with same quote type
+&lt;([a-z]+)&gt;.*?&lt;/\1&gt;      Matches HTML tags: &lt;p&gt;...&lt;/p&gt;, &lt;div&gt;...&lt;/div&gt;</code></pre>
+
+                <div class="example-box">
+                    <strong>Matching Repeated Words:</strong>
+                    <pre data-label="REPEAT"><code>\b(\w+)\s+\1\b          Matches "word word", "test test"</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Atomic Groups</h3>
+                <p>Prevent backtracking once matched (PCRE, Java, .NET):</p>
+                <pre data-label="ATOMIC"><code>(?>pattern)             Atomic group
+
+(?&gt;a+)b                 Never matches "aaaa" (possessive + consumes all 'a's)
+a+b                     Can match "aaaa" followed by "b"</code></pre>
+
+                <div class="info-box">
+                    Use atomic groups for:
+                    <ul style="margin-top: 8px; margin-bottom: 0;">
+                        <li>Performance optimization</li>
+                        <li>Preventing catastrophic backtracking</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOOKAHEAD & LOOKBEHIND -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2 class="section-title">Lookahead & Lookbehind</h2>
+                <p class="section-desc">Zero-width assertions that match positions without consuming characters. Essential for complex validation.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Positive Lookahead (?=...)</h3>
+                <p>Assert that pattern CAN be matched ahead:</p>
+                <pre data-label="LOOKAHEAD"><code>\d(?=px)                Matches digit followed by "px" (doesn't include "px")
+                        In "10px", matches "10"
+
+q(?=u)                  Matches "q" followed by "u"
+                        In "question", matches "q"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Negative Lookahead (?!...)</h3>
+                <p>Assert that pattern CANNOT be matched ahead:</p>
+                <pre data-label="NEG-LOOKAHEAD"><code>\d(?!px)                Matches digit NOT followed by "px"
+                        In "10px 20em", matches "2" and "0"
+
+q(?!u)                  Matches "q" NOT followed by "u"
+                        In "Iraq", matches "q"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Positive Lookbehind (?&lt;=...)</h3>
+                <p>Assert that pattern CAN be matched behind:</p>
+                <pre data-label="LOOKBEHIND"><code>(?&lt;=\$)\d+              Matches digits preceded by "$"
+                        In "$100", matches "100"
+
+(?&lt;=[a-z])[A-Z]         Matches uppercase letter after lowercase
+                        In "testCase", matches "C"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Negative Lookbehind (?&lt;!...)</h3>
+                <p>Assert that pattern CANNOT be matched behind:</p>
+                <pre data-label="NEG-LOOKBEHIND"><code>(?&lt;!\$)\d+              Matches digits NOT preceded by "$"
+                        In "$10 20", matches "20"
+
+(?&lt;![a-z])[A-Z]         Matches uppercase letter NOT after lowercase
+                        In "TestCase", matches "T"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Practical Examples</h3>
+
+                <div class="example-box">
+                    <strong>Password Validation:</strong>
+                    <p style="margin-top: 12px;">Minimum 8 chars, requires uppercase, lowercase, digit, special:</p>
+                    <pre data-label="PASSWORD"><code>^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$
+
+Breakdown:
+  ^                             Start of string
+  (?=.*[A-Z])                   Must contain uppercase
+  (?=.*[a-z])                   Must contain lowercase
+  (?=.*\d)                      Must contain digit
+  (?=.*[^A-Za-z0-9\s])          Must contain special character
+  .{8,}                         At least 8 characters total
+  $                             End of string</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <strong>Extract Price Without Currency Symbol:</strong>
+                    <pre data-label="PRICE"><code>(?&lt;=\$)\d+(?:\.\d{2})?
+Matches: "$10.53" → "10.53"</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <strong>Add Spaces to camelCase:</strong>
+                    <pre data-label="CAMELCASE"><code>(?&lt;=[a-z])(?=[A-Z])
+Position between: "testCase" → "test" + "Case"</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <strong>Username Validation:</strong>
+                    <p style="margin-top: 12px;">Alphanumeric, 3-16 chars, not all digits:</p>
+                    <pre data-label="USERNAME"><code>^(?!^\d+$)[a-zA-Z0-9]{3,16}$</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Limitations</h3>
+                <div class="warning-box">
+                    <strong>Fixed-width lookbehind:</strong> Many engines (JavaScript before ES2018, some PCRE versions) require lookbehind to be fixed-width:
+                    <pre style="margin-top: 12px;" data-label="WIDTH"><code>(?&lt;=\d{4})      OK (fixed width: 4)
+(?&lt;=\d+)        May fail (variable width)</code></pre>
+                    Modern JavaScript (ES2018+) and Python support variable-width lookbehind.
+                </div>
+            </div>
+        </section>
+
+        <!-- FLAGS & MODES -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2 class="section-title">Flags & Modes</h2>
+                <p class="section-desc">Modifiers that change regex behavior. Syntax varies by language.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Common Flags</h3>
+
+                <div class="pattern-grid-layout">
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">i - Case Insensitive</div>
+                        <div class="pattern-card-code">/hello/i</div>
+                        <div class="pattern-card-desc">Matches "hello", "Hello", "HELLO", "HeLLo"</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">g - Global</div>
+                        <div class="pattern-card-code">/test/g</div>
+                        <div class="pattern-card-desc">Match all occurrences, not just the first</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">m - Multiline</div>
+                        <div class="pattern-card-code">/^Line/m</div>
+                        <div class="pattern-card-desc">^ and $ match line boundaries, not just string boundaries</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">s - Dotall</div>
+                        <div class="pattern-card-code">/.+/s</div>
+                        <div class="pattern-card-desc">Dot matches newlines too (single-line mode)</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">x - Extended</div>
+                        <div class="pattern-card-code">/\d{4} # year/x</div>
+                        <div class="pattern-card-desc">Ignore whitespace, allow comments</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">u - Unicode</div>
+                        <div class="pattern-card-code">/^\u{1F600}$/u</div>
+                        <div class="pattern-card-desc">Enable Unicode features and proper code point matching</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Flag Syntax by Language</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">JavaScript</h4>
+                <pre data-label="JS"><code>/pattern/flags
+new RegExp('pattern', 'flags')
+
+/hello/i
+/\d+/g
+/^line/m</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Python</h4>
+                <pre data-label="PYTHON"><code>import re
+re.compile(r'pattern', re.FLAG)
+
+re.IGNORECASE or re.I
+re.MULTILINE or re.M
+re.DOTALL or re.S
+re.VERBOSE or re.X
+re.UNICODE or re.U
+
+# Example
+re.compile(r'hello', re.I | re.M)</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Perl/PCRE</h4>
+                <pre data-label="PERL"><code>/pattern/imsxg
+m/pattern/imsxg
+
+/hello/i
+/\d+/g</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Inline Modifiers</h3>
+                <p>Set flags within the pattern itself:</p>
+                <pre data-label="INLINE"><code>(?i)case-insensitive    Turn on case-insensitive
+(?-i)case-sensitive     Turn off case-insensitive
+(?i:pattern)            Case-insensitive for this group only
+(?ims)                  Multiple flags</code></pre>
+
+                <p>Examples:</p>
+                <pre data-label="EXAMPLES"><code>(?i)hello               Matches "hello", "Hello", "HELLO"
+hello(?i)world          Only "world" is case-insensitive
+(?i:hello) world        Only "hello" is case-insensitive</code></pre>
+            </div>
+        </section>
+
+        <!-- FLAVOR DIFFERENCES -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2 class="section-title">Flavor Differences</h2>
+                <p class="section-desc">Different regex engines have varying features and syntax. Know your environment.</p>
+            </div>
+
+            <div class="flavor-grid">
+                <div class="flavor-card">
+                    <h4 class="flavor-name">POSIX BRE</h4>
+                    <div class="flavor-used-by">Used by: grep, sed, vi</div>
+                    <div class="flavor-features">
+                        Oldest flavor. Most metacharacters require backslash to be special. Very limited feature set.
+                        <pre style="margin-top: 12px; font-size: 0.8rem;" data-label="BRE"><code>\(group\)       Grouping
+\{n,m\}         Quantifiers
+\|              Alternation</code></pre>
+                    </div>
+                </div>
+
+                <div class="flavor-card">
+                    <h4 class="flavor-name">POSIX ERE</h4>
+                    <div class="flavor-used-by">Used by: egrep, awk, grep -E</div>
+                    <div class="flavor-features">
+                        Metacharacters don't need escaping. More modern syntax.
+                        <pre style="margin-top: 12px; font-size: 0.8rem;" data-label="ERE"><code>(group)         Grouping
+{n,m}           Quantifiers
+|               Alternation</code></pre>
+                    </div>
+                </div>
+
+                <div class="flavor-card">
+                    <h4 class="flavor-name">PCRE</h4>
+                    <div class="flavor-used-by">Used by: Perl, PHP, R, grep -P</div>
+                    <div class="flavor-features">
+                        Most powerful and feature-rich. Industry standard for advanced regex. Supports all modern features including lookaround, atomic groups, recursion.
+                    </div>
+                </div>
+
+                <div class="flavor-card">
+                    <h4 class="flavor-name">JavaScript</h4>
+                    <div class="flavor-used-by">Used by: Browsers, Node.js</div>
+                    <div class="flavor-features">
+                        ES2018+ added lookbehind, named groups, dotAll, Unicode properties. No atomic groups or possessive quantifiers.
+                    </div>
+                </div>
+
+                <div class="flavor-card">
+                    <h4 class="flavor-name">Python</h4>
+                    <div class="flavor-used-by">Used by: Python scripts</div>
+                    <div class="flavor-features">
+                        Excellent Unicode support, named groups, variable-width lookbehind. Different named group syntax: (?P&lt;name&gt;...)
+                    </div>
+                </div>
+
+                <div class="flavor-card">
+                    <h4 class="flavor-name">Java</h4>
+                    <div class="flavor-used-by">Used by: Java applications</div>
+                    <div class="flavor-features">
+                        Supports possessive quantifiers, atomic groups, lookaround. Good Unicode support.
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Feature Comparison</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>BRE</th>
+                                <th>ERE</th>
+                                <th>PCRE</th>
+                                <th>JavaScript</th>
+                                <th>Python</th>
+                                <th>Java</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Basic matching</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Character classes</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Lazy quantifiers</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Possessive quantifiers</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Non-capturing groups</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Named groups</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓ (ES2018+)</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Lookahead</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Lookbehind</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓ (ES2018+)</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Atomic groups</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Unicode</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Choosing the Right Flavor</h3>
+                <ul>
+                    <li><strong>For portability:</strong> Use ERE (works in most Unix tools)</li>
+                    <li><strong>For power:</strong> Use PCRE (most features, widely supported)</li>
+                    <li><strong>For web:</strong> JavaScript (browser compatibility)</li>
+                    <li><strong>For scripting:</strong> Python or Perl (excellent string manipulation)</li>
+                    <li><strong>For performance-critical:</strong> Consider RE2 (Google's linear-time engine)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- COMMON PATTERNS -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2 class="section-title">Common Patterns</h2>
+                <p class="section-desc">Battle-tested regex patterns for everyday tasks. Copy, paste, adapt.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Email Validation</h3>
+                <pre data-label="SIMPLE"><code>^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$</code></pre>
+                <p>Breakdown:</p>
+                <ul>
+                    <li><code>[a-zA-Z0-9._%+-]+</code> - Local part (username)</li>
+                    <li><code>@</code> - Literal @</li>
+                    <li><code>[a-zA-Z0-9.-]+</code> - Domain name</li>
+                    <li><code>\.</code> - Literal dot</li>
+                    <li><code>[a-zA-Z]{2,}</code> - TLD (2+ letters)</li>
+                </ul>
+                <div class="warning-box">
+                    Email validation is complex. For production, use a dedicated library. RFC 5322-compliant regex is hundreds of characters long.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">URL Validation</h3>
+                <pre data-label="URL"><code>^(https?:\/\/)?([\w-]+\.)+[a-zA-Z]{2,}(\/[\w\-\.~:/?#\[\]@!\$&'()\*\+,;=%.]*)?$</code></pre>
+                <p>Breakdown:</p>
+                <ul>
+                    <li><code>(https?:\/\/)?</code> - Optional protocol</li>
+                    <li><code>([\w-]+\.)+</code> - Domain parts (subdomains)</li>
+                    <li><code>[a-zA-Z]{2,}</code> - TLD</li>
+                    <li><code>(\/...)?</code> - Optional path, query, fragment</li>
+                </ul>
+                <p style="margin-top: 16px;">Match URLs in text:</p>
+                <pre data-label="SIMPLE"><code>https?:\/\/[^\s]+</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">IP Address</h3>
+                <p><strong>IPv4:</strong></p>
+                <pre data-label="IPV4"><code>^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$</code></pre>
+                <p>Breakdown:</p>
+                <ul>
+                    <li><code>25[0-5]</code> - 250-255</li>
+                    <li><code>2[0-4][0-9]</code> - 200-249</li>
+                    <li><code>[01]?[0-9][0-9]?</code> - 0-199</li>
+                </ul>
+                <p style="margin-top: 16px;"><strong>Simpler (less strict):</strong></p>
+                <pre data-label="SIMPLE"><code>^(\d{1,3}\.){3}\d{1,3}$</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Date Formats</h3>
+                <pre data-label="ISO"><code>^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+// YYYY-MM-DD (ISO 8601)</code></pre>
+                <pre data-label="US"><code>^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$
+// MM/DD/YYYY</code></pre>
+                <pre data-label="EU"><code>^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$
+// DD-MM-YYYY</code></pre>
+                <div class="info-box">
+                    These validate format only, not actual date validity (e.g., Feb 30). Use date libraries for real validation.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Phone Numbers</h3>
+                <pre data-label="US"><code>^(\+1[-.]?)?(\(?\d{3}\)?[-.]?)?\d{3}[-.]?\d{4}$</code></pre>
+                <p>Matches:</p>
+                <ul>
+                    <li>555-1234</li>
+                    <li>(555) 123-4567</li>
+                    <li>+1-555-123-4567</li>
+                    <li>555.123.4567</li>
+                </ul>
+                <p style="margin-top: 16px;"><strong>International E.164 format:</strong></p>
+                <pre data-label="E164"><code>^\+[1-9]\d{1,14}$</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Password Validation</h3>
+                <pre data-label="STRONG"><code>^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$
+// Min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special</code></pre>
+                <pre data-label="MEDIUM"><code>^(?=.*[A-Za-z])(?=.*\d).{8,}$
+// Min 8 chars, at least 1 letter and 1 digit</code></pre>
+                <pre data-label="NO-SPACE"><code>^\S{6,20}$
+// No whitespace, 6-20 characters</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Username Validation</h3>
+                <pre data-label="BASIC"><code>^[a-zA-Z0-9_]{3,16}$
+// Alphanumeric, 3-16 characters, underscores allowed</code></pre>
+                <pre data-label="START-LETTER"><code>^[a-zA-Z][a-zA-Z0-9_-]{2,15}$
+// Start with letter, alphanumeric + underscore + hyphen, 3-16 chars</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">HTML/XML</h3>
+                <pre data-label="TAGS"><code>&lt;([a-z]+)([^&gt;]*)&gt;(.*?)&lt;\/\1&gt;
+// HTML tags with backreference</code></pre>
+                <pre data-label="COMMENTS"><code>&lt;!--.*?--&gt;
+// HTML comments</code></pre>
+                <pre data-label="STRIP"><code>&lt;[^&gt;]*&gt;
+// Strip HTML tags</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">File Paths & Extensions</h3>
+                <pre data-label="EXTENSION"><code>\.([a-zA-Z0-9]+)$
+// File extension</code></pre>
+                <pre data-label="UNIX"><code>^\/(?:[^\/\0]+\/?)*$
+// Unix absolute path</code></pre>
+                <pre data-label="WINDOWS"><code>^[a-zA-Z]:\\(?:[^\\/:*?"&lt;&gt;|\r\n]+\\)*[^\\/:*?"&lt;&gt;|\r\n]*$
+// Windows path</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Hex Color</h3>
+                <pre data-label="HEX"><code>^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$
+// 3 or 6 digit hex color</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Slug/URL-friendly String</h3>
+                <pre data-label="SLUG"><code>^[a-z0-9]+(?:-[a-z0-9]+)*$
+// Lowercase letters, numbers, hyphens</code></pre>
+            </div>
+        </section>
+
+        <!-- PERFORMANCE -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2 class="section-title">Performance</h2>
+                <p class="section-desc">Optimize regex for speed and prevent catastrophic backtracking. Security matters.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Catastrophic Backtracking</h3>
+                <p>Certain patterns cause exponential time complexity, making them vulnerable to ReDoS (Regular Expression Denial of Service) attacks.</p>
+
+                <div class="warning-box">
+                    <strong>Dangerous patterns - nested quantifiers:</strong>
+                    <pre style="margin-top: 12px;" data-label="DANGER"><code>(a+)+              Dangerous
+(a*)*              Dangerous
+(a+)*              Dangerous
+(a|a)*             Dangerous
+(a|b)*a            Can be dangerous with long non-matching input</code></pre>
+                </div>
+
+                <div class="example-box">
+                    <strong>Example Attack:</strong>
+                    <pre data-label="ATTACK"><code>^(a+)+$
+
+Input: "aaaaaaaaaaaaaaaaaaaX" (19 a's, then X)
+
+The engine tries exponential combinations:
+  - 19 groups of 1 'a' each
+  - 1 group of 19 'a's
+  - 9 groups of 2, 1 of 1
+  - ... (2^19 combinations)
+
+Result: Exponential time O(2^n)</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Detecting Vulnerable Patterns</h3>
+                <p><strong>Red flags:</strong></p>
+                <ul>
+                    <li>Nested quantifiers: <code>(a+)+</code>, <code>(a*)*</code></li>
+                    <li>Overlapping alternatives: <code>(a|a)*</code>, <code>(a|ab)*</code></li>
+                    <li>Optional groups repeated: <code>(a?)*</code></li>
+                    <li>Alternation with shared prefix: <code>(abc|abd)*</code></li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Prevention Strategies</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">1. Use Atomic Groups</h4>
+                <pre data-label="ATOMIC"><code>// Vulnerable
+^(a+)+$
+
+// Fixed with atomic group
+^(?&gt;a+)+$</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">2. Use Possessive Quantifiers</h4>
+                <pre data-label="POSSESSIVE"><code>// Vulnerable
+^(a+)+$
+
+// Fixed with possessive quantifier (PCRE/Java)
+^a++$</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">3. Rewrite Pattern</h4>
+                <pre data-label="REWRITE"><code>// Vulnerable
+^(a+)+$
+
+// Fixed - simplified
+^a+$
+
+// Vulnerable
+^([a-zA-Z0-9])+@([a-zA-Z0-9])+$
+
+// Fixed - removed unnecessary groups
+^[a-zA-Z0-9]+@[a-zA-Z0-9]+$</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">4. Be Specific with Quantifiers</h4>
+                <pre data-label="BOUNDED"><code>// Vulnerable - unbounded repetition
+.*
+
+// Better - bounded
+.{0,100}
+
+// Better - specific character class
+[a-zA-Z0-9]{0,100}</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Performance Best Practices</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">1. Anchor Your Regex</h4>
+                <pre data-label="ANCHOR"><code>// Slow - engine must try every position
+\d{4}-\d{2}-\d{2}
+
+// Faster - engine knows to start at beginning
+^\d{4}-\d{2}-\d{2}</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">2. Use Specific Character Classes</h4>
+                <pre data-label="SPECIFIC"><code>// Slower - . matches anything, more backtracking
+.*?@.*
+
+// Faster - specific character classes
+[^@]+@[^@]+</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">3. Put More Specific Patterns First</h4>
+                <pre data-label="ORDER"><code>// Slower
+(a|abc)
+
+// Faster - longer/more specific first
+(abc|a)</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">4. Use Non-Capturing Groups When Possible</h4>
+                <pre data-label="NON-CAPTURE"><code>// Slower - unnecessary capturing
+(\d+)\.(\d+)\.(\d+)\.(\d+)
+
+// Faster - if you don't need captures
+(?:\d+)\.(?:\d+)\.(?:\d+)\.(?:\d+)
+
+// Fastest - no groups if structure is simple
+\d+\.\d+\.\d+\.\d+</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">5. Avoid Greedy Matching When Possible</h4>
+                <pre data-label="LAZY"><code>// Slower - greedy, lots of backtracking
+&lt;.*&gt;
+
+// Faster - lazy
+&lt;.*?&gt;
+
+// Fastest - specific negated class
+&lt;[^&gt;]*&gt;</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">6. Compile Regex Once, Reuse</h4>
+                <pre data-label="COMPILE"><code>// Slow - compiles on every iteration
+for line in lines:
+    if re.match(r'\d+', line):
+        ...
+
+// Fast - compile once
+pattern = re.compile(r'\d+')
+for line in lines:
+    if pattern.match(line):
+        ...</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Linear-Time Regex Engines</h3>
+                <div class="info-box">
+                    <strong>RE2 (Google's engine):</strong>
+                    <ul style="margin-top: 8px; margin-bottom: 0;">
+                        <li>Guarantees O(n) time complexity</li>
+                        <li>No backtracking</li>
+                        <li>Limitations: No backreferences, no lookahead/lookbehind</li>
+                        <li>Used in: Go, Google Code Search</li>
+                        <li>Safe from ReDoS attacks</li>
+                    </ul>
+                </div>
+                <p style="margin-top: 16px;"><strong>When to use RE2:</strong></p>
+                <ul>
+                    <li>User-provided regex patterns</li>
+                    <li>Performance-critical applications</li>
+                    <li>DoS attack prevention</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- PRO TIPS -->
+        <section class="section">
+            <div class="section-decoration"></div>
+            <div class="section-header">
+                <span class="section-number">11</span>
+                <h2 class="section-title">Pro Tips</h2>
+                <p class="section-desc">Advanced techniques, debugging strategies, and real-world usage patterns.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Regex in Command-Line Tools</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">grep</h4>
+                <pre data-label="GREP"><code># Basic regex (BRE)
+grep 'pattern' file.txt
+
+# Extended regex (ERE)
+grep -E 'pattern' file.txt
+egrep 'pattern' file.txt
+
+# Perl regex (PCRE) - if supported
+grep -P 'pattern' file.txt
+
+# Case-insensitive
+grep -i 'pattern' file.txt
+
+# Invert match (lines NOT matching)
+grep -v 'pattern' file.txt
+
+# Show line numbers
+grep -n 'pattern' file.txt
+
+# Recursive search
+grep -r 'pattern' directory/
+
+# Show only matching part
+grep -o 'pattern' file.txt</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">sed</h4>
+                <pre data-label="SED"><code># Basic substitution (BRE)
+sed 's/pattern/replacement/' file.txt
+
+# Extended regex (ERE)
+sed -E 's/pattern/replacement/' file.txt
+
+# Global replacement (all occurrences per line)
+sed 's/pattern/replacement/g' file.txt
+
+# Case-insensitive (GNU sed)
+sed 's/pattern/replacement/i' file.txt
+
+# Backreferences
+sed 's/\(word\)/[\1]/g' file.txt              # BRE
+sed -E 's/(word)/[\1]/g' file.txt             # ERE
+
+# Delete matching lines
+sed '/pattern/d' file.txt</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">awk</h4>
+                <pre data-label="AWK"><code># Match lines with ERE
+awk '/pattern/' file.txt
+
+# Pattern in condition
+awk '$1 ~ /pattern/' file.txt
+
+# Negation
+awk '$1 !~ /pattern/' file.txt
+
+# Substitution
+awk '{gsub(/pattern/, "replacement"); print}' file.txt</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Regex in Programming Languages</h3>
+
+                <h4 style="margin-bottom: 12px; font-size: 1.125rem;">Python</h4>
+                <pre data-label="PYTHON"><code>import re
+
+# Basic matching
+match = re.search(r'pattern', text)
+if match:
+    print(match.group(0))
+
+# Find all matches
+matches = re.findall(r'\d+', text)
+
+# Substitution
+result = re.sub(r'pattern', 'replacement', text)
+
+# Split
+parts = re.split(r'[,;]', text)
+
+# Compiled regex (better performance)
+pattern = re.compile(r'\d+')
+for line in lines:
+    match = pattern.search(line)
+
+# Named groups
+pattern = r'(?P&lt;year&gt;\d{4})-(?P&lt;month&gt;\d{2})-(?P&lt;day&gt;\d{2})'
+match = re.search(pattern, '2026-02-09')
+print(match.group('year'))  # '2026'
+print(match.groupdict())    # {'year': '2026', ...}</code></pre>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">JavaScript</h4>
+                <pre data-label="JS"><code>// Literal syntax
+const regex = /pattern/flags;
+
+// Constructor (useful for dynamic patterns)
+const regex = new RegExp('pattern', 'flags');
+
+// Test (returns boolean)
+if (/\d+/.test(text)) {
+  console.log('Contains digits');
+}
+
+// Match
+const match = text.match(/\d+/);
+if (match) {
+  console.log(match[0]);  // Matched text
+  console.log(match.index);  // Position
+}
+
+// Global match
+const matches = text.match(/\d+/g);  // Array of all matches
+
+// Replace
+const result = text.replace(/pattern/g, 'replacement');
+
+// Replace with function
+const result = text.replace(/\d+/g, (match) => parseInt(match) * 2);
+
+// Named groups (ES2018+)
+const regex = /(?&lt;year&gt;\d{4})-(?&lt;month&gt;\d{2})-(?&lt;day&gt;\d{2})/;
+const match = text.match(regex);
+console.log(match.groups.year);  // '2026'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Debugging Regex</h3>
+                <p><strong>Essential Tools:</strong></p>
+                <ul>
+                    <li><strong>regex101.com</strong> - Live testing, explanation, debugger, performance warnings</li>
+                    <li><strong>regexr.com</strong> - Visual highlighting, community patterns</li>
+                    <li><strong>regexper.com</strong> - Visualize regex as railroad diagram</li>
+                    <li><strong>debuggex.com</strong> - Visual regex tester</li>
+                </ul>
+
+                <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 1.125rem;">Debugging Techniques</h4>
+                <pre data-label="VERBOSE"><code>// Python - verbose mode with comments
+import re
+
+pattern = re.compile(r'''
+    ^                   # Start of string
+    (?P&lt;year&gt;\d{4})     # Year (4 digits)
+    -                   # Separator
+    (?P&lt;month&gt;\d{2})    # Month (2 digits)
+    -                   # Separator
+    (?P&lt;day&gt;\d{2})      # Day (2 digits)
+    $                   # End of string
+''', re.VERBOSE)</code></pre>
+
+                <p style="margin-top: 24px;"><strong>Test Incrementally:</strong></p>
+                <p>Start simple, add complexity step by step:</p>
+                <pre data-label="INCREMENTAL"><code>patterns = [
+    r'\d{4}',                    # Just year
+    r'\d{4}-\d{2}',              # Year-month
+    r'\d{4}-\d{2}-\d{2}',        # Full date
+    r'^\d{4}-\d{2}-\d{2}$',      # With anchors
+]</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Common Debugging Mistakes</h3>
+                <div class="pattern-grid-layout">
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">Forgetting to Escape Metacharacters</div>
+                        <div class="pattern-card-code">example.com</div>
+                        <div class="pattern-card-desc">Matches "exampleXcom" (. is any char). Use: example\.com</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">Greedy vs Lazy Quantifiers</div>
+                        <div class="pattern-card-code">&lt;.+&gt;</div>
+                        <div class="pattern-card-desc">Matches entire "&lt;p&gt;Hello&lt;/p&gt;". Use &lt;.+?&gt; for each tag separately.</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">Anchors in Multiline Text</div>
+                        <div class="pattern-card-code">/^line/</div>
+                        <div class="pattern-card-desc">Only matches first line. Use /^line/m to match each line.</div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <div class="pattern-card-title">Forgetting Groups for Alternation</div>
+                        <div class="pattern-card-code">file.txt|jpg</div>
+                        <div class="pattern-card-desc">Matches "file.txt" OR "jpg". Use file.(txt|jpg) for both extensions.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">When to Use What</h3>
+                <ul>
+                    <li><strong>Use BRE when:</strong> Working with traditional Unix tools, maximum portability required</li>
+                    <li><strong>Use ERE when:</strong> Working with awk, grep -E, need basic modern features</li>
+                    <li><strong>Use PCRE when:</strong> Need advanced features (lookaround, atomic groups), performance critical</li>
+                    <li><strong>Use JavaScript regex when:</strong> Browser/Node.js environment, modern ES2018+ features available</li>
+                    <li><strong>Use Python regex when:</strong> Scripting and automation, need excellent Unicode support</li>
+                    <li><strong>Use RE2 when:</strong> User-provided patterns (security), performance guarantees required</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-pattern"></div>
+            <div class="footer-content">
+                <p>Built with the <a href="../styles/op-art.html">Op Art</a> design system</p>
+                <p style="margin-top: 16px; font-size: 0.875rem; opacity: 0.8;">Comprehensive Regular Expressions Reference • Pattern Matching Guide</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

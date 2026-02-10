@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH: The Case Files - Secure Shell Investigation Manual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-typewriter: 'Courier Prime', 'Courier New', monospace;
+            --font-headline: 'Playfair Display', Georgia, serif;
+            --font-condensed: 'Oswald', 'Arial Narrow', sans-serif;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Noir Color Palette */
+            --noir-black: #0a0a0a;
+            --noir-charcoal: #141414;
+            --noir-dark: #1a1a1a;
+            --noir-shadow: #222222;
+            --noir-gray: #333333;
+            --noir-mid: #4a4a4a;
+            --noir-light: #6a6a6a;
+            --noir-pale: #8a8a8a;
+            --noir-silver: #b0b0b0;
+            --noir-white: #e8e8e8;
+            --noir-pure-white: #f5f5f5;
+
+            /* Accent Colors */
+            --blood-red: #8b0000;
+            --blood-bright: #b22222;
+            --cigarette-ember: #ff4500;
+            --cigarette-glow: #ff6b35;
+            --whiskey-amber: #d4a574;
+            --gold-badge: #c9a227;
+            --lipstick-red: #c41e3a;
+            --neon-blue: #4a9eff;
+
+            /* Semantic Colors */
+            --text-primary: var(--noir-white);
+            --text-secondary: var(--noir-silver);
+            --text-muted: var(--noir-pale);
+            --text-faded: var(--noir-light);
+            --bg-primary: var(--noir-black);
+            --bg-secondary: var(--noir-charcoal);
+            --bg-elevated: var(--noir-dark);
+            --border-color: var(--noir-gray);
+            --border-subtle: var(--noir-shadow);
+            --accent: var(--blood-red);
+            --accent-bright: var(--blood-bright);
+
+            /* Effects */
+            --shadow-dramatic: 0 20px 60px rgba(0, 0, 0, 0.8);
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.6);
+            --shadow-glow-red: 0 0 30px rgba(139, 0, 0, 0.3);
+            --shadow-glow-ember: 0 0 20px rgba(255, 69, 0, 0.4);
+            --transition-slow: 0.4s ease;
+            --transition-base: 0.25s ease;
+            --transition-fast: 0.15s ease;
+
+            /* Venetian Blind Variables */
+            --blind-width: 100%;
+            --blind-slat-height: 8px;
+            --blind-gap: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Film Grain Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Dramatic Vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Venetian Blind Shadow Effect */
+        .venetian-shadow {
+            position: relative;
+        }
+
+        .venetian-shadow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent var(--blind-slat-height),
+                rgba(0, 0, 0, 0.4) var(--blind-slat-height),
+                rgba(0, 0, 0, 0.4) calc(var(--blind-slat-height) + 3px),
+                transparent calc(var(--blind-slat-height) + 3px),
+                transparent var(--blind-gap)
+            );
+            pointer-events: none;
+            z-index: 10;
+            animation: blindsSway 8s ease-in-out infinite;
+        }
+
+        @keyframes blindsSway {
+            0%, 100% {
+                transform: skewY(0deg) translateY(0);
+                opacity: 0.6;
+            }
+            25% {
+                transform: skewY(0.3deg) translateY(2px);
+                opacity: 0.7;
+            }
+            50% {
+                transform: skewY(-0.2deg) translateY(-1px);
+                opacity: 0.5;
+            }
+            75% {
+                transform: skewY(0.2deg) translateY(1px);
+                opacity: 0.65;
+            }
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-headline);
+            font-weight: 500;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-6);
+            text-shadow:
+                4px 4px 0 var(--noir-shadow),
+                8px 8px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-5);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: var(--space-4);
+            color: var(--whiskey-amber);
+        }
+
+        h4 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: var(--space-3);
+            color: var(--text-secondary);
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 75ch;
+        }
+
+        a {
+            color: var(--blood-bright);
+            text-decoration: none;
+            border-bottom: 1px solid var(--blood-red);
+            transition: all var(--transition-fast);
+        }
+
+        a:hover {
+            color: var(--cigarette-ember);
+            border-bottom-color: var(--cigarette-ember);
+            text-shadow: var(--shadow-glow-ember);
+        }
+
+        code {
+            font-family: var(--font-typewriter);
+            background: var(--bg-elevated);
+            padding: 2px 6px;
+            border: 1px solid var(--border-subtle);
+            color: var(--whiskey-amber);
+            font-size: 0.9em;
+        }
+
+        pre {
+            font-family: var(--font-typewriter);
+            background: var(--noir-charcoal);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--blood-red);
+            padding: var(--space-5);
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            box-shadow: var(--shadow-card);
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        /* Case File Number */
+        .case-number {
+            font-family: var(--font-typewriter);
+            font-size: 0.75rem;
+            color: var(--blood-red);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-4);
+        }
+
+        /* Header */
+        .header {
+            padding: var(--space-10) 0 var(--space-8);
+            position: relative;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: var(--space-9);
+        }
+
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-typewriter);
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--border-subtle);
+            margin-bottom: var(--space-6);
+            transition: var(--transition-fast);
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-muted);
+        }
+
+        .header-tagline {
+            font-family: var(--font-typewriter);
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 1.125rem;
+            max-width: 60ch;
+            line-height: 1.6;
+        }
+
+        /* Section */
+        .section {
+            padding: var(--space-9) 0;
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-7);
+        }
+
+        .section-number {
+            font-family: var(--font-typewriter);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            margin-bottom: var(--space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .section-number::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-subtle), transparent);
+            max-width: 200px;
+        }
+
+        .subsection {
+            margin-bottom: var(--space-7);
+        }
+
+        /* Table - Dossier Style */
+        .table-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            box-shadow: var(--shadow-card);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-subtle);
+            font-family: var(--font-typewriter);
+        }
+
+        .table th {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--whiskey-amber);
+            background: var(--bg-elevated);
+        }
+
+        .table td {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table code {
+            white-space: nowrap;
+        }
+
+        /* Evidence Card - for code examples */
+        .evidence {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            padding: var(--space-5);
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .evidence::before {
+            content: 'EVIDENCE';
+            position: absolute;
+            top: var(--space-3);
+            right: var(--space-3);
+            font-family: var(--font-typewriter);
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--blood-red);
+            padding: var(--space-1) var(--space-2);
+            border: 1px solid var(--blood-red);
+            transform: rotate(3deg);
+        }
+
+        .evidence h4 {
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px dashed var(--border-subtle);
+        }
+
+        /* Note cards */
+        .note {
+            background: var(--noir-dark);
+            border-left: 3px solid var(--gold-badge);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .note strong {
+            color: var(--gold-badge);
+            font-style: normal;
+        }
+
+        /* Warning boxes */
+        .warning {
+            background: rgba(139, 0, 0, 0.1);
+            border: 1px solid var(--blood-red);
+            border-left: 4px solid var(--blood-red);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            color: var(--text-secondary);
+        }
+
+        .warning strong {
+            color: var(--blood-bright);
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) 0;
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: var(--space-9);
+        }
+
+        .footer p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            max-width: none;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-bottom: var(--space-5);
+            padding-left: var(--space-6);
+        }
+
+        li {
+            margin-bottom: var(--space-2);
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-4);
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.75rem;
+            }
+
+            .header {
+                padding: var(--space-7) 0 var(--space-6);
+            }
+
+            .section {
+                padding: var(--space-6) 0;
+            }
+
+            pre {
+                font-size: 0.75rem;
+                padding: var(--space-3);
+            }
+
+            .table-wrapper {
+                font-size: 0.75rem;
+            }
+
+            .table th,
+            .table td {
+                padding: var(--space-2);
+            }
+        }
+
+        /* Spotlight effect on header */
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -50px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* Cigarette smoke decoration */
+        @keyframes smokeRise {
+            0% {
+                opacity: 0.3;
+                transform: translateY(0) translateX(0) scale(0.5);
+            }
+            50% {
+                opacity: 0.15;
+                transform: translateY(-80px) translateX(20px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-160px) translateX(-10px) scale(1.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header venetian-shadow">
+            <a href="index.html" class="back-link">← Tech Guides</a>
+            <div class="case-number">CASE FILE #SSH-2026-CLASSIFIED</div>
+            <h1>SSH: The Secure Shell Dossier</h1>
+            <p class="header-tagline">The detective's guide to encrypted connections, cryptographic keys, and remote infiltration through secured channels. Every connection tells a story. Every key unlocks a secret.</p>
+        </header>
+
+        <!-- SECTION 1: QUICK REFERENCE -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #01</div>
+                <h2>Quick Reference</h2>
+            </div>
+
+            <p>Essential commands every investigator needs on hand. Memorize these like your badge number.</p>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>ssh user@host</code></td>
+                            <td>Connect to remote host</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh -p 2222 user@host</code></td>
+                            <td>Connect via non-standard port</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh-keygen -t ed25519</code></td>
+                            <td>Generate Ed25519 key (recommended)</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh-copy-id user@host</code></td>
+                            <td>Copy public key to remote</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh -L 8080:localhost:80 user@host</code></td>
+                            <td>Local port forwarding</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh -R 8080:localhost:80 user@host</code></td>
+                            <td>Remote port forwarding</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh -D 1080 user@host</code></td>
+                            <td>Dynamic SOCKS proxy</td>
+                        </tr>
+                        <tr>
+                            <td><code>ssh -J jump@bastion target@host</code></td>
+                            <td>Jump through bastion host</td>
+                        </tr>
+                        <tr>
+                            <td><code>scp file.txt user@host:/path/</code></td>
+                            <td>Copy file to remote</td>
+                        </tr>
+                        <tr>
+                            <td><code>rsync -avzP dir/ user@host:/path/</code></td>
+                            <td>Sync directory efficiently</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="note">
+                <strong>Detective's Note:</strong> These commands are your first line of defense. Keep them close, like a loaded revolver in a dark alley.
+            </div>
+        </section>
+
+        <!-- SECTION 2: CONNECTION BASICS -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #02</div>
+                <h2>Connection Basics</h2>
+            </div>
+
+            <div class="subsection">
+                <h3>Standard Connection Syntax</h3>
+                <p>Making first contact with the target system.</p>
+
+                <pre><code># Basic connection
+ssh user@hostname
+ssh user@192.168.1.100
+
+# Specify port
+ssh -p 2222 user@host
+ssh user@host -p 2222
+
+# Using domain
+ssh admin@example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Verbose Mode (Debugging)</h3>
+                <p>When the trail goes cold, turn up the lights and see what's happening behind the scenes.</p>
+
+                <pre><code># Increasing levels of verbosity
+ssh -v user@host          # Verbose (level 1)
+ssh -vv user@host         # More verbose (level 2)
+ssh -vvv user@host        # Maximum verbosity (level 3)</code></pre>
+
+                <div class="note">
+                    <strong>Field Report:</strong> Use verbose mode to troubleshoot connection issues, authentication problems, or key exchange errors. It's like turning on all the lights in a crime scene.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Jump Hosts & ProxyJump</h3>
+                <p>Sometimes you need to go through the middleman to reach your target. ProxyJump allows connecting through intermediary bastion hosts with end-to-end encryption.</p>
+
+                <pre><code># Single jump host
+ssh -J jump@bastion target@destination
+
+# Multiple jump hosts (comma-separated)
+ssh -J user1@bastion1,user2@bastion2 user3@target
+
+# With custom ports
+ssh -J user@bastion:2222 target@destination
+
+# Alternative ProxyCommand syntax (older method)
+ssh -o ProxyCommand="ssh -W %h:%p user@bastion" target@destination</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Connection Options</h3>
+                <p>Additional flags for special circumstances in the field.</p>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>-i ~/.ssh/custom_key</code></td>
+                                <td>Use specific identity file</td>
+                            </tr>
+                            <tr>
+                                <td><code>-X</code></td>
+                                <td>Enable X11 forwarding</td>
+                            </tr>
+                            <tr>
+                                <td><code>-Y</code></td>
+                                <td>Trusted X11 forwarding</td>
+                            </tr>
+                            <tr>
+                                <td><code>-C</code></td>
+                                <td>Enable compression</td>
+                            </tr>
+                            <tr>
+                                <td><code>-N</code></td>
+                                <td>No remote command (tunnels only)</td>
+                            </tr>
+                            <tr>
+                                <td><code>-f</code></td>
+                                <td>Background before execution</td>
+                            </tr>
+                            <tr>
+                                <td><code>-A</code></td>
+                                <td>Enable agent forwarding</td>
+                            </tr>
+                            <tr>
+                                <td><code>-o ServerAliveInterval=60</code></td>
+                                <td>Keep connection alive</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <pre><code># Execute remote command
+ssh user@host 'ls -la /var/log'
+ssh user@host 'uptime && free -h'
+
+# Keep connection alive through timeouts
+ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3 user@host</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>Warning:</strong> The <code>-o StrictHostKeyChecking=no</code> option disables host key verification. Only use in controlled testing environments - never in production. It's like walking into a dark warehouse without backup.
+            </div>
+        </section>
+
+        <!-- SECTION 3: KEY MANAGEMENT -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #03</div>
+                <h2>Key Management</h2>
+            </div>
+
+            <p>In this business, keys are everything. They open doors, grant access, and leave traces. Handle them with care.</p>
+
+            <div class="subsection">
+                <h3>ssh-keygen: Key Generation</h3>
+
+                <h4>Ed25519 (Recommended for 2026)</h4>
+                <p>The sleek, modern key type. Compact, fast, and secure with 256-bit keys.</p>
+
+                <pre><code># Generate Ed25519 key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# Specify output file
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work -C "work key"
+
+# With passphrase (recommended)
+ssh-keygen -t ed25519 -C "comment"
+# Will prompt for passphrase
+
+# Without passphrase (automation/CI only)
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519_deploy</code></pre>
+
+                <h4>RSA Keys</h4>
+                <p>The old reliable. RSA keys must be at least 3072 bits, preferably 4096 bits for 2026 security standards.</p>
+
+                <pre><code># Generate RSA 4096-bit key
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Specify custom file
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa_legacy
+
+# For legacy systems requiring 2048-bit (not recommended)
+ssh-keygen -t rsa -b 2048</code></pre>
+
+                <div class="note">
+                    <strong>Detective's Note:</strong> ECDSA has security concerns. Ed25519 is the recommended algorithm for new keys. Think of it as upgrading from a revolver to a modern semi-automatic.
+                </div>
+
+                <h4>FIDO2/U2F Hardware Keys</h4>
+                <p>OpenSSH 8.2+ supports FIDO2 hardware authenticators (YubiKey, etc.) with enhanced security.</p>
+
+                <pre><code># Generate Ed25519-SK key (requires hardware key)
+ssh-keygen -t ed25519-sk -C "yubikey-ed25519"
+
+# Generate ECDSA-SK key
+ssh-keygen -t ecdsa-sk -C "yubikey-ecdsa"
+
+# Require PIN verification
+ssh-keygen -t ed25519-sk -O verify-required -C "yubikey-with-pin"
+
+# Resident key (stored on device)
+ssh-keygen -t ed25519-sk -O resident -C "resident-key"</code></pre>
+
+                <div class="evidence">
+                    <h4>FIDO2 Benefits</h4>
+                    <ul>
+                        <li>Private keys never leave the hardware device</li>
+                        <li>Physical touch required for each authentication</li>
+                        <li>Optional PIN verification for additional security</li>
+                        <li>Protection against phishing and remote attacks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Key Operations</h3>
+
+                <pre><code># Change passphrase of existing key
+ssh-keygen -p -f ~/.ssh/id_ed25519
+
+# Show fingerprint
+ssh-keygen -lf ~/.ssh/id_ed25519.pub
+ssh-keygen -lf ~/.ssh/id_ed25519    # Works with private key too
+
+# Show fingerprint in different formats
+ssh-keygen -lf ~/.ssh/id_ed25519.pub -E md5
+ssh-keygen -lf ~/.ssh/id_ed25519.pub -E sha256
+
+# Show ASCII art representation
+ssh-keygen -lvf ~/.ssh/id_ed25519.pub
+
+# Convert key format (OpenSSH to PEM)
+ssh-keygen -p -f ~/.ssh/id_rsa -m pem
+
+# Test key against server
+ssh -T git@github.com       # GitHub
+ssh -T git@gitlab.com       # GitLab</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>ssh-agent: Key Agent Management</h3>
+                <p>The agent holds your keys in memory, so you don't have to enter passphrases repeatedly. Like a trusted partner who remembers the safe combination.</p>
+
+                <pre><code># Start ssh-agent
+eval "$(ssh-agent -s)"
+
+# Add key to agent
+ssh-add ~/.ssh/id_ed25519
+ssh-add ~/.ssh/id_rsa
+
+# Add key with timeout (1 hour)
+ssh-add -t 3600 ~/.ssh/id_ed25519
+
+# List loaded keys
+ssh-add -l              # Short format
+ssh-add -L              # Full public keys
+
+# Remove key from agent
+ssh-add -d ~/.ssh/id_ed25519
+
+# Remove all keys
+ssh-add -D
+
+# Lock agent with passphrase
+ssh-add -x
+
+# Unlock agent
+ssh-add -X</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Distributing Public Keys</h3>
+
+                <pre><code># Copy public key to remote server
+ssh-copy-id user@host
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@host
+
+# Copy to non-standard port
+ssh-copy-id -p 2222 user@host
+
+# Manual method (if ssh-copy-id unavailable)
+cat ~/.ssh/id_ed25519.pub | ssh user@host "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+
+# Set correct permissions on remote
+ssh user@host "chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Key File Permissions</h3>
+                <p>Critical security requirement. Wrong permissions are like leaving case files on your desk overnight.</p>
+
+                <pre><code>chmod 700 ~/.ssh                    # Directory
+chmod 600 ~/.ssh/id_ed25519         # Private key
+chmod 600 ~/.ssh/config             # Config file
+chmod 644 ~/.ssh/id_ed25519.pub     # Public key
+chmod 644 ~/.ssh/known_hosts        # Known hosts
+chmod 600 ~/.ssh/authorized_keys    # Authorized keys (on server)</code></pre>
+
+                <div class="warning">
+                    <strong>Critical:</strong> SSH will refuse to use keys with incorrect permissions. Private keys must be readable only by owner (600). This isn't paranoia - it's protocol.
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: SSH CONFIG FILE -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #04</div>
+                <h2>SSH Config File</h2>
+            </div>
+
+            <p>The SSH config file (<code>~/.ssh/config</code>) is your personal case file system. It simplifies connection management with persistent settings and aliases.</p>
+
+            <div class="subsection">
+                <h3>Basic Structure</h3>
+
+                <pre><code># ~/.ssh/config
+
+# Default settings for all hosts
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    Compression yes
+
+# Specific host configuration
+Host myserver
+    HostName 192.168.1.100
+    User admin
+    Port 2222
+    IdentityFile ~/.ssh/id_ed25519_work
+
+# Using wildcards
+Host dev-*
+    User developer
+    ForwardAgent no
+
+Host prod-*
+    User deployer
+    StrictHostKeyChecking yes</code></pre>
+
+                <div class="note">
+                    <strong>Case Note:</strong> Host aliases let you type <code>ssh myserver</code> instead of <code>ssh -p 2222 admin@192.168.1.100</code>. Less typing, more investigating.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Essential Directives</h3>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Directive</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Host</code></td>
+                                <td>Alias for connection</td>
+                            </tr>
+                            <tr>
+                                <td><code>HostName</code></td>
+                                <td>Real hostname or IP</td>
+                            </tr>
+                            <tr>
+                                <td><code>User</code></td>
+                                <td>Default username</td>
+                            </tr>
+                            <tr>
+                                <td><code>Port</code></td>
+                                <td>Custom port</td>
+                            </tr>
+                            <tr>
+                                <td><code>IdentityFile</code></td>
+                                <td>Private key location</td>
+                            </tr>
+                            <tr>
+                                <td><code>IdentitiesOnly</code></td>
+                                <td>Only use specified keys</td>
+                            </tr>
+                            <tr>
+                                <td><code>ProxyJump</code></td>
+                                <td>Jump through bastion</td>
+                            </tr>
+                            <tr>
+                                <td><code>ForwardAgent</code></td>
+                                <td>Forward ssh-agent</td>
+                            </tr>
+                            <tr>
+                                <td><code>LocalForward</code></td>
+                                <td>Local port forward</td>
+                            </tr>
+                            <tr>
+                                <td><code>RemoteForward</code></td>
+                                <td>Remote port forward</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Match Blocks</h3>
+                <p>Conditional configuration based on runtime conditions. Apply different rules based on the situation.</p>
+
+                <pre><code># Match by hostname pattern
+Match host "*.prod.example.com"
+    ForwardAgent no
+    StrictHostKeyChecking yes
+
+# Match by user
+Match user developer
+    IdentityFile ~/.ssh/id_dev
+
+# Match by local user
+Match localuser admin
+    ForwardAgent yes
+
+# Match by network (CIDR)
+Match host "10.0.0.*"
+    ProxyJump bastion
+
+# Multiple conditions (AND logic)
+Match host "*.internal" user developer
+    ProxyJump bastion.internal</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Include Directive</h3>
+                <p>Organize complex configurations across multiple files.</p>
+
+                <pre><code># ~/.ssh/config
+Include ~/.ssh/config.d/*.conf
+Include ~/.ssh/work_config
+Include ~/.ssh/personal_config
+
+Host *
+    ServerAliveInterval 60</code></pre>
+
+                <p>Then create separate files:</p>
+
+                <pre><code># ~/.ssh/config.d/work.conf
+Host work-*
+    User employee
+    IdentityFile ~/.ssh/id_work
+
+# ~/.ssh/config.d/personal.conf
+Host personal-*
+    User myusername
+    IdentityFile ~/.ssh/id_personal</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Practical Examples</h3>
+
+                <pre><code># GitHub with multiple accounts
+Host github-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes
+
+Host github-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+
+# Jump host setup
+Host bastion
+    HostName bastion.example.com
+    User jumpuser
+    Port 22
+
+Host internal-*
+    ProxyJump bastion
+    User admin
+
+# AWS EC2 instances
+Host ec2-*
+    User ec2-user
+    IdentityFile ~/.ssh/aws-keypair.pem
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Development environment with multiplexing
+Host devbox
+    HostName dev.example.com
+    User developer
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+    ForwardAgent yes
+    LocalForward 3000 localhost:3000
+    LocalForward 5432 localhost:5432</code></pre>
+            </div>
+        </section>
+
+        <!-- SECTION 5: PORT FORWARDING & TUNNELS -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #05</div>
+                <h2>Port Forwarding & Tunnels</h2>
+            </div>
+
+            <p>SSH tunneling creates encrypted connections for secure access to remote services. Think of it as creating secret passages through the network.</p>
+
+            <div class="subsection">
+                <h3>Local Port Forwarding (-L)</h3>
+                <p>Forward local port to remote destination. Traffic originates from your machine.</p>
+
+                <pre><code># Syntax: -L [local_ip:]local_port:destination_host:destination_port
+
+# Forward local 8080 to remote's localhost:80
+ssh -L 8080:localhost:80 user@remote
+# Access via: http://localhost:8080
+
+# Forward to different host through remote
+ssh -L 5432:database.internal:5432 user@bastion
+# Connect to database through bastion
+
+# Bind to specific interface
+ssh -L 127.0.0.1:8080:localhost:80 user@remote
+ssh -L 0.0.0.0:8080:localhost:80 user@remote  # All interfaces
+
+# Multiple forwards in one connection
+ssh -L 8080:localhost:80 -L 5432:db:5432 user@remote
+
+# Background tunnel (no shell)
+ssh -f -N -L 8080:localhost:80 user@remote
+# -f: background, -N: no command execution</code></pre>
+
+                <div class="evidence">
+                    <h4>Use Cases</h4>
+                    <ul>
+                        <li>Access web application on remote server</li>
+                        <li>Connect to remote database securely</li>
+                        <li>Bypass firewall restrictions</li>
+                        <li>Access internal services through bastion</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Remote Port Forwarding (-R)</h3>
+                <p>Forward remote port to local destination. Makes local service accessible from remote.</p>
+
+                <pre><code># Syntax: -R [remote_ip:]remote_port:destination_host:destination_port
+
+# Make local service accessible on remote
+ssh -R 8080:localhost:80 user@remote
+# Remote users access via: remote:8080
+
+# Reverse tunnel to local database
+ssh -R 5432:localhost:5432 user@remote
+
+# Bind to specific remote interface
+ssh -R 0.0.0.0:8080:localhost:80 user@remote
+
+# Forward to different local host
+ssh -R 9090:192.168.1.100:80 user@remote
+
+# Persistent reverse tunnel
+ssh -f -N -R 8080:localhost:80 user@remote</code></pre>
+
+                <div class="evidence">
+                    <h4>Use Cases</h4>
+                    <ul>
+                        <li>Expose local development server to remote testers</li>
+                        <li>Remote access to service behind NAT/firewall</li>
+                        <li>Webhook testing (expose localhost to internet)</li>
+                        <li>Remote support/administration</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Dynamic Port Forwarding (-D)</h3>
+                <p>Creates a SOCKS proxy for flexible port forwarding. Route all your traffic through the encrypted tunnel.</p>
+
+                <pre><code># Create SOCKS5 proxy on port 1080
+ssh -D 1080 user@remote
+
+# Specify bind address
+ssh -D 127.0.0.1:1080 user@remote
+ssh -D 0.0.0.0:1080 user@remote    # All interfaces (careful!)
+
+# Background SOCKS proxy
+ssh -f -N -D 1080 user@remote
+
+# Configure applications to use proxy:
+# Browser: Set SOCKS5 proxy to localhost:1080
+# curl: curl --socks5 localhost:1080 https://example.com
+# git: git config --global http.proxy socks5://127.0.0.1:1080</code></pre>
+
+                <div class="evidence">
+                    <h4>Use Cases</h4>
+                    <ul>
+                        <li>Browse internet through remote server</li>
+                        <li>Access geo-restricted content</li>
+                        <li>Bypass network filters/censorship</li>
+                        <li>Route all traffic through encrypted tunnel</li>
+                        <li>Dynamic routing (destination determined at request time)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>SSH Config Tunnels</h3>
+                <p>Make tunnels persistent in your config file.</p>
+
+                <pre><code># Local forward
+Host webapp-tunnel
+    HostName remote.example.com
+    User admin
+    LocalForward 8080 localhost:80
+    LocalForward 5432 db.internal:5432
+
+# Remote forward
+Host expose-local
+    HostName public.example.com
+    User deployer
+    RemoteForward 8080 localhost:3000
+
+# Dynamic SOCKS proxy
+Host socks-proxy
+    HostName proxy.example.com
+    User proxyuser
+    DynamicForward 1080</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Advanced Tunnel Examples</h3>
+
+                <pre><code># Jump host with local forward
+ssh -J bastion -L 5432:db:5432 app-server
+
+# Persistent autossh tunnel (auto-reconnect)
+autossh -M 0 -f -N \
+    -o "ServerAliveInterval 30" \
+    -o "ServerAliveCountMax 3" \
+    -L 8080:localhost:80 user@remote
+
+# Reverse tunnel for SSH access behind NAT
+# On NAT'd machine:
+ssh -R 2222:localhost:22 user@public-server
+# On public server:
+ssh -p 2222 localhost  # Access NAT'd machine</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>Server Configuration:</strong> For remote forwarding to be accessible from other hosts, server must enable <code>GatewayPorts yes</code> in <code>/etc/ssh/sshd_config</code>.
+            </div>
+        </section>
+
+        <!-- SECTION 6: FILE TRANSFER -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #06</div>
+                <h2>File Transfer</h2>
+            </div>
+
+            <p>Moving evidence between locations. Three tools for different situations.</p>
+
+            <div class="subsection">
+                <h3>SCP (Secure Copy)</h3>
+                <p>Simple file copying over SSH. Note: SCP is being deprecated in favor of SFTP/rsync, but still widely used.</p>
+
+                <pre><code># Copy file to remote
+scp file.txt user@host:/path/to/destination/
+scp file.txt user@host:~/
+
+# Copy from remote to local
+scp user@host:/path/to/file.txt .
+scp user@host:~/file.txt /local/path/
+
+# Copy directory recursively
+scp -r directory/ user@host:/path/
+
+# Custom port
+scp -P 2222 file.txt user@host:/path/
+
+# Preserve timestamps and permissions
+scp -p file.txt user@host:/path/
+
+# Verbose output
+scp -v file.txt user@host:/path/
+
+# Copy between two remote hosts (through local)
+scp user1@host1:/path/file user2@host2:/path/
+
+# Custom SSH key
+scp -i ~/.ssh/custom_key file.txt user@host:/path/
+
+# Limit bandwidth (in Kbps)
+scp -l 1024 file.txt user@host:/path/
+
+# Multiple files
+scp file1.txt file2.txt user@host:/path/
+scp *.txt user@host:/path/
+
+# Compression
+scp -C large_file.dat user@host:/path/</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>SFTP (SSH File Transfer Protocol)</h3>
+                <p>Interactive file transfer protocol over SSH. More feature-rich than SCP.</p>
+
+                <pre><code># Connect to SFTP server
+sftp user@host
+sftp -P 2222 user@host        # Custom port
+
+# Custom identity file
+sftp -i ~/.ssh/custom_key user@host
+
+# Batch mode (non-interactive)
+sftp -b commands.txt user@host</code></pre>
+
+                <h4>Interactive SFTP Commands</h4>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Command</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>pwd</code></td>
+                                <td>Print remote working directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>lpwd</code></td>
+                                <td>Print local working directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>ls</code></td>
+                                <td>List remote directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>lls</code></td>
+                                <td>List local directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>cd /path</code></td>
+                                <td>Change remote directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>lcd /path</code></td>
+                                <td>Change local directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>get file.txt</code></td>
+                                <td>Download file</td>
+                            </tr>
+                            <tr>
+                                <td><code>get -r dir/</code></td>
+                                <td>Download directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>put file.txt</code></td>
+                                <td>Upload file</td>
+                            </tr>
+                            <tr>
+                                <td><code>put -r dir/</code></td>
+                                <td>Upload directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>mget *.txt</code></td>
+                                <td>Download multiple (glob)</td>
+                            </tr>
+                            <tr>
+                                <td><code>mput *.log</code></td>
+                                <td>Upload multiple (glob)</td>
+                            </tr>
+                            <tr>
+                                <td><code>mkdir dir</code></td>
+                                <td>Create remote directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>rm file.txt</code></td>
+                                <td>Delete remote file</td>
+                            </tr>
+                            <tr>
+                                <td><code>chmod 644 file.txt</code></td>
+                                <td>Change permissions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>SFTP in Scripts</h4>
+
+                <pre><code># Automated SFTP with here-document
+sftp user@host << EOF
+cd /remote/path
+get file.txt
+put upload.txt
+bye
+EOF</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>rsync over SSH</h3>
+                <p>Efficient file synchronization with incremental transfers. The professional's choice for serious file operations.</p>
+
+                <pre><code># Basic syntax
+rsync [options] source destination
+
+# Sync directory to remote
+rsync -avz /local/dir/ user@host:/remote/dir/
+# -a: archive (recursive, preserve attributes)
+# -v: verbose
+# -z: compression
+
+# Common options
+rsync -avzP /local/dir/ user@host:/remote/dir/
+# -P: show progress + keep partial transfers
+
+# Sync from remote to local
+rsync -avz user@host:/remote/dir/ /local/dir/
+
+# Custom SSH port
+rsync -avz -e "ssh -p 2222" /local/ user@host:/remote/
+
+# Custom SSH key
+rsync -avz -e "ssh -i ~/.ssh/custom_key" /local/ user@host:/remote/
+
+# Delete files on destination not in source
+rsync -avz --delete /local/ user@host:/remote/
+
+# Exclude patterns
+rsync -avz --exclude '*.log' --exclude 'temp/' /local/ user@host:/remote/
+
+# Dry run (preview changes)
+rsync -avzn /local/ user@host:/remote/
+# or --dry-run
+
+# Limit bandwidth (KB/s)
+rsync -avz --bwlimit=1000 /local/ user@host:/remote/
+
+# Show progress for each file
+rsync -avz --progress /local/ user@host:/remote/
+
+# Preserve hard links
+rsync -avzH /local/ user@host:/remote/</code></pre>
+
+                <h4>rsync Advanced Examples</h4>
+
+                <pre><code># Backup with date
+rsync -avz /data/ user@backup:/backups/data-$(date +%Y%m%d)/
+
+# Mirror website
+rsync -avz --delete /var/www/ user@webserver:/var/www/
+
+# Sync only specific file types
+rsync -avz --include='*.jpg' --include='*/' --exclude='*' /photos/ user@host:/photos/
+
+# Through jump host
+rsync -avz -e "ssh -J jumphost" /local/ user@target:/remote/
+
+# Show differences before sync
+rsync -avzn --itemize-changes /local/ user@host:/remote/</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Performance Comparison</h3>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Speed</th>
+                                <th>Incremental</th>
+                                <th>Resumable</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>scp</code></td>
+                                <td>Medium</td>
+                                <td>No</td>
+                                <td>No</td>
+                                <td>Single file transfers, simplicity</td>
+                            </tr>
+                            <tr>
+                                <td><code>sftp</code></td>
+                                <td>Medium</td>
+                                <td>No</td>
+                                <td>No</td>
+                                <td>Interactive transfers, browsing</td>
+                            </tr>
+                            <tr>
+                                <td><code>rsync</code></td>
+                                <td>Fast</td>
+                                <td>Yes</td>
+                                <td>Yes</td>
+                                <td>Directory sync, backups, large data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 7: AUTHENTICATION -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #07</div>
+                <h2>Authentication</h2>
+            </div>
+
+            <p>Proving your identity. In the digital world, you are your keys.</p>
+
+            <div class="subsection">
+                <h3>Password Authentication</h3>
+                <p>Basic but least secure method. Like using a combination lock instead of a biometric scanner.</p>
+
+                <pre><code># Connect with password prompt
+ssh user@host
+
+# Disable password auth (server-side)
+# In /etc/ssh/sshd_config:
+PasswordAuthentication no
+ChallengeResponseAuthentication no</code></pre>
+
+                <div class="warning">
+                    <strong>Security Advisory:</strong> Password authentication should be disabled on production servers. Use key-based authentication instead.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Key-Based Authentication</h3>
+                <p>Recommended method using cryptographic key pairs. The modern detective's badge.</p>
+
+                <h4>Setup Process</h4>
+
+                <pre><code># 1. Generate key pair
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# 2. Copy public key to server
+ssh-copy-id user@host
+
+# 3. Test connection
+ssh user@host
+
+# 4. Disable password authentication on server
+# /etc/ssh/sshd_config:
+PasswordAuthentication no
+PubkeyAuthentication yes</code></pre>
+
+                <h4>Multiple Keys</h4>
+
+                <pre><code># Specify key
+ssh -i ~/.ssh/id_ed25519_work user@host
+
+# In config
+Host workserver
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Certificate-Based Authentication</h3>
+                <p>SSH certificates provide centralized key management and fine-grained access control.</p>
+
+                <div class="evidence">
+                    <h4>Benefits</h4>
+                    <ul>
+                        <li>No need to distribute public keys to every server</li>
+                        <li>Centralized revocation</li>
+                        <li>Time-limited access</li>
+                        <li>Host verification</li>
+                        <li>Role-based access</li>
+                    </ul>
+                </div>
+
+                <h4>Setup</h4>
+
+                <pre><code># 1. Generate CA key
+ssh-keygen -t ed25519 -f ca_user_key -C "User CA"
+
+# 2. Sign user's public key
+ssh-keygen -s ca_user_key \
+    -I user_identifier \
+    -n username \
+    -V +52w \
+    ~/.ssh/id_ed25519.pub
+# Creates id_ed25519-cert.pub
+
+# 3. Configure server to trust CA
+# /etc/ssh/sshd_config:
+TrustedUserCAKeys /etc/ssh/ca_user_key.pub
+
+# 4. Connect (certificate auto-loaded with key)
+ssh user@host</code></pre>
+
+                <h4>Certificate Options</h4>
+
+                <pre><code># Time-limited certificate (1 week)
+ssh-keygen -s ca_key -I "user_id" -n username -V +1w id_ed25519.pub
+
+# Specific validity period
+ssh-keygen -s ca_key -I "user_id" -n username \
+    -V 20260201:20260301 id_ed25519.pub
+
+# Multiple principals (usernames)
+ssh-keygen -s ca_key -I "user_id" -n "user1,user2,admin" id_ed25519.pub
+
+# Force command
+ssh-keygen -s ca_key -I "user_id" -n username \
+    -O force-command="/usr/bin/restricted" id_ed25519.pub
+
+# Restrict source address
+ssh-keygen -s ca_key -I "user_id" -n username \
+    -O source-address="192.168.1.0/24" id_ed25519.pub
+
+# Disable features
+ssh-keygen -s ca_key -I "user_id" -n username \
+    -O no-port-forwarding \
+    -O no-agent-forwarding \
+    -O no-x11-forwarding \
+    id_ed25519.pub
+
+# View certificate details
+ssh-keygen -Lf id_ed25519-cert.pub</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Two-Factor Authentication (2FA/MFA)</h3>
+                <p>Add second authentication factor beyond keys. Defense in depth.</p>
+
+                <h4>PAM-based 2FA</h4>
+
+                <pre><code># Install Google Authenticator PAM module
+sudo apt install libpam-google-authenticator
+
+# Setup for user
+google-authenticator
+
+# Configure SSH PAM
+# /etc/pam.d/sshd:
+auth required pam_google_authenticator.so
+
+# /etc/ssh/sshd_config:
+ChallengeResponseAuthentication yes
+AuthenticationMethods publickey,keyboard-interactive</code></pre>
+            </div>
+        </section>
+
+        <!-- SECTION 8: SECURITY HARDENING -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #08</div>
+                <h2>Security Hardening</h2>
+            </div>
+
+            <p>Lock down your SSH server like Fort Knox. Every open door is an opportunity for the wrong person.</p>
+
+            <div class="subsection">
+                <h3>sshd_config Best Practices</h3>
+                <p>Server-side configuration file: <code>/etc/ssh/sshd_config</code></p>
+
+                <pre><code># === AUTHENTICATION ===
+PermitRootLogin no                          # Disable root login
+PasswordAuthentication no                   # Disable password auth
+ChallengeResponseAuthentication no          # Disable challenge-response
+PubkeyAuthentication yes                    # Enable key-based auth
+PermitEmptyPasswords no                     # Reject empty passwords
+UsePAM yes                                  # Use PAM for auth
+
+# === ACCESS CONTROL ===
+AllowUsers alice bob charlie                # Whitelist users
+AllowGroups sshusers admins                 # Whitelist groups
+DenyUsers guest                             # Blacklist users
+DenyGroups restricted                       # Blacklist groups
+
+# === NETWORK ===
+Port 2222                                   # Non-standard port
+ListenAddress 192.168.1.10                  # Specific interface only
+AddressFamily inet                          # IPv4 only
+
+# === PROTOCOL ===
+Protocol 2                                  # SSH protocol 2 only
+MaxAuthTries 3                              # Limit auth attempts
+MaxSessions 10                              # Max sessions per connection
+ClientAliveInterval 300                     # 5 min keepalive
+ClientAliveCountMax 2                       # Disconnect after 2 missed
+LoginGraceTime 60                           # 1 min to authenticate
+MaxStartups 10:30:60                        # Connection rate limiting
+
+# === SECURITY OPTIONS ===
+StrictModes yes                             # Check file permissions
+X11Forwarding no                            # Disable X11 (unless needed)
+PermitUserEnvironment no                    # Prevent env manipulation
+AllowAgentForwarding no                     # Disable agent forwarding
+AllowTcpForwarding no                       # Disable port forwarding (if not needed)
+GatewayPorts no                             # Don't allow remote port binding
+PermitTunnel no                             # Disable tun device forwarding
+
+# === LOGGING ===
+SyslogFacility AUTH                         # Log to auth facility
+LogLevel VERBOSE                            # Detailed logging
+
+# === CRYPTOGRAPHY ===
+# Modern ciphers only (OpenSSH 7.6+)
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+
+# Modern MACs
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+# Modern key exchange
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512
+
+# Host keys (prefer Ed25519 and RSA)
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# === BANNER ===
+Banner /etc/ssh/banner.txt                  # Display login banner</code></pre>
+
+                <h4>Apply Changes</h4>
+
+                <pre><code># Test configuration
+sudo sshd -t
+
+# Restart SSH service
+sudo systemctl restart sshd
+# or
+sudo service ssh restart</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>fail2ban Configuration</h3>
+                <p>Automated intrusion prevention - bans IPs with repeated failed attempts. Your automated security guard.</p>
+
+                <h4>Installation</h4>
+
+                <pre><code># Ubuntu/Debian
+sudo apt install fail2ban
+
+# CentOS/RHEL
+sudo yum install fail2ban</code></pre>
+
+                <h4>Configuration</h4>
+
+                <pre><code># /etc/fail2ban/jail.local
+[DEFAULT]
+bantime = 3600              # Ban for 1 hour
+findtime = 600              # 10 minute window
+maxretry = 3                # 3 attempts before ban
+destemail = admin@example.com
+sendername = Fail2Ban
+action = %(action_mwl)s     # Ban and email with logs
+
+[sshd]
+enabled = true
+port = ssh,2222             # Monitor ports
+logpath = /var/log/auth.log # Debian/Ubuntu
+# logpath = /var/log/secure # CentOS/RHEL
+maxretry = 3
+findtime = 600
+bantime = 3600
+
+# Whitelist IPs
+ignoreip = 127.0.0.1/8 192.168.1.0/24</code></pre>
+
+                <h4>Management Commands</h4>
+
+                <pre><code># Start fail2ban
+sudo systemctl start fail2ban
+sudo systemctl enable fail2ban
+
+# Status
+sudo fail2ban-client status
+sudo fail2ban-client status sshd
+
+# Unban IP
+sudo fail2ban-client set sshd unbanip 192.168.1.100
+
+# Ban IP manually
+sudo fail2ban-client set sshd banip 203.0.113.100
+
+# Reload configuration
+sudo fail2ban-client reload
+
+# Check logs
+sudo tail -f /var/log/fail2ban.log</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Additional Hardening Measures</h3>
+
+                <h4>IP Whitelisting</h4>
+
+                <pre><code># iptables firewall
+sudo iptables -A INPUT -p tcp -s 192.168.1.0/24 --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 22 -j DROP
+
+# Save rules
+sudo iptables-save > /etc/iptables/rules.v4</code></pre>
+
+                <h4>Port Knocking</h4>
+
+                <pre><code># Install knockd
+sudo apt install knockd
+
+# /etc/knockd.conf
+[openSSH]
+    sequence    = 7000,8000,9000
+    seq_timeout = 10
+    command     = /sbin/iptables -I INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+    tcpflags    = syn
+
+[closeSSH]
+    sequence    = 9000,8000,7000
+    seq_timeout = 10
+    command     = /sbin/iptables -D INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+    tcpflags    = syn</code></pre>
+            </div>
+
+            <div class="warning">
+                <strong>Critical Warning:</strong> Always maintain an alternative access method (console, IPMI, physical access) before implementing aggressive security measures. Don't lock yourself out.
+            </div>
+        </section>
+
+        <!-- SECTION 9: MULTIPLEXING -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #09</div>
+                <h2>Multiplexing & Performance</h2>
+            </div>
+
+            <p>SSH multiplexing allows multiple sessions over a single TCP connection, significantly improving performance. One connection, many possibilities.</p>
+
+            <div class="subsection">
+                <h3>ControlMaster Configuration</h3>
+
+                <pre><code># ~/.ssh/config
+
+# Enable multiplexing globally
+Host *
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+
+# Or per-host
+Host fastserver
+    HostName server.example.com
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 600</code></pre>
+
+                <h4>ControlMaster Options</h4>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>no</code></td>
+                                <td>Disable multiplexing (default)</td>
+                            </tr>
+                            <tr>
+                                <td><code>yes</code></td>
+                                <td>Master mode, listen for connections</td>
+                            </tr>
+                            <tr>
+                                <td><code>auto</code></td>
+                                <td>Try to use master, create if none exists (recommended)</td>
+                            </tr>
+                            <tr>
+                                <td><code>autoask</code></td>
+                                <td>Like auto, but ask before creating master</td>
+                            </tr>
+                            <tr>
+                                <td><code>ask</code></td>
+                                <td>Ask before creating master connection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>ControlPath Variables</h4>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>%h</code></td>
+                                <td>Remote hostname</td>
+                            </tr>
+                            <tr>
+                                <td><code>%p</code></td>
+                                <td>Remote port</td>
+                            </tr>
+                            <tr>
+                                <td><code>%r</code></td>
+                                <td>Remote username</td>
+                            </tr>
+                            <tr>
+                                <td><code>%L</code></td>
+                                <td>Local hostname</td>
+                            </tr>
+                            <tr>
+                                <td><code>%n</code></td>
+                                <td>Original hostname (command line)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Setup Multiplexing</h3>
+
+                <pre><code># 1. Create socket directory
+mkdir -p ~/.ssh/sockets
+chmod 700 ~/.ssh/sockets
+
+# 2. Add to config (shown above)
+
+# 3. Connect - first connection creates master
+ssh user@host
+
+# 4. Subsequent connections reuse master (instant!)
+ssh user@host               # Nearly instantaneous
+scp file.txt user@host:/path/  # Reuses connection</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Managing Master Connections</h3>
+
+                <pre><code># Check if master exists
+ssh -O check user@host
+
+# Stop master connection
+ssh -O stop user@host
+
+# Forward port on existing connection
+ssh -O forward -L 8080:localhost:80 user@host
+
+# Cancel port forward
+ssh -O cancel -L 8080:localhost:80 user@host
+
+# Ask master to exit when no more clients
+ssh -O exit user@host</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Performance Benefits</h3>
+
+                <div class="evidence">
+                    <h4>Without Multiplexing</h4>
+                    <ul>
+                        <li>Each connection: Full TCP + SSH handshake</li>
+                        <li>Time: ~500-2000ms per connection</li>
+                        <li>Resources: N connections = N TCP sockets</li>
+                    </ul>
+
+                    <h4>With Multiplexing</h4>
+                    <ul>
+                        <li>First connection: Full handshake</li>
+                        <li>Subsequent: Reuse existing connection</li>
+                        <li>Time: ~10-50ms per additional session</li>
+                        <li>Resources: N sessions = 1 TCP socket</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Advanced Multiplexing Patterns</h3>
+
+                <pre><code># Long-lived connections (development server)
+Host devserver
+    HostName dev.example.com
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 8h
+
+# Short-lived connections (deployment)
+Host deploy-*
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 5m
+
+# No multiplexing (sensitive operations)
+Host prod-*
+    ControlMaster no</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Complete Performance Config</h3>
+
+                <pre><code>Host *
+    # Multiplexing
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+
+    # Compression
+    Compression yes
+
+    # Keepalive
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    TCPKeepAlive yes
+
+    # Speed up initial connection
+    GSSAPIAuthentication no
+
+    # Modern ciphers (faster)
+    Ciphers chacha20-poly1305@openssh.com,aes128-gcm@openssh.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Troubleshooting Multiplexing</h3>
+
+                <pre><code># Stale socket
+rm ~/.ssh/sockets/*
+
+# Permission issues
+chmod 700 ~/.ssh/sockets
+
+# Verbose master debug
+ssh -vvv -M -S ~/.ssh/sockets/test user@host
+
+# Check master status
+ssh -O check -S ~/.ssh/sockets/%r@%h:%p user@host</code></pre>
+            </div>
+        </section>
+
+        <!-- SECTION 10: PRO TIPS -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">CASE #10</div>
+                <h2>Pro Tips</h2>
+            </div>
+
+            <p>Advanced techniques learned in the field. The difference between a rookie and a veteran.</p>
+
+            <div class="subsection">
+                <h3>Agent Forwarding (Use Carefully)</h3>
+                <p>Agent forwarding allows remote hosts to use your local SSH keys.</p>
+
+                <pre><code># Enable for connection
+ssh -A user@host
+
+# In config
+Host trustedhost
+    ForwardAgent yes
+
+# Best practice: Only enable for trusted hosts
+Host *
+    ForwardAgent no
+
+Host bastion.example.com
+    ForwardAgent yes</code></pre>
+
+                <div class="warning">
+                    <strong>Security Warning:</strong> Agent forwarding is risky - root on intermediate host can hijack agent socket. Use ProxyJump instead when possible: <code>ssh -J bastion target</code>
+                </div>
+
+                <h4>Safer Agent Usage</h4>
+
+                <pre><code># Time-limited agent
+ssh-add -t 3600 ~/.ssh/id_ed25519  # 1 hour
+
+# Confirm before each use (OpenSSH 8.4+)
+ssh-add -c ~/.ssh/id_ed25519</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Escape Sequences</h3>
+                <p>Press <code>~</code> then another key (after newline):</p>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sequence</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>~.</code></td>
+                                <td>Disconnect immediately</td>
+                            </tr>
+                            <tr>
+                                <td><code>~^Z</code></td>
+                                <td>Background SSH session (fg to resume)</td>
+                            </tr>
+                            <tr>
+                                <td><code>~#</code></td>
+                                <td>List forwarded connections</td>
+                            </tr>
+                            <tr>
+                                <td><code>~&</code></td>
+                                <td>Background SSH at logout when waiting</td>
+                            </tr>
+                            <tr>
+                                <td><code>~?</code></td>
+                                <td>Show escape sequence help</td>
+                            </tr>
+                            <tr>
+                                <td><code>~C</code></td>
+                                <td>Open command line (add port forwards)</td>
+                            </tr>
+                            <tr>
+                                <td><code>~R</code></td>
+                                <td>Request connection rekeying</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="note">
+                    <strong>Field Tip:</strong> Frozen SSH session? Use <code>~.</code> to disconnect cleanly. Add port forward mid-session with <code>~C</code> then <code>-L 8080:localhost:80</code>.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Autossh</h3>
+                <p>Automatically restart SSH connections. Keep your tunnels alive.</p>
+
+                <pre><code># Install
+sudo apt install autossh
+
+# Recommended: No monitoring port, use ServerAlive
+autossh -M 0 \
+    -o "ServerAliveInterval 30" \
+    -o "ServerAliveCountMax 3" \
+    user@host
+
+# Background persistent tunnel
+autossh -M 0 -f -N \
+    -o "ServerAliveInterval 30" \
+    -o "ServerAliveCountMax 3" \
+    -L 8080:localhost:80 \
+    user@host</code></pre>
+
+                <h4>Systemd Service for Autossh</h4>
+
+                <pre><code># /etc/systemd/system/autossh-tunnel.service
+[Unit]
+Description=AutoSSH tunnel
+After=network.target
+
+[Service]
+Environment="AUTOSSH_GATETIME=0"
+ExecStart=/usr/bin/autossh -M 0 -N \
+    -o "ServerAliveInterval=30" \
+    -o "ServerAliveCountMax=3" \
+    -L 8080:localhost:80 \
+    user@host
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Quick Connection Tricks</h3>
+
+                <pre><code># Pipeline remote command
+ssh user@host 'cat /var/log/syslog' | grep ERROR
+
+# Remote compression + local decompression
+ssh user@host 'tar czf - /path' | tar xzf -
+
+# Copy directory over network
+tar czf - /local/dir | ssh user@host 'tar xzf - -C /remote/'
+
+# Remote screen/tmux session
+ssh -t user@host tmux attach
+ssh -t user@host screen -rd
+
+# X11 forwarding for single app
+ssh -X user@host firefox
+
+# SSH config per-command
+ssh -F ~/.ssh/config.alternate user@host</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>SSH over Hostile Networks</h3>
+
+                <pre><code># Use Mosh (mobile shell) for unreliable connections
+mosh user@host
+
+# SSH over HTTP proxy
+ssh -o ProxyCommand="nc -X connect -x proxy:8080 %h %p" user@host
+
+# SSH over SOCKS proxy
+ssh -o ProxyCommand="nc -x socks5://127.0.0.1:1080 %h %p" user@host
+
+# Through HTTP tunnel (corkscrew)
+ssh -o ProxyCommand="corkscrew proxy 8080 %h %p" user@host</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Debugging Connection Issues</h3>
+
+                <pre><code># Verbose connection
+ssh -vvv user@host
+
+# Test specific cipher
+ssh -c aes256-ctr user@host
+
+# Test specific auth method
+ssh -o PreferredAuthentications=publickey user@host
+
+# Check server public key
+ssh-keyscan host
+
+# Verify known_hosts entry
+ssh-keygen -F host
+
+# Remove known_hosts entry
+ssh-keygen -R host</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>SSH in Scripts</h3>
+
+                <pre><code># Non-interactive (no prompts)
+ssh -o BatchMode=yes user@host command
+
+# Complete script-friendly command
+ssh -o BatchMode=yes \
+    -o StrictHostKeyChecking=yes \
+    -o ConnectTimeout=10 \
+    -o ServerAliveInterval=60 \
+    -o ServerAliveCountMax=3 \
+    user@host 'command here'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Modern SSH Features (OpenSSH 8.x+)</h3>
+
+                <pre><code># FIDO2 hardware keys
+ssh-keygen -t ed25519-sk
+
+# Security key resident keys
+ssh-keygen -t ed25519-sk -O resident
+
+# Include config files
+# ~/.ssh/config:
+Include ~/.ssh/config.d/*.conf
+
+# SetEnv (OpenSSH 8.7+)
+Host dev
+    SetEnv ENV=development DEBUG=true
+
+# SessionType (OpenSSH 9.0+)
+ssh -o SessionType=none user@host  # No shell, for port forwarding only</code></pre>
+            </div>
+
+            <div class="note">
+                <strong>Final Note:</strong> SSH is more than a protocol - it's a philosophy. Every connection is secure, every session is authenticated, every tunnel is encrypted. In a world of open networks and unsecured channels, SSH is the private eye's best friend. Use it wisely.
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <p>Built with the <a href="../styles/noir.html">Noir</a> design system.</p>
+            <p class="case-number" style="margin-top: var(--space-4);">CASE CLOSED - SSH DOSSIER COMPLETE</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEMD -- SYSTEM AND SERVICE MANAGER</title>
+    <style>
+        /* ============================================
+           BRUTALIST WEB DESIGN SYSTEM
+           ============================================
+           No polish. No refinement. Raw HTML energy.
+           Function over form. Structure exposed.
+           Like looking at a building's skeleton.
+           ============================================ */
+
+        :root {
+            /* PRIMARY: Black and White only */
+            --black: #000000;
+            --white: #FFFFFF;
+
+            /* HARSH ACCENTS: Used sparingly, aggressively */
+            --brutal-red: #FF0000;
+            --brutal-blue: #0000FF;
+            --brutal-yellow: #FFFF00;
+            --brutal-green: #00FF00;
+
+            /* GRAYS: Web-safe, system-level */
+            --gray-light: #C0C0C0;
+            --gray-medium: #808080;
+            --gray-dark: #404040;
+
+            /* SYSTEM FONTS: No fancy imports */
+            --font-serif: 'Times New Roman', Times, Georgia, serif;
+            --font-sans: Arial, Helvetica, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+
+            /* BORDERS: Always visible, always harsh */
+            --border-thin: 1px solid var(--black);
+            --border-thick: 2px solid var(--black);
+            --border-brutal: 3px solid var(--black);
+            --border-dotted: 2px dotted var(--black);
+            --border-dashed: 2px dashed var(--black);
+
+            /* SPACING: Arbitrary, dense */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            line-height: 1.4;
+            color: var(--black);
+            background: var(--white);
+        }
+
+        .page-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            border-left: var(--border-brutal);
+            border-right: var(--border-brutal);
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .site-header {
+            background: var(--black);
+            color: var(--white);
+            padding: var(--space-xl);
+            border-bottom: 4px solid var(--brutal-red);
+        }
+
+        .site-header h1 {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0 0 var(--space-sm) 0;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .site-header .subtitle {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-style: italic;
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        .site-header .version {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            margin-top: var(--space-md);
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--brutal-yellow);
+            color: var(--black);
+            display: inline-block;
+        }
+
+        /* NAVIGATION */
+        .nav-bar {
+            background: var(--gray-light);
+            padding: var(--space-sm);
+            border-bottom: var(--border-thick);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        .nav-bar a {
+            color: var(--black);
+            text-decoration: underline;
+            margin-right: var(--space-md);
+            display: inline-block;
+        }
+
+        .nav-bar a:hover {
+            background: var(--black);
+            color: var(--white);
+            text-decoration: none;
+            padding: 0 var(--space-xs);
+        }
+
+        /* SECTION */
+        .section {
+            padding: var(--space-xl) var(--space-md);
+            border-bottom: var(--border-brutal);
+        }
+
+        .section:nth-child(even) {
+            background: repeating-linear-gradient(
+                0deg,
+                var(--white),
+                var(--white) 20px,
+                #f8f8f8 20px,
+                #f8f8f8 21px
+            );
+        }
+
+        .section-header {
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-sm);
+            border-bottom: var(--border-dashed);
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--brutal-red);
+            display: block;
+            margin-bottom: var(--space-xs);
+        }
+
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            letter-spacing: 0.05em;
+        }
+
+        /* SUBSECTIONS */
+        .subsection {
+            margin-bottom: var(--space-xl);
+        }
+
+        .subsection-title {
+            font-family: var(--font-sans);
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0 0 var(--space-sm) 0;
+            padding: var(--space-xs) 0;
+            border-bottom: var(--border-thin);
+        }
+
+        /* TYPOGRAPHY */
+        h3 {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: var(--space-md) 0 var(--space-sm) 0;
+        }
+
+        p {
+            margin: 0 0 var(--space-md) 0;
+            line-height: 1.6;
+        }
+
+        strong {
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        em {
+            font-style: italic;
+        }
+
+        /* LISTS */
+        ul, ol {
+            margin: 0 0 var(--space-md) 0;
+            padding-left: var(--space-xl);
+        }
+
+        li {
+            margin-bottom: var(--space-xs);
+            line-height: 1.6;
+        }
+
+        /* CODE */
+        code {
+            font-family: var(--font-mono);
+            background: var(--black);
+            color: var(--brutal-green);
+            padding: 1px 4px;
+            font-size: 0.875em;
+        }
+
+        pre {
+            font-family: var(--font-mono);
+            background: var(--black);
+            color: var(--brutal-green);
+            padding: var(--space-md);
+            overflow-x: auto;
+            border: var(--border-thick);
+            margin: var(--space-md) 0;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: inherit;
+        }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            border: var(--border-thick);
+            margin-bottom: var(--space-md);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            padding: var(--space-sm);
+            text-align: left;
+            border: var(--border-thin);
+        }
+
+        th {
+            background: var(--black);
+            color: var(--white);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background: var(--gray-light);
+        }
+
+        /* LINKS */
+        a {
+            color: var(--brutal-blue);
+            text-decoration: underline;
+        }
+
+        a:visited {
+            color: #990099;
+        }
+
+        a:hover {
+            color: var(--white);
+            background: var(--brutal-blue);
+            text-decoration: none;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: var(--black);
+            color: var(--white);
+            padding: var(--space-lg);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--brutal-yellow);
+        }
+
+        .footer a:hover {
+            background: var(--brutal-yellow);
+            color: var(--black);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 600px) {
+            .site-header h1 {
+                font-size: 2rem;
+                letter-spacing: 0.1em;
+            }
+
+            .section {
+                padding: var(--space-lg) var(--space-sm);
+            }
+
+            .section-number {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- HEADER -->
+        <header class="site-header">
+            <h1>SYSTEMD</h1>
+            <p class="subtitle">System and Service Manager for Linux</p>
+            <span class="version">v250+ / CGROUPS V2</span>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="nav-bar">
+            <a href="index.html">← TECH GUIDES</a>
+        </nav>
+
+        <!-- INTRO -->
+        <div class="section">
+            <p>systemd is the init system and service manager used by most modern Linux distributions. It manages system services, dependencies, logging, resource control, and boot targets. This reference covers systemctl commands, unit files, service management, dependencies, journalctl, timers, targets, resource control, socket activation, and advanced techniques.</p>
+        </div>
+
+        <!-- 01. QUICK REFERENCE -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2 class="section-title">QUICK REFERENCE</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">ESSENTIAL SYSTEMCTL COMMANDS</h3>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>COMMAND</th>
+                                <th>DESCRIPTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>systemctl start &lt;unit&gt;</td>
+                                <td>Start a service</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl stop &lt;unit&gt;</td>
+                                <td>Stop a service</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl restart &lt;unit&gt;</td>
+                                <td>Restart a service</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl reload &lt;unit&gt;</td>
+                                <td>Reload configuration without restart</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl status &lt;unit&gt;</td>
+                                <td>Show detailed service status</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl enable &lt;unit&gt;</td>
+                                <td>Enable service to start at boot</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl disable &lt;unit&gt;</td>
+                                <td>Disable service from starting at boot</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl enable --now &lt;unit&gt;</td>
+                                <td>Enable and start immediately</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl mask &lt;unit&gt;</td>
+                                <td>Prevent service from being started</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl list-units</td>
+                                <td>List active units</td>
+                            </tr>
+                            <tr>
+                                <td>systemctl daemon-reload</td>
+                                <td>Reload systemd manager configuration</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">ESSENTIAL JOURNALCTL COMMANDS</h3>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>COMMAND</th>
+                                <th>DESCRIPTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>journalctl</td>
+                                <td>Show all logs</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -f</td>
+                                <td>Follow logs in real-time</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -u &lt;unit&gt;</td>
+                                <td>Show logs for specific unit</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -n 50</td>
+                                <td>Show last 50 lines</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl --since "1 hour ago"</td>
+                                <td>Show logs from last hour</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -p err</td>
+                                <td>Show errors only</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -b</td>
+                                <td>Show logs from current boot</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -b -1</td>
+                                <td>Show logs from previous boot</td>
+                            </tr>
+                            <tr>
+                                <td>journalctl -o json-pretty</td>
+                                <td>Output as formatted JSON</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 02. SYSTEMCTL BASICS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2 class="section-title">SYSTEMCTL BASICS</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SERVICE STATE MANAGEMENT</h3>
+
+                <p><strong>start</strong> - Activate/start one or more units:</p>
+                <pre><code>systemctl start nginx.service
+systemctl start nginx apache2  # Start multiple</code></pre>
+
+                <p><strong>stop</strong> - Deactivate/stop one or more units:</p>
+                <pre><code>systemctl stop nginx.service</code></pre>
+                <p>Note: Stopping does not prevent it from starting at next boot.</p>
+
+                <p><strong>restart</strong> - Stop and then start a service:</p>
+                <pre><code>systemctl restart nginx.service</code></pre>
+                <p>Use when configuration changes require full restart.</p>
+
+                <p><strong>reload</strong> - Reload service configuration without stopping:</p>
+                <pre><code>systemctl reload nginx.service</code></pre>
+                <p>Sends signal to service to reload config. Not all services support this.</p>
+
+                <p><strong>reload-or-restart</strong> - Reload if supported, otherwise restart:</p>
+                <pre><code>systemctl reload-or-restart nginx.service</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SERVICE BOOT BEHAVIOR</h3>
+
+                <p><strong>enable</strong> - Configure service to start at boot:</p>
+                <pre><code>systemctl enable nginx.service</code></pre>
+                <p>Creates symlinks in appropriate targets. Service will start on next boot but is not started immediately.</p>
+
+                <p><strong>disable</strong> - Prevent service from starting at boot:</p>
+                <pre><code>systemctl disable nginx.service</code></pre>
+                <p>Removes symlinks but does not stop the service if currently running.</p>
+
+                <p><strong>enable --now</strong> - Enable and start immediately:</p>
+                <pre><code>systemctl enable --now nginx.service</code></pre>
+
+                <p><strong>disable --now</strong> - Disable and stop immediately:</p>
+                <pre><code>systemctl disable --now nginx.service</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MASKING AND UNMASKING</h3>
+
+                <p><strong>mask</strong> - Completely prevent service from starting:</p>
+                <pre><code>systemctl mask nginx.service</code></pre>
+                <p>Creates symlink to /dev/null. Service cannot be started manually or automatically, even as a dependency. This is stronger than disable.</p>
+
+                <p><strong>unmask</strong> - Remove mask to allow service to be started:</p>
+                <pre><code>systemctl unmask nginx.service</code></pre>
+
+                <p><strong>Key Differences:</strong></p>
+                <ul>
+                    <li><strong>stop</strong>: Service not running but can be started manually or automatically</li>
+                    <li><strong>disable</strong>: Service won't start at boot but can be started manually or by dependencies</li>
+                    <li><strong>mask</strong>: Service cannot be started at all (manual or automatic) until unmasked</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">LIST AND INSPECT COMMANDS</h3>
+
+                <p><strong>list-units</strong> - Show active units:</p>
+                <pre><code>systemctl list-units                    # All active units
+systemctl list-units --type=service     # Only services
+systemctl list-units --state=failed     # Only failed units
+systemctl list-units --all              # Include inactive</code></pre>
+
+                <p><strong>list-unit-files</strong> - Show all installed unit files:</p>
+                <pre><code>systemctl list-unit-files
+systemctl list-unit-files --type=service
+systemctl list-unit-files --state=enabled</code></pre>
+
+                <p><strong>list-dependencies</strong> - Show dependency tree:</p>
+                <pre><code>systemctl list-dependencies nginx.service
+systemctl list-dependencies --reverse nginx.service
+systemctl list-dependencies --all nginx.service</code></pre>
+
+                <p><strong>cat</strong> - View unit file and drop-in snippets:</p>
+                <pre><code>systemctl cat nginx.service</code></pre>
+
+                <p><strong>show</strong> - Display all unit properties:</p>
+                <pre><code>systemctl show nginx.service
+systemctl show nginx.service -p MainPID</code></pre>
+            </div>
+        </section>
+
+        <!-- 03. UNIT FILES -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2 class="section-title">UNIT FILES</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">UNIT FILE STRUCTURE</h3>
+
+                <p>Unit files are plain text INI-style files located in:</p>
+                <ul>
+                    <li><code>/etc/systemd/system/</code> - Local, administrator-created (highest priority)</li>
+                    <li><code>/run/systemd/system/</code> - Runtime units</li>
+                    <li><code>/usr/lib/systemd/system/</code> - Distribution-provided (lowest priority)</li>
+                </ul>
+
+                <p>A unit file consists of sections:</p>
+                <ul>
+                    <li><code>[Unit]</code> - Generic metadata and dependencies</li>
+                    <li>Type-specific section (<code>[Service]</code>, <code>[Socket]</code>, <code>[Timer]</code>, etc.)</li>
+                    <li><code>[Install]</code> - Installation information for enable/disable</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">[UNIT] SECTION</h3>
+
+                <p>Common directives in the <code>[Unit]</code> section:</p>
+                <pre><code>[Unit]
+Description=Human-readable description of the unit
+Documentation=https://example.com/docs
+After=network.target
+Before=nginx.service
+Requires=postgresql.service
+Wants=redis.service
+BindsTo=mount-point.mount
+Conflicts=apache2.service
+ConditionPathExists=/etc/myapp/config
+OnFailure=recovery.service</code></pre>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>DIRECTIVE</th>
+                                <th>PURPOSE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>After=</td>
+                                <td>Start after these units (ordering only)</td>
+                            </tr>
+                            <tr>
+                                <td>Before=</td>
+                                <td>Start before these units (ordering only)</td>
+                            </tr>
+                            <tr>
+                                <td>Requires=</td>
+                                <td>Hard dependency - must be started</td>
+                            </tr>
+                            <tr>
+                                <td>Wants=</td>
+                                <td>Soft dependency - should be started</td>
+                            </tr>
+                            <tr>
+                                <td>BindsTo=</td>
+                                <td>Stops if bound unit stops</td>
+                            </tr>
+                            <tr>
+                                <td>Conflicts=</td>
+                                <td>Cannot run simultaneously</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">[SERVICE] SECTION</h3>
+
+                <p>The <code>Type=</code> directive defines how systemd determines when the service has started:</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TYPE</th>
+                                <th>DESCRIPTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>simple</td>
+                                <td>Service is ready immediately after fork (default)</td>
+                            </tr>
+                            <tr>
+                                <td>exec</td>
+                                <td>Similar to simple, waits until main process is executed</td>
+                            </tr>
+                            <tr>
+                                <td>forking</td>
+                                <td>Service forks a child process and parent exits</td>
+                            </tr>
+                            <tr>
+                                <td>oneshot</td>
+                                <td>Single task/script, can finish before other units start</td>
+                            </tr>
+                            <tr>
+                                <td>notify</td>
+                                <td>Service sends readiness notification via sd_notify()</td>
+                            </tr>
+                            <tr>
+                                <td>dbus</td>
+                                <td>Service is ready when D-Bus name is acquired</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>COMMON SERVICE DIRECTIVES</h3>
+                <pre><code>[Service]
+# Execution
+ExecStart=/usr/bin/myapp --config /etc/myapp/config.conf
+ExecStartPre=/usr/local/bin/pre-start.sh
+ExecStartPost=/usr/local/bin/post-start.sh
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/usr/local/bin/graceful-stop.sh
+
+# Restart Behavior
+Restart=on-failure
+RestartSec=5s
+StartLimitBurst=5
+StartLimitIntervalSec=60s
+
+# Environment
+WorkingDirectory=/var/lib/myapp
+User=myappuser
+Group=myappgroup
+Environment="VAR1=value1" "VAR2=value2"
+EnvironmentFile=/etc/myapp/environment
+
+# Security
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+NoNewPrivileges=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myapp</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">EXAMPLE COMPLETE UNIT FILE</h3>
+
+                <pre><code>[Unit]
+Description=My Application Service
+Documentation=https://myapp.example.com/docs
+After=network.target postgresql.service
+Wants=redis.service
+ConditionPathExists=/etc/myapp/config.conf
+
+[Service]
+Type=notify
+User=myappuser
+Group=myappgroup
+WorkingDirectory=/var/lib/myapp
+Environment="NODE_ENV=production"
+EnvironmentFile=/etc/myapp/environment
+
+ExecStartPre=/usr/local/bin/check-config.sh
+ExecStart=/usr/bin/myapp --config /etc/myapp/config.conf
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/usr/local/bin/graceful-stop.sh
+
+Restart=on-failure
+RestartSec=10s
+StartLimitBurst=3
+StartLimitIntervalSec=120s
+
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myapp
+
+PrivateTmp=yes
+ProtectSystem=full
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+            </div>
+        </section>
+
+        <!-- 04. SERVICE MANAGEMENT -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2 class="section-title">SERVICE MANAGEMENT</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">EXECUTION COMMANDS</h3>
+
+                <p><strong>ExecStart</strong> - Main command to start the service:</p>
+                <pre><code># Simple command
+ExecStart=/usr/bin/myapp
+
+# With arguments
+ExecStart=/usr/bin/myapp --port 8080 --config /etc/myapp.conf
+
+# Prefix modifiers:
+# - = errors (non-zero exit) are ignored
+# + = run with full privileges (even if User= is set)
+# ! = elevate privileges
+ExecStart=-/usr/bin/may-fail
+ExecStart=+/usr/bin/needs-root</code></pre>
+
+                <p><strong>ExecStartPre</strong> - Commands to run before ExecStart:</p>
+                <pre><code>ExecStartPre=/usr/local/bin/validate-config.sh
+ExecStartPre=/usr/bin/mkdir -p /var/run/myapp</code></pre>
+
+                <p><strong>ExecStartPost</strong> - Commands to run after ExecStart:</p>
+                <pre><code>ExecStartPost=/usr/local/bin/register-service.sh</code></pre>
+
+                <p><strong>ExecReload</strong> - Command to reload configuration:</p>
+                <pre><code>ExecReload=/bin/kill -HUP $MAINPID</code></pre>
+
+                <p><strong>ExecStop</strong> - Command to stop the service:</p>
+                <pre><code>ExecStop=/usr/local/bin/graceful-stop.sh</code></pre>
+
+                <p><strong>ExecStopPost</strong> - Commands to run after service stops:</p>
+                <pre><code>ExecStopPost=/usr/bin/rm -rf /var/run/myapp</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">RESTART BEHAVIOR</h3>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>RESTART VALUE</th>
+                                <th>WHEN TO RESTART</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>no</td>
+                                <td>Never restart (default)</td>
+                            </tr>
+                            <tr>
+                                <td>always</td>
+                                <td>Always restart when process exits</td>
+                            </tr>
+                            <tr>
+                                <td>on-success</td>
+                                <td>Restart only on clean exit (code 0)</td>
+                            </tr>
+                            <tr>
+                                <td>on-failure</td>
+                                <td>Restart on non-zero exit, signal, timeout</td>
+                            </tr>
+                            <tr>
+                                <td>on-abnormal</td>
+                                <td>Restart on signal, timeout, watchdog</td>
+                            </tr>
+                            <tr>
+                                <td>on-abort</td>
+                                <td>Restart if terminated by signal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <pre><code>[Service]
+Restart=on-failure
+RestartSec=5s               # Wait 5 seconds before restart
+StartLimitBurst=5           # Try max 5 times
+StartLimitIntervalSec=60s   # Within 60 second window</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">PROCESS MANAGEMENT</h3>
+
+                <p><strong>KillMode</strong> - How to kill processes:</p>
+                <pre><code>KillMode=control-group  # Kill all processes in cgroup (default)
+KillMode=process        # Kill only main process
+KillMode=mixed          # SIGTERM to main, SIGKILL to others
+KillMode=none           # Don't kill processes</code></pre>
+
+                <p><strong>Timeouts:</strong></p>
+                <pre><code>TimeoutStartSec=90s     # Wait max 90 seconds for startup
+TimeoutStopSec=30s      # Wait 30s for stop, then SIGKILL
+TimeoutSec=60s          # Sets both start and stop timeout</code></pre>
+
+                <p><strong>Signals:</strong></p>
+                <pre><code>KillSignal=SIGTERM      # Default signal when stopping
+KillSignal=SIGINT</code></pre>
+            </div>
+        </section>
+
+        <!-- 05. DEPENDENCIES -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2 class="section-title">DEPENDENCIES</h2>
+            </div>
+
+            <p>systemd provides two orthogonal types of dependencies:</p>
+            <ol>
+                <li><strong>Ordering dependencies</strong> - Control startup/shutdown order (After/Before)</li>
+                <li><strong>Requirement dependencies</strong> - Control if units are pulled in (Requires/Wants/BindsTo)</li>
+            </ol>
+            <p>These are independent - you often use both together.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">ORDERING DEPENDENCIES</h3>
+
+                <p><strong>After=</strong> - Start this unit after the specified units:</p>
+                <pre><code>After=network.target postgresql.service</code></pre>
+                <p>Does NOT cause the units to be started automatically. Only controls order IF both are starting.</p>
+
+                <p><strong>Before=</strong> - Start this unit before the specified units:</p>
+                <pre><code>Before=nginx.service</code></pre>
+                <p>Does NOT cause the units to be started automatically. Only controls order IF both are starting.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">REQUIREMENT DEPENDENCIES</h3>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>DIRECTIVE</th>
+                                <th>BEHAVIOR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Wants=</td>
+                                <td>Weak dependency - starts the unit but continues if it fails</td>
+                            </tr>
+                            <tr>
+                                <td>Requires=</td>
+                                <td>Strong dependency - fails if required unit fails</td>
+                            </tr>
+                            <tr>
+                                <td>BindsTo=</td>
+                                <td>Strongest - stops if bound unit stops unexpectedly</td>
+                            </tr>
+                            <tr>
+                                <td>Conflicts=</td>
+                                <td>Mutual exclusion - cannot run simultaneously</td>
+                            </tr>
+                            <tr>
+                                <td>PartOf=</td>
+                                <td>Stop/restart propagation - stops when parent stops</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">DEPENDENCY EXAMPLES</h3>
+
+                <p><strong>Web application with database:</strong></p>
+                <pre><code>[Unit]
+Description=Web Application
+After=network.target postgresql.service
+Requires=postgresql.service
+Wants=redis.service</code></pre>
+
+                <p><strong>Service with mount point:</strong></p>
+                <pre><code>[Unit]
+Description=Data Processor
+BindsTo=mnt-data.mount
+After=mnt-data.mount
+Wants=network-online.target</code></pre>
+
+                <p><strong>Viewing dependencies:</strong></p>
+                <pre><code>systemctl list-dependencies myapp.service
+systemctl list-dependencies --reverse myapp.service
+systemctl show myapp.service -p Requires -p Wants -p After</code></pre>
+            </div>
+        </section>
+
+        <!-- 06. JOURNALCTL -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2 class="section-title">JOURNALCTL</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">BASIC USAGE</h3>
+
+                <pre><code># View all logs
+journalctl
+
+# Follow logs in real-time
+journalctl -f
+
+# Show recent entries
+journalctl -n 50
+
+# Reverse order (newest first)
+journalctl -r
+
+# No pager
+journalctl --no-pager</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">FILTERING BY UNIT</h3>
+
+                <pre><code># Specific service
+journalctl -u nginx.service
+journalctl -u nginx               # .service can be omitted
+
+# Follow service logs
+journalctl -u nginx.service -f
+
+# Multiple units
+journalctl -u nginx.service -u postgresql.service
+
+# Kernel messages
+journalctl -k
+journalctl --dmesg</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">FILTERING BY TIME</h3>
+
+                <pre><code># Relative time
+journalctl --since "1 hour ago"
+journalctl --since "30 minutes ago"
+journalctl --since today
+journalctl --since yesterday
+
+# Absolute time
+journalctl --since "2025-01-01"
+journalctl --since "2025-01-01 14:30:00"
+
+# Time range
+journalctl --since "09:00" --until "17:00"
+journalctl --since "2025-01-15" --until "2025-01-20"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">FILTERING BY PRIORITY</h3>
+
+                <p>Priority levels: emerg (0), alert (1), crit (2), err (3), warning (4), notice (5), info (6), debug (7)</p>
+
+                <pre><code># Error priority and above
+journalctl -p err
+
+# Warning priority and above
+journalctl -p warning
+
+# Numeric priority
+journalctl -p 3
+
+# Priority range
+journalctl -p warning..err</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">FILTERING BY BOOT</h3>
+
+                <pre><code># Current boot
+journalctl -b
+journalctl -b 0
+
+# Previous boots
+journalctl -b -1               # Previous boot
+journalctl -b -2               # Boot before that
+
+# List all boots
+journalctl --list-boots</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">OUTPUT FORMATS</h3>
+
+                <pre><code># Short format (default)
+journalctl -o short
+
+# Verbose (all fields)
+journalctl -o verbose
+
+# JSON
+journalctl -o json
+journalctl -o json-pretty
+
+# Cat (just message, no metadata)
+journalctl -o cat
+
+# With millisecond precision
+journalctl -o short-precise</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">JOURNAL MAINTENANCE</h3>
+
+                <pre><code># Disk usage
+journalctl --disk-usage
+
+# Vacuum by size
+sudo journalctl --vacuum-size=500M
+
+# Vacuum by time
+sudo journalctl --vacuum-time=7d
+
+# Verify journal integrity
+journalctl --verify
+
+# Rotate journal
+sudo journalctl --rotate</code></pre>
+            </div>
+        </section>
+
+        <!-- 07. TIMERS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2 class="section-title">TIMERS</h2>
+            </div>
+
+            <p>systemd timers provide cron-like scheduling integrated with systemd. Timers offer better logging, dependency management, and more flexible scheduling than cron.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">TIMER STRUCTURE</h3>
+
+                <p>A timer requires TWO files:</p>
+                <ul>
+                    <li><code>.timer</code> file - defines when to run</li>
+                    <li><code>.service</code> file - defines what to run</li>
+                </ul>
+
+                <p><strong>Basic timer file:</strong></p>
+                <pre><code># /etc/systemd/system/backup.timer
+[Unit]
+Description=Daily Backup Timer
+Requires=backup.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target</code></pre>
+
+                <p><strong>Corresponding service file:</strong></p>
+                <pre><code># /etc/systemd/system/backup.service
+[Unit]
+Description=Daily Backup Job
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup.sh</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">ONCALENDAR - CALENDAR TIME</h3>
+
+                <p>Format: <code>DayOfWeek Year-Month-Day Hour:Minute:Second</code></p>
+
+                <pre><code># Daily at midnight
+OnCalendar=daily
+OnCalendar=*-*-* 00:00:00
+
+# Daily at 2:30 AM
+OnCalendar=*-*-* 02:30:00
+
+# Every Monday at 9 AM
+OnCalendar=Mon *-*-* 09:00:00
+
+# Weekdays at 10 AM
+OnCalendar=Mon..Fri *-*-* 10:00:00
+
+# First day of month
+OnCalendar=monthly
+OnCalendar=*-*-01 00:00:00
+
+# Every hour
+OnCalendar=hourly
+OnCalendar=*-*-* *:00:00
+
+# Every 15 minutes
+OnCalendar=*:0/15
+
+# Weekends at noon
+OnCalendar=Sat,Sun *-*-* 12:00:00</code></pre>
+
+                <p><strong>Test calendar expressions:</strong></p>
+                <pre><code>systemd-analyze calendar "Mon..Fri *-*-* 10:00:00"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MONOTONIC TIMERS</h3>
+
+                <p>Run relative to events:</p>
+
+                <pre><code># 15 minutes after boot
+OnBootSec=15min
+
+# 1 hour after last activation
+OnUnitActiveSec=1h
+
+# 5 minutes after service becomes inactive
+OnUnitInactiveSec=5min
+
+# 2 minutes after timer itself is activated
+OnActiveSec=2min</code></pre>
+
+                <p>Time units: us, ms, s, sec, min, h, hr, d, day, w, week, month, y, year</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">TIMER OPTIONS</h3>
+
+                <pre><code>[Timer]
+# Catch up on missed runs
+Persistent=true
+
+# Randomization window (spreads load)
+AccuracySec=1h
+
+# Add random delay
+RandomizedDelaySec=30min
+
+# Activate specific service
+Unit=different-name.service
+
+# Keep timer active after trigger
+RemainAfterElapse=yes</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MANAGING TIMERS</h3>
+
+                <pre><code># Enable and start timer
+sudo systemctl enable --now backup.timer
+
+# Check timer status
+systemctl status backup.timer
+
+# List all timers
+systemctl list-timers
+systemctl list-timers --all
+
+# View logs
+journalctl -u backup.timer
+journalctl -u backup.service
+
+# Manually trigger service
+sudo systemctl start backup.service</code></pre>
+            </div>
+        </section>
+
+        <!-- 08. TARGETS & BOOT -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2 class="section-title">TARGETS &amp; BOOT</h2>
+            </div>
+
+            <p>systemd targets are groupings of units that represent system states. They are similar to SysV runlevels but more flexible.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MAJOR SYSTEM TARGETS</h3>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TARGET</th>
+                                <th>DESCRIPTION</th>
+                                <th>RUNLEVEL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>multi-user.target</td>
+                                <td>Multi-user system, non-graphical (servers)</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>graphical.target</td>
+                                <td>Graphical interface (desktop)</td>
+                                <td>5</td>
+                            </tr>
+                            <tr>
+                                <td>rescue.target</td>
+                                <td>Single-user rescue mode</td>
+                                <td>1</td>
+                            </tr>
+                            <tr>
+                                <td>emergency.target</td>
+                                <td>Emergency shell (minimal)</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>poweroff.target</td>
+                                <td>System shutdown</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td>reboot.target</td>
+                                <td>System reboot</td>
+                                <td>6</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">TARGET MANAGEMENT</h3>
+
+                <pre><code># View current target
+systemctl get-default
+
+# Set default target
+sudo systemctl set-default multi-user.target
+sudo systemctl set-default graphical.target
+
+# Switch to target immediately
+sudo systemctl isolate multi-user.target
+
+# List available targets
+systemctl list-units --type=target
+systemctl list-units --type=target --all</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">BOOT ANALYSIS</h3>
+
+                <p><strong>systemd-analyze</strong> provides tools to analyze boot performance:</p>
+
+                <pre><code># Boot time summary
+systemd-analyze
+
+# Per-unit timing
+systemd-analyze blame
+
+# Critical chain (bottleneck analysis)
+systemd-analyze critical-chain
+systemd-analyze critical-chain nginx.service
+
+# Graphical boot chart
+systemd-analyze plot > boot.svg
+
+# Verify unit files
+systemd-analyze verify /etc/systemd/system/myapp.service
+
+# Security analysis
+systemd-analyze security myapp.service
+
+# Calendar expression testing
+systemd-analyze calendar "Mon..Fri *-*-* 10:00:00"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">BOOT DEBUGGING</h3>
+
+                <pre><code># Boot messages
+journalctl -b                    # Current boot
+journalctl -b -1                 # Previous boot
+journalctl -b -p err             # Errors from current boot
+
+# Failed units
+systemctl --failed
+systemctl list-units --failed
+
+# Boot in rescue mode (add to GRUB kernel line)
+systemd.unit=rescue.target
+systemd.unit=emergency.target
+
+# Boot with debug output
+systemd.log_level=debug
+systemd.log_target=console</code></pre>
+            </div>
+        </section>
+
+        <!-- 09. RESOURCE CONTROL -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2 class="section-title">RESOURCE CONTROL</h2>
+            </div>
+
+            <p>systemd integrates with Linux control groups (cgroups) to provide resource management for services. This allows you to limit CPU, memory, I/O, and other resources on a per-service basis.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">CPU CONTROL</h3>
+
+                <pre><code>[Service]
+# Limit CPU usage
+CPUQuota=20%              # Max 20% of one core
+CPUQuota=200%             # Max 2 full cores
+
+# CPU priority/share
+CPUWeight=500             # Range: 1-10000, default: 100
+
+# Enable CPU accounting
+CPUAccounting=yes</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MEMORY CONTROL</h3>
+
+                <pre><code>[Service]
+# Hard memory limit
+MemoryMax=1G              # Kill at 1 GB
+
+# Soft memory limit
+MemoryHigh=800M           # Throttle at 800 MB
+
+# Swap limit
+MemorySwapMax=500M        # Max swap usage
+MemorySwapMax=0           # Disable swap
+
+# Enable memory accounting
+MemoryAccounting=yes</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">I/O CONTROL</h3>
+
+                <pre><code>[Service]
+# I/O priority
+IOWeight=500              # Range: 1-10000, default: 100
+
+# Limit read bandwidth
+IOReadBandwidthMax=/dev/sda 10M
+
+# Limit write bandwidth
+IOWriteBandwidthMax=/dev/sda 5M
+
+# Limit IOPS
+IOReadIOPSMax=/dev/sda 1000
+IOWriteIOPSMax=/dev/sda 500</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">TASK CONTROL</h3>
+
+                <pre><code>[Service]
+# Limit number of tasks (threads/processes)
+TasksMax=100              # Max 100 tasks
+TasksMax=infinity         # No limit</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MONITORING RESOURCES</h3>
+
+                <pre><code># Real-time cgroup monitoring
+systemd-cgtop
+
+# View service resources
+systemctl status myapp.service
+systemctl show myapp.service -p MemoryCurrent
+systemctl show myapp.service -p CPUUsageNSec
+systemctl show myapp.service -p TasksCurrent</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">COMPLETE RESOURCE EXAMPLE</h3>
+
+                <pre><code>[Unit]
+Description=Resource-Limited Web Application
+After=network.target
+
+[Service]
+Type=notify
+User=webapp
+ExecStart=/usr/bin/webapp
+
+# CPU limits
+CPUAccounting=yes
+CPUQuota=100%             # Max 1 core
+CPUWeight=200             # Higher priority
+
+# Memory limits
+MemoryAccounting=yes
+MemoryHigh=1.5G           # Throttle
+MemoryMax=2G              # Hard limit
+MemorySwapMax=500M        # Limited swap
+
+# I/O limits
+IOWeight=200
+IOWriteBandwidthMax=/dev/sda 50M
+
+# Task limits
+TasksMax=200
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+            </div>
+        </section>
+
+        <!-- 10. SOCKET ACTIVATION -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2 class="section-title">SOCKET ACTIVATION</h2>
+            </div>
+
+            <p>Socket activation allows systemd to start services on-demand when a connection arrives on a socket, rather than running services continuously. This improves resource usage and boot times.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SOCKET UNIT STRUCTURE</h3>
+
+                <p>Socket activation requires TWO files:</p>
+                <ul>
+                    <li><code>.socket</code> file - defines socket to listen on</li>
+                    <li><code>.service</code> file - service to activate when connection arrives</li>
+                </ul>
+
+                <p><strong>Basic socket file:</strong></p>
+                <pre><code># /etc/systemd/system/myapp.socket
+[Unit]
+Description=My Application Socket
+
+[Socket]
+ListenStream=8080
+
+[Install]
+WantedBy=sockets.target</code></pre>
+
+                <p><strong>Corresponding service:</strong></p>
+                <pre><code># /etc/systemd/system/myapp.service
+[Unit]
+Description=My Application
+
+[Service]
+ExecStart=/usr/bin/myapp</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SOCKET TYPES</h3>
+
+                <pre><code># TCP socket
+ListenStream=80
+ListenStream=8080
+ListenStream=192.168.1.1:8080
+ListenStream=[::]:9000           # IPv6
+
+# UDP socket
+ListenDatagram=514
+
+# Unix socket
+ListenStream=/run/myapp.sock
+
+# Multiple sockets
+ListenStream=80
+ListenStream=443</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SOCKET OPTIONS</h3>
+
+                <pre><code>[Socket]
+# Unix socket permissions
+SocketMode=0660
+SocketUser=www-data
+SocketGroup=www-data
+
+# Connection backlog
+Backlog=128
+
+# Limit connections
+MaxConnections=64
+MaxConnectionsPerSource=10
+
+# TCP keepalive
+KeepAlive=yes
+KeepAliveTimeSec=30
+
+# Buffer sizes
+ReceiveBuffer=256K
+SendBuffer=256K</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MANAGING SOCKETS</h3>
+
+                <pre><code># Enable and start socket
+sudo systemctl enable --now myapp.socket
+
+# Check socket status
+systemctl status myapp.socket
+
+# List all sockets
+systemctl list-sockets
+systemctl list-sockets --all
+
+# Test socket
+nc localhost 8080
+nc -U /run/myapp.sock</code></pre>
+            </div>
+        </section>
+
+        <!-- 11. PRO TIPS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">11</span>
+                <h2 class="section-title">PRO TIPS</h2>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">DEBUGGING FAILED SERVICES</h3>
+
+                <pre><code># Check service status
+systemctl status myapp.service
+
+# View full logs
+journalctl -u myapp.service -n 100
+journalctl -u myapp.service --since "1 hour ago"
+
+# Check exit code and reason
+systemctl show myapp.service -p ExecMainStatus
+systemctl show myapp.service -p Result
+
+# Validate unit file
+systemd-analyze verify myapp.service
+
+# Emulate service execution
+sudo runuser -u <User> -g <Group> -c "cd <WorkingDirectory> && <ExecStart>"</code></pre>
+
+                <p><strong>Common failure reasons:</strong></p>
+                <ul>
+                    <li>Wrong User/Group (permission denied)</li>
+                    <li>Missing WorkingDirectory</li>
+                    <li>Wrong ExecStart path (file not found)</li>
+                    <li>Missing environment variables</li>
+                    <li>Service exits immediately (needs Type=forking or Type=oneshot)</li>
+                    <li>Timeout (increase TimeoutStartSec)</li>
+                    <li>Dependency failure (check Required/Wanted units)</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SYSTEMD-RUN FOR TRANSIENT UNITS</h3>
+
+                <p><code>systemd-run</code> creates temporary units that exist only while running:</p>
+
+                <pre><code># Run command as transient service
+systemd-run /usr/bin/mycommand
+
+# Run with resource limits
+systemd-run --property=MemoryMax=1G \
+            --property=CPUQuota=50% \
+            /usr/bin/memory-hungry-app
+
+# Run in foreground (scope unit)
+systemd-run --scope /usr/bin/mycommand
+
+# Run as specific user
+systemd-run --property=User=webapp /usr/bin/webapp
+
+# Run on timer
+systemd-run --on-calendar=daily /usr/local/bin/backup.sh
+
+# Wait for completion
+systemd-run --wait /usr/bin/long-task</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">USER SERVICES</h3>
+
+                <p>systemd can manage services for individual users (not just system-wide):</p>
+
+                <p><strong>User unit file locations:</strong></p>
+                <ul>
+                    <li><code>~/.config/systemd/user/</code> - User's own units</li>
+                    <li><code>/etc/systemd/user/</code> - System-wide user units</li>
+                </ul>
+
+                <pre><code># Manage user services (as user, NOT with sudo)
+systemctl --user start myapp.service
+systemctl --user enable myapp.service
+systemctl --user status myapp.service
+
+# User service logs
+journalctl --user -u myapp.service
+
+# Enable lingering (services run without login)
+sudo loginctl enable-linger username</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">OVERRIDE FILES (systemctl edit)</h3>
+
+                <p>Modify units without editing original files using drop-in snippets:</p>
+
+                <pre><code># Edit service with drop-in
+sudo systemctl edit myapp.service
+# Opens editor with empty override file
+# Saves to /etc/systemd/system/myapp.service.d/override.conf
+
+# Edit full unit file
+sudo systemctl edit --full myapp.service
+
+# View effective configuration
+systemctl cat myapp.service
+
+# Remove overrides
+sudo systemctl revert myapp.service</code></pre>
+
+                <p><strong>Example overrides:</strong></p>
+
+                <pre><code># Increase memory limit
+[Service]
+MemoryMax=2G
+
+# Add environment variable
+[Service]
+Environment="DEBUG=true"
+
+# Override ExecStart (must clear first)
+[Service]
+ExecStart=
+ExecStart=/usr/bin/myapp --new-flag</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">QUICK CHECKS</h3>
+
+                <pre><code># Status checks
+systemctl is-active myapp.service
+systemctl is-enabled myapp.service
+systemctl is-failed myapp.service
+
+# List all failed units
+systemctl --failed
+
+# Reset failed state
+sudo systemctl reset-failed myapp.service
+sudo systemctl reset-failed  # Reset all
+
+# Reload unit files
+sudo systemctl daemon-reload
+
+# Set property at runtime
+sudo systemctl set-property myapp.service MemoryMax=2G
+
+# Template units
+sudo systemctl start myapp@instance1.service
+sudo systemctl start myapp@instance2.service</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SECURITY HARDENING</h3>
+
+                <pre><code>[Service]
+# Private namespaces
+PrivateTmp=yes          # Private /tmp
+PrivateDevices=yes      # Private /dev
+ProtectSystem=strict    # Read-only /usr, /boot
+ProtectHome=yes         # Inaccessible /home
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+
+# Capabilities instead of root
+User=myapp
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+# Prevent manual control
+RefuseManualStop=yes
+RefuseManualStart=yes
+
+# Watchdog for health monitoring
+Type=notify
+WatchdogSec=30s</code></pre>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <p>Built with the <a href="../styles/brutalist-web.html">BRUTALIST WEB</a> design system</p>
+            <p>systemd v250+ / cgroups v2 / 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

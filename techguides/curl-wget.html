@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>curl & wget | Data Transfer Command Line Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           DOS/BIOS DESIGN SYSTEM
+           curl & wget Tech Guide
+           ============================================
+           PC BIOS Setup Utility aesthetic.
+           Blue background, white/yellow text,
+           ASCII box-drawing, function key bar.
+           AMI BIOS. Phoenix BIOS. Norton Commander.
+           ============================================ */
+
+        :root {
+            /* CGA/EGA 16-COLOR PALETTE */
+            --cga-black: #000000;  --cga-blue: #0000AA;
+            --cga-green: #00AA00;  --cga-cyan: #00AAAA;
+            --cga-red: #AA0000;    --cga-magenta: #AA00AA;
+            --cga-brown: #AA5500;  --cga-light-gray: #AAAAAA;
+            --cga-dark-gray: #555555;  --cga-light-blue: #5555FF;
+            --cga-light-green: #55FF55; --cga-light-cyan: #55FFFF;
+            --cga-light-red: #FF5555;  --cga-light-magenta: #FF55FF;
+            --cga-yellow: #FFFF55; --cga-white: #FFFFFF;
+            /* BIOS SEMANTIC COLORS */
+            --bios-bg: #0000AA;        --bios-bg-dark: #000080;
+            --bios-bg-header: #AAAAAA; --bios-text: #FFFFFF;
+            --bios-text-dim: #AAAAAA;  --bios-highlight-bg: #AAAAAA;
+            --bios-highlight-text: #000000;
+            --bios-accent: #FFFF55;    --bios-link: #55FFFF;
+            --bios-selected-bg: #00AAAA; --bios-selected-text: #000000;
+            /* STATUS */
+            --status-ok: #55FF55;   --status-warning: #FFFF55;
+            --status-error: #FF5555; --status-info: #55FFFF;
+            /* TYPOGRAPHY */
+            --font-bios: 'Share Tech Mono', monospace;
+            --font-display: 'VT323', monospace;
+            --font-code: 'IBM Plex Mono', monospace;
+            /* SPACING (4px base) */
+            --space-1: 4px;  --space-2: 8px;   --space-3: 12px;
+            --space-4: 16px; --space-5: 20px;  --space-6: 24px;
+            --space-7: 28px; --space-8: 32px;  --space-9: 48px;
+            --space-10: 64px;
+        }
+
+        /* RESET */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-bios); background: var(--bios-bg);
+            color: var(--bios-text); line-height: 1.5;
+            min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* CONTAINER */
+        .bios-screen { max-width: 1100px; margin: 0 auto; padding: var(--space-4); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* BACK LINK */
+        .back-link { display: inline-block; font-family: var(--font-code); font-size: 14px; color: var(--bios-text-dim); text-decoration: none; margin-bottom: var(--space-6); padding: var(--space-2) var(--space-4); border: 1px solid var(--bios-text-dim); background: var(--bios-bg-dark); transition: all 0.2s; }
+        .back-link:hover { background: var(--bios-selected-bg); color: var(--bios-selected-text); border-color: var(--bios-selected-bg); }
+
+        /* HEADER BAR */
+        .bios-header { background: var(--bios-bg-header); color: var(--bios-highlight-text); padding: var(--space-4) var(--space-6); text-align: center; margin-bottom: var(--space-8); border: 2px solid var(--bios-text-dim); }
+        .bios-header-title { font-family: var(--font-display); font-size: 32px; letter-spacing: 4px; font-weight: normal; line-height: 1.2; }
+        .bios-header-subtitle { font-size: 14px; margin-top: var(--space-2); letter-spacing: 1px; }
+
+        /* PANELS WITH BOX-DRAWING BORDERS */
+        .bios-panel { position: relative; margin-bottom: var(--space-8); padding: var(--space-5); background: var(--bios-bg-dark); }
+        .bios-panel::before { content: ''; position: absolute; inset: 0; border: 2px solid var(--bios-text-dim); pointer-events: none; }
+        .bios-panel-double::before { border: 3px double var(--bios-text-dim); }
+        .bios-panel-title { position: absolute; top: -12px; left: var(--space-5); background: var(--bios-bg); padding: 0 var(--space-3); font-family: var(--font-display); font-size: 22px; color: var(--bios-accent); letter-spacing: 2px; }
+        .bios-panel-content { padding-top: var(--space-2); }
+
+        /* SECTIONS */
+        .section { margin-bottom: var(--space-10); }
+        .section-header { background: var(--bios-bg-header); color: var(--bios-highlight-text); padding: var(--space-3) var(--space-5); margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between; }
+        .section-title { font-family: var(--font-display); font-size: 26px; font-weight: normal; letter-spacing: 3px; }
+        .section-nav { font-size: 12px; font-family: var(--font-code); }
+        .section-description { font-size: 14px; color: var(--bios-text-dim); margin-bottom: var(--space-5); padding-left: var(--space-5); line-height: 1.7; }
+
+        /* SUBSECTION */
+        .subsection { margin-bottom: var(--space-8); }
+        .subsection-title { font-family: var(--font-display); font-size: 20px; color: var(--bios-accent); letter-spacing: 2px; margin-bottom: var(--space-4); padding-bottom: var(--space-2); border-bottom: 1px solid var(--bios-bg-dark); }
+        .subsection-title::before { content: '> '; color: var(--cga-cyan); }
+
+        /* TYPOGRAPHY */
+        h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); color: var(--bios-accent); letter-spacing: 2px; line-height: 1.3; font-weight: normal; }
+        h1 { font-size: 36px; margin-bottom: var(--space-4); }
+        h2 { font-size: 28px; margin-bottom: var(--space-3); }
+        h3 { font-size: 24px; margin-bottom: var(--space-3); color: var(--bios-text); }
+        h4 { font-size: 20px; margin-bottom: var(--space-2); color: var(--bios-text); }
+        p { font-family: var(--font-bios); font-size: 14px; margin-bottom: var(--space-4); line-height: 1.7; }
+        a { color: var(--bios-link); text-decoration: none; border-bottom: 1px dotted var(--bios-link); }
+        a:hover { background: var(--bios-link); color: var(--cga-black); border-bottom-style: solid; }
+        code { font-family: var(--font-code); background: var(--cga-black); padding: 2px 6px; color: var(--bios-accent); font-size: 13px; border: 1px solid var(--bios-bg-dark); }
+        pre { font-family: var(--font-code); background: var(--cga-black); border: 2px solid var(--bios-text-dim); padding: var(--space-4); overflow-x: auto; margin-bottom: var(--space-4); font-size: 13px; line-height: 1.6; }
+        pre code { background: none; padding: 0; border: none; color: var(--cga-light-green); }
+
+        /* COMMENT STYLE IN CODE */
+        .comment { color: var(--cga-dark-gray); font-style: italic; }
+        .cmd { color: var(--cga-light-cyan); }
+        .flag { color: var(--cga-yellow); }
+        .value { color: var(--cga-light-magenta); }
+
+        /* TABLE */
+        .table-container { overflow-x: auto; border: 2px solid var(--bios-text-dim); margin-bottom: var(--space-4); }
+        .table { width: 100%; border-collapse: collapse; font-family: var(--font-code); font-size: 13px; background: var(--bios-bg-dark); }
+        .table th, .table td { padding: var(--space-2) var(--space-4); text-align: left; border-bottom: 1px solid var(--bios-bg); }
+        .table thead { background: var(--bios-bg-header); color: var(--bios-highlight-text); }
+        .table th { font-weight: normal; letter-spacing: 1px; text-transform: uppercase; font-size: 12px; border-bottom: 2px solid var(--bios-text-dim); }
+        .table td { color: var(--bios-text); }
+        .table td:first-child { color: var(--bios-accent); white-space: nowrap; }
+        .table tr:hover td { background: var(--bios-selected-bg); color: var(--bios-selected-text); }
+
+        /* BADGES */
+        .badge { font-family: var(--font-code); font-size: 11px; padding: var(--space-1) var(--space-2); text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-right: var(--space-2); margin-bottom: var(--space-2); }
+        .badge-curl { background: var(--cga-cyan); color: var(--cga-black); }
+        .badge-wget { background: var(--cga-green); color: var(--cga-black); }
+        .badge-both { background: var(--bios-accent); color: var(--cga-black); }
+        .badge-new { background: var(--cga-magenta); color: var(--cga-white); }
+
+        /* FEATURE GRID */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+        .feature-box { border: 2px solid var(--bios-text-dim); padding: var(--space-4); background: var(--bios-bg-dark); position: relative; }
+        .feature-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--bios-accent); }
+        .feature-title { font-family: var(--font-display); font-size: 18px; color: var(--bios-accent); margin-bottom: var(--space-2); letter-spacing: 1px; }
+        .feature-desc { font-size: 13px; color: var(--bios-text-dim); line-height: 1.6; }
+
+        /* COMPARISON BOX */
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
+        .comparison-item { border: 2px solid var(--bios-text-dim); padding: var(--space-4); background: var(--bios-bg-dark); }
+        .comparison-header { background: var(--bios-bg-header); color: var(--bios-highlight-text); padding: var(--space-2) var(--space-3); margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-3); font-family: var(--font-display); font-size: 20px; letter-spacing: 2px; text-align: center; }
+
+        /* ALERT BOXES */
+        .alert { padding: var(--space-4); margin-bottom: var(--space-4); border: 2px solid; font-size: 14px; }
+        .alert-info { border-color: var(--status-info); background: var(--bios-bg-dark); color: var(--bios-text); }
+        .alert-info::before { content: '[i] '; color: var(--status-info); font-weight: bold; }
+        .alert-warning { border-color: var(--status-warning); background: var(--bios-bg-dark); color: var(--bios-text); }
+        .alert-warning::before { content: '[!] '; color: var(--status-warning); font-weight: bold; }
+        .alert-tip { border-color: var(--status-ok); background: var(--bios-bg-dark); color: var(--bios-text); }
+        .alert-tip::before { content: '[+] '; color: var(--status-ok); font-weight: bold; }
+
+        /* LIST STYLES */
+        ul, ol { margin-bottom: var(--space-4); padding-left: var(--space-8); }
+        ul li, ol li { font-size: 14px; line-height: 1.7; margin-bottom: var(--space-2); color: var(--bios-text-dim); }
+        ul li::marker { color: var(--bios-accent); }
+        ol li::marker { color: var(--bios-accent); }
+
+        /* FOOTER */
+        .bios-footer { margin-top: auto; text-align: center; padding: var(--space-6); border-top: 2px solid var(--bios-text-dim); background: var(--bios-bg-header); color: var(--bios-highlight-text); }
+        .bios-footer p { font-size: 13px; margin-bottom: var(--space-2); }
+
+        /* FUNCTION KEY BAR */
+        .fkey-bar { background: var(--bios-bg-header); border-top: 2px solid var(--bios-text-dim); padding: var(--space-2) var(--space-4); display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); position: sticky; bottom: 0; z-index: 100; }
+        .fkey-item { font-size: 12px; color: var(--bios-highlight-text); display: flex; align-items: center; gap: 4px; }
+        .fkey-key { color: var(--cga-black); font-weight: bold; background: var(--bios-bg); padding: 2px 6px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .bios-screen { padding: var(--space-2); }
+            .bios-header-title { font-size: 22px; letter-spacing: 2px; }
+            .section-header { flex-direction: column; gap: var(--space-2); text-align: center; }
+            .section-title { font-size: 20px; }
+            .comparison { grid-template-columns: 1fr; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .table { font-size: 11px; }
+            .table th, .table td { padding: var(--space-1) var(--space-2); }
+            pre { font-size: 11px; padding: var(--space-2); }
+            .fkey-bar { padding: var(--space-1); gap: var(--space-2); }
+            .fkey-item { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bios-screen">
+
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- HEADER -->
+        <header class="bios-header">
+            <h1 class="bios-header-title">CURL &amp; WGET</h1>
+            <p class="bios-header-subtitle">Data Transfer Command Line Tools - Complete Reference</p>
+        </header>
+
+        <!-- INTRO PANEL -->
+        <div class="bios-panel bios-panel-double">
+            <span class="bios-panel-title">System Information</span>
+            <div class="bios-panel-content">
+                <p><strong>curl</strong> - Client URL Library. Transfer data with URLs. Supports 20+ protocols including HTTP, HTTPS, FTP, SFTP, SCP, SMTP, LDAP, and more. API testing powerhouse with full control over headers, methods, and authentication.</p>
+                <p style="margin-top: var(--space-4);"><strong>wget</strong> - Network downloader. Recursive website mirroring, background downloads, resume capability. Built for downloading files and entire websites with depth control and filtering.</p>
+                <p style="margin-top: var(--space-4); color: var(--bios-accent);">Both tools are essential for command-line data transfer, each with distinct strengths.</p>
+            </div>
+        </div>
+
+        <!-- QUICK REFERENCE -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">1. QUICK REFERENCE</span>
+                <span class="section-nav">Essential Commands</span>
+            </div>
+            <p class="section-description">The most commonly used commands for curl and wget. Start here for quick lookups.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Essential curl Commands</h3>
+                <pre><code><span class="comment"># Basic GET request</span>
+curl https://api.example.com
+
+<span class="comment"># POST JSON data</span>
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"key":"value"}' https://api.example.com
+
+<span class="comment"># Download file</span>
+curl -O https://example.com/file.zip
+
+<span class="comment"># Follow redirects</span>
+curl -L https://example.com
+
+<span class="comment"># Save with custom name</span>
+curl -o myfile.zip https://example.com/file.zip
+
+<span class="comment"># Include headers in output</span>
+curl -i https://api.example.com
+
+<span class="comment"># Send with authentication</span>
+curl -u username:password https://api.example.com
+
+<span class="comment"># Bearer token auth</span>
+curl -H "Authorization: Bearer TOKEN" https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Essential wget Commands</h3>
+                <pre><code><span class="comment"># Download file</span>
+wget https://example.com/file.zip
+
+<span class="comment"># Continue interrupted download</span>
+wget -c https://example.com/largefile.iso
+
+<span class="comment"># Download in background</span>
+wget -b https://example.com/file.zip
+
+<span class="comment"># Mirror website</span>
+wget -m https://example.com
+
+<span class="comment"># Recursive download with depth limit</span>
+wget -r -l 2 https://example.com
+
+<span class="comment"># Download from file list</span>
+wget -i urls.txt
+
+<span class="comment"># Limit download speed</span>
+wget --limit-rate=200k https://example.com/file.zip</code></pre>
+            </div>
+        </section>
+
+        <!-- CURL BASICS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">2. CURL BASICS</span>
+                <span class="section-nav">HTTP Methods &amp; URLs</span>
+            </div>
+            <p class="section-description">Fundamental curl usage patterns. HTTP methods, URL syntax, and protocol support.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">HTTP Methods</h3>
+                <pre><code><span class="comment"># GET (default)</span>
+curl https://api.example.com/users
+
+<span class="comment"># Explicit GET</span>
+curl -X GET https://api.example.com/users
+
+<span class="comment"># POST</span>
+curl -X POST https://api.example.com/users
+
+<span class="comment"># PUT</span>
+curl -X PUT https://api.example.com/users/123
+
+<span class="comment"># DELETE</span>
+curl -X DELETE https://api.example.com/users/123
+
+<span class="comment"># PATCH</span>
+curl -X PATCH https://api.example.com/users/123
+
+<span class="comment"># HEAD (headers only)</span>
+curl -I https://api.example.com/users
+curl --head https://api.example.com/users
+
+<span class="comment"># OPTIONS</span>
+curl -X OPTIONS https://api.example.com/users</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">URL Syntax &amp; Multiple URLs</h3>
+                <pre><code><span class="comment"># Query parameters</span>
+curl "https://api.example.com/search?q=query&limit=10"
+
+<span class="comment"># Multiple URLs (sequential)</span>
+curl https://example.com/file1.zip https://example.com/file2.zip
+
+<span class="comment"># Parallel downloads (curl 7.66.0+)</span>
+curl -Z https://example.com/file1.zip https://example.com/file2.zip
+
+<span class="comment"># URL with authentication in URL</span>
+curl https://username:password@example.com/api
+
+<span class="comment"># URL ranges</span>
+curl https://example.com/file[1-10].jpg
+curl https://example.com/page[001-100].html
+
+<span class="comment"># Multiple URLs with custom output names</span>
+curl https://example.com/file1.zip -o first.zip \
+     https://example.com/file2.zip -o second.zip</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Protocol Support</h3>
+                <p>curl supports 20+ protocols beyond HTTP/HTTPS:</p>
+                <div class="feature-grid">
+                    <div class="feature-box">
+                        <div class="feature-title">HTTP/HTTPS</div>
+                        <div class="feature-desc">Web requests and RESTful APIs</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-title">FTP/FTPS</div>
+                        <div class="feature-desc">File transfer protocol</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-title">SCP/SFTP</div>
+                        <div class="feature-desc">Secure file transfer over SSH</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-title">SMTP/POP3/IMAP</div>
+                        <div class="feature-desc">Email protocols</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-title">LDAP</div>
+                        <div class="feature-desc">Directory services</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-title">SMB</div>
+                        <div class="feature-desc">Windows file sharing</div>
+                    </div>
+                </div>
+                <pre><code><span class="comment"># FTP download</span>
+curl ftp://ftp.example.com/file.zip
+
+<span class="comment"># FTP upload</span>
+curl -T localfile.txt ftp://ftp.example.com/
+
+<span class="comment"># SFTP with key authentication</span>
+curl -u user: --key ~/.ssh/id_rsa sftp://example.com/file.txt</code></pre>
+            </div>
+        </section>
+
+        <!-- HEADERS & AUTHENTICATION -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">3. HEADERS &amp; AUTHENTICATION</span>
+                <span class="section-nav">curl Authentication Methods</span>
+            </div>
+            <p class="section-description">Custom headers, cookies, and authentication patterns for API access.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Custom Headers (-H)</h3>
+                <pre><code><span class="comment"># Single header</span>
+curl -H "Content-Type: application/json" https://api.example.com
+
+<span class="comment"># Multiple headers</span>
+curl -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -H "X-Custom-Header: value" \
+     https://api.example.com
+
+<span class="comment"># User-Agent</span>
+curl -H "User-Agent: MyApp/1.0" https://api.example.com
+curl -A "MyApp/1.0" https://api.example.com  <span class="comment"># Shorthand</span>
+
+<span class="comment"># Referer</span>
+curl -H "Referer: https://example.com" https://api.example.com
+curl -e "https://example.com" https://api.example.com  <span class="comment"># Shorthand</span>
+
+<span class="comment"># Remove default header</span>
+curl -H "Accept:" https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Cookies (-b/-c)</h3>
+                <pre><code><span class="comment"># Send cookie (inline)</span>
+curl -b "session=abc123" https://example.com
+
+<span class="comment"># Send multiple cookies (inline)</span>
+curl -b "session=abc123; user=john" https://example.com
+curl -b "session=abc123" -b "user=john" https://example.com
+
+<span class="comment"># Load cookies from file</span>
+curl -b cookies.txt https://example.com
+
+<span class="comment"># Save cookies to file</span>
+curl -c cookies.txt https://example.com
+
+<span class="comment"># Both save and send cookies (session management)</span>
+curl -b cookies.txt -c cookies.txt https://example.com/login
+
+<span class="comment"># Cookie jar example workflow</span>
+<span class="comment"># 1. Login and save session cookie</span>
+curl -X POST -d "username=user&password=pass" \
+     -c cookies.txt https://example.com/login
+
+<span class="comment"># 2. Use saved cookie for authenticated request</span>
+curl -b cookies.txt https://example.com/dashboard
+
+<span class="comment"># 3. Logout and update cookie</span>
+curl -b cookies.txt -c cookies.txt https://example.com/logout</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Basic Authentication (-u)</h3>
+                <pre><code><span class="comment"># Basic auth (prompts for password)</span>
+curl -u username https://api.example.com
+
+<span class="comment"># Basic auth (password in command)</span>
+curl -u username:password https://api.example.com
+
+<span class="comment"># Basic auth (from .netrc file)</span>
+curl -n https://api.example.com
+
+<span class="comment"># Basic auth with POST</span>
+curl -u username:password \
+     -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"data":"value"}' \
+     https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Bearer Token Authentication</h3>
+                <pre><code><span class="comment"># Bearer token</span>
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" https://api.example.com
+
+<span class="comment"># Bearer token with POST</span>
+curl -X POST \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"key":"value"}' \
+     https://api.example.com
+
+<span class="comment"># Token from file</span>
+TOKEN=$(cat token.txt)
+curl -H "Authorization: Bearer $TOKEN" https://api.example.com
+
+<span class="comment"># Token from environment variable</span>
+curl -H "Authorization: Bearer $API_TOKEN" https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">OAuth &amp; Advanced Authentication</h3>
+                <pre><code><span class="comment"># API Key in header</span>
+curl -H "X-API-Key: YOUR_API_KEY" https://api.example.com
+
+<span class="comment"># API Key in query parameter</span>
+curl "https://api.example.com/endpoint?api_key=YOUR_API_KEY"
+
+<span class="comment"># Digest authentication</span>
+curl --digest -u username:password https://api.example.com
+
+<span class="comment"># NTLM authentication (Windows)</span>
+curl --ntlm -u username:password https://api.example.com
+
+<span class="comment"># Certificate-based authentication</span>
+curl --cert client.pem --key client-key.pem https://api.example.com
+
+<span class="comment"># Certificate with passphrase</span>
+curl --cert client.pem:passphrase --key client-key.pem https://api.example.com</code></pre>
+            </div>
+        </section>
+
+        <!-- DATA & FORMS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">4. DATA &amp; FORMS</span>
+                <span class="section-nav">POST Data &amp; File Uploads</span>
+            </div>
+            <p class="section-description">Sending data with curl - URL-encoded, JSON, multipart forms, and file uploads.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">POST Data (-d)</h3>
+                <pre><code><span class="comment"># URL-encoded POST data</span>
+curl -d "name=John&email=john@example.com" https://api.example.com
+
+<span class="comment"># Multiple -d flags (automatically concatenated with &)</span>
+curl -d "name=John" -d "email=john@example.com" https://api.example.com
+
+<span class="comment"># POST data from file</span>
+curl -d @data.txt https://api.example.com
+
+<span class="comment"># POST with custom Content-Type</span>
+curl -d "param1=value1&param2=value2" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     https://api.example.com
+
+<span class="comment"># Empty POST</span>
+curl -d "" https://api.example.com
+
+<span class="comment"># POST without data (sends Content-Length: 0)</span>
+curl -X POST https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">JSON Data (--json, -d)</h3>
+                <pre><code><span class="comment"># JSON with --json flag (curl 7.82.0+, auto-sets headers)</span>
+curl --json '{"name":"John","email":"john@example.com"}' \
+     https://api.example.com
+
+<span class="comment"># JSON with -d flag (manual header)</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"name":"John","email":"john@example.com"}' \
+     https://api.example.com
+
+<span class="comment"># JSON from file</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d @payload.json \
+     https://api.example.com
+
+<span class="comment"># JSON with heredoc (better for complex data)</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d @- https://api.example.com &lt;&lt;'EOF'
+{
+  "user": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "settings": {
+      "notifications": true,
+      "theme": "dark"
+    }
+  }
+}
+EOF
+
+<span class="comment"># Nested JSON</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{
+       "order": {
+         "items": [
+           {"id": 1, "quantity": 2},
+           {"id": 2, "quantity": 1}
+         ],
+         "total": 59.99
+       }
+     }' \
+     https://api.example.com
+
+<span class="comment"># JSON with variables</span>
+NAME="John"
+EMAIL="john@example.com"
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d "{\"name\":\"$NAME\",\"email\":\"$EMAIL\"}" \
+     https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Form Data (-F, Multipart)</h3>
+                <pre><code><span class="comment"># Simple form field</span>
+curl -F "name=John" https://api.example.com
+
+<span class="comment"># Multiple form fields</span>
+curl -F "name=John" -F "email=john@example.com" https://api.example.com
+
+<span class="comment"># File upload</span>
+curl -F "file=@/path/to/document.pdf" https://api.example.com/upload
+
+<span class="comment"># File upload with custom filename</span>
+curl -F "file=@local.jpg;filename=remote.jpg" https://api.example.com/upload
+
+<span class="comment"># File upload with custom content type</span>
+curl -F "file=@data.json;type=application/json" https://api.example.com/upload
+
+<span class="comment"># Multiple files</span>
+curl -F "file1=@image1.jpg" \
+     -F "file2=@image2.jpg" \
+     https://api.example.com/upload
+
+<span class="comment"># Form fields with file</span>
+curl -F "name=John" \
+     -F "email=john@example.com" \
+     -F "avatar=@profile.jpg" \
+     https://api.example.com/profile
+
+<span class="comment"># Upload file from stdin</span>
+cat document.txt | curl -F "file=@-" https://api.example.com/upload
+
+<span class="comment"># Binary file upload</span>
+curl -F "binary=@file.bin;type=application/octet-stream" \
+     https://api.example.com/upload</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">File Uploads (Various Methods)</h3>
+                <pre><code><span class="comment"># PUT method for file upload</span>
+curl -T localfile.txt https://example.com/upload/remotefile.txt
+
+<span class="comment"># PUT with authentication</span>
+curl -T file.zip -u username:password ftp://ftp.example.com/
+
+<span class="comment"># Upload with progress bar</span>
+curl -# -T largefile.iso https://example.com/upload/
+
+<span class="comment"># Binary data upload</span>
+curl -X POST \
+     --data-binary @image.jpg \
+     -H "Content-Type: image/jpeg" \
+     https://api.example.com/upload
+
+<span class="comment"># Upload with custom headers</span>
+curl -T file.pdf \
+     -H "X-File-Name: document.pdf" \
+     -H "X-File-Size: 1024000" \
+     https://api.example.com/upload</code></pre>
+            </div>
+        </section>
+
+        <!-- CURL ADVANCED -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">5. CURL ADVANCED</span>
+                <span class="section-nav">Redirects, SSL, Timeouts, Proxies</span>
+            </div>
+            <p class="section-description">Advanced curl features for production use: SSL/TLS, timeouts, retries, proxies, and network control.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Follow Redirects (-L)</h3>
+                <pre><code><span class="comment"># Follow redirects</span>
+curl -L https://example.com
+
+<span class="comment"># Follow redirects with maximum redirect count</span>
+curl -L --max-redirs 5 https://example.com
+
+<span class="comment"># Follow redirects and show redirect chain</span>
+curl -Lv https://example.com
+
+<span class="comment"># Follow POST through redirects</span>
+curl -L -X POST -d "data=value" https://example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">SSL/TLS Options</h3>
+                <pre><code><span class="comment"># Ignore SSL certificate errors (insecure)</span>
+curl -k https://self-signed.example.com
+curl --insecure https://self-signed.example.com
+
+<span class="comment"># Specify CA certificate</span>
+curl --cacert /path/to/ca-cert.pem https://api.example.com
+
+<span class="comment"># Client certificate authentication</span>
+curl --cert client.pem --key client-key.pem https://api.example.com
+
+<span class="comment"># Client certificate with password</span>
+curl --cert client.pem:password https://api.example.com
+
+<span class="comment"># Specify TLS version</span>
+curl --tlsv1.2 https://api.example.com
+curl --tlsv1.3 https://api.example.com
+
+<span class="comment"># Show TLS handshake details</span>
+curl -v https://api.example.com 2>&1 | grep -i tls
+
+<span class="comment"># Certificate pinning</span>
+curl --pinnedpubkey sha256//BASE64_HASH https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Timeouts &amp; Retries</h3>
+                <pre><code><span class="comment"># Connection timeout (seconds)</span>
+curl --connect-timeout 10 https://api.example.com
+
+<span class="comment"># Maximum time for entire operation (seconds)</span>
+curl --max-time 60 https://api.example.com
+curl -m 60 https://api.example.com  <span class="comment"># Short form</span>
+
+<span class="comment"># Combine timeouts</span>
+curl --connect-timeout 10 --max-time 60 https://api.example.com
+
+<span class="comment"># Retry on failure (curl 7.71.0+)</span>
+curl --retry 5 https://api.example.com
+
+<span class="comment"># Retry with delay between attempts</span>
+curl --retry 5 --retry-delay 3 https://api.example.com
+
+<span class="comment"># Retry only on specific errors</span>
+curl --retry 3 --retry-connrefused https://api.example.com
+
+<span class="comment"># Maximum retry time</span>
+curl --retry 5 --retry-max-time 120 https://api.example.com
+
+<span class="comment"># Exponential backoff</span>
+curl --retry 5 --retry-delay 1 --retry-max-time 60 https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Rate Limiting &amp; Bandwidth Control</h3>
+                <pre><code><span class="comment"># Limit download speed (bytes per second)</span>
+curl --limit-rate 100k https://example.com/largefile.zip
+
+<span class="comment"># Limit speed in KB/s</span>
+curl --limit-rate 100k https://example.com/file.zip
+
+<span class="comment"># Limit speed in MB/s</span>
+curl --limit-rate 1m https://example.com/file.zip
+
+<span class="comment"># Speed limit (abort if slower than rate for duration)</span>
+curl --speed-limit 1000 --speed-time 10 https://example.com/file.zip
+<span class="comment"># Aborts if speed drops below 1000 bytes/sec for 10 seconds</span>
+
+<span class="comment"># Combine rate limiting with retry</span>
+curl --limit-rate 500k --retry 3 https://example.com/file.zip</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Connection &amp; Network Options</h3>
+                <pre><code><span class="comment"># IPv4 only</span>
+curl -4 https://api.example.com
+
+<span class="comment"># IPv6 only</span>
+curl -6 https://api.example.com
+
+<span class="comment"># Use specific network interface</span>
+curl --interface eth0 https://api.example.com
+
+<span class="comment"># Bind to specific IP address</span>
+curl --interface 192.168.1.100 https://api.example.com
+
+<span class="comment"># Resolve hostname to specific IP</span>
+curl --resolve example.com:443:93.184.216.34 https://example.com
+
+<span class="comment"># Use HTTP/2</span>
+curl --http2 https://api.example.com
+
+<span class="comment"># Use HTTP/3 (QUIC)</span>
+curl --http3 https://api.example.com
+
+<span class="comment"># Keep-alive</span>
+curl --keepalive-time 60 https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Proxy Configuration</h3>
+                <pre><code><span class="comment"># HTTP proxy</span>
+curl -x http://proxy.example.com:8080 https://api.example.com
+
+<span class="comment"># SOCKS5 proxy</span>
+curl -x socks5://proxy.example.com:1080 https://api.example.com
+
+<span class="comment"># Proxy with authentication</span>
+curl -x http://proxy.example.com:8080 \
+     -U proxyuser:proxypass https://api.example.com
+
+<span class="comment"># No proxy for specific hosts</span>
+curl --noproxy localhost,127.0.0.1 \
+     -x http://proxy:8080 https://api.example.com
+
+<span class="comment"># Use system proxy settings</span>
+curl -x "" https://api.example.com  <span class="comment"># Reads from env vars</span></code></pre>
+            </div>
+        </section>
+
+        <!-- CURL OUTPUT -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">6. CURL OUTPUT</span>
+                <span class="section-nav">Saving Files &amp; Response Info</span>
+            </div>
+            <p class="section-description">Control curl output: save to files, show headers, format responses, extract metrics.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Save to File (-o/-O)</h3>
+                <pre><code><span class="comment"># Save with remote filename</span>
+curl -O https://example.com/file.zip
+
+<span class="comment"># Save with custom filename</span>
+curl -o myfile.zip https://example.com/file.zip
+
+<span class="comment"># Save multiple files with remote names</span>
+curl -O https://example.com/file1.zip -O https://example.com/file2.zip
+
+<span class="comment"># Save multiple files with custom names</span>
+curl https://example.com/file1.zip -o first.zip \
+     https://example.com/file2.zip -o second.zip
+
+<span class="comment"># Append to existing file</span>
+curl https://api.example.com >> output.txt
+
+<span class="comment"># Save to directory</span>
+curl -o ~/downloads/file.zip https://example.com/file.zip
+
+<span class="comment"># Create directory structure from URL</span>
+curl --create-dirs -o path/to/file.zip https://example.com/file.zip</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Silent &amp; Verbose Modes</h3>
+                <pre><code><span class="comment"># Silent mode (no progress bar or errors)</span>
+curl -s https://api.example.com
+
+<span class="comment"># Silent with errors shown</span>
+curl -sS https://api.example.com
+
+<span class="comment"># Verbose mode (detailed debug info)</span>
+curl -v https://api.example.com
+
+<span class="comment"># Very verbose (even more details)</span>
+curl -vv https://api.example.com
+
+<span class="comment"># Trace (complete packet trace)</span>
+curl --trace trace.txt https://api.example.com
+
+<span class="comment"># Trace ASCII (readable trace)</span>
+curl --trace-ascii trace.txt https://api.example.com
+
+<span class="comment"># Show only errors</span>
+curl --no-progress-meter https://api.example.com  <span class="comment"># curl 7.67.0+</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Progress Bar &amp; Display</h3>
+                <pre><code><span class="comment"># Progress bar instead of meter</span>
+curl -# https://example.com/largefile.zip
+
+<span class="comment"># No progress indicator at all</span>
+curl -s https://example.com/file.zip
+
+<span class="comment"># Progress bar with output to file</span>
+curl -# -o file.zip https://example.com/file.zip
+
+<span class="comment"># Show transfer stats at end</span>
+curl -w "\nTotal time: %{time_total}s\n" https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Write-Out Format (-w)</h3>
+                <pre><code><span class="comment"># Show HTTP status code</span>
+curl -w "%{http_code}\n" -o /dev/null -s https://api.example.com
+
+<span class="comment"># Show status code only (suppress body)</span>
+curl -o /dev/null -s -w "%{http_code}" https://api.example.com
+
+<span class="comment"># Show multiple stats</span>
+curl -w "Status: %{http_code}\nTime: %{time_total}s\n" \
+     https://api.example.com
+
+<span class="comment"># Complete response stats</span>
+curl -w @- https://api.example.com &lt;&lt;'EOF'
+HTTP Status: %{http_code}
+Content Type: %{content_type}
+Total Time: %{time_total}s
+Download Size: %{size_download} bytes
+Download Speed: %{speed_download} bytes/sec
+EOF
+
+<span class="comment"># Common write-out variables</span>
+curl -w "
+    http_code:      %{http_code}
+    time_total:     %{time_total}
+    time_connect:   %{time_connect}
+    time_starttransfer: %{time_starttransfer}
+    size_download:  %{size_download}
+    speed_download: %{speed_download}
+    url_effective:  %{url_effective}
+\n" https://api.example.com
+
+<span class="comment"># JSON format output (curl 7.70.0+)</span>
+curl -w "%{json}" https://api.example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Response Codes &amp; Headers</h3>
+                <pre><code><span class="comment"># Include response headers in output</span>
+curl -i https://api.example.com
+
+<span class="comment"># Show only headers (HEAD request)</span>
+curl -I https://api.example.com
+
+<span class="comment"># Save headers to separate file</span>
+curl -D headers.txt https://api.example.com
+
+<span class="comment"># Save headers to stdout, body to file</span>
+curl -D - -o body.txt https://api.example.com
+
+<span class="comment"># Show specific header</span>
+curl -s -I https://api.example.com | grep -i content-type
+
+<span class="comment"># Multiple header formats</span>
+curl -v https://api.example.com 2>&1 | grep "^&lt; "  <span class="comment"># Response headers</span>
+curl -v https://api.example.com 2>&1 | grep "^> "  <span class="comment"># Request headers</span>
+
+<span class="comment"># Extract status code with write-out</span>
+curl -w "%{http_code}" -o /dev/null -s https://api.example.com
+
+<span class="comment"># Check if URL is accessible</span>
+curl -f https://api.example.com && echo "Success" || echo "Failed"
+<span class="comment"># -f fails silently on HTTP errors (returns exit code 22 for 400+)</span>
+
+<span class="comment"># Show redirect chain</span>
+curl -Lsv https://example.com 2>&1 | grep "^&lt; HTTP"</code></pre>
+            </div>
+        </section>
+
+        <!-- WGET BASICS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">7. WGET BASICS</span>
+                <span class="section-nav">Downloads &amp; Mirroring</span>
+            </div>
+            <p class="section-description">wget fundamentals: downloading files, recursive downloads, and website mirroring.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Download Files</h3>
+                <pre><code><span class="comment"># Download single file</span>
+wget https://example.com/file.zip
+
+<span class="comment"># Download with custom filename</span>
+wget -O myfile.zip https://example.com/file.zip
+
+<span class="comment"># Download multiple files</span>
+wget https://example.com/file1.zip https://example.com/file2.zip
+
+<span class="comment"># Download from file list</span>
+wget -i urls.txt
+
+<span class="comment"># Download to specific directory</span>
+wget -P ~/downloads/ https://example.com/file.zip
+
+<span class="comment"># Download in background</span>
+wget -b https://example.com/largefile.iso
+<span class="comment"># Output written to wget-log</span>
+
+<span class="comment"># Background with custom log file</span>
+wget -b -o download.log https://example.com/file.zip
+
+<span class="comment"># Continue interrupted download</span>
+wget -c https://example.com/largefile.iso
+
+<span class="comment"># Try count (default is 20)</span>
+wget --tries=5 https://example.com/file.zip
+
+<span class="comment"># Infinite retries</span>
+wget --tries=inf https://example.com/file.zip
+
+<span class="comment"># Wait between retries</span>
+wget --waitretry=5 https://example.com/file.zip</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Recursive Downloads (-r)</h3>
+                <pre><code><span class="comment"># Basic recursive download</span>
+wget -r https://example.com
+
+<span class="comment"># Recursive with depth limit</span>
+wget -r -l 2 https://example.com
+<span class="comment"># -l 0 or --level=0 means infinite recursion</span>
+
+<span class="comment"># Don't ascend to parent directory</span>
+wget -r --no-parent https://example.com/docs/
+
+<span class="comment"># Recursive download of specific types</span>
+wget -r -A pdf,zip https://example.com
+
+<span class="comment"># Exclude file types</span>
+wget -r -R jpg,png https://example.com
+
+<span class="comment"># Follow only relative links</span>
+wget -r --relative https://example.com
+
+<span class="comment"># Convert links for offline browsing</span>
+wget -r -k https://example.com
+<span class="comment"># -k converts links to relative paths</span>
+
+<span class="comment"># Recursive with page requisites (images, CSS, JS)</span>
+wget -r -p https://example.com
+
+<span class="comment"># Complete website download for offline viewing</span>
+wget -r -p -k -E https://example.com
+<span class="comment"># -E adds .html extension to HTML files</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Mirroring (-m)</h3>
+                <pre><code><span class="comment"># Mirror website</span>
+wget -m https://example.com
+
+<span class="comment"># Mirror is equivalent to:</span>
+wget -r -N -l inf --no-remove-listing https://example.com
+<span class="comment"># -N enables timestamping</span>
+<span class="comment"># -l inf sets infinite recursion depth</span>
+
+<span class="comment"># Mirror with conversion for offline viewing</span>
+wget -m -k -p -E https://example.com
+
+<span class="comment"># Mirror specific section</span>
+wget -m --no-parent https://example.com/documentation/
+
+<span class="comment"># Mirror with bandwidth limit</span>
+wget -m --limit-rate=200k https://example.com
+
+<span class="comment"># Mirror with wait time (polite crawling)</span>
+wget -m --wait=2 https://example.com
+
+<span class="comment"># Mirror excluding domains</span>
+wget -m --exclude-domains ads.example.com,tracker.example.com \
+     https://example.com
+
+<span class="comment"># Mirror with custom user agent</span>
+wget -m --user-agent="Mozilla/5.0" https://example.com</code></pre>
+            </div>
+        </section>
+
+        <!-- WGET ADVANCED -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">8. WGET ADVANCED</span>
+                <span class="section-nav">Spider Mode, Filtering, Auth</span>
+            </div>
+            <p class="section-description">Advanced wget features: link checking, filtering, authentication, and bandwidth control.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Spider Mode (Check Links)</h3>
+                <pre><code><span class="comment"># Basic spider mode (don't download)</span>
+wget --spider https://example.com
+
+<span class="comment"># Check single URL</span>
+wget --spider https://example.com/file.zip
+<span class="comment"># Exit code 0 if exists, 8 if error</span>
+
+<span class="comment"># Spider mode with recursive checking</span>
+wget --spider -r https://example.com
+
+<span class="comment"># Find broken links</span>
+wget --spider -r -nd -nv -o spider.log https://example.com
+grep -B 2 "broken link" spider.log
+
+<span class="comment"># Spider with detailed logging</span>
+wget --spider -r -nd -nv -o links.log https://example.com
+
+<span class="comment"># Check links without following robots.txt</span>
+wget --spider -e robots=off -r https://example.com
+
+<span class="comment"># Show only HTTP responses</span>
+wget --spider --server-response https://example.com 2>&1 | grep "HTTP/"
+
+<span class="comment"># Check if file exists (return code)</span>
+wget --spider -q https://example.com/file.zip
+if [ $? -eq 0 ]; then
+    echo "File exists"
+else
+    echo "File not found"
+fi</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Depth Control &amp; Filtering</h3>
+                <pre><code><span class="comment"># Limit recursion depth</span>
+wget -r -l 3 https://example.com
+<span class="comment"># Default is 5 levels</span>
+
+<span class="comment"># No depth limit</span>
+wget -r -l 0 https://example.com
+
+<span class="comment"># Span hosts (follow links to other domains)</span>
+wget -r -H https://example.com
+
+<span class="comment"># Limit to specific domains</span>
+wget -r -H -D example.com,cdn.example.com https://example.com
+
+<span class="comment"># Exclude directories</span>
+wget -r -X /cgi-bin/,/temp/ https://example.com
+
+<span class="comment"># Include only specific directories</span>
+wget -r -I /docs/,/images/ https://example.com
+
+<span class="comment"># Follow FTP links from HTTP page</span>
+wget -r --follow-ftp https://example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Accept/Reject Patterns</h3>
+                <pre><code><span class="comment"># Accept only specific file types</span>
+wget -r -A pdf,zip,tar.gz https://example.com
+
+<span class="comment"># Reject file types</span>
+wget -r -R jpg,png,gif,css,js https://example.com
+
+<span class="comment"># Accept patterns (regex)</span>
+wget -r --accept-regex ".*\.(pdf|zip)$" https://example.com
+
+<span class="comment"># Reject patterns (regex)</span>
+wget -r --reject-regex ".*\.(jpg|png|gif)$" https://example.com
+
+<span class="comment"># Case-insensitive matching</span>
+wget -r -A pdf --ignore-case https://example.com
+
+<span class="comment"># Download only HTML files</span>
+wget -r -A html,htm https://example.com
+
+<span class="comment"># Download everything except multimedia</span>
+wget -r -R mp3,mp4,avi,mkv,flv https://example.com
+
+<span class="comment"># Combine accept and reject</span>
+wget -r -A pdf -R "*sample*" https://example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Bandwidth Limiting &amp; Throttling</h3>
+                <pre><code><span class="comment"># Limit download rate (bytes per second)</span>
+wget --limit-rate=100k https://example.com/file.zip
+
+<span class="comment"># Rate in MB/s</span>
+wget --limit-rate=1m https://example.com/largefile.iso
+
+<span class="comment"># Wait between downloads (seconds)</span>
+wget --wait=5 -r https://example.com
+
+<span class="comment"># Random wait (0.5 to 1.5 times --wait value)</span>
+wget --wait=5 --random-wait -r https://example.com
+
+<span class="comment"># Wait between retries</span>
+wget --waitretry=10 https://example.com/file.zip
+
+<span class="comment"># Quota limit (stop after downloading X bytes)</span>
+wget -Q 100m -r https://example.com
+<span class="comment"># Stops after downloading 100MB</span>
+
+<span class="comment"># Polite crawling (recommended settings)</span>
+wget -r --wait=2 --random-wait --limit-rate=200k https://example.com</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Background Downloads &amp; Logging</h3>
+                <pre><code><span class="comment"># Background download</span>
+wget -b https://example.com/largefile.iso
+<span class="comment"># Logs to wget-log by default</span>
+
+<span class="comment"># Background with custom log</span>
+wget -b -o download.log https://example.com/file.zip
+
+<span class="comment"># Quiet mode (no output)</span>
+wget -q https://example.com/file.zip
+
+<span class="comment"># Verbose output</span>
+wget -v https://example.com/file.zip
+<span class="comment"># This is the default</span>
+
+<span class="comment"># No verbose (minimal output)</span>
+wget -nv https://example.com/file.zip
+
+<span class="comment"># Debug output</span>
+wget -d https://example.com/file.zip
+
+<span class="comment"># Append to log file</span>
+wget -a download.log https://example.com/file.zip
+
+<span class="comment"># Monitor background download</span>
+tail -f wget-log</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Authentication &amp; Headers</h3>
+                <pre><code><span class="comment"># HTTP basic authentication</span>
+wget --user=username --password=password https://example.com
+
+<span class="comment"># Read password from file</span>
+wget --user=username --password=$(cat password.txt) https://example.com
+
+<span class="comment"># Custom headers</span>
+wget --header="Authorization: Bearer TOKEN" https://api.example.com
+
+<span class="comment"># Multiple headers</span>
+wget --header="Accept: application/json" \
+     --header="X-API-Key: key123" \
+     https://api.example.com
+
+<span class="comment"># Custom User-Agent</span>
+wget --user-agent="Mozilla/5.0" https://example.com
+
+<span class="comment"># Referer</span>
+wget --referer="https://google.com" https://example.com
+
+<span class="comment"># Load cookies from file</span>
+wget --load-cookies=cookies.txt https://example.com
+
+<span class="comment"># Save cookies to file</span>
+wget --save-cookies=cookies.txt --keep-session-cookies https://example.com
+
+<span class="comment"># POST request with wget</span>
+wget --post-data="user=name&pass=secret" https://example.com/login
+
+<span class="comment"># POST data from file</span>
+wget --post-file=data.txt https://api.example.com</code></pre>
+            </div>
+        </section>
+
+        <!-- API TESTING PATTERNS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">9. API TESTING PATTERNS</span>
+                <span class="section-nav">REST, GraphQL, Load Testing</span>
+            </div>
+            <p class="section-description">Using curl for API testing: REST endpoints, GraphQL queries, and load testing patterns.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">REST API Testing with curl</h3>
+                <pre><code><span class="comment"># GET request with JSON response</span>
+curl -H "Accept: application/json" https://api.example.com/users
+
+<span class="comment"># Pretty-print JSON response</span>
+curl -s https://api.example.com/users | jq '.'
+
+<span class="comment"># GET with query parameters</span>
+curl "https://api.example.com/users?page=1&limit=10"
+
+<span class="comment"># POST - Create resource</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer TOKEN" \
+     -d '{"name":"John","email":"john@example.com"}' \
+     https://api.example.com/users
+
+<span class="comment"># PUT - Update resource</span>
+curl -X PUT \
+     -H "Content-Type: application/json" \
+     -d '{"name":"John Doe","email":"john.doe@example.com"}' \
+     https://api.example.com/users/123
+
+<span class="comment"># PATCH - Partial update</span>
+curl -X PATCH \
+     -H "Content-Type: application/json" \
+     -d '{"email":"newemail@example.com"}' \
+     https://api.example.com/users/123
+
+<span class="comment"># DELETE - Remove resource</span>
+curl -X DELETE \
+     -H "Authorization: Bearer TOKEN" \
+     https://api.example.com/users/123
+
+<span class="comment"># Error handling and status checking</span>
+HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            https://api.example.com/users)
+if [ $HTTP_CODE -eq 200 ]; then
+    echo "Success"
+    cat response.json | jq '.'
+else
+    echo "Error: HTTP $HTTP_CODE"
+    cat response.json
+fi
+
+<span class="comment"># Test API with different methods</span>
+for METHOD in GET POST PUT DELETE; do
+    echo "Testing $METHOD"
+    curl -X $METHOD -w "\nStatus: %{http_code}\n" \
+         https://api.example.com/resource
+done</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">GraphQL API Testing</h3>
+                <pre><code><span class="comment"># Basic GraphQL query</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"query": "{ users { id name email } }"}' \
+     https://api.example.com/graphql
+
+<span class="comment"># GraphQL query with variables</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": "query GetUser($id: ID!) { user(id: $id) { name email } }",
+       "variables": {"id": "123"}
+     }' \
+     https://api.example.com/graphql
+
+<span class="comment"># GraphQL mutation</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": "mutation CreateUser($name: String!, $email: String!) {
+         createUser(name: $name, email: $email) { id name email }
+       }",
+       "variables": {"name": "John", "email": "john@example.com"}
+     }' \
+     https://api.example.com/graphql
+
+<span class="comment"># GraphQL with authentication</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer TOKEN" \
+     -d '{"query": "{ me { name email } }"}' \
+     https://api.example.com/graphql
+
+<span class="comment"># Pretty-print GraphQL response</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"query": "{ users { id name } }"}' \
+     https://api.example.com/graphql | jq '.data'
+
+<span class="comment"># GraphQL query from file</span>
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d @query.json \
+     https://api.example.com/graphql</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">API Testing Scripts</h3>
+                <pre><code><span class="comment"># Complete API test script</span>
+#!/bin/bash
+API_URL="https://api.example.com"
+TOKEN="your_token_here"
+
+<span class="comment"># Test GET</span>
+echo "Testing GET..."
+curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/users" | jq '.'
+
+<span class="comment"># Test POST</span>
+echo "Testing POST..."
+RESPONSE=$(curl -s -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d '{"name":"Test User","email":"test@example.com"}' \
+     "$API_URL/users")
+USER_ID=$(echo $RESPONSE | jq -r '.id')
+echo "Created user with ID: $USER_ID"
+
+<span class="comment"># Test PUT</span>
+echo "Testing PUT..."
+curl -s -X PUT \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d '{"name":"Updated Name"}' \
+     "$API_URL/users/$USER_ID" | jq '.'
+
+<span class="comment"># Test DELETE</span>
+echo "Testing DELETE..."
+curl -s -X DELETE \
+     -H "Authorization: Bearer $TOKEN" \
+     -w "Status: %{http_code}\n" \
+     "$API_URL/users/$USER_ID"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Rate Limiting &amp; Load Testing</h3>
+                <pre><code><span class="comment"># Simple load test (10 requests)</span>
+for i in {1..10}; do
+    curl -s -w "%{http_code} - %{time_total}s\n" \
+         https://api.example.com/health
+done
+
+<span class="comment"># Parallel load test</span>
+seq 1 100 | xargs -P 10 -I {} curl -s -w "%{http_code}\n" \
+     https://api.example.com/health
+
+<span class="comment"># Test rate limiting</span>
+for i in {1..50}; do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                https://api.example.com/endpoint)
+    echo "Request $i: HTTP $HTTP_CODE"
+    if [ $HTTP_CODE -eq 429 ]; then
+        echo "Rate limit hit at request $i"
+        break
+    fi
+    sleep 0.1
+done
+
+<span class="comment"># Response time testing</span>
+curl -w "
+    time_namelookup:  %{time_namelookup}
+    time_connect:     %{time_connect}
+    time_appconnect:  %{time_appconnect}
+    time_pretransfer: %{time_pretransfer}
+    time_redirect:    %{time_redirect}
+    time_starttransfer: %{time_starttransfer}
+    time_total:       %{time_total}
+\n" -o /dev/null https://api.example.com</code></pre>
+            </div>
+        </section>
+
+        <!-- PRO TIPS -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">10. PRO TIPS</span>
+                <span class="section-nav">Best Practices &amp; Comparisons</span>
+            </div>
+            <p class="section-description">When to use curl vs wget, configuration files, parallel downloads, HTTP/2 support, and debugging.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">curl vs wget: When to Use Each</h3>
+                <div class="comparison">
+                    <div class="comparison-item">
+                        <div class="comparison-header">USE CURL</div>
+                        <ul>
+                            <li>Interacting with REST APIs</li>
+                            <li>Fine control over HTTP headers and methods</li>
+                            <li>Uploading data or files</li>
+                            <li>Testing APIs (POST, PUT, PATCH, DELETE)</li>
+                            <li>Using protocols beyond HTTP (FTP, SMTP, LDAP)</li>
+                            <li>Response piped to stdout for processing</li>
+                            <li>Bearer tokens or OAuth authentication</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-item">
+                        <div class="comparison-header">USE WGET</div>
+                        <ul>
+                            <li>Downloading files or entire websites</li>
+                            <li>Recursive downloads with depth control</li>
+                            <li>Mirroring websites for offline viewing</li>
+                            <li>Resuming interrupted downloads</li>
+                            <li>Background downloads</li>
+                            <li>Simple file downloads without complex auth</li>
+                            <li>Downloading from file lists</li>
+                            <li>Fire-and-forget download tool</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>curl</th>
+                                <th>wget</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Protocols</td>
+                                <td>20+ protocols</td>
+                                <td>HTTP, HTTPS, FTP</td>
+                            </tr>
+                            <tr>
+                                <td>HTTP Methods</td>
+                                <td>All methods</td>
+                                <td>GET, POST</td>
+                            </tr>
+                            <tr>
+                                <td>Default Behavior</td>
+                                <td>Output to stdout</td>
+                                <td>Save to file</td>
+                            </tr>
+                            <tr>
+                                <td>Recursive Download</td>
+                                <td>No</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Resume Downloads</td>
+                                <td>Yes (-C)</td>
+                                <td>Yes (-c)</td>
+                            </tr>
+                            <tr>
+                                <td>Background Downloads</td>
+                                <td>No</td>
+                                <td>Yes (-b)</td>
+                            </tr>
+                            <tr>
+                                <td>Parallel Downloads</td>
+                                <td>Yes (7.66.0+)</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td>API Testing</td>
+                                <td>Excellent</td>
+                                <td>Limited</td>
+                            </tr>
+                            <tr>
+                                <td>Cookie Management</td>
+                                <td>Yes</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td>Authentication</td>
+                                <td>Extensive</td>
+                                <td>Basic</td>
+                            </tr>
+                            <tr>
+                                <td>Customization</td>
+                                <td>Highly customizable</td>
+                                <td>Moderate</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Configuration Files (.curlrc / .wgetrc)</h3>
+                <pre><code><span class="comment"># ~/.curlrc - Default options for all curl requests</span>
+<span class="comment"># Follow redirects by default</span>
+location
+
+<span class="comment"># Show error messages</span>
+show-error
+
+<span class="comment"># Timeout settings</span>
+connect-timeout = 10
+max-time = 300
+
+<span class="comment"># User agent</span>
+user-agent = "Mozilla/5.0 (curl)"
+
+<span class="comment"># Progress bar</span>
+progress-bar
+
+<span class="comment"># Retry settings</span>
+retry = 3
+retry-delay = 2
+
+<span class="comment"># Disable .curlrc for a specific request</span>
+curl -q https://api.example.com
+
+<span class="comment"># Use specific config file</span>
+curl -K custom-config.txt https://api.example.com</code></pre>
+
+                <pre><code><span class="comment"># ~/.wgetrc - Default options for all wget requests</span>
+<span class="comment"># Wait between requests (polite crawling)</span>
+wait = 2
+random_wait = on
+
+<span class="comment"># Retry settings</span>
+tries = 3
+retry_connrefused = on
+waitretry = 10
+
+<span class="comment"># Timeout</span>
+timeout = 60
+dns_timeout = 30
+connect_timeout = 30
+read_timeout = 60
+
+<span class="comment"># User agent</span>
+user_agent = Mozilla/5.0 (wget)
+
+<span class="comment"># Continue downloads</span>
+continue = on
+
+<span class="comment"># No parent directory traversal</span>
+no_parent = on
+
+<span class="comment"># Timestamping</span>
+timestamping = on
+
+<span class="comment"># Disable .wgetrc</span>
+wget --no-config https://example.com/file.zip
+
+<span class="comment"># Use specific config file</span>
+WGETRC=custom-wgetrc wget https://example.com/file.zip</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Parallel Downloads</h3>
+                <pre><code><span class="comment"># curl parallel downloads (7.66.0+)</span>
+curl -Z https://example.com/file1.zip https://example.com/file2.zip
+
+<span class="comment"># Parallel with output files</span>
+curl -Z \
+     https://example.com/file1.zip -o file1.zip \
+     https://example.com/file2.zip -o file2.zip
+
+<span class="comment"># Limit concurrent connections</span>
+curl -Z --parallel-max 5 \
+     https://example.com/file[1-10].zip
+
+<span class="comment"># Parallel download from URL list</span>
+cat urls.txt | xargs -P 5 -n 1 curl -O
+
+<span class="comment"># Parallel with GNU parallel</span>
+parallel -j 10 curl -O ::: $(cat urls.txt)
+
+<span class="comment"># wget parallel (using GNU parallel)</span>
+cat urls.txt | parallel -j 5 wget -q
+
+<span class="comment"># Parallel with custom naming</span>
+cat urls.txt | parallel -j 5 'wget -O output-{#}.zip {}'</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">HTTP/2 &amp; HTTP/3 Support</h3>
+                <pre><code><span class="comment"># Check if curl supports HTTP/2</span>
+curl --version | grep HTTP2
+
+<span class="comment"># Use HTTP/2 (negotiated via ALPN)</span>
+curl --http2 https://api.example.com
+
+<span class="comment"># Force HTTP/2 prior knowledge</span>
+curl --http2-prior-knowledge http://api.example.com
+
+<span class="comment"># HTTP/2 with verbose output</span>
+curl --http2 -v https://api.example.com 2>&1 | grep "ALPN"
+
+<span class="comment"># Check if curl supports HTTP/3</span>
+curl --version | grep HTTP3
+
+<span class="comment"># Use HTTP/3 (QUIC)</span>
+curl --http3 https://cloudflare-quic.com
+
+<span class="comment"># Force HTTP/3</span>
+curl --http3 -v https://example.com
+
+<span class="comment"># Note: HTTP/3 support requires curl built with nghttp3 and ngtcp2</span></code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Advanced Debugging &amp; Troubleshooting</h3>
+                <pre><code><span class="comment"># curl verbose debugging</span>
+curl -v https://api.example.com
+curl -vv https://api.example.com  <span class="comment"># Very verbose</span>
+
+<span class="comment"># Trace all communications</span>
+curl --trace trace.log https://api.example.com
+
+<span class="comment"># Trace ASCII (human-readable)</span>
+curl --trace-ascii trace.log https://api.example.com
+
+<span class="comment"># Show timing breakdown</span>
+curl -w @- https://api.example.com &lt;&lt;'EOF'
+    time_namelookup:  %{time_namelookup}s
+    time_connect:     %{time_connect}s
+    time_appconnect:  %{time_appconnect}s
+    time_pretransfer: %{time_pretransfer}s
+    time_redirect:    %{time_redirect}s
+    time_starttransfer: %{time_starttransfer}s
+    time_total:       %{time_total}s
+EOF
+
+<span class="comment"># Debug DNS resolution</span>
+curl -v https://api.example.com 2>&1 | grep "Trying"
+
+<span class="comment"># Test with specific IP</span>
+curl --resolve api.example.com:443:93.184.216.34 https://api.example.com
+
+<span class="comment"># wget debugging</span>
+wget -d https://api.example.com
+
+<span class="comment"># wget with server response</span>
+wget --server-response https://api.example.com
+
+<span class="comment"># Test SSL/TLS</span>
+curl -v https://api.example.com 2>&1 | grep -E "SSL|TLS"
+
+<span class="comment"># Check certificate details</span>
+curl -vI https://api.example.com 2>&1 | grep -A 10 "Server certificate"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Shell Scripting Best Practices</h3>
+                <pre><code><span class="comment"># Check if curl succeeded</span>
+if curl -f -s https://api.example.com > /dev/null; then
+    echo "API is reachable"
+else
+    echo "API is down"
+fi
+
+<span class="comment"># Store response and status code separately</span>
+HTTP_BODY=$(curl -s https://api.example.com/users)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://api.example.com/users)
+
+if [ $HTTP_CODE -eq 200 ]; then
+    echo "$HTTP_BODY" | jq '.'
+else
+    echo "Error: HTTP $HTTP_CODE"
+fi
+
+<span class="comment"># Better: Get both in one request</span>
+RESPONSE=$(curl -s -w "\n%{http_code}" https://api.example.com/users)
+HTTP_BODY=$(echo "$RESPONSE" | head -n -1)
+HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+
+<span class="comment"># Retry with exponential backoff</span>
+retry_count=0
+max_retries=5
+until curl -f https://api.example.com; do
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -ge $max_retries ]; then
+        echo "Max retries reached"
+        exit 1
+    fi
+    sleep_time=$((2 ** retry_count))
+    echo "Retry $retry_count/$max_retries in ${sleep_time}s..."
+    sleep $sleep_time
+done</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Performance Optimization</h3>
+                <pre><code><span class="comment"># Reuse connections (HTTP keep-alive)</span>
+curl --keepalive-time 60 https://api.example.com
+
+<span class="comment"># Disable DNS cache (for load balancing tests)</span>
+curl --no-keepalive https://api.example.com
+
+<span class="comment"># Use connection pooling</span>
+for i in {1..100}; do
+    curl -s https://api.example.com/endpoint$i &
+done
+wait
+
+<span class="comment"># Compress responses</span>
+curl --compressed https://api.example.com
+
+<span class="comment"># Use CDN edge locations</span>
+curl -H "Accept-Encoding: gzip, deflate, br" https://cdn.example.com/asset.js
+
+<span class="comment"># Parallel downloads with progress</span>
+cat urls.txt | parallel --bar -j 10 curl -O</code></pre>
+            </div>
+
+            <div class="alert alert-tip">
+                <strong>Pro Tip:</strong> Use curl for APIs and scripting, wget for downloading files and mirroring websites. Both tools complement each other perfectly.
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bios-footer">
+            <p>Built with the <a href="../styles/dos-bios.html">DOS/BIOS</a> design system</p>
+            <p>curl &amp; wget - Essential command-line data transfer tools</p>
+        </footer>
+
+        <!-- FUNCTION KEY BAR -->
+        <div class="fkey-bar">
+            <div class="fkey-item"><span class="fkey-key">F1</span> Help</div>
+            <div class="fkey-item"><span class="fkey-key">F2</span> Quick Ref</div>
+            <div class="fkey-item"><span class="fkey-key">F3</span> Examples</div>
+            <div class="fkey-item"><span class="fkey-key">F10</span> Exit</div>
+            <div class="fkey-item"><span class="fkey-key">ESC</span> Index</div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jq // Command-Line JSON Processor - Complete Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700&family=Work+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           KINETIC FLUX DESIGN SYSTEM
+           jq Tech Guide - Data in Motion
+           ============================================ */
+
+        :root {
+            --font-display: "Syne", sans-serif;
+            --font-body: "Work Sans", sans-serif;
+            --font-code: "Fira Code", monospace;
+
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            --radius-sm: 10px;
+            --radius-md: 18px;
+            --radius-lg: 28px;
+            --radius-xl: 40px;
+
+            --ease-fluid: cubic-bezier(0.16, 0.84, 0.44, 1);
+            --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --dur-fast: 180ms;
+            --dur-base: 420ms;
+            --dur-slow: 900ms;
+
+            --ink: #0a0f1f;
+            --ink-soft: #2c3450;
+            --muted: #68708c;
+            --canvas: #f4f6fb;
+            --surface: #ffffff;
+            --surface-alt: #eef1f9;
+            --line: rgba(10, 15, 31, 0.15);
+
+            --accent: #7dff5a;
+            --accent-2: #2bb3ff;
+            --accent-3: #ff8a2b;
+            --accent-4: #ff3b5c;
+
+            --shadow-soft: 0 18px 40px rgba(10, 15, 31, 0.14);
+            --shadow-cut: 0 3px 0 rgba(10, 15, 31, 0.7);
+            --shadow-float: 0 28px 60px rgba(10, 15, 31, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 20px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--ink);
+            background:
+                radial-gradient(900px 600px at -10% 10%, rgba(43, 179, 255, 0.22), transparent 60%),
+                radial-gradient(800px 500px at 110% -10%, rgba(125, 255, 90, 0.16), transparent 60%),
+                radial-gradient(700px 500px at 50% 120%, rgba(255, 138, 43, 0.18), transparent 60%),
+                var(--canvas);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            width: 60vmax;
+            height: 60vmax;
+            border-radius: 50%;
+            z-index: 0;
+            filter: blur(0.5px);
+            opacity: 0.22;
+            pointer-events: none;
+        }
+
+        body::before {
+            top: -25vmax;
+            right: -15vmax;
+            background: radial-gradient(circle, rgba(125, 255, 90, 0.55), transparent 70%);
+            animation: drift 18s ease-in-out infinite alternate;
+        }
+
+        body::after {
+            bottom: -30vmax;
+            left: -15vmax;
+            background: radial-gradient(circle, rgba(43, 179, 255, 0.5), transparent 70%);
+            animation: drift 22s ease-in-out infinite alternate;
+        }
+
+        .flow-lines {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(120deg, rgba(10, 15, 31, 0.05) 0 1px, transparent 1px),
+                linear-gradient(120deg, rgba(10, 15, 31, 0.03) 0 1px, transparent 1px),
+                linear-gradient(30deg, rgba(255, 255, 255, 0.7) 0 2px, transparent 2px);
+            background-size: 120px 120px, 60px 60px, 240px 240px;
+            opacity: 0.45;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 0;
+            animation: pan 22s linear infinite;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-6) var(--space-9);
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.1;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 7vw, 5.2rem);
+        }
+
+        h2 {
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            margin-bottom: var(--space-5);
+        }
+
+        h3 {
+            font-size: 1.65rem;
+            margin-bottom: var(--space-4);
+        }
+
+        h4 {
+            font-size: 1.25rem;
+            margin-bottom: var(--space-3);
+            color: var(--ink-soft);
+        }
+
+        p {
+            color: var(--muted);
+            max-width: 65ch;
+            margin-bottom: var(--space-4);
+        }
+
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-code);
+            font-size: 14px;
+            color: var(--accent-2);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(43, 179, 255, 0.3);
+            margin-bottom: var(--space-6);
+            transition: all var(--dur-fast) var(--ease-fluid);
+            padding: var(--space-2) 0;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            transform: translateX(-4px);
+        }
+
+        .header {
+            position: relative;
+            border-radius: var(--radius-xl);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            padding: var(--space-8) var(--space-7);
+            margin-bottom: var(--space-8);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(120deg, rgba(125, 255, 90, 0.12), transparent 35%),
+                linear-gradient(320deg, rgba(43, 179, 255, 0.12), transparent 45%);
+            pointer-events: none;
+        }
+
+        .header > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            font-size: 0.75rem;
+            color: var(--accent-2);
+            margin-bottom: var(--space-3);
+        }
+
+        .title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            background: linear-gradient(120deg, var(--accent-2), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-3);
+            line-height: 1.05;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--ink-soft);
+            margin-bottom: var(--space-5);
+            font-weight: 400;
+        }
+
+        .lead {
+            font-size: 1.1rem;
+            color: var(--muted);
+            max-width: 70ch;
+        }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-top: var(--space-5);
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ink-soft);
+        }
+
+        .section {
+            position: relative;
+            padding: var(--space-7);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow-soft);
+            margin-bottom: var(--space-8);
+            overflow: hidden;
+            transition: transform var(--dur-base) var(--ease-fluid), box-shadow var(--dur-base) var(--ease-fluid);
+        }
+
+        .section::after {
+            content: "";
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            border: 2px solid rgba(10, 15, 31, 0.08);
+            transform: rotate(12deg);
+        }
+
+        .section > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        code {
+            font-family: var(--font-code);
+            background: var(--surface-alt);
+            padding: 2px 6px;
+            border-radius: 5px;
+            color: var(--accent-2);
+            font-size: 0.9em;
+            border: 1px solid rgba(43, 179, 255, 0.15);
+        }
+
+        pre {
+            font-family: var(--font-code);
+            background: var(--ink);
+            color: var(--accent);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            border: 1px solid rgba(125, 255, 90, 0.2);
+            box-shadow: 0 8px 24px rgba(10, 15, 31, 0.3), inset 0 1px 0 rgba(125, 255, 90, 0.1);
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            border: none;
+            color: inherit;
+        }
+
+        .comment {
+            color: #68708c;
+            opacity: 0.7;
+        }
+
+        .string {
+            color: #7dff5a;
+        }
+
+        .number {
+            color: #ff8a2b;
+        }
+
+        .keyword {
+            color: #2bb3ff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            background: var(--surface-alt);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--line);
+            margin-bottom: var(--space-5);
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--line);
+        }
+
+        th {
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.75rem;
+            background: rgba(43, 179, 255, 0.08);
+            color: var(--ink-soft);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(125, 255, 90, 0.08);
+            transition: background var(--dur-fast) var(--ease-fluid);
+        }
+
+        td code {
+            background: var(--surface);
+        }
+
+        .example-grid {
+            display: grid;
+            gap: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .example {
+            background: var(--surface-alt);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line);
+            padding: var(--space-5);
+            transition: all var(--dur-base) var(--ease-fluid);
+        }
+
+        .example:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .example h4 {
+            color: var(--accent-2);
+            margin-bottom: var(--space-3);
+        }
+
+        .example-desc {
+            color: var(--muted);
+            margin-bottom: var(--space-4);
+            font-size: 0.95rem;
+        }
+
+        .flow-block {
+            background: linear-gradient(135deg, rgba(43, 179, 255, 0.1), rgba(125, 255, 90, 0.1));
+            border: 1px solid rgba(43, 179, 255, 0.2);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .flow-block h4 {
+            color: var(--accent-2);
+        }
+
+        .alert {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line);
+            padding: var(--space-4);
+            background: rgba(43, 179, 255, 0.1);
+            margin-bottom: var(--space-5);
+        }
+
+        .alert.warn {
+            background: rgba(255, 138, 43, 0.18);
+            border-color: rgba(255, 138, 43, 0.3);
+        }
+
+        .alert.good {
+            background: rgba(125, 255, 90, 0.2);
+            border-color: rgba(125, 255, 90, 0.3);
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            color: var(--ink-soft);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .card {
+            background: var(--surface-alt);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line);
+            padding: var(--space-5);
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--dur-base) var(--ease-fluid), box-shadow var(--dur-base) var(--ease-fluid);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+            transform: translateX(-120%);
+            opacity: 0;
+            transition: transform var(--dur-base) var(--ease-fluid), opacity var(--dur-base) var(--ease-fluid);
+        }
+
+        .card:hover {
+            transform: translateY(-6px) rotate(-0.2deg);
+            box-shadow: var(--shadow-float);
+        }
+
+        .card:hover::before {
+            transform: translateX(120%);
+            opacity: 1;
+        }
+
+        .card h3 {
+            margin-bottom: var(--space-3);
+            color: var(--ink-soft);
+        }
+
+        .card h4 {
+            font-size: 1rem;
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--surface-alt);
+            display: inline-block;
+            margin-bottom: var(--space-3);
+        }
+
+        .badge.filter { background: rgba(125, 255, 90, 0.2); }
+        .badge.transform { background: rgba(43, 179, 255, 0.18); }
+        .badge.selector { background: rgba(255, 138, 43, 0.2); }
+        .badge.format { background: rgba(255, 59, 92, 0.15); }
+
+        ul, ol {
+            margin-left: var(--space-6);
+            margin-bottom: var(--space-5);
+            color: var(--muted);
+        }
+
+        li {
+            margin-bottom: var(--space-2);
+        }
+
+        li code {
+            font-size: 0.85em;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+            padding: var(--space-7) 0;
+            margin-top: var(--space-9);
+            border-top: 1px dashed var(--line);
+        }
+
+        .footer a {
+            color: var(--accent-2);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(43, 179, 255, 0.3);
+            transition: all var(--dur-fast) var(--ease-fluid);
+        }
+
+        .footer a:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        @keyframes drift {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(40px, -30px, 0) scale(1.05); }
+        }
+
+        @keyframes pan {
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 240px 240px, 120px 120px, -240px 240px; }
+        }
+
+        @media (max-width: 900px) {
+            .section {
+                padding: var(--space-6);
+            }
+
+            .header {
+                padding: var(--space-6);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .page {
+                padding: var(--space-7) var(--space-4) var(--space-8);
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="flow-lines"></div>
+
+    <div class="page">
+        <a href="index.html" class="back-link">← Tech Guides</a>
+
+        <header class="header">
+            <div class="eyebrow">Command-Line Toolkit</div>
+            <h1 class="title">jq</h1>
+            <p class="subtitle">Lightweight command-line JSON processor</p>
+            <p class="lead">Like sed/awk for JSON data. Slice, filter, map, and transform structured data with zero runtime dependencies. Powerful filters meet Unix philosophy.</p>
+            <div class="meta-row">
+                <span class="chip">JSON Processing</span>
+                <span class="chip">Stream Filtering</span>
+                <span class="chip">Data Transformation</span>
+                <span class="chip">Zero Dependencies</span>
+            </div>
+        </header>
+
+        <section class="section">
+            <h2>Quick Reference</h2>
+            <p>Essential jq filters at a glance — the building blocks for JSON data transformation.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <span class="badge filter">Core Filters</span>
+                    <h4>Identity & Access</h4>
+                    <pre><code><span class="comment"># Pretty-print</span>
+jq <span class="string">'.'</span>
+
+<span class="comment"># Object field access</span>
+jq <span class="string">'.foo'</span>
+jq <span class="string">'.foo.bar'</span>
+
+<span class="comment"># Array access</span>
+jq <span class="string">'.[0]'</span>
+jq <span class="string">'.[-1]'</span>     <span class="comment"># last</span>
+jq <span class="string">'.[2:4]'</span>    <span class="comment"># slice</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <span class="badge selector">Iteration</span>
+                    <h4>Pipe & Iterate</h4>
+                    <pre><code><span class="comment"># Pipe filters</span>
+jq <span class="string">'.foo | .bar'</span>
+
+<span class="comment"># Multiple outputs</span>
+jq <span class="string">'.foo, .bar'</span>
+
+<span class="comment"># Array iteration</span>
+jq <span class="string">'.[]'</span>
+jq <span class="string">'.[] | .name'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <span class="badge transform">Array Operations</span>
+                    <h4>Map & Select</h4>
+                    <pre><code><span class="comment"># Transform array</span>
+jq <span class="string">'map(.name)'</span>
+
+<span class="comment"># Filter by condition</span>
+jq <span class="string">'map(select(.age > 21))'</span>
+
+<span class="comment"># Sort and group</span>
+jq <span class="string">'sort_by(.age)'</span>
+jq <span class="string">'group_by(.dept)'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <span class="badge format">Conditionals</span>
+                    <h4>Logic & Defaults</h4>
+                    <pre><code><span class="comment"># If-then-else</span>
+jq <span class="string">'if .status == "ok"
+  then .data
+  else empty end'</span>
+
+<span class="comment"># Default value</span>
+jq <span class="string">'.result // "not found"'</span></code></pre>
+                </div>
+            </div>
+
+            <div class="flow-block">
+                <h4>Object Construction</h4>
+                <pre><code><span class="comment"># Build new object from fields</span>
+jq <span class="string">'{name: .user, id: .uid}'</span>
+
+<span class="comment"># Shorthand when key matches field</span>
+jq <span class="string">'{name, age}'</span></code></pre>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Basic Filters</h2>
+            <p>Core filters for navigating and accessing JSON data structures.</p>
+
+            <div class="example-grid">
+                <div class="example">
+                    <h4>Identity: <code>.</code></h4>
+                    <p class="example-desc">The simplest filter — passes input unchanged. Essential for pretty-printing.</p>
+                    <pre><code>echo <span class="string">'{"name":"Alice","age":30}'</span> | jq <span class="string">'.'</span>
+<span class="comment"># {
+#   "name": "Alice",
+#   "age": 30
+# }</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Object Field Access: <code>.foo</code></h4>
+                    <p class="example-desc">Access object fields using dot notation.</p>
+                    <pre><code>echo <span class="string">'{"name":"Alice","age":30}'</span> | jq <span class="string">'.name'</span>
+<span class="comment"># "Alice"</span>
+
+echo <span class="string">'{"user":{"name":"Bob","id":123}}'</span> | jq <span class="string">'.user.name'</span>
+<span class="comment"># "Bob"</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Array Index: <code>.[n]</code></h4>
+                    <p class="example-desc">Access array elements by index (0-based, negative for reverse).</p>
+                    <pre><code>echo <span class="string">'[10,20,30,40,50]'</span> | jq <span class="string">'.[2]'</span>
+<span class="comment"># 30</span>
+
+echo <span class="string">'[10,20,30,40,50]'</span> | jq <span class="string">'.[-1]'</span>
+<span class="comment"># 50 (last element)</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Array Slice: <code>.[start:end]</code></h4>
+                    <p class="example-desc">Extract array subsets (end index is exclusive).</p>
+                    <pre><code>echo <span class="string">'[0,1,2,3,4,5]'</span> | jq <span class="string">'.[2:4]'</span>
+<span class="comment"># [2,3]</span>
+
+echo <span class="string">'[0,1,2,3,4,5]'</span> | jq <span class="string">'.[:3]'</span>
+<span class="comment"># [0,1,2]</span>
+
+echo <span class="string">'[0,1,2,3,4,5]'</span> | jq <span class="string">'.[3:]'</span>
+<span class="comment"># [3,4,5]</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Iterator: <code>.[]</code></h4>
+                    <p class="example-desc">Iterate over array elements or object values.</p>
+                    <pre><code>echo <span class="string">'[1,2,3]'</span> | jq <span class="string">'.[]'</span>
+<span class="comment"># 1
+# 2
+# 3</span>
+
+echo <span class="string">'{"a":1,"b":2}'</span> | jq <span class="string">'.[]'</span>
+<span class="comment"># 1
+# 2</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Optional Access: <code>.foo?</code></h4>
+                    <p class="example-desc">Access fields without errors if missing — returns null instead.</p>
+                    <pre><code>echo <span class="string">'{"name":"Alice"}'</span> | jq <span class="string">'.age?'</span>
+<span class="comment"># null</span>
+
+echo <span class="string">'[1,2,3]'</span> | jq <span class="string">'.[10]?'</span>
+<span class="comment"># null</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Types & Values</h2>
+            <p>Understanding and working with JSON data types in jq.</p>
+
+            <div class="alert good">
+                <div class="alert-title">JSON Types in jq</div>
+                <p>jq supports all JSON types: <code>null</code>, <code>boolean</code>, <code>number</code>, <code>string</code>, <code>array</code>, <code>object</code></p>
+            </div>
+
+            <h3>Type Function</h3>
+            <p>The <code>type</code> function returns the type of a value as a string.</p>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h4>Basic Types</h4>
+                    <pre><code>echo <span class="string">'null'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "null"</span>
+
+echo <span class="string">'42'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "number"</span>
+
+echo <span class="string">'"hello"'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "string"</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Collections</h4>
+                    <pre><code>echo <span class="string">'[1,2,3]'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "array"</span>
+
+echo <span class="string">'{"a":1}'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "object"</span>
+
+echo <span class="string">'true'</span> | jq <span class="string">'type'</span>
+<span class="comment"># "boolean"</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Type Checking</h4>
+                    <pre><code><span class="comment"># Select by type</span>
+jq <span class="string">'select(type == "array")'</span>
+
+<span class="comment"># Type-specific filters</span>
+jq <span class="string">'.[] | arrays'</span>
+jq <span class="string">'.[] | objects'</span>
+jq <span class="string">'.[] | numbers'</span></code></pre>
+                </div>
+            </div>
+
+            <h3>Null Handling</h3>
+            <div class="example">
+                <h4>Working with Null Values</h4>
+                <pre><code><span class="comment"># Check for null</span>
+echo <span class="string">'null'</span> | jq <span class="string">'. == null'</span>
+<span class="comment"># true</span>
+
+<span class="comment"># Filter out nulls</span>
+echo <span class="string">'[1, null, 2, null]'</span> | jq <span class="string">'[.[] | select(. != null)]'</span>
+<span class="comment"># [1,2]</span>
+
+<span class="comment"># Provide default for null</span>
+echo <span class="string">'{"name": null}'</span> | jq <span class="string">'.name // "unknown"'</span>
+<span class="comment"># "unknown"</span></code></pre>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Object Construction</h2>
+            <p>Build new objects from existing data — reshape, extract, and transform.</p>
+
+            <div class="example-grid">
+                <div class="example">
+                    <h4>Basic Object Construction</h4>
+                    <p class="example-desc">Create new objects from existing fields.</p>
+                    <pre><code>echo <span class="string">'{"first":"Alice","last":"Smith","age":30}'</span> | \
+  jq <span class="string">'{name: .first, age: .age}'</span>
+<span class="comment"># {
+#   "name": "Alice",
+#   "age": 30
+# }</span>
+
+<span class="comment"># Shorthand when key matches field</span>
+echo <span class="string">'{"name":"Bob","age":25}'</span> | jq <span class="string">'{name, age}'</span>
+<span class="comment"># {
+#   "name": "Bob",
+#   "age": 25
+# }</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Computed Keys</h4>
+                    <p class="example-desc">Use parentheses for dynamic key names.</p>
+                    <pre><code>echo <span class="string">'{"key":"username","value":"alice"}'</span> | \
+  jq <span class="string">'{(.key): .value}'</span>
+<span class="comment"># {
+#   "username": "alice"
+# }</span>
+
+<span class="comment"># Multiple computed keys</span>
+echo <span class="string">'{"k1":"name","v1":"Alice","k2":"age","v2":30}'</span> | \
+  jq <span class="string">'{(.k1): .v1, (.k2): .v2}'</span>
+<span class="comment"># {
+#   "name": "Alice",
+#   "age": 30
+# }</span></code></pre>
+                </div>
+            </div>
+
+            <h3>Format Strings (String Interpolation)</h3>
+            <p>Built-in formatters for encoding and transforming strings.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Format</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>@text</code></td>
+                        <td>Plain text (default)</td>
+                        <td><code>jq -r '.name | @text'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@json</code></td>
+                        <td>JSON encode</td>
+                        <td><code>jq '@json'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@html</code></td>
+                        <td>HTML escape</td>
+                        <td><code>jq '@html'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@uri</code></td>
+                        <td>URL encode</td>
+                        <td><code>jq '@uri'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@base64</code></td>
+                        <td>Base64 encode</td>
+                        <td><code>jq '@base64'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@base64d</code></td>
+                        <td>Base64 decode</td>
+                        <td><code>jq '@base64d'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@sh</code></td>
+                        <td>Shell escape</td>
+                        <td><code>jq '@sh'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@csv</code></td>
+                        <td>CSV format</td>
+                        <td><code>jq '@csv'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>@tsv</code></td>
+                        <td>TSV format</td>
+                        <td><code>jq '@tsv'</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example">
+                <h4>CSV/TSV Conversion</h4>
+                <pre><code><span class="comment"># Array of objects to CSV</span>
+echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'</span> | \
+  jq -r <span class="string">'.[] | [.name, .age] | @csv'</span>
+<span class="comment"># "Alice",30
+# "Bob",25</span>
+
+<span class="comment"># Add header row</span>
+echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'</span> | \
+  jq -r <span class="string">'["name","age"], (.[] | [.name, .age]) | @csv'</span>
+<span class="comment"># "name","age"
+# "Alice",30
+# "Bob",25</span></code></pre>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Array Operations</h2>
+            <p>Powerful array manipulation — map, filter, sort, group, and aggregate.</p>
+
+            <h3>map() — Transform Arrays</h3>
+            <div class="example">
+                <h4>Apply Filter to Each Element</h4>
+                <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | jq <span class="string">'map(. * 2)'</span>
+<span class="comment"># [2,4,6,8,10]</span>
+
+echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'</span> | \
+  jq <span class="string">'map(.name)'</span>
+<span class="comment"># ["Alice","Bob"]</span>
+
+<span class="comment"># Nested map</span>
+echo <span class="string">'[[1,2],[3,4]]'</span> | jq <span class="string">'map(map(. * 2))'</span>
+<span class="comment"># [[2,4],[6,8]]</span></code></pre>
+            </div>
+
+            <h3>select() — Filter by Condition</h3>
+            <div class="example">
+                <h4>Filter Array Elements</h4>
+                <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | jq <span class="string">'[.[] | select(. > 3)]'</span>
+<span class="comment"># [4,5]</span>
+
+echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'</span> | \
+  jq <span class="string">'[.[] | select(.age >= 30)]'</span>
+<span class="comment"># [{"name":"Alice","age":30}]</span>
+
+<span class="comment"># Multiple conditions</span>
+echo <span class="string">'[1,2,3,4,5,6]'</span> | jq <span class="string">'[.[] | select(. > 2 and . < 5)]'</span>
+<span class="comment"># [3,4]</span></code></pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>flatten — Flatten Arrays</h4>
+                    <pre><code>echo <span class="string">'[[1,2],[3,[4,5]]]'</span> | \
+  jq <span class="string">'flatten'</span>
+<span class="comment"># [1,2,3,4,5]</span>
+
+<span class="comment"># Flatten to depth</span>
+echo <span class="string">'[[1,[2,[3]]]]'</span> | \
+  jq <span class="string">'flatten(1)'</span>
+<span class="comment"># [1,2,[3]]</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>reverse — Reverse Order</h4>
+                    <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | \
+  jq <span class="string">'reverse'</span>
+<span class="comment"># [5,4,3,2,1]</span></code></pre>
+                </div>
+            </div>
+
+            <h3>group_by() — Group Elements</h3>
+            <div class="example">
+                <h4>Group by Expression</h4>
+                <pre><code>echo <span class="string">'[{"name":"Alice","dept":"eng"},{"name":"Bob","dept":"sales"},{"name":"Carol","dept":"eng"}]'</span> | \
+  jq <span class="string">'group_by(.dept)'</span>
+<span class="comment"># [
+#   [{"name":"Alice","dept":"eng"},{"name":"Carol","dept":"eng"}],
+#   [{"name":"Bob","dept":"sales"}]
+# ]</span>
+
+<span class="comment"># Group and transform</span>
+echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":30},{"name":"Carol","age":25}]'</span> | \
+  jq <span class="string">'group_by(.age) | map({age: .[0].age, people: map(.name)})'</span>
+<span class="comment"># [
+#   {"age":25,"people":["Carol"]},
+#   {"age":30,"people":["Alice","Bob"]}
+# ]</span></code></pre>
+            </div>
+
+            <h3>sort_by() — Sort Arrays</h3>
+            <div class="example">
+                <h4>Sort by Expression</h4>
+                <pre><code>echo <span class="string">'[{"name":"Carol","age":25},{"name":"Alice","age":30},{"name":"Bob","age":20}]'</span> | \
+  jq <span class="string">'sort_by(.age)'</span>
+<span class="comment"># [
+#   {"name":"Bob","age":20},
+#   {"name":"Carol","age":25},
+#   {"name":"Alice","age":30}
+# ]</span>
+
+<span class="comment"># Reverse sort</span>
+echo <span class="string">'[3,1,4,1,5]'</span> | jq <span class="string">'sort | reverse'</span>
+<span class="comment"># [5,4,3,1,1]</span>
+
+<span class="comment"># Sort by multiple fields</span>
+echo <span class="string">'[{"a":2,"b":1},{"a":1,"b":2},{"a":1,"b":1}]'</span> | \
+  jq <span class="string">'sort_by(.a, .b)'</span></code></pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>unique — Remove Duplicates</h4>
+                    <pre><code>echo <span class="string">'[1,2,2,3,3,3,4]'</span> | \
+  jq <span class="string">'unique'</span>
+<span class="comment"># [1,2,3,4]</span>
+
+<span class="comment"># Unique by field</span>
+jq <span class="string">'unique_by(.name)'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>min / max — Find Extremes</h4>
+                    <pre><code>echo <span class="string">'[3,1,4,1,5,9,2,6]'</span> | \
+  jq <span class="string">'min'</span>
+<span class="comment"># 1</span>
+
+echo <span class="string">'[3,1,4,1,5,9,2,6]'</span> | \
+  jq <span class="string">'max'</span>
+<span class="comment"># 9</span>
+
+jq <span class="string">'min_by(.age)'</span>
+jq <span class="string">'max_by(.age)'</span></code></pre>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>add — Sum Elements</h4>
+                    <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | \
+  jq <span class="string">'add'</span>
+<span class="comment"># 15</span>
+
+echo <span class="string">'["hello"," ","world"]'</span> | \
+  jq <span class="string">'add'</span>
+<span class="comment"># "hello world"</span>
+
+<span class="comment"># Default for empty</span>
+echo <span class="string">'[]'</span> | jq <span class="string">'add // 0'</span>
+<span class="comment"># 0</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>length — Get Size</h4>
+                    <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | \
+  jq <span class="string">'length'</span>
+<span class="comment"># 5</span>
+
+echo <span class="string">'{"a":1,"b":2,"c":3}'</span> | \
+  jq <span class="string">'length'</span>
+<span class="comment"># 3</span>
+
+echo <span class="string">'"hello"'</span> | jq <span class="string">'length'</span>
+<span class="comment"># 5</span></code></pre>
+                </div>
+            </div>
+
+            <h3>contains / inside — Check Containment</h3>
+            <div class="example">
+                <pre><code>echo <span class="string">'["a","b","c"]'</span> | jq <span class="string">'contains(["b"])'</span>
+<span class="comment"># true</span>
+
+echo <span class="string">'{"a":1,"b":2}'</span> | jq <span class="string">'contains({"a":1})'</span>
+<span class="comment"># true</span>
+
+echo <span class="string">'["b"]'</span> | jq <span class="string">'inside(["a","b","c"])'</span>
+<span class="comment"># true</span></code></pre>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>String Operations</h2>
+            <p>Powerful string manipulation — split, join, match, replace, and format.</p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>split() / join()</h4>
+                    <pre><code>echo <span class="string">'"a,b,c,d"'</span> | \
+  jq <span class="string">'split(",")'</span>
+<span class="comment"># ["a","b","c","d"]</span>
+
+echo <span class="string">'["a","b","c"]'</span> | \
+  jq <span class="string">'join(",")'</span>
+<span class="comment"># "a,b,c"</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>test() — Regex Test</h4>
+                    <pre><code>echo <span class="string">'"hello123"'</span> | \
+  jq <span class="string">'test("[0-9]+")'</span>
+<span class="comment"># true</span>
+
+echo <span class="string">'"hello"'</span> | \
+  jq <span class="string">'test("^[a-z]+$")'</span>
+<span class="comment"># true</span>
+
+<span class="comment"># Case-insensitive</span>
+jq <span class="string">'test("hello"; "i")'</span></code></pre>
+                </div>
+            </div>
+
+            <h3>match() — Regex Matching</h3>
+            <div class="example">
+                <h4>Match Regex and Extract Details</h4>
+                <pre><code>echo <span class="string">'"The price is $42.50"'</span> | jq <span class="string">'match("\\$([0-9.]+)")'</span>
+<span class="comment"># {
+#   "offset": 13,
+#   "length": 6,
+#   "string": "$42.50",
+#   "captures": [
+#     {
+#       "offset": 14,
+#       "length": 5,
+#       "string": "42.50",
+#       "name": null
+#     }
+#   ]
+# }</span>
+
+<span class="comment"># Global match</span>
+echo <span class="string">'"abc123def456"'</span> | jq <span class="string">'[match("[0-9]+"; "g")]'</span>
+<span class="comment"># [
+#   {"offset":3,"length":3,"string":"123","captures":[]},
+#   {"offset":9,"length":3,"string":"456","captures":[]}
+# ]</span></code></pre>
+            </div>
+
+            <h3>capture() — Named Groups</h3>
+            <div class="example">
+                <h4>Extract Named Groups from Regex</h4>
+                <pre><code>echo <span class="string">'"User: alice, ID: 123"'</span> | \
+  jq <span class="string">'capture("User: (?<name>\\w+), ID: (?<id>\\d+)")'</span>
+<span class="comment"># {
+#   "name": "alice",
+#   "id": "123"
+# }</span>
+
+<span class="comment"># Use captured values</span>
+echo <span class="string">'"price: $42.50"'</span> | \
+  jq <span class="string">'capture("\\$(?<price>[0-9.]+)") | .price | tonumber'</span>
+<span class="comment"># 42.5</span></code></pre>
+            </div>
+
+            <h3>sub() / gsub() — String Replacement</h3>
+            <div class="example">
+                <h4>Substitute Strings</h4>
+                <pre><code><span class="comment"># Replace first occurrence</span>
+echo <span class="string">'"hello world"'</span> | jq <span class="string">'sub("l"; "L")'</span>
+<span class="comment"># "heLlo world"</span>
+
+<span class="comment"># Replace all occurrences</span>
+echo <span class="string">'"hello world"'</span> | jq <span class="string">'gsub("l"; "L")'</span>
+<span class="comment"># "heLLo worLd"</span>
+
+<span class="comment"># Regex replacement</span>
+echo <span class="string">'"price: $42.50"'</span> | jq <span class="string">'gsub("\\$[0-9.]+"; "REDACTED")'</span>
+<span class="comment"># "price: REDACTED"</span>
+
+<span class="comment"># Backreferences</span>
+echo <span class="string">'"2024-01-15"'</span> | \
+  jq <span class="string">'gsub("(?<y>[0-9]{4})-(?<m>[0-9]{2})-(?<d>[0-9]{2})"; "\\(.d)/\\(.m)/\\(.y)")'</span>
+<span class="comment"># "15/01/2024"</span></code></pre>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h4>ltrimstr / rtrimstr</h4>
+                    <pre><code><span class="comment"># Remove prefix</span>
+jq <span class="string">'ltrimstr("https://")'</span>
+
+<span class="comment"># Remove suffix</span>
+jq <span class="string">'rtrimstr(".txt")'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Case Conversion</h4>
+                    <pre><code>jq <span class="string">'ascii_downcase'</span>
+<span class="comment"># "hello world"</span>
+
+jq <span class="string">'ascii_upcase'</span>
+<span class="comment"># "HELLO WORLD"</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>startswith / endswith</h4>
+                    <pre><code>jq <span class="string">'startswith("hello")'</span>
+<span class="comment"># true</span>
+
+jq <span class="string">'endswith(".pdf")'</span>
+<span class="comment"># true</span></code></pre>
+                </div>
+            </div>
+
+            <h3>String Interpolation</h3>
+            <div class="example">
+                <h4>Use <code>\(expr)</code> Inside Strings</h4>
+                <pre><code>echo <span class="string">'{"name":"Alice","age":30}'</span> | \
+  jq <span class="string">'"Hello, \(.name)! You are \(.age) years old."'</span>
+<span class="comment"># "Hello, Alice! You are 30 years old."</span>
+
+<span class="comment"># With expressions</span>
+echo <span class="string">'{"price":42.5}'</span> | \
+  jq <span class="string">'"Total: $\(.price * 1.1 | floor)"'</span>
+<span class="comment"># "Total: $46"</span></code></pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>tonumber / tostring</h4>
+                    <pre><code>echo <span class="string">'"42"'</span> | jq <span class="string">'tonumber'</span>
+<span class="comment"># 42</span>
+
+echo <span class="string">'42'</span> | jq <span class="string">'tostring'</span>
+<span class="comment"># "42"</span>
+
+jq <span class="string">'tonumber | . * 2'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>indices() — Find All</h4>
+                    <pre><code>echo <span class="string">'["a","b","c","b","d"]'</span> | \
+  jq <span class="string">'indices("b")'</span>
+<span class="comment"># [1,3]</span>
+
+echo <span class="string">'[1,2,3,2,1]'</span> | \
+  jq <span class="string">'indices(2)'</span>
+<span class="comment"># [1,3]</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Conditionals & Comparisons</h2>
+            <p>Logic, conditionals, and control flow for dynamic transformations.</p>
+
+            <h3>if-then-else</h3>
+            <div class="example">
+                <h4>Basic Conditional Logic</h4>
+                <pre><code>echo <span class="string">'{"age":25}'</span> | \
+  jq <span class="string">'if .age >= 18 then "adult" else "minor" end'</span>
+<span class="comment"># "adult"</span>
+
+<span class="comment"># Multiple conditions with elif</span>
+echo <span class="string">'42'</span> | \
+  jq <span class="string">'if . < 33 then "small" elif . < 66 then "medium" else "large" end'</span>
+<span class="comment"># "medium"</span>
+
+<span class="comment"># Nested conditionals</span>
+echo <span class="string">'{"status":"success","data":123}'</span> | \
+  jq <span class="string">'if .status == "success" then
+    (if .data then .data else 0 end)
+  else null end'</span>
+<span class="comment"># 123</span></code></pre>
+            </div>
+
+            <h3>Alternative Operator: <code>//</code></h3>
+            <div class="example">
+                <h4>Provide Default Value for Null/False</h4>
+                <pre><code>echo <span class="string">'{"name":"Alice"}'</span> | jq <span class="string">'.age // 0'</span>
+<span class="comment"># 0</span>
+
+echo <span class="string">'null'</span> | jq <span class="string">'. // "default"'</span>
+<span class="comment"># "default"</span>
+
+echo <span class="string">'false'</span> | jq <span class="string">'. // "default"'</span>
+<span class="comment"># "default"</span>
+
+echo <span class="string">'[]'</span> | jq <span class="string">'add // 0'</span>
+<span class="comment"># 0</span>
+
+<span class="comment"># Chain alternatives</span>
+echo <span class="string">'{}'</span> | jq <span class="string">'.a // .b // .c // "none"'</span>
+<span class="comment"># "none"</span></code></pre>
+            </div>
+
+            <h3>try-catch</h3>
+            <div class="example">
+                <h4>Error Handling</h4>
+                <pre><code><span class="comment"># Handle errors gracefully</span>
+echo <span class="string">'{"name":"Alice"}'</span> | jq <span class="string">'try .age catch "not found"'</span>
+<span class="comment"># "not found"</span>
+
+<span class="comment"># Suppress errors with ?</span>
+echo <span class="string">'{"name":"Alice"}'</span> | jq <span class="string">'.age?'</span>
+<span class="comment"># null</span>
+
+echo <span class="string">'"not-a-number"'</span> | jq <span class="string">'try tonumber catch 0'</span>
+<span class="comment"># 0</span></code></pre>
+            </div>
+
+            <h3>Comparison Operators</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Operator</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>==</code></td>
+                        <td>Equal to</td>
+                        <td><code>.a == .b</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>!=</code></td>
+                        <td>Not equal to</td>
+                        <td><code>.a != .b</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&gt;</code></td>
+                        <td>Greater than</td>
+                        <td><code>.x &gt; 5</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&gt;=</code></td>
+                        <td>Greater than or equal</td>
+                        <td><code>.x &gt;= 10</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;</code></td>
+                        <td>Less than</td>
+                        <td><code>.x &lt; 20</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;=</code></td>
+                        <td>Less than or equal</td>
+                        <td><code>.x &lt;= 10</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Logical Operators</h3>
+            <div class="example">
+                <pre><code><span class="comment"># and</span>
+echo <span class="string">'{"x":10,"y":20}'</span> | jq <span class="string">'.x > 5 and .y < 30'</span>
+<span class="comment"># true</span>
+
+<span class="comment"># or</span>
+echo <span class="string">'{"status":"error"}'</span> | jq <span class="string">'.status == "error" or .status == "warning"'</span>
+<span class="comment"># true</span>
+
+<span class="comment"># not</span>
+echo <span class="string">'{"active":true}'</span> | jq <span class="string">'.active | not'</span>
+<span class="comment"># false</span>
+
+<span class="comment"># Complex logic</span>
+echo <span class="string">'{"age":25,"verified":true}'</span> | jq <span class="string">'.age >= 18 and .verified'</span>
+<span class="comment"># true</span></code></pre>
+            </div>
+
+            <div class="alert warn">
+                <div class="alert-title">Truthiness in jq</div>
+                <p>Only <code>false</code> and <code>null</code> are falsy — everything else is truthy. This means <code>0</code>, <code>""</code>, and <code>[]</code> are all truthy values.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Advanced Filters</h2>
+            <p>Power tools for complex transformations — reduce, recurse, walk, and more.</p>
+
+            <h3>reduce — Iteration with Accumulator</h3>
+            <div class="example-grid">
+                <div class="example">
+                    <h4>Sum Array</h4>
+                    <pre><code>echo <span class="string">'[1,2,3,4,5]'</span> | \
+  jq <span class="string">'reduce .[] as $item (0; . + $item)'</span>
+<span class="comment"># 15</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Build Object from Array</h4>
+                    <pre><code>echo <span class="string">'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'</span> | \
+  jq <span class="string">'reduce .[] as $item ({}; .[$item.name] = $item.age)'</span>
+<span class="comment"># {
+#   "Alice": 30,
+#   "Bob": 25
+# }</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Count Occurrences</h4>
+                    <pre><code>echo <span class="string">'["a","b","a","c","b","a"]'</span> | \
+  jq <span class="string">'reduce .[] as $item ({}; .[$item] = (.[$item] // 0) + 1)'</span>
+<span class="comment"># {
+#   "a": 3,
+#   "b": 2,
+#   "c": 1
+# }</span></code></pre>
+                </div>
+            </div>
+
+            <h3>recurse — Recursive Application</h3>
+            <div class="example">
+                <h4>Traverse Nested Structure</h4>
+                <pre><code><span class="comment"># Generate sequence</span>
+echo <span class="string">'1'</span> | jq <span class="string">'[limit(5; recurse(. + 1))]'</span>
+<span class="comment"># [1,2,3,4,5]</span>
+
+<span class="comment"># Traverse nested structure</span>
+echo <span class="string">'{"name":"root","children":[{"name":"a","children":[{"name":"b"}]},{"name":"c"}]}'</span> | \
+  jq <span class="string">'.. | objects | .name'</span>
+<span class="comment"># "root"
+# "a"
+# "b"
+# "c"</span></code></pre>
+            </div>
+
+            <h3>walk() — Recursive Transformation</h3>
+            <div class="example">
+                <h4>Apply Filter to All Values</h4>
+                <pre><code><span class="comment"># Increment all numbers</span>
+echo <span class="string">'{"a":1,"b":{"c":2,"d":3}}'</span> | \
+  jq <span class="string">'walk(if type == "number" then . + 1 else . end)'</span>
+<span class="comment"># {
+#   "a": 2,
+#   "b": {
+#     "c": 3,
+#     "d": 4
+#   }
+# }</span>
+
+<span class="comment"># Remove null values recursively</span>
+echo <span class="string">'{"a":1,"b":null,"c":{"d":2,"e":null}}'</span> | \
+  jq <span class="string">'walk(if type == "object" then with_entries(select(.value != null)) else . end)'</span>
+<span class="comment"># {
+#   "a": 1,
+#   "c": {
+#     "d": 2
+#   }
+# }</span></code></pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>limit() / first() / last()</h4>
+                    <pre><code><span class="comment"># Limit outputs</span>
+jq <span class="string">'[limit(3; .[])]'</span>
+<span class="comment"># [1,2,3]</span>
+
+<span class="comment"># First element</span>
+jq <span class="string">'first'</span>
+<span class="comment"># 1</span>
+
+<span class="comment"># Last element</span>
+jq <span class="string">'last'</span>
+<span class="comment"># 5</span>
+
+<span class="comment"># Nth element</span>
+jq <span class="string">'nth(2)'</span>
+<span class="comment"># 30</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>until() — Repeat</h4>
+                    <pre><code><span class="comment"># Find next power of 2</span>
+echo <span class="string">'50'</span> | \
+  jq <span class="string">'until(. >= 50; . * 2)'</span>
+<span class="comment"># 64</span>
+
+<span class="comment"># Countdown</span>
+echo <span class="string">'5'</span> | \
+  jq <span class="string">'[., until(. <= 0; . - 1)]'</span>
+<span class="comment"># [5,4,3,2,1,0]</span></code></pre>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>env — Environment Variables</h4>
+                    <pre><code><span class="comment"># Get environment variable</span>
+USER=alice jq -n <span class="string">'env.USER'</span>
+<span class="comment"># "alice"</span>
+
+<span class="comment"># Use in filter</span>
+PORT=8080 jq -n <span class="string">'{
+  host: "localhost",
+  port: (env.PORT | tonumber)
+}'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>input / inputs</h4>
+                    <pre><code><span class="comment"># Read next input</span>
+jq -n <span class="string">'input'</span>
+
+<span class="comment"># Read all inputs</span>
+jq -n <span class="string">'[inputs]'</span>
+
+<span class="comment"># Combine inputs</span>
+jq -s <span class="string">'add'</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Combining Filters</h2>
+            <p>Master filter composition — pipe, comma, and control flow operators.</p>
+
+            <h3>Pipe: <code>|</code></h3>
+            <div class="example">
+                <h4>Feed Output to Next Filter</h4>
+                <pre><code>echo <span class="string">'{"user":{"name":"Alice","age":30}}'</span> | jq <span class="string">'.user | .name'</span>
+<span class="comment"># "Alice"</span>
+
+<span class="comment"># Chain multiple operations</span>
+echo <span class="string">'[3,1,4,1,5,9]'</span> | jq <span class="string">'sort | reverse | .[0:3]'</span>
+<span class="comment"># [9,5,4]</span></code></pre>
+            </div>
+
+            <h3>Comma: <code>,</code></h3>
+            <div class="example">
+                <h4>Produce Multiple Outputs</h4>
+                <pre><code>echo <span class="string">'{"name":"Alice","age":30}'</span> | jq <span class="string">'.name, .age'</span>
+<span class="comment"># "Alice"
+# 30</span>
+
+<span class="comment"># Collect with array</span>
+echo <span class="string">'{"name":"Alice","age":30}'</span> | jq <span class="string">'[.name, .age]'</span>
+<span class="comment"># ["Alice",30]</span>
+
+<span class="comment"># Multiple transformations</span>
+echo <span class="string">'{"x":10}'</span> | jq <span class="string">'.x, .x * 2, .x * 3'</span>
+<span class="comment"># 10
+# 20
+# 30</span></code></pre>
+            </div>
+
+            <h3>Parentheses — Grouping</h3>
+            <div class="example">
+                <pre><code>echo <span class="string">'[1,2,3]'</span> | jq <span class="string">'(.[] | . * 2)'</span>
+<span class="comment"># 2
+# 4
+# 6</span>
+
+<span class="comment"># Vs without parentheses</span>
+echo <span class="string">'[1,2,3]'</span> | jq <span class="string">'[.[] | . * 2]'</span>
+<span class="comment"># [2,4,6]</span></code></pre>
+            </div>
+
+            <div class="alert">
+                <div class="alert-title">Semicolon in Function Parameters</div>
+                <p>The semicolon <code>;</code> is used to separate function parameters, not for sequencing operations.</p>
+                <pre><code><span class="comment"># limit(n; expr)</span>
+jq <span class="string">'[limit(5; range(10))]'</span>
+
+<span class="comment"># until(condition; update)</span>
+jq <span class="string">'until(. > 100; . * 2)'</span></code></pre>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Practical Patterns</h2>
+            <p>Real-world use cases and common workflows for JSON data processing.</p>
+
+            <h3>API Response Parsing</h3>
+            <div class="example">
+                <h4>Extract & Transform API Data</h4>
+                <pre><code><span class="comment"># Extract specific fields from GitHub API</span>
+curl -s https://api.github.com/repos/jqlang/jq | \
+  jq <span class="string">'{name, stars: .stargazers_count, issues: .open_issues_count}'</span>
+
+<span class="comment"># Get list of user repos</span>
+curl -s https://api.github.com/users/octocat/repos | \
+  jq <span class="string">'[.[] | {name, url: .html_url, stars: .stargazers_count}]'</span>
+
+<span class="comment"># Filter and sort</span>
+curl -s https://api.github.com/users/octocat/repos | \
+  jq <span class="string">'[.[] | select(.stargazers_count > 10)] | sort_by(-.stargazers_count) | .[0:5]'</span></code></pre>
+            </div>
+
+            <h3>Log File Analysis</h3>
+            <div class="example-grid">
+                <div class="example">
+                    <h4>Parse JSON Logs</h4>
+                    <pre><code><span class="comment"># Filter errors</span>
+cat app.log | \
+  jq <span class="string">'select(.level == "error")'</span>
+
+<span class="comment"># Count by type</span>
+cat app.log | \
+  jq -s <span class="string">'group_by(.error_type) |
+  map({
+    type: .[0].error_type,
+    count: length
+  })'</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Extract Time Range</h4>
+                    <pre><code>cat app.log | \
+  jq <span class="string">'select(
+    .timestamp >= "2024-01-01"
+    and
+    .timestamp < "2024-02-01"
+  )'</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Aggregate Statistics</h4>
+                    <pre><code>cat metrics.log | jq -s <span class="string">'{
+  total: length,
+  avg_duration: (
+    map(.duration) | add / length
+  ),
+  max_duration: (
+    map(.duration) | max
+  ),
+  min_duration: (
+    map(.duration) | min
+  )
+}'</span></code></pre>
+                </div>
+            </div>
+
+            <h3>Config File Transformation</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Update Config</h4>
+                    <pre><code><span class="comment"># Update config value</span>
+jq <span class="string">'.database.port = 5432'</span> \
+  config.json > config.new.json
+
+<span class="comment"># Merge configs</span>
+jq -s <span class="string">'.[0] * .[1]'</span> \
+  config1.json config2.json \
+  > merged.json</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Extract & Clean</h4>
+                    <pre><code><span class="comment"># Remove sensitive data</span>
+jq <span class="string">'del(.secrets, .api_keys)'</span> \
+  config.json
+
+<span class="comment"># Extract environment</span>
+jq <span class="string">'.environments.production'</span> \
+  config.json</code></pre>
+                </div>
+            </div>
+
+            <h3>Data Reshaping</h3>
+            <div class="example-grid">
+                <div class="example">
+                    <h4>Pivot: Array to Object</h4>
+                    <pre><code>echo <span class="string">'[{"id":"a","value":1},{"id":"b","value":2}]'</span> | \
+  jq <span class="string">'map({(.id): .value}) | add'</span>
+<span class="comment"># {"a":1,"b":2}</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Unpivot: Object to Array</h4>
+                    <pre><code>echo <span class="string">'{"a":1,"b":2,"c":3}'</span> | \
+  jq <span class="string">'to_entries | map({key, value})'</span>
+<span class="comment"># [
+#   {"key":"a","value":1},
+#   {"key":"b","value":2},
+#   {"key":"c","value":3}
+# ]</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Flatten Nested Structure</h4>
+                    <pre><code>echo <span class="string">'{"users":[{"name":"Alice","addresses":[{"city":"NYC"},{"city":"LA"}]}]}'</span> | \
+  jq <span class="string">'[.users[] | {name, city: .addresses[].city}]'</span>
+<span class="comment"># [
+#   {"name":"Alice","city":"NYC"},
+#   {"name":"Alice","city":"LA"}
+# ]</span></code></pre>
+                </div>
+
+                <div class="example">
+                    <h4>Group & Aggregate</h4>
+                    <pre><code>echo <span class="string">'[{"dept":"eng","salary":100},{"dept":"sales","salary":80},{"dept":"eng","salary":120}]'</span> | \
+  jq <span class="string">'group_by(.dept) |
+  map({
+    dept: .[0].dept,
+    total: (map(.salary) | add),
+    count: length
+  })'</span>
+<span class="comment"># [
+#   {"dept":"eng","total":220,"count":2},
+#   {"dept":"sales","total":80,"count":1}
+# ]</span></code></pre>
+                </div>
+            </div>
+
+            <h3>Validation & Filtering</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Validate Required Fields</h4>
+                    <pre><code>jq <span class="string">'select(.name and .email and .age)'</span> \
+  users.json
+
+<span class="comment"># Remove invalid entries</span>
+jq <span class="string">'[.[] | select(.age >= 0 and .age <= 150)]'</span> \
+  users.json</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Check Data Quality</h4>
+                    <pre><code><span class="comment"># Validate email format</span>
+jq <span class="string">'[.[] | select(.email | test("@.*\\..*"))]'</span> \
+  users.json
+
+<span class="comment"># Find inconsistencies</span>
+jq <span class="string">'[.[] | select(.created_at > .updated_at)]'</span> \
+  records.json</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Pro Tips</h2>
+            <p>Expert workflows, performance optimization, and advanced techniques.</p>
+
+            <h3>jq with curl</h3>
+            <div class="example">
+                <pre><code><span class="comment"># Pretty-print API response</span>
+curl -s https://api.github.com/users/octocat | jq <span class="string">'.'</span>
+
+<span class="comment"># Extract single field</span>
+curl -s https://api.github.com/users/octocat | jq -r <span class="string">'.name'</span>
+
+<span class="comment"># Store token, use in request</span>
+TOKEN=$(jq -r <span class="string">'.token'</span> auth.json)
+curl -H "Authorization: Bearer $TOKEN" https://api.example.com/data | jq <span class="string">'.'</span>
+
+<span class="comment"># Pipe to other commands</span>
+curl -s https://api.github.com/users/octocat/repos | \
+  jq -r <span class="string">'.[].clone_url'</span> | xargs -I {} git clone {}</code></pre>
+            </div>
+
+            <h3>jq in Shell Scripts</h3>
+            <div class="example">
+                <pre><code><span class="comment">#!/bin/bash</span>
+<span class="comment"># Read config</span>
+DB_HOST=$(jq -r <span class="string">'.database.host'</span> config.json)
+DB_PORT=$(jq -r <span class="string">'.database.port'</span> config.json)
+
+<span class="comment"># Process array</span>
+jq -c <span class="string">'.[]'</span> data.json | while read -r item; do
+  name=$(echo "$item" | jq -r <span class="string">'.name'</span>)
+  echo "Processing: $name"
+done
+
+<span class="comment"># Build JSON</span>
+output=$(jq -n \
+  --arg host "$HOSTNAME" \
+  --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  <span class="string">'{hostname: $host, timestamp: $time, status: "ok"}'</span>)
+
+<span class="comment"># Validate JSON</span>
+if jq empty file.json 2>/dev/null; then
+  echo "Valid JSON"
+else
+  echo "Invalid JSON"
+fi</code></pre>
+            </div>
+
+            <h3>Command-Line Options</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>-r</code></td>
+                        <td>Raw output (no JSON quotes)</td>
+                        <td><code>jq -r '.name'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>-c</code></td>
+                        <td>Compact output (no pretty-print)</td>
+                        <td><code>jq -c '.'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>-s</code></td>
+                        <td>Slurp (read entire input into array)</td>
+                        <td><code>jq -s 'add'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>-n</code></td>
+                        <td>Null input (don't read input)</td>
+                        <td><code>jq -n '{hello: "world"}'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>-e</code></td>
+                        <td>Exit status based on output</td>
+                        <td><code>jq -e '.error'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>-f</code></td>
+                        <td>Read filter from file</td>
+                        <td><code>jq -f filter.jq data.json</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>--arg</code></td>
+                        <td>Pass string variable</td>
+                        <td><code>jq --arg name "Alice" '{name: $name}'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>--argjson</code></td>
+                        <td>Pass JSON variable</td>
+                        <td><code>jq --argjson age 30 '{age: $age}'</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>--slurpfile</code></td>
+                        <td>Read JSON file into variable</td>
+                        <td><code>jq --slurpfile cfg config.json</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>--stream</code></td>
+                        <td>Parse in streaming mode (large files)</td>
+                        <td><code>jq --stream '.' large.json</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Performance Tips</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Optimize Processing</h4>
+                    <pre><code><span class="comment"># Use --stream for large files</span>
+jq --stream <span class="string">'select(.[0][0] == "target")'</span> \
+  huge.json
+
+<span class="comment"># Use limit() to stop early</span>
+jq <span class="string">'limit(10; .[] | select(.age > 30))'</span> \
+  users.json
+
+<span class="comment"># Single pass vs multiple</span>
+<span class="comment"># BAD: Multiple passes</span>
+jq <span class="string">'.[] | select(.age > 30)'</span> | \
+  jq <span class="string">'map(.name)'</span>
+
+<span class="comment"># GOOD: Single pass</span>
+jq <span class="string">'[.[] | select(.age > 30) | .name]'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>Efficient Output</h4>
+                    <pre><code><span class="comment"># Compact output (faster, less bandwidth)</span>
+jq -c <span class="string">'.'</span> data.json
+
+<span class="comment"># Read multiple files efficiently</span>
+jq -s <span class="string">'add'</span> \
+  file1.json \
+  file2.json \
+  file3.json
+
+<span class="comment"># Use --tab for TSV</span>
+jq -r <span class="string">'.[] | [.name, .age] | @tsv'</span> \
+  users.json</code></pre>
+                </div>
+            </div>
+
+            <h3>Debugging Techniques</h3>
+            <div class="example">
+                <pre><code><span class="comment"># Print intermediate values with debug</span>
+echo <span class="string">'{"a":1,"b":2}'</span> | jq <span class="string">'.a | debug | . * 2'</span>
+<span class="comment"># ["DEBUG:",1]
+# 2</span>
+
+<span class="comment"># Use stderr for logging</span>
+echo <span class="string">'{"a":1}'</span> | jq <span class="string">'.a | debug("value is:") | . * 2'</span>
+
+<span class="comment"># Check types</span>
+echo <span class="string">'{"data":"123"}'</span> | jq <span class="string">'.data | type, tonumber | type'</span>
+<span class="comment"># "string"
+# "number"</span>
+
+<span class="comment"># Use $__loc__ for location info</span>
+echo <span class="string">'{"a":{"b":1}}'</span> | jq <span class="string">'.a.b | $__loc__'</span></code></pre>
+            </div>
+
+            <h3>Common Gotchas</h3>
+            <div class="alert warn">
+                <div class="alert-title">Watch Out For These Common Mistakes</div>
+                <ul>
+                    <li><strong>Strings vs raw strings:</strong> <code>jq '.name'</code> outputs <code>"Alice"</code> (JSON string), use <code>-r</code> for raw output</li>
+                    <li><strong>Empty vs null:</strong> Only <code>false</code> and <code>null</code> are falsy — <code>""</code>, <code>0</code>, and <code>[]</code> are truthy</li>
+                    <li><strong>Array wrapping:</strong> <code>.[]</code> produces multiple outputs, use <code>[.[]]</code> to wrap in array</li>
+                    <li><strong>Computed keys:</strong> Use <code>{(.key): "value"}</code> not <code>{.key: "value"}</code></li>
+                    <li><strong>Regex escaping:</strong> Must escape backslashes: <code>test("\\d+")</code></li>
+                    <li><strong>Integer division:</strong> <code>5 / 2</code> returns <code>2.5</code>, use <code>floor</code> for integers</li>
+                    <li><strong>Null propagation:</strong> Use <code>.a?.b?.c?</code> to safely traverse nullable paths</li>
+                </ul>
+            </div>
+
+            <h3>Alternative Tools</h3>
+            <div class="grid-3">
+                <div class="card">
+                    <h4>yq</h4>
+                    <span class="badge">YAML Processor</span>
+                    <p>jq for YAML — same syntax, different format.</p>
+                    <pre><code>yq eval <span class="string">'.servers[0].host'</span> \
+  config.yaml
+
+<span class="comment"># Convert YAML to JSON</span>
+yq eval -o=json <span class="string">'.'</span> \
+  config.yaml | jq <span class="string">'.'</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>gojq</h4>
+                    <span class="badge">Go Implementation</span>
+                    <p>Pure Go jq — faster startup, library usage.</p>
+                    <pre><code>gojq <span class="string">'.'</span> data.json
+
+<span class="comment"># Same syntax as jq
+# Can be used as library</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>jaq</h4>
+                    <span class="badge">Rust Clone</span>
+                    <p>Rust-based jq — significantly faster for large files.</p>
+                    <pre><code>jaq <span class="string">'.'</span> data.json
+
+<span class="comment"># Compatible with most jq
+# Faster for large datasets</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>fx</h4>
+                    <span class="badge">Terminal Viewer</span>
+                    <p>Interactive JSON viewer with autocomplete.</p>
+                    <pre><code>fx data.json
+
+<span class="comment"># Interactive browsing
+# JavaScript-based filtering</span></code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>jless</h4>
+                    <span class="badge">Interactive Viewer</span>
+                    <p>Vim-like JSON viewer with tree expansion.</p>
+                    <pre><code>jless data.json
+
+<span class="comment"># Vim keybindings
+# Expandable tree view</span></code></pre>
+                </div>
+            </div>
+
+            <h3>Online Playground</h3>
+            <div class="alert good">
+                <div class="alert-title">Test jq Filters Online</div>
+                <p>Use <strong><a href="https://jqplay.org" target="_blank">jqplay.org</a></strong> — the official interactive playground for testing jq filters with real-time results, shareable URLs, and syntax highlighting.</p>
+                <p style="margin-top: var(--space-3);">Alternative: <a href="https://www.devtoolsdaily.com/jq_playground/" target="_blank">DevToolsDaily jq Playground</a></p>
+            </div>
+
+            <h3>Installation</h3>
+            <div class="grid-2">
+                <div class="card">
+                    <h4>Package Managers</h4>
+                    <pre><code><span class="comment"># macOS</span>
+brew install jq
+
+<span class="comment"># Ubuntu/Debian</span>
+sudo apt-get install jq
+
+<span class="comment"># Fedora</span>
+sudo dnf install jq
+
+<span class="comment"># Windows (Chocolatey)</span>
+choco install jq</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4>From Source</h4>
+                    <pre><code>git clone \
+  https://github.com/jqlang/jq.git
+cd jq
+autoreconf -fi
+./configure
+make
+sudo make install</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>Built with the <a href="../styles/kinetic-flux.html">Kinetic Flux</a> design system</p>
+            <p style="margin-top: var(--space-3); font-size: 0.85rem;">jq 1.7-1.8 reference • Last updated February 2026</p>
+        </footer>
+    </div>
+</body>
+</html>
