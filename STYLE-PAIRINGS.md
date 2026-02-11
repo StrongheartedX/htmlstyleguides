@@ -2,7 +2,7 @@
 
 Master mapping of all 103 style guides and their usage across tech guides and stories.
 
-**Used:** 48 styles · **Available:** 55 styles
+**Used:** 49 styles · **Available:** 54 styles
 
 | Style | Tech Guide | Story |
 |-------|-----------|-------|
@@ -86,7 +86,7 @@ Master mapping of all 103 style guides and their usage across tech guides and st
 | retro-terminal | tmux | The Machine |
 | risograph | | The Zine |
 | rococo | | |
-| rts-hud | | |
+| rts-hud | Terminal Emulators | |
 | scandi-cozy | | |
 | sketch | | The First Line |
 | solarpunk | Ansible | |
