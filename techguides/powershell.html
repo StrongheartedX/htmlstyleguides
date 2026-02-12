@@ -1,0 +1,3274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerShell — Tech Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           POWERSHELL TECH GUIDE — WINDOWS 3.1 DESIGN SYSTEM
+           Early-90s Windows aesthetic: beveled panels, teal desktop,
+           16-color VGA palette, VT323 pixel font
+        ================================================================ */
+
+        /* --- CSS VARIABLES / DESIGN TOKENS ----------------------------- */
+        :root {
+            /* CLASSIC WINDOWS 3.1 16-COLOR VGA PALETTE */
+            --win-black: #000000;
+            --win-dark-blue: #000080;
+            --win-dark-green: #008000;
+            --win-dark-cyan: #008080;
+            --win-dark-red: #800000;
+            --win-dark-magenta: #800080;
+            --win-brown: #808000;
+            --win-light-gray: #C0C0C0;
+            --win-dark-gray: #808080;
+            --win-blue: #0000FF;
+            --win-green: #00FF00;
+            --win-cyan: #00FFFF;
+            --win-red: #FF0000;
+            --win-magenta: #FF00FF;
+            --win-yellow: #FFFF00;
+            --win-white: #FFFFFF;
+
+            /* SEMANTIC COLORS */
+            --bg-desktop: #008080;
+            --bg-window: var(--win-light-gray);
+            --bg-titlebar: var(--win-dark-blue);
+            --text-primary: var(--win-black);
+            --text-titlebar: var(--win-white);
+            --text-disabled: var(--win-dark-gray);
+
+            /* 3D BEVEL COLORS */
+            --bevel-light: var(--win-white);
+            --bevel-medium: var(--win-light-gray);
+            --bevel-dark: var(--win-dark-gray);
+            --bevel-shadow: var(--win-black);
+
+            /* TYPOGRAPHY */
+            --font-system: 'VT323', 'MS Sans Serif', Tahoma, sans-serif;
+
+            /* BORDERS */
+            --border-width: 2px;
+        }
+
+        /* --- BASE RESET & GLOBAL STYLES -------------------------------- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-padding-top: 60px;
+        }
+
+        body {
+            font-family: var(--font-system);
+            font-size: 1.125rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background: var(--bg-desktop);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* --- BACK LINK ------------------------------------------------- */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 12px;
+            font-family: var(--font-system);
+            font-size: 1rem;
+            color: var(--win-dark-blue);
+            text-decoration: none;
+            background: var(--bg-window);
+            padding: 2px 8px;
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+        }
+
+        .back-link:hover {
+            background: var(--win-white);
+        }
+
+        /* --- WINDOW FRAME ---------------------------------------------- */
+        .window {
+            background: var(--bg-window);
+            border: var(--border-width) solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            box-shadow:
+                inset 1px 1px 0 var(--bevel-light),
+                inset -1px -1px 0 var(--bevel-dark),
+                4px 4px 0 rgba(0, 0, 0, 0.3);
+            margin-bottom: 24px;
+        }
+
+        .window-titlebar {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+            padding: 2px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .window-title {
+            flex: 1;
+            padding-left: 4px;
+            font-size: 1rem;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .window-btn {
+            width: 18px;
+            height: 18px;
+            background: var(--bg-window);
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .window-btn:active {
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+        }
+
+        .window-btn-minimize::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            height: 2px;
+            background: var(--win-black);
+        }
+
+        .window-btn-maximize::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            right: 1px;
+            bottom: 1px;
+            border: 2px solid var(--win-black);
+            border-top-width: 3px;
+        }
+
+        .window-content {
+            padding: 16px;
+        }
+
+        /* --- HEADER WINDOW --------------------------------------------- */
+        .header-window {
+            margin-bottom: 0;
+        }
+
+        .header-menubar {
+            background: var(--bg-window);
+            padding: 2px 4px;
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--bevel-dark);
+        }
+
+        .header-menu-item {
+            padding: 2px 8px;
+            font-family: var(--font-system);
+            font-size: 1rem;
+            color: var(--text-primary);
+            cursor: default;
+            user-select: none;
+        }
+
+        .menu-underline {
+            text-decoration: underline;
+        }
+
+        .header-menu-item:hover {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        .header-body {
+            padding: 24px 16px;
+            text-align: center;
+        }
+
+        .header-body h1 {
+            font-family: var(--font-system);
+            font-size: 3rem;
+            color: var(--win-dark-blue);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .header-tagline {
+            font-size: 1.125rem;
+            color: var(--text-primary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header-statusbar {
+            background: var(--bg-window);
+            border-top: 2px solid;
+            border-color: var(--bevel-dark);
+            padding: 2px 4px;
+            display: flex;
+            gap: 0;
+            font-size: 0.875rem;
+        }
+
+        .status-cell {
+            padding: 1px 8px;
+            border: 1px solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+        }
+
+        .status-cell:first-child {
+            flex: 1;
+        }
+
+        /* --- JUMP NAV (TOOLBAR) ---------------------------------------- */
+        .jump-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-window);
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            padding: 4px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .jump-nav a {
+            display: inline-block;
+            padding: 3px 10px;
+            font-family: var(--font-system);
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            background: var(--bg-window);
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .jump-nav a:hover {
+            background: var(--win-white);
+        }
+
+        .jump-nav a:active {
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+        }
+
+        /* --- SECTION TITLE STYLING ------------------------------------- */
+        .section-intro {
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .section-intro p {
+            margin-bottom: 12px;
+        }
+
+        /* --- SUBSECTION HEADINGS --------------------------------------- */
+        h3 {
+            font-family: var(--font-system);
+            font-size: 1.25rem;
+            color: var(--win-dark-blue);
+            margin-bottom: 8px;
+            margin-top: 16px;
+        }
+
+        h4 {
+            font-family: var(--font-system);
+            font-size: 1.125rem;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            margin-top: 12px;
+        }
+
+        p {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        /* --- CODE BLOCKS ----------------------------------------------- */
+        pre {
+            background: var(--win-white);
+            border: 2px solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            box-shadow: inset 1px 1px 0 var(--bevel-dark);
+            padding: 12px;
+            overflow-x: auto;
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin: 8px 0 12px 0;
+        }
+
+        pre code {
+            font-family: inherit;
+            font-size: inherit;
+            background: none;
+            padding: 0;
+            border: none;
+        }
+
+        code {
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            background: var(--win-white);
+            padding: 1px 4px;
+            border: 1px solid var(--bevel-dark);
+        }
+
+        /* Syntax highlighting helpers */
+        .c-comment { color: var(--win-dark-green); }
+        .c-keyword { color: var(--win-dark-blue); font-weight: bold; }
+        .c-string { color: var(--win-dark-red); }
+        .c-variable { color: var(--win-dark-cyan); }
+        .c-cmdlet { color: var(--win-dark-magenta); }
+        .c-param { color: var(--win-dark-gray); }
+        .c-number { color: var(--win-brown); }
+        .c-operator { color: var(--win-dark-red); }
+
+        /* --- DATA TABLES ----------------------------------------------- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 12px 0;
+            font-family: var(--font-system);
+        }
+
+        .data-table th {
+            background: var(--bg-window);
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            padding: 4px 8px;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .data-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--bg-window);
+            background: var(--win-white);
+            font-size: 0.95rem;
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-titlebar);
+            color: var(--text-titlebar);
+        }
+
+        .data-table code {
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+
+        .data-table tr:hover code {
+            color: inherit;
+        }
+
+        /* --- ALERTS / DIALOG BOXES ------------------------------------- */
+        .alert {
+            background: var(--bg-window);
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            padding: 12px;
+            margin: 12px 0;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .alert-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content p {
+            margin: 0;
+        }
+
+        .alert-info .alert-icon { color: var(--win-dark-blue); }
+        .alert-warning .alert-icon { color: var(--win-brown); }
+        .alert-tip .alert-icon { color: var(--win-dark-green); }
+
+        /* --- COMMAND GRID ---------------------------------------------- */
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .command-card {
+            background: var(--win-white);
+            border: 2px solid;
+            border-color: var(--bevel-shadow) var(--bevel-light) var(--bevel-light) var(--bevel-shadow);
+            padding: 8px;
+        }
+
+        .command-card-title {
+            font-weight: bold;
+            color: var(--win-dark-blue);
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .command-card-alias {
+            font-size: 0.85rem;
+            color: var(--win-dark-gray);
+            margin-bottom: 4px;
+        }
+
+        .command-card-desc {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        /* --- GROUPBOX -------------------------------------------------- */
+        .groupbox {
+            border: 1px solid var(--bevel-dark);
+            margin: 12px 0;
+            padding: 16px;
+            padding-top: 24px;
+            position: relative;
+        }
+
+        .groupbox-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--bg-window);
+            padding: 0 4px;
+            font-weight: bold;
+            color: var(--win-dark-blue);
+            font-size: 1.05rem;
+        }
+
+        /* --- BADGES ---------------------------------------------------- */
+        .badge {
+            display: inline-block;
+            padding: 1px 6px;
+            font-size: 0.8rem;
+            font-family: var(--font-system);
+            border: 1px solid var(--bevel-dark);
+        }
+
+        .badge-ps5 {
+            background: var(--win-dark-cyan);
+            color: var(--win-white);
+        }
+
+        .badge-ps7 {
+            background: var(--win-dark-blue);
+            color: var(--win-white);
+        }
+
+        .badge-both {
+            background: var(--win-dark-green);
+            color: var(--win-white);
+        }
+
+        .badge-yes {
+            background: var(--win-dark-green);
+            color: var(--win-white);
+        }
+
+        .badge-no {
+            background: var(--win-dark-red);
+            color: var(--win-white);
+        }
+
+        /* --- CATEGORY LABEL -------------------------------------------- */
+        .category-label {
+            display: block;
+            font-weight: bold;
+            font-size: 1.05rem;
+            color: var(--win-dark-blue);
+            margin-bottom: 8px;
+            margin-top: 16px;
+            padding: 2px 6px;
+            background: var(--bg-window);
+            border-bottom: 2px solid var(--bevel-dark);
+        }
+
+        .category-label:first-child {
+            margin-top: 0;
+        }
+
+        /* --- SEPARATOR ------------------------------------------------- */
+        hr {
+            border: none;
+            border-top: 1px solid var(--bevel-dark);
+            border-bottom: 1px solid var(--bevel-light);
+            margin: 16px 0;
+        }
+
+        /* --- FOOTER ---------------------------------------------------- */
+        .site-footer {
+            text-align: center;
+            padding: 16px;
+            margin-top: 24px;
+        }
+
+        .site-footer a {
+            color: var(--win-white);
+            font-family: var(--font-system);
+            text-decoration: none;
+            background: var(--bg-window);
+            padding: 4px 12px;
+            border: 2px solid;
+            border-color: var(--bevel-light) var(--bevel-shadow) var(--bevel-shadow) var(--bevel-light);
+            color: var(--text-primary);
+        }
+
+        .site-footer a:hover {
+            background: var(--win-white);
+        }
+
+        /* --- FOOTER / STATUSBAR ---------------------------------------- */
+        .window-titlebar-inactive {
+            background: var(--win-dark-gray);
+        }
+
+        .window-statusbar {
+            display: flex;
+            gap: 0;
+            border-top: 2px solid;
+            border-color: var(--bevel-dark);
+            background: var(--bg-window);
+        }
+
+        .statusbar-section {
+            flex: 1;
+            padding: 4px 8px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            border-right: 2px solid;
+            border-right-color: var(--bevel-dark);
+            text-align: center;
+        }
+
+        .statusbar-section:last-child {
+            border-right: none;
+        }
+
+        /* --- RESPONSIVE ------------------------------------------------ */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            .jump-nav {
+                gap: 2px;
+                flex-wrap: nowrap;
+            }
+
+            .jump-nav a {
+                font-size: 0.75rem;
+                padding: 2px 6px;
+            }
+
+            .command-grid {
+                grid-template-columns: 1fr;
+            }
+
+            pre {
+                font-size: 0.85rem;
+            }
+
+            .header-body h1 {
+                font-size: 2rem;
+            }
+
+            .header-statusbar {
+                flex-wrap: wrap;
+            }
+
+            .data-table {
+                font-size: 0.85rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 3px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Back Link -->
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- ============================================================
+             HEADER WINDOW
+        ============================================================= -->
+        <div class="window header-window">
+            <div class="window-titlebar">
+                <span class="window-title">PowerShell — Quick Reference Guide</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="header-menubar">
+                <span class="header-menu-item"><span class="menu-underline">F</span>ile</span>
+                <span class="header-menu-item"><span class="menu-underline">E</span>dit</span>
+                <span class="header-menu-item"><span class="menu-underline">V</span>iew</span>
+                <span class="header-menu-item"><span class="menu-underline">H</span>elp</span>
+            </div>
+            <div class="header-body">
+                <h1>PowerShell</h1>
+                <p class="header-tagline">The object-oriented shell &mdash; from Windows PowerShell 5.1 to cross-platform pwsh 7+</p>
+            </div>
+            <div class="header-statusbar">
+                <span class="status-cell">Ready</span>
+                <span class="status-cell">v7.5</span>
+                <span class="status-cell">Cross-Platform</span>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             JUMP NAV (TOOLBAR)
+        ============================================================= -->
+        <nav class="jump-nav">
+            <a href="#cheatsheet">01 Cheat Sheet</a>
+            <a href="#ps5vs7">02 PS5 vs 7</a>
+            <a href="#core-concepts">03 Core Concepts</a>
+            <a href="#variables-types">04 Variables</a>
+            <a href="#control-flow">05 Control Flow</a>
+            <a href="#functions">06 Functions</a>
+            <a href="#objects-pipeline">07 Objects</a>
+            <a href="#filesystem-io">08 File I/O</a>
+            <a href="#error-handling">09 Errors</a>
+            <a href="#modules">10 Modules</a>
+            <a href="#remoting">11 Remoting</a>
+            <a href="#tips-tricks">12 Tips</a>
+        </nav>
+
+        <!-- ============================================================
+             SECTION 01 — CHEAT SHEET
+        ============================================================= -->
+        <div class="window" id="cheatsheet">
+            <div class="window-titlebar">
+                <span class="window-title">01. Cheat Sheet</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>The most essential PowerShell cmdlets at a glance. Each card shows the canonical cmdlet name, common aliases, and a one-line description. Pin this section and reach for it daily.</p>
+                </div>
+
+                <!-- Getting Help -->
+                <span class="category-label">Getting Help</span>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Help &lt;cmd&gt; -Examples</div>
+                        <div class="command-card-alias">Alias: help, man</div>
+                        <div class="command-card-desc">Show usage examples for any cmdlet. Add <code>-Online</code> to open docs in browser.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Command -Verb Get</div>
+                        <div class="command-card-alias">Alias: gcm</div>
+                        <div class="command-card-desc">Find cmdlets by verb, noun, or wildcard pattern. Try <code>gcm *-Service</code>.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Member</div>
+                        <div class="command-card-alias">Alias: gm</div>
+                        <div class="command-card-desc">Inspect the properties and methods of any object. Pipe anything into it.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Update-Help</div>
+                        <div class="command-card-alias">No alias</div>
+                        <div class="command-card-desc">Download the latest help files from Microsoft. Run as admin once after installing.</div>
+                    </div>
+                </div>
+
+                <!-- Navigation & Files -->
+                <span class="category-label">Navigation &amp; Files</span>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Get-ChildItem</div>
+                        <div class="command-card-alias">Alias: ls, dir, gci</div>
+                        <div class="command-card-desc">List files and directories. Use <code>-Recurse</code> and <code>-Filter *.log</code>.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Set-Location</div>
+                        <div class="command-card-alias">Alias: cd, sl</div>
+                        <div class="command-card-desc">Change the current working directory. Works with PSDrives too (e.g., <code>cd HKLM:</code>).</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Content</div>
+                        <div class="command-card-alias">Alias: cat, gc, type</div>
+                        <div class="command-card-desc">Read a file. Use <code>-Tail 20</code> for last N lines or <code>-Wait</code> to follow.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Set-Content</div>
+                        <div class="command-card-alias">Alias: sc</div>
+                        <div class="command-card-desc">Write text to a file (overwrites). See also <code>Add-Content</code> to append.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Test-Path</div>
+                        <div class="command-card-alias">No alias</div>
+                        <div class="command-card-desc">Returns <code>$true</code> or <code>$false</code> if a path exists. Works for files, dirs, and registry keys.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">New-Item</div>
+                        <div class="command-card-alias">Alias: ni</div>
+                        <div class="command-card-desc">Create a file or directory. Use <code>-ItemType Directory</code> for folders.</div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Essentials -->
+                <span class="category-label">Pipeline Essentials</span>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Where-Object { }</div>
+                        <div class="command-card-alias">Alias: where, ?</div>
+                        <div class="command-card-desc">Filter objects by condition. <code>$_</code> is the current object in the pipeline.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Select-Object</div>
+                        <div class="command-card-alias">Alias: select</div>
+                        <div class="command-card-desc">Pick specific properties or first/last N items with <code>-First</code> / <code>-Last</code>.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">ForEach-Object { }</div>
+                        <div class="command-card-alias">Alias: foreach, %</div>
+                        <div class="command-card-desc">Process each pipeline item. In PS7+, add <code>-Parallel</code> for concurrent execution.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Sort-Object</div>
+                        <div class="command-card-alias">Alias: sort</div>
+                        <div class="command-card-desc">Sort by one or more properties. Add <code>-Descending</code> to reverse.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Measure-Object</div>
+                        <div class="command-card-alias">Alias: measure</div>
+                        <div class="command-card-desc">Calculate count, sum, average, min, max. Use <code>-Property Length</code> for file sizes.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Group-Object</div>
+                        <div class="command-card-alias">Alias: group</div>
+                        <div class="command-card-desc">Group results by a property. Great for quick frequency counts.</div>
+                    </div>
+                </div>
+
+                <!-- System & Process -->
+                <span class="category-label">System &amp; Process</span>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Process</div>
+                        <div class="command-card-alias">Alias: ps, gps</div>
+                        <div class="command-card-desc">List running processes. Filter by name: <code>Get-Process chrome</code>.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Stop-Process</div>
+                        <div class="command-card-alias">Alias: kill, spps</div>
+                        <div class="command-card-desc">Terminate a process by name or ID. Add <code>-Force</code> if needed.</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Get-Service</div>
+                        <div class="command-card-alias">Alias: gsv</div>
+                        <div class="command-card-desc">List Windows services and their status (Running, Stopped).</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Invoke-WebRequest</div>
+                        <div class="command-card-alias">Alias: iwr, curl, wget</div>
+                        <div class="command-card-desc">Make HTTP requests. Access <code>.Content</code>, <code>.StatusCode</code>, <code>.Headers</code> on the response.</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-tip">
+                    <span class="alert-icon">&#9998;</span>
+                    <div class="alert-content">
+                        <p><strong>Tip:</strong> You can discover any cmdlet's aliases with <code>Get-Alias -Definition Get-ChildItem</code>. Aliases are handy at the prompt, but always use full cmdlet names in scripts for readability.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 02 — POWERSHELL 5.1 vs 7+
+        ============================================================= -->
+        <div class="window" id="ps5vs7">
+            <div class="window-titlebar">
+                <span class="window-title">02. PowerShell 5.1 vs 7+</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>Many developers don't realize there are two very different versions of PowerShell. <strong>Windows PowerShell 5.1</strong> (<code>powershell.exe</code>) ships built-in with every modern Windows installation but is frozen &mdash; no new features since 2017. <strong>PowerShell 7+</strong> (<code>pwsh.exe</code>) is the actively developed, cross-platform successor built on .NET 8+. It is significantly faster, has modern language features, and runs on Windows, macOS, and Linux.</p>
+                    <p>They install side by side. Installing pwsh does not remove or replace powershell.exe. You can run both at the same time, test scripts in both, and migrate at your own pace.</p>
+                </div>
+
+                <!-- Performance -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Performance</span>
+                    <p>PowerShell 7 is built on .NET 8+ (formerly .NET Core) instead of the legacy .NET Framework 4.x. This gives it substantial performance advantages across the board.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Windows PS 5.1</th>
+                                <th>PowerShell 7+</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Runtime</td>
+                                <td>.NET Framework 4.x</td>
+                                <td>.NET 8+ (AOT-capable)</td>
+                            </tr>
+                            <tr>
+                                <td>Startup time</td>
+                                <td>~600-800ms</td>
+                                <td>~300-400ms</td>
+                            </tr>
+                            <tr>
+                                <td>Cmdlet execution</td>
+                                <td>Baseline</td>
+                                <td>Up to 2x faster (JIT improvements)</td>
+                            </tr>
+                            <tr>
+                                <td>Pipeline throughput</td>
+                                <td>Single-threaded only</td>
+                                <td><code>ForEach-Object -Parallel</code></td>
+                            </tr>
+                            <tr>
+                                <td>JSON handling</td>
+                                <td>JavaScriptSerializer (slow)</td>
+                                <td>System.Text.Json (fast)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Note:</strong> The <code>ForEach-Object -Parallel</code> parameter alone can cut processing time dramatically for I/O-bound tasks like batch API calls or file processing across thousands of files.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Installation -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Installation</span>
+                    <p>PowerShell 7+ installs alongside Windows PowerShell 5.1 &mdash; both can coexist without conflict. The executable is <code>pwsh.exe</code> (not <code>powershell.exe</code>).</p>
+                    <pre><code><span class="c-comment"># Windows (winget — recommended)</span>
+winget install Microsoft.PowerShell
+
+<span class="c-comment"># macOS (Homebrew)</span>
+brew install powershell/tap/powershell
+
+<span class="c-comment"># Ubuntu / Debian</span>
+sudo apt-get update
+sudo apt-get install -y powershell
+
+<span class="c-comment"># Fedora / RHEL</span>
+sudo dnf install powershell
+
+<span class="c-comment"># .NET global tool (any platform with .NET SDK)</span>
+dotnet tool install --global PowerShell
+
+<span class="c-comment"># Verify installation</span>
+pwsh --version</code></pre>
+                    <p>After installation, <code>powershell.exe</code> (5.1) remains untouched. You now have <code>pwsh.exe</code> (or <code>pwsh</code> on Linux/macOS) available as a separate shell.</p>
+                </div>
+
+                <!-- Feature Comparison -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Feature Comparison</span>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Windows PS 5.1</th>
+                                <th>PowerShell 7+</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Executable</td>
+                                <td><code>powershell.exe</code></td>
+                                <td><code>pwsh.exe</code></td>
+                            </tr>
+                            <tr>
+                                <td>.NET Runtime</td>
+                                <td>.NET Framework 4.x</td>
+                                <td>.NET 8+</td>
+                            </tr>
+                            <tr>
+                                <td>Cross-Platform</td>
+                                <td><span class="badge badge-no">Windows only</span></td>
+                                <td><span class="badge badge-yes">Win / Mac / Linux</span></td>
+                            </tr>
+                            <tr>
+                                <td>Ternary operator <code>? :</code></td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td>Null-coalescing <code>??</code></td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td>Null-conditional <code>?.</code></td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td>Pipeline chains <code>&amp;&amp;</code> <code>||</code></td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>ForEach-Object -Parallel</code></td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td>SSH Remoting</td>
+                                <td><span class="badge badge-no">No</span></td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td>ISE Support</td>
+                                <td><span class="badge badge-yes">Yes</span></td>
+                                <td><span class="badge badge-no">No (use VS Code)</span></td>
+                            </tr>
+                            <tr>
+                                <td>COM / WMI Objects</td>
+                                <td>Full support</td>
+                                <td>Limited (Windows only)</td>
+                            </tr>
+                            <tr>
+                                <td>Default Encoding</td>
+                                <td>UTF-16 LE (BOM)</td>
+                                <td>UTF-8 (no BOM)</td>
+                            </tr>
+                            <tr>
+                                <td>JSON Default Depth</td>
+                                <td>2</td>
+                                <td>100</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Profile Locations -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Profile Locations</span>
+                    <p>Each version uses a separate profile directory. Changes to one do not affect the other.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>$PROFILE Path</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PS 5.1</td>
+                                <td><code>Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1</code></td>
+                            </tr>
+                            <tr>
+                                <td>PS 7+</td>
+                                <td><code>Documents\PowerShell\Microsoft.PowerShell_profile.ps1</code></td>
+                            </tr>
+                            <tr>
+                                <td>PS 7+ (Linux/macOS)</td>
+                                <td><code>~/.config/powershell/Microsoft.PowerShell_profile.ps1</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Check your current profile path</span>
+<span class="c-variable">$PROFILE</span>
+
+<span class="c-comment"># See all profile locations</span>
+<span class="c-variable">$PROFILE</span> | <span class="c-cmdlet">Get-Member</span> -MemberType NoteProperty | <span class="c-cmdlet">Select-Object</span> Name, @{
+    N=<span class="c-string">'Path'</span>; E={ <span class="c-variable">$PROFILE</span>.(<span class="c-variable">$_</span>.Name) }
+}
+
+<span class="c-comment"># Create your profile if it doesn't exist</span>
+<span class="c-keyword">if</span> (-not (<span class="c-cmdlet">Test-Path</span> <span class="c-variable">$PROFILE</span>)) {
+    <span class="c-cmdlet">New-Item</span> -Path <span class="c-variable">$PROFILE</span> -ItemType File -Force
+}</code></pre>
+                </div>
+
+                <!-- Migration Tips -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Migration Tips</span>
+                    <p>Moving from 5.1 to 7+ is straightforward, but watch for these common gotchas:</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Area</th>
+                                <th>What Changed</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Encoding</td>
+                                <td>Default changed from UTF-16 LE to UTF-8 (no BOM)</td>
+                                <td>Review scripts that parse or write text files</td>
+                            </tr>
+                            <tr>
+                                <td>JSON depth</td>
+                                <td><code>ConvertTo-Json</code> default depth went from 2 to 100</td>
+                                <td>Remove explicit <code>-Depth</code> params if you set them to work around 5.1</td>
+                            </tr>
+                            <tr>
+                                <td>Legacy modules</td>
+                                <td>Some 5.1-only modules won't load natively</td>
+                                <td>Use <code>Import-Module -UseWindowsPowerShell</code></td>
+                            </tr>
+                            <tr>
+                                <td>COM / WMI</td>
+                                <td>COM objects limited; <code>Get-WmiObject</code> removed</td>
+                                <td>Use <code>Get-CimInstance</code> instead (works in both)</td>
+                            </tr>
+                            <tr>
+                                <td>ISE</td>
+                                <td>Not supported in PS 7+</td>
+                                <td>Install VS Code + PowerShell extension</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Test your scripts in both versions during migration</span>
+powershell.exe -File .\myscript.ps1    <span class="c-comment"># Run in 5.1</span>
+pwsh.exe -File .\myscript.ps1          <span class="c-comment"># Run in 7+</span>
+
+<span class="c-comment"># Load a legacy 5.1-only module from PS 7</span>
+<span class="c-cmdlet">Import-Module</span> ActiveDirectory -UseWindowsPowerShell</code></pre>
+                </div>
+
+                <div class="alert alert-tip">
+                    <span class="alert-icon">&#9998;</span>
+                    <div class="alert-content">
+                        <p><strong>Switch today:</strong> <code>winget install Microsoft.PowerShell</code> &mdash; then set pwsh as your default in Windows Terminal under Settings &gt; Startup. You get modern syntax, parallel pipelines, and cross-platform scripts while powershell.exe stays available for any legacy needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 03 — CORE CONCEPTS
+        ============================================================= -->
+        <div class="window" id="core-concepts">
+            <div class="window-titlebar">
+                <span class="window-title">03. Core Concepts</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell looks like a command-line shell, but underneath it is a full .NET scripting environment. The five concepts in this section are the foundation for everything else. Master them and the rest of PowerShell follows naturally.</p>
+                </div>
+
+                <!-- Everything is an Object -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Everything is an Object</span>
+                    <p>This is the single most important concept in PowerShell. Unlike bash, zsh, or cmd, PowerShell pipelines do <strong>not</strong> pass text &mdash; they pass live .NET objects. When you run <code>Get-Process</code>, each item in the output is a <code>System.Diagnostics.Process</code> object with typed properties (<code>.Name</code>, <code>.Id</code>, <code>.CPU</code>, <code>.WorkingSet64</code>) and methods (<code>.Kill()</code>, <code>.Refresh()</code>).</p>
+                    <p>This means you never need to parse text with grep, awk, or sed. You access structured data directly.</p>
+                    <pre><code><span class="c-comment"># Bash: text parsing required — fragile and error-prone</span>
+ps aux | grep nginx | awk '{print $2}'
+
+<span class="c-comment"># PowerShell: direct property access — always reliable</span>
+<span class="c-cmdlet">Get-Process</span> nginx | <span class="c-cmdlet">Select-Object</span> Id</code></pre>
+                    <pre><code><span class="c-comment"># Explore what an object contains</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Select-Object</span> -First <span class="c-number">1</span> | <span class="c-cmdlet">Get-Member</span>
+
+<span class="c-comment"># Access properties directly</span>
+<span class="c-variable">$proc</span> = <span class="c-cmdlet">Get-Process</span> -Name pwsh
+<span class="c-variable">$proc</span>.Id              <span class="c-comment"># Process ID (Int32)</span>
+<span class="c-variable">$proc</span>.CPU             <span class="c-comment"># CPU time (Double)</span>
+<span class="c-variable">$proc</span>.WorkingSet64    <span class="c-comment"># Memory in bytes (Int64)</span>
+<span class="c-variable">$proc</span>.StartTime       <span class="c-comment"># DateTime object</span>
+
+<span class="c-comment"># Call methods on objects</span>
+<span class="c-variable">$date</span> = <span class="c-cmdlet">Get-Date</span>
+<span class="c-variable">$date</span>.AddDays(<span class="c-number">30</span>)     <span class="c-comment"># Returns a new DateTime 30 days from now</span>
+<span class="c-variable">$date</span>.ToString(<span class="c-string">"yyyy-MM-dd"</span>)</code></pre>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Why it matters:</strong> Object-based pipelines eliminate an entire class of bugs. No broken parsing when a filename has spaces, no locale-dependent date formats, no column alignment shifts. The data is always structured and typed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verb-Noun Naming Convention -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Verb-Noun Naming Convention</span>
+                    <p>Every cmdlet follows a strict <code>Verb-Noun</code> naming pattern. The verb describes the action; the noun describes what you act on. This makes PowerShell remarkably discoverable &mdash; once you know the pattern, you can guess cmdlet names before you look them up.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Verb</th>
+                                <th>Meaning</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Get</code></td>
+                                <td>Retrieve / read data</td>
+                                <td><code>Get-Process</code>, <code>Get-Content</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Set</code></td>
+                                <td>Modify / update</td>
+                                <td><code>Set-Content</code>, <code>Set-Location</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>New</code></td>
+                                <td>Create something</td>
+                                <td><code>New-Item</code>, <code>New-Object</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Remove</code></td>
+                                <td>Delete / destroy</td>
+                                <td><code>Remove-Item</code>, <code>Remove-Module</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Start</code></td>
+                                <td>Begin an operation</td>
+                                <td><code>Start-Process</code>, <code>Start-Job</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Stop</code></td>
+                                <td>End an operation</td>
+                                <td><code>Stop-Process</code>, <code>Stop-Service</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Invoke</code></td>
+                                <td>Execute / call</td>
+                                <td><code>Invoke-WebRequest</code>, <code>Invoke-Command</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Test</code></td>
+                                <td>Check / validate</td>
+                                <td><code>Test-Path</code>, <code>Test-Connection</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Import</code></td>
+                                <td>Bring data in</td>
+                                <td><code>Import-Module</code>, <code>Import-Csv</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Export</code></td>
+                                <td>Send data out</td>
+                                <td><code>Export-Csv</code>, <code>Export-Clixml</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>ConvertTo</code></td>
+                                <td>Transform format</td>
+                                <td><code>ConvertTo-Json</code>, <code>ConvertTo-Html</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>ConvertFrom</code></td>
+                                <td>Parse format</td>
+                                <td><code>ConvertFrom-Json</code>, <code>ConvertFrom-Csv</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Find all cmdlets that use a specific verb</span>
+<span class="c-cmdlet">Get-Command</span> -Verb <span class="c-string">"Test"</span>
+
+<span class="c-comment"># Find all cmdlets that work with a specific noun</span>
+<span class="c-cmdlet">Get-Command</span> -Noun <span class="c-string">"*Service*"</span>
+
+<span class="c-comment"># List all approved verbs (for writing your own cmdlets)</span>
+<span class="c-cmdlet">Get-Verb</span> | <span class="c-cmdlet">Sort-Object</span> Verb</code></pre>
+                </div>
+
+                <!-- The Pipeline -->
+                <div class="groupbox">
+                    <span class="groupbox-label">The Pipeline</span>
+                    <p>The pipe operator <code>|</code> passes objects from one cmdlet to the next. Unlike Unix pipes that pass byte streams, PowerShell pipes carry full .NET objects with all their properties and methods intact. You chain cmdlets together to build multi-stage data processing workflows without intermediate variables.</p>
+                    <pre><code><span class="c-comment"># Multi-stage pipeline: find large files, sort, and format</span>
+<span class="c-cmdlet">Get-ChildItem</span> -Recurse -File |
+    <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.Length -gt <span class="c-number">1MB</span> } |
+    <span class="c-cmdlet">Sort-Object</span> Length -Descending |
+    <span class="c-cmdlet">Select-Object</span> Name, @{N=<span class="c-string">'SizeMB'</span>;E={[math]::Round(<span class="c-variable">$_</span>.Length/<span class="c-number">1MB</span>,<span class="c-number">2</span>)}} |
+    <span class="c-cmdlet">Format-Table</span> -AutoSize</code></pre>
+                    <p>Each stage in the pipeline receives objects from the previous stage. The <code>$_</code> automatic variable (or <code>$PSItem</code>) represents the current object being processed.</p>
+                    <pre><code><span class="c-comment"># Pipeline stage breakdown:</span>
+<span class="c-comment">#   1. Get-ChildItem  — emits FileInfo objects</span>
+<span class="c-comment">#   2. Where-Object   — filters, passes only files > 1MB</span>
+<span class="c-comment">#   3. Sort-Object    — reorders by Length descending</span>
+<span class="c-comment">#   4. Select-Object  — creates new objects with Name + calculated SizeMB</span>
+<span class="c-comment">#   5. Format-Table   — renders output as a table</span>
+
+<span class="c-comment"># Real-world example: find services that failed to start</span>
+<span class="c-cmdlet">Get-Service</span> |
+    <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.StartType -eq <span class="c-string">'Automatic'</span> -and <span class="c-variable">$_</span>.Status -ne <span class="c-string">'Running'</span> } |
+    <span class="c-cmdlet">Select-Object</span> Name, Status, StartType |
+    <span class="c-cmdlet">Sort-Object</span> Name</code></pre>
+                    <div class="alert alert-warning">
+                        <span class="alert-icon">&#9888;</span>
+                        <div class="alert-content">
+                            <p><strong>Caution:</strong> <code>Format-*</code> cmdlets (<code>Format-Table</code>, <code>Format-List</code>) produce formatting objects, not data objects. Always place them at the <em>end</em> of a pipeline. Never pipe Format output into <code>Where-Object</code> or <code>Export-Csv</code> &mdash; you'll get garbled results.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Help System -->
+                <div class="groupbox">
+                    <span class="groupbox-label">The Help System</span>
+                    <p>PowerShell has the most comprehensive built-in help system of any shell. Three discovery cmdlets form the backbone of self-directed learning:</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Cmdlet</th>
+                                <th>Purpose</th>
+                                <th>When to Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Get-Help</code></td>
+                                <td>Read documentation</td>
+                                <td>"How do I use this cmdlet?"</td>
+                            </tr>
+                            <tr>
+                                <td><code>Get-Command</code></td>
+                                <td>Find cmdlets</td>
+                                <td>"Is there a cmdlet that does X?"</td>
+                            </tr>
+                            <tr>
+                                <td><code>Get-Member</code></td>
+                                <td>Inspect objects</td>
+                                <td>"What properties does this object have?"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Get-Help: read the manual for a cmdlet</span>
+<span class="c-cmdlet">Get-Help</span> Get-Process                <span class="c-comment"># Synopsis + syntax</span>
+<span class="c-cmdlet">Get-Help</span> Get-Process -Examples      <span class="c-comment"># Practical examples</span>
+<span class="c-cmdlet">Get-Help</span> Get-Process -Full          <span class="c-comment"># Everything: params, notes, examples</span>
+<span class="c-cmdlet">Get-Help</span> Get-Process -Online        <span class="c-comment"># Open Microsoft docs in browser</span>
+<span class="c-cmdlet">Get-Help</span> about_Operators            <span class="c-comment"># Conceptual "about_" topics</span>
+
+<span class="c-comment"># Get-Command: find cmdlets by pattern</span>
+<span class="c-cmdlet">Get-Command</span> *-Service*               <span class="c-comment"># Wildcards in name</span>
+<span class="c-cmdlet">Get-Command</span> -Verb Get -Noun *Net*   <span class="c-comment"># Filter by verb + noun</span>
+<span class="c-cmdlet">Get-Command</span> -Module Microsoft.PowerShell.Management  <span class="c-comment"># By module</span>
+
+<span class="c-comment"># Get-Member: discover what an object can do</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Get-Member</span>                <span class="c-comment"># All members</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Get-Member</span> -MemberType Property  <span class="c-comment"># Properties only</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Get-Member</span> -MemberType Method    <span class="c-comment"># Methods only</span>
+<span class="c-string">"hello"</span> | <span class="c-cmdlet">Get-Member</span>                    <span class="c-comment"># Works on any object</span></code></pre>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Tip:</strong> Run <code>Update-Help</code> once (as admin) after installing PowerShell. Without it, <code>Get-Help</code> returns minimal stubs. After updating, you get complete documentation with examples for every cmdlet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Providers & Drives -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Providers &amp; Drives</span>
+                    <p>PowerShell providers expose different data stores as file-system-like drives. You can use the same cmdlets (<code>Get-ChildItem</code>, <code>Set-Location</code>, <code>New-Item</code>, <code>Remove-Item</code>) to navigate and manipulate registries, environment variables, certificates, and more &mdash; exactly like you browse files.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Provider</th>
+                                <th>Drive(s)</th>
+                                <th>What It Exposes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>FileSystem</td>
+                                <td><code>C:</code>, <code>D:</code>, etc.</td>
+                                <td>Files and directories on disk</td>
+                            </tr>
+                            <tr>
+                                <td>Registry</td>
+                                <td><code>HKLM:</code>, <code>HKCU:</code></td>
+                                <td>Windows Registry hives</td>
+                            </tr>
+                            <tr>
+                                <td>Environment</td>
+                                <td><code>Env:</code></td>
+                                <td>Environment variables</td>
+                            </tr>
+                            <tr>
+                                <td>Alias</td>
+                                <td><code>Alias:</code></td>
+                                <td>Command aliases</td>
+                            </tr>
+                            <tr>
+                                <td>Function</td>
+                                <td><code>Function:</code></td>
+                                <td>Loaded functions</td>
+                            </tr>
+                            <tr>
+                                <td>Variable</td>
+                                <td><code>Variable:</code></td>
+                                <td>All session variables</td>
+                            </tr>
+                            <tr>
+                                <td>Certificate</td>
+                                <td><code>Cert:</code></td>
+                                <td>X.509 certificates (Windows)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Browse the Windows Registry like a file system</span>
+<span class="c-cmdlet">Set-Location</span> HKLM:\SOFTWARE\Microsoft
+<span class="c-cmdlet">Get-ChildItem</span>
+
+<span class="c-comment"># List all environment variables</span>
+<span class="c-cmdlet">Get-ChildItem</span> Env:
+
+<span class="c-comment"># Access a specific env var (two ways)</span>
+<span class="c-variable">$env:PATH</span>
+(<span class="c-cmdlet">Get-Item</span> Env:PATH).Value
+
+<span class="c-comment"># See all loaded aliases</span>
+<span class="c-cmdlet">Get-ChildItem</span> Alias: | <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.Name -like <span class="c-string">"g*"</span> }
+
+<span class="c-comment"># Create a new environment variable</span>
+<span class="c-cmdlet">New-Item</span> -Path Env: -Name MY_VAR -Value <span class="c-string">"hello"</span>
+
+<span class="c-comment"># List all available PSDrives</span>
+<span class="c-cmdlet">Get-PSDrive</span>
+
+<span class="c-comment"># Create a custom drive mapping</span>
+<span class="c-cmdlet">New-PSDrive</span> -Name Projects -PSProvider FileSystem -Root <span class="c-string">"C:\Users\me\Projects"</span>
+<span class="c-cmdlet">Set-Location</span> Projects:</code></pre>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Note:</strong> The Registry and Certificate providers are Windows-only. On Linux and macOS, you have FileSystem, Environment, Alias, Function, and Variable providers. Third-party modules can add custom providers (e.g., cloud storage, databases).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 04 — VARIABLES & DATA TYPES
+        ============================================================= -->
+        <div class="window" id="variables-types">
+            <div class="window-titlebar">
+                <span class="window-title">04. Variables &amp; Data Types</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell variables are prefixed with <code>$</code>, are case-insensitive, and do not require declaration &mdash; just assign a value and the variable is created with the appropriate .NET type. Because PowerShell is built on .NET, every value is a typed object: strings are <code>System.String</code>, numbers are <code>System.Int32</code> or <code>System.Double</code>, and so on.</p>
+                </div>
+
+                <!-- Variable Basics -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Variable Basics</span>
+                    <p>Variables start with <code>$</code> and are case-insensitive. No declaration keyword is needed &mdash; assign with <code>=</code> and the type is inferred automatically.</p>
+                    <pre><code><span class="c-variable">$name</span> = <span class="c-string">"PowerShell"</span>        <span class="c-comment"># String</span>
+<span class="c-variable">$count</span> = <span class="c-number">42</span>                 <span class="c-comment"># Int32</span>
+<span class="c-variable">$pi</span> = <span class="c-number">3.14159</span>              <span class="c-comment"># Double</span>
+<span class="c-variable">$active</span> = <span class="c-variable">$true</span>            <span class="c-comment"># Boolean</span>
+<span class="c-variable">$nothing</span> = <span class="c-variable">$null</span>           <span class="c-comment"># Null</span>
+
+<span class="c-comment"># Check a variable's type</span>
+<span class="c-variable">$name</span>.GetType().Name       <span class="c-comment"># String</span>
+<span class="c-variable">$count</span>.GetType().Name      <span class="c-comment"># Int32</span>
+
+<span class="c-comment"># Variables are case-insensitive</span>
+<span class="c-variable">$Name</span> -eq <span class="c-variable">$NAME</span>            <span class="c-comment"># True — same variable</span>
+
+<span class="c-comment"># Remove a variable</span>
+<span class="c-cmdlet">Remove-Variable</span> -Name name
+<span class="c-comment"># Or use the Variable: drive</span>
+<span class="c-cmdlet">Remove-Item</span> Variable:\count</code></pre>
+                </div>
+
+                <!-- Strings -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Strings</span>
+                    <p>Single-quoted strings are literal &mdash; no variable expansion. Double-quoted strings expand variables and subexpressions. Here-strings handle multiline content.</p>
+                    <pre><code><span class="c-variable">$name</span> = <span class="c-string">"World"</span>
+<span class="c-string">'Hello $name'</span>              <span class="c-comment"># Hello $name (literal)</span>
+<span class="c-string">"Hello $name"</span>              <span class="c-comment"># Hello World (expanded)</span>
+<span class="c-string">"Files: $(<span class="c-cmdlet">(Get-ChildItem)</span>.Count)"</span>  <span class="c-comment"># Subexpression</span>
+
+<span class="c-comment"># Here-strings (multiline)</span>
+<span class="c-variable">$multiline</span> = @<span class="c-string">"
+Line 1: $name
+Line 2: $(Get-Date)
+"</span>@
+
+<span class="c-comment"># Literal here-string (no expansion)</span>
+<span class="c-variable">$template</span> = @<span class="c-string">'
+No $variables expanded here.
+Use this for regex patterns or templates.
+'</span>@</code></pre>
+                    <p>Common string methods &mdash; every string is a <code>[System.String]</code> object:</p>
+                    <pre><code><span class="c-variable">$s</span> = <span class="c-string">"  Hello, World!  "</span>
+<span class="c-variable">$s</span>.ToUpper()               <span class="c-comment"># "  HELLO, WORLD!  "</span>
+<span class="c-variable">$s</span>.ToLower()               <span class="c-comment"># "  hello, world!  "</span>
+<span class="c-variable">$s</span>.Trim()                  <span class="c-comment"># "Hello, World!"</span>
+<span class="c-variable">$s</span>.Replace(<span class="c-string">"World"</span>, <span class="c-string">"PS"</span>)  <span class="c-comment"># "  Hello, PS!  "</span>
+<span class="c-variable">$s</span>.Split(<span class="c-string">","</span>)              <span class="c-comment"># @("  Hello", " World!  ")</span>
+<span class="c-variable">$s</span>.Contains(<span class="c-string">"World"</span>)       <span class="c-comment"># True</span>
+<span class="c-variable">$s</span>.StartsWith(<span class="c-string">"  H"</span>)      <span class="c-comment"># True</span>
+<span class="c-variable">$s</span>.Substring(<span class="c-number">2</span>, <span class="c-number">5</span>)        <span class="c-comment"># "Hello"</span></code></pre>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Tip:</strong> Use the subexpression operator <code>$()</code> inside double-quoted strings for anything beyond a simple variable &mdash; property access, method calls, and expressions all need it: <code>"Today is $((Get-Date).DayOfWeek)"</code>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arrays -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Arrays</span>
+                    <p>Arrays are created with <code>@()</code> or comma-separated values. They are zero-indexed, support negative indexing from the end, and can hold mixed types.</p>
+                    <pre><code><span class="c-variable">$colors</span> = @(<span class="c-string">"Red"</span>, <span class="c-string">"Green"</span>, <span class="c-string">"Blue"</span>)
+<span class="c-variable">$numbers</span> = <span class="c-number">1</span>, <span class="c-number">2</span>, <span class="c-number">3</span>, <span class="c-number">4</span>, <span class="c-number">5</span>
+<span class="c-variable">$empty</span> = @()
+<span class="c-variable">$range</span> = <span class="c-number">1</span>..<span class="c-number">100</span>
+
+<span class="c-variable">$colors</span>[<span class="c-number">0</span>]          <span class="c-comment"># Red</span>
+<span class="c-variable">$colors</span>[<span class="c-number">-1</span>]         <span class="c-comment"># Blue (last item)</span>
+<span class="c-variable">$colors</span>[<span class="c-number">0</span>..<span class="c-number">1</span>]      <span class="c-comment"># Red, Green (slice)</span>
+<span class="c-variable">$colors</span> += <span class="c-string">"Yellow"</span> <span class="c-comment"># Add element (creates new array)</span>
+<span class="c-variable">$colors</span>.Count       <span class="c-comment"># 4</span>
+
+<span class="c-comment"># Check if array contains a value</span>
+<span class="c-variable">$colors</span> <span class="c-operator">-contains</span> <span class="c-string">"Red"</span>     <span class="c-comment"># True</span>
+<span class="c-string">"Red"</span> <span class="c-operator">-in</span> <span class="c-variable">$colors</span>            <span class="c-comment"># True (PS 3.0+)</span>
+
+<span class="c-comment"># Strongly typed array</span>
+[<span class="c-keyword">int</span>[]] <span class="c-variable">$ids</span> = <span class="c-number">1</span>, <span class="c-number">2</span>, <span class="c-number">3</span>
+<span class="c-variable">$ids</span> += <span class="c-string">"not a number"</span>      <span class="c-comment"># Error — type enforced</span></code></pre>
+                    <div class="alert alert-warning">
+                        <span class="alert-icon">&#9888;</span>
+                        <div class="alert-content">
+                            <p><strong>Caution:</strong> PowerShell arrays are fixed-size. The <code>+=</code> operator creates an entirely new array each time, copying every element. For loops that add thousands of items, use a <code>[System.Collections.Generic.List[object]]</code> instead and call <code>.Add()</code>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hashtables -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Hashtables</span>
+                    <p>Hashtables are key-value stores created with <code>@{}</code>. Keys are accessed with dot notation or bracket syntax. By default, key order is not preserved &mdash; use <code>[ordered]</code> if order matters.</p>
+                    <pre><code><span class="c-variable">$server</span> = @{
+    Name     = <span class="c-string">"web01"</span>
+    IP       = <span class="c-string">"192.168.1.10"</span>
+    Port     = <span class="c-number">443</span>
+    Enabled  = <span class="c-variable">$true</span>
+}
+<span class="c-variable">$server</span>.Name              <span class="c-comment"># web01</span>
+<span class="c-variable">$server</span>[<span class="c-string">'IP'</span>]             <span class="c-comment"># 192.168.1.10</span>
+<span class="c-variable">$server</span>.Keys              <span class="c-comment"># Name, IP, Port, Enabled</span>
+<span class="c-variable">$server</span>.Values            <span class="c-comment"># web01, 192.168.1.10, 443, True</span>
+<span class="c-variable">$server</span>.ContainsKey(<span class="c-string">'IP'</span>) <span class="c-comment"># True</span>
+
+<span class="c-comment"># Add and remove keys</span>
+<span class="c-variable">$server</span>.OS = <span class="c-string">"Windows"</span>    <span class="c-comment"># Add new key</span>
+<span class="c-variable">$server</span>.Remove(<span class="c-string">'Enabled'</span>) <span class="c-comment"># Remove key</span>
+
+<span class="c-comment"># Ordered hashtable (preserves insertion order)</span>
+<span class="c-variable">$config</span> = [<span class="c-keyword">ordered</span>]@{
+    Host     = <span class="c-string">"localhost"</span>
+    Port     = <span class="c-number">5432</span>
+    Database = <span class="c-string">"myapp"</span>
+}</code></pre>
+                </div>
+
+                <!-- PSCustomObject -->
+                <div class="groupbox">
+                    <span class="groupbox-label">PSCustomObject</span>
+                    <p>The modern way to create structured data objects (PS 3.0+). Faster than <code>New-Object</code>, maintains property order, and is the idiomatic way to produce function output.</p>
+                    <pre><code><span class="c-variable">$user</span> = [<span class="c-keyword">PSCustomObject</span>]@{
+    Name     = <span class="c-string">"jsmith"</span>
+    Email    = <span class="c-string">"john@example.com"</span>
+    Role     = <span class="c-string">"Admin"</span>
+    Created  = (<span class="c-cmdlet">Get-Date</span>)
+}
+<span class="c-variable">$user</span>.Name    <span class="c-comment"># jsmith</span>
+<span class="c-variable">$user</span> | <span class="c-cmdlet">Format-Table</span>
+
+<span class="c-comment"># Add a property after creation</span>
+<span class="c-variable">$user</span> | <span class="c-cmdlet">Add-Member</span> -NotePropertyName <span class="c-string">"Department"</span> -NotePropertyValue <span class="c-string">"IT"</span>
+
+<span class="c-comment"># Create multiple objects (common in scripts)</span>
+<span class="c-variable">$report</span> = <span class="c-keyword">foreach</span> (<span class="c-variable">$svc</span> <span class="c-keyword">in</span> <span class="c-cmdlet">Get-Service</span>) {
+    [<span class="c-keyword">PSCustomObject</span>]@{
+        Name   = <span class="c-variable">$svc</span>.DisplayName
+        Status = <span class="c-variable">$svc</span>.Status
+        Type   = <span class="c-variable">$svc</span>.StartType
+    }
+}
+<span class="c-variable">$report</span> | <span class="c-cmdlet">Export-Csv</span> -Path services.csv -NoTypeInformation</code></pre>
+                </div>
+
+                <!-- Type Accelerators -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Type Accelerators</span>
+                    <p>Type accelerators are shorthand aliases for common .NET types. Use them for casting, variable constraints, and parameter declarations.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Accelerator</th>
+                                <th>.NET Type</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>[int]</code></td>
+                                <td>System.Int32</td>
+                                <td><code>[int]"42"</code> &rarr; <code>42</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[string]</code></td>
+                                <td>System.String</td>
+                                <td><code>[string]42</code> &rarr; <code>"42"</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[bool]</code></td>
+                                <td>System.Boolean</td>
+                                <td><code>[bool]1</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[datetime]</code></td>
+                                <td>System.DateTime</td>
+                                <td><code>[datetime]"2025-01-15"</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[array]</code></td>
+                                <td>System.Object[]</td>
+                                <td><code>[array]$single</code> &rarr; wraps in array</td>
+                            </tr>
+                            <tr>
+                                <td><code>[hashtable]</code></td>
+                                <td>System.Collections.Hashtable</td>
+                                <td>Type-check a parameter</td>
+                            </tr>
+                            <tr>
+                                <td><code>[regex]</code></td>
+                                <td>System.Text.RegularExpressions.Regex</td>
+                                <td><code>[regex]::Match($s, '\d+')</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[pscustomobject]</code></td>
+                                <td>System.Management.Automation.PSObject</td>
+                                <td>Structured data objects</td>
+                            </tr>
+                            <tr>
+                                <td><code>[xml]</code></td>
+                                <td>System.Xml.XmlDocument</td>
+                                <td><code>[xml]$doc = Get-Content file.xml</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ipaddress]</code></td>
+                                <td>System.Net.IPAddress</td>
+                                <td><code>[ipaddress]"10.0.0.1"</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Casting examples</span>
+[<span class="c-keyword">int</span>]<span class="c-string">"42"</span>                  <span class="c-comment"># String to integer</span>
+[<span class="c-keyword">datetime</span>]<span class="c-string">"2025-03-15"</span>     <span class="c-comment"># String to DateTime</span>
+[<span class="c-keyword">string</span>]<span class="c-number">3.14</span>              <span class="c-comment"># Double to string</span>
+
+<span class="c-comment"># Constrain a variable to a type</span>
+[<span class="c-keyword">int</span>] <span class="c-variable">$port</span> = <span class="c-number">8080</span>
+<span class="c-variable">$port</span> = <span class="c-string">"not a number"</span>    <span class="c-comment"># Error — type constraint enforced</span></code></pre>
+                </div>
+
+                <!-- Automatic Variables -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Automatic Variables</span>
+                    <p>PowerShell defines many automatic variables that provide session state, pipeline context, and execution information. These are read-only (with a few exceptions).</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>$_</code> / <code>$PSItem</code></td>
+                                <td>Current pipeline object</td>
+                            </tr>
+                            <tr>
+                                <td><code>$PSVersionTable</code></td>
+                                <td>PowerShell version info (PSVersion, PSEdition, OS)</td>
+                            </tr>
+                            <tr>
+                                <td><code>$PROFILE</code></td>
+                                <td>Path to the current user's profile script</td>
+                            </tr>
+                            <tr>
+                                <td><code>$HOME</code></td>
+                                <td>User home directory path</td>
+                            </tr>
+                            <tr>
+                                <td><code>$PWD</code></td>
+                                <td>Current working directory (PathInfo object)</td>
+                            </tr>
+                            <tr>
+                                <td><code>$null</code></td>
+                                <td>Null value &mdash; used to discard output or test emptiness</td>
+                            </tr>
+                            <tr>
+                                <td><code>$true</code> / <code>$false</code></td>
+                                <td>Boolean constants</td>
+                            </tr>
+                            <tr>
+                                <td><code>$Error</code></td>
+                                <td>Collection of recent errors (most recent first)</td>
+                            </tr>
+                            <tr>
+                                <td><code>$LASTEXITCODE</code></td>
+                                <td>Exit code of the last native command (e.g., <code>git</code>)</td>
+                            </tr>
+                            <tr>
+                                <td><code>$?</code></td>
+                                <td>Boolean &mdash; <code>$true</code> if last command succeeded</td>
+                            </tr>
+                            <tr>
+                                <td><code>$args</code></td>
+                                <td>Array of unbound arguments passed to a function</td>
+                            </tr>
+                            <tr>
+                                <td><code>$Matches</code></td>
+                                <td>Hashtable of regex capture groups from <code>-match</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>$env:VAR</code></td>
+                                <td>Access environment variables (e.g., <code>$env:PATH</code>)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Check your PowerShell version</span>
+<span class="c-variable">$PSVersionTable</span>.PSVersion
+
+<span class="c-comment"># Use $_ in pipeline filters</span>
+<span class="c-cmdlet">Get-Service</span> | <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.Status <span class="c-operator">-eq</span> <span class="c-string">'Running'</span> }
+
+<span class="c-comment"># Capture regex matches</span>
+<span class="c-string">"Error 404: Not Found"</span> <span class="c-operator">-match</span> <span class="c-string">'(\d{3})'</span>
+<span class="c-variable">$Matches</span>[<span class="c-number">1</span>]              <span class="c-comment"># 404</span>
+
+<span class="c-comment"># Check if last native command succeeded</span>
+git status
+<span class="c-keyword">if</span> (<span class="c-variable">$LASTEXITCODE</span> <span class="c-operator">-ne</span> <span class="c-number">0</span>) { <span class="c-string">"Git command failed"</span> }</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 05 — CONTROL FLOW
+        ============================================================= -->
+        <div class="window" id="control-flow">
+            <div class="window-titlebar">
+                <span class="window-title">05. Control Flow</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell's control flow uses familiar structures &mdash; <code>if/elseif/else</code>, <code>switch</code>, <code>foreach</code>, <code>while</code> &mdash; but with its own comparison operators and some unique twists. The biggest difference from most languages: PowerShell uses word-based operators (<code>-eq</code>, <code>-gt</code>, <code>-like</code>) instead of symbols (<code>==</code>, <code>></code>).</p>
+                </div>
+
+                <!-- Comparison Operators -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Comparison Operators</span>
+                    <p>PowerShell comparison operators are case-<strong>insensitive</strong> by default. Prefix with <code>c</code> for case-sensitive variants (<code>-ceq</code>, <code>-clike</code>, <code>-cmatch</code>).</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Operator</th>
+                                <th>Meaning</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>-eq</code></td>
+                                <td>Equal to</td>
+                                <td><code>5 -eq 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-ne</code></td>
+                                <td>Not equal to</td>
+                                <td><code>"a" -ne "b"</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-gt</code></td>
+                                <td>Greater than</td>
+                                <td><code>10 -gt 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-ge</code></td>
+                                <td>Greater or equal</td>
+                                <td><code>5 -ge 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-lt</code></td>
+                                <td>Less than</td>
+                                <td><code>3 -lt 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-le</code></td>
+                                <td>Less or equal</td>
+                                <td><code>5 -le 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-like</code></td>
+                                <td>Wildcard match</td>
+                                <td><code>"hello" -like "hel*"</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-notlike</code></td>
+                                <td>Wildcard non-match</td>
+                                <td><code>"hello" -notlike "bye*"</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-match</code></td>
+                                <td>Regex match</td>
+                                <td><code>"abc123" -match '\d+'</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-notmatch</code></td>
+                                <td>Regex non-match</td>
+                                <td><code>"hello" -notmatch '\d+'</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-contains</code></td>
+                                <td>Collection contains value</td>
+                                <td><code>@(1,2,3) -contains 2</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-notcontains</code></td>
+                                <td>Collection missing value</td>
+                                <td><code>@(1,2,3) -notcontains 5</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-in</code></td>
+                                <td>Value in collection</td>
+                                <td><code>2 -in @(1,2,3)</code> &rarr; <code>$true</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>-notin</code></td>
+                                <td>Value not in collection</td>
+                                <td><code>5 -notin @(1,2,3)</code> &rarr; <code>$true</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Logical operators:</strong> PowerShell uses <code>-and</code>, <code>-or</code>, <code>-not</code> (or <code>!</code>), and <code>-xor</code> for boolean logic. Example: <code>if ($age -ge 18 -and $hasID) { "Allowed" }</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- If / ElseIf / Else -->
+                <div class="groupbox">
+                    <span class="groupbox-label">If / ElseIf / Else</span>
+                    <p>Standard conditional branching. Conditions are enclosed in parentheses and bodies in braces. PowerShell 7+ adds a ternary operator for simple inline conditionals.</p>
+                    <pre><code><span class="c-variable">$score</span> = <span class="c-number">85</span>
+<span class="c-keyword">if</span> (<span class="c-variable">$score</span> <span class="c-operator">-ge</span> <span class="c-number">90</span>) {
+    <span class="c-string">"Grade: A"</span>
+} <span class="c-keyword">elseif</span> (<span class="c-variable">$score</span> <span class="c-operator">-ge</span> <span class="c-number">80</span>) {
+    <span class="c-string">"Grade: B"</span>
+} <span class="c-keyword">elseif</span> (<span class="c-variable">$score</span> <span class="c-operator">-ge</span> <span class="c-number">70</span>) {
+    <span class="c-string">"Grade: C"</span>
+} <span class="c-keyword">else</span> {
+    <span class="c-string">"Grade: F"</span>
+}
+
+<span class="c-comment"># Ternary operator (PS 7+ only)</span>
+<span class="c-variable">$grade</span> = (<span class="c-variable">$score</span> <span class="c-operator">-ge</span> <span class="c-number">90</span>) ? <span class="c-string">"A"</span> : <span class="c-string">"B-or-lower"</span>
+
+<span class="c-comment"># Null-coalescing operator (PS 7+ only)</span>
+<span class="c-variable">$name</span> = <span class="c-variable">$inputName</span> ?? <span class="c-string">"default"</span>
+
+<span class="c-comment"># Null-conditional member access (PS 7+ only)</span>
+<span class="c-variable">$length</span> = <span class="c-variable">${myString}</span>?.Length</code></pre>
+                </div>
+
+                <!-- Switch Statement -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Switch Statement</span>
+                    <p>PowerShell's <code>switch</code> is far more powerful than most languages. It supports wildcards, regex, script block conditions, and can process arrays &mdash; matching each element against all clauses.</p>
+                    <pre><code><span class="c-comment"># Basic switch</span>
+<span class="c-keyword">switch</span> (<span class="c-variable">$status</span>) {
+    <span class="c-string">"Running"</span> { <span class="c-string">"Active"</span>; <span class="c-keyword">break</span> }
+    <span class="c-string">"Stopped"</span> { <span class="c-string">"Inactive"</span>; <span class="c-keyword">break</span> }
+    <span class="c-keyword">default</span>   { <span class="c-string">"Unknown"</span> }
+}
+
+<span class="c-comment"># With -Wildcard</span>
+<span class="c-keyword">switch</span> -Wildcard (<span class="c-variable">$filename</span>) {
+    <span class="c-string">"*.txt"</span>  { <span class="c-string">"Text file"</span> }
+    <span class="c-string">"*.log"</span>  { <span class="c-string">"Log file"</span> }
+    <span class="c-string">"*.json"</span> { <span class="c-string">"JSON file"</span> }
+}
+
+<span class="c-comment"># With -Regex</span>
+<span class="c-keyword">switch</span> -Regex (<span class="c-variable">$line</span>) {
+    <span class="c-string">'^\d+$'</span>       { <span class="c-string">"Number"</span> }
+    <span class="c-string">'^[a-z]+$'</span>    { <span class="c-string">"Word"</span> }
+    <span class="c-string">'^#'</span>          { <span class="c-string">"Comment"</span> }
+}
+
+<span class="c-comment"># Process array (each element tested against all clauses)</span>
+<span class="c-keyword">switch</span> (<span class="c-number">1</span>, <span class="c-number">2</span>, <span class="c-number">3</span>, <span class="c-number">4</span>, <span class="c-number">5</span>) {
+    {<span class="c-variable">$_</span> <span class="c-operator">-gt</span> <span class="c-number">3</span>} { <span class="c-string">"$_ is greater than 3"</span> }
+    {<span class="c-variable">$_</span> % <span class="c-number">2</span>}   { <span class="c-string">"$_ is odd"</span> }
+}</code></pre>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Tip:</strong> Without <code>break</code>, switch falls through and tests all remaining clauses. This lets a single value match multiple conditions &mdash; useful when you want cumulative matches. Use <code>break</code> for exclusive matching.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loops -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Loops</span>
+                    <p>PowerShell provides five loop constructs. The <code>foreach</code> statement is the most common for iterating collections, while <code>while</code> and <code>do-until</code> are ideal for polling and retry logic.</p>
+                    <pre><code><span class="c-comment"># ForEach (statement form — loads entire collection first)</span>
+<span class="c-keyword">foreach</span> (<span class="c-variable">$file</span> <span class="c-keyword">in</span> <span class="c-cmdlet">Get-ChildItem</span> *.txt) {
+    <span class="c-string">"Processing: $(<span class="c-variable">$file</span>.Name)"</span>
+}
+
+<span class="c-comment"># For loop (classic counter-based)</span>
+<span class="c-keyword">for</span> (<span class="c-variable">$i</span> = <span class="c-number">0</span>; <span class="c-variable">$i</span> <span class="c-operator">-lt</span> <span class="c-number">10</span>; <span class="c-variable">$i</span>++) {
+    <span class="c-string">"Iteration $i"</span>
+}
+
+<span class="c-comment"># While (test condition first)</span>
+<span class="c-variable">$attempts</span> = <span class="c-number">0</span>
+<span class="c-keyword">while</span> (<span class="c-variable">$attempts</span> <span class="c-operator">-lt</span> <span class="c-number">3</span>) {
+    <span class="c-keyword">try</span> { Connect-Server; <span class="c-keyword">break</span> }
+    <span class="c-keyword">catch</span> { <span class="c-variable">$attempts</span>++ }
+}
+
+<span class="c-comment"># Do-While (runs at least once, then tests)</span>
+<span class="c-keyword">do</span> {
+    <span class="c-variable">$input</span> = <span class="c-cmdlet">Read-Host</span> <span class="c-string">"Enter 'quit' to exit"</span>
+} <span class="c-keyword">while</span> (<span class="c-variable">$input</span> <span class="c-operator">-ne</span> <span class="c-string">'quit'</span>)
+
+<span class="c-comment"># Do-Until (runs at least once, stops when condition is true)</span>
+<span class="c-keyword">do</span> {
+    <span class="c-cmdlet">Start-Sleep</span> -Seconds <span class="c-number">5</span>
+    <span class="c-variable">$status</span> = Get-ServiceStatus
+} <span class="c-keyword">until</span> (<span class="c-variable">$status</span> <span class="c-operator">-eq</span> <span class="c-string">'Ready'</span>)</code></pre>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>foreach statement vs ForEach-Object cmdlet:</strong> The <code>foreach ($x in $collection)</code> statement loads the full collection into memory first &mdash; faster, but higher memory use. The <code>ForEach-Object</code> cmdlet (<code>%</code>) streams one object at a time through the pipeline &mdash; slower, but memory-efficient for large datasets.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Break, Continue, Return -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Break, Continue, Return</span>
+                    <p>Three keywords for controlling execution flow within loops and functions.</p>
+                    <pre><code><span class="c-comment"># break — exit the current loop entirely</span>
+<span class="c-keyword">foreach</span> (<span class="c-variable">$n</span> <span class="c-keyword">in</span> <span class="c-number">1</span>..<span class="c-number">100</span>) {
+    <span class="c-keyword">if</span> (<span class="c-variable">$n</span> <span class="c-operator">-eq</span> <span class="c-number">5</span>) { <span class="c-keyword">break</span> }   <span class="c-comment"># Stops at 5, exits loop</span>
+    <span class="c-variable">$n</span>
+}
+
+<span class="c-comment"># continue — skip rest of current iteration, go to next</span>
+<span class="c-keyword">foreach</span> (<span class="c-variable">$n</span> <span class="c-keyword">in</span> <span class="c-number">1</span>..<span class="c-number">10</span>) {
+    <span class="c-keyword">if</span> (<span class="c-variable">$n</span> % <span class="c-number">2</span> <span class="c-operator">-eq</span> <span class="c-number">0</span>) { <span class="c-keyword">continue</span> }  <span class="c-comment"># Skip even numbers</span>
+    <span class="c-variable">$n</span>                          <span class="c-comment"># Outputs: 1, 3, 5, 7, 9</span>
+}
+
+<span class="c-comment"># return — exit the current function (and emit a value)</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Find-First</span> {
+    <span class="c-keyword">param</span>([<span class="c-keyword">string</span>[]]<span class="c-variable">$Items</span>, [<span class="c-keyword">string</span>]<span class="c-variable">$Pattern</span>)
+    <span class="c-keyword">foreach</span> (<span class="c-variable">$item</span> <span class="c-keyword">in</span> <span class="c-variable">$Items</span>) {
+        <span class="c-keyword">if</span> (<span class="c-variable">$item</span> <span class="c-operator">-match</span> <span class="c-variable">$Pattern</span>) {
+            <span class="c-keyword">return</span> <span class="c-variable">$item</span>     <span class="c-comment"># Exits function, returns match</span>
+        }
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 06 — FUNCTIONS
+        ============================================================= -->
+        <div class="window" id="functions">
+            <div class="window-titlebar">
+                <span class="window-title">06. Functions</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>Functions in PowerShell range from simple one-liners to full-featured cmdlets with parameter validation, pipeline support, and built-in <code>-WhatIf</code> / <code>-Confirm</code> safety. The key insight: adding <code>[CmdletBinding()]</code> transforms a script function into an "advanced function" that behaves exactly like a compiled cmdlet.</p>
+                </div>
+
+                <!-- Basic Functions -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Basic Functions</span>
+                    <p>Functions use the <code>function</code> keyword. Parameters go in a <code>param()</code> block. Return values are implicit &mdash; the last expression output is the return value.</p>
+                    <pre><code><span class="c-comment"># Simple function with a default parameter</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Get-Greeting</span> {
+    <span class="c-keyword">param</span>([<span class="c-keyword">string</span>]<span class="c-variable">$Name</span> = <span class="c-string">"World"</span>)
+    <span class="c-string">"Hello, $Name!"</span>
+}
+<span class="c-cmdlet">Get-Greeting</span> -Name <span class="c-string">"PowerShell"</span>  <span class="c-comment"># Hello, PowerShell!</span>
+<span class="c-cmdlet">Get-Greeting</span>                      <span class="c-comment"># Hello, World!</span>
+
+<span class="c-comment"># Return values are implicit — last expression is output</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Add-Numbers</span> {
+    <span class="c-keyword">param</span>([<span class="c-keyword">int</span>]<span class="c-variable">$A</span>, [<span class="c-keyword">int</span>]<span class="c-variable">$B</span>)
+    <span class="c-variable">$A</span> + <span class="c-variable">$B</span>    <span class="c-comment"># This is the return value</span>
+}
+<span class="c-variable">$sum</span> = <span class="c-cmdlet">Add-Numbers</span> -A <span class="c-number">5</span> -B <span class="c-number">3</span>  <span class="c-comment"># 8</span></code></pre>
+                    <div class="alert alert-warning">
+                        <span class="alert-icon">&#9888;</span>
+                        <div class="alert-content">
+                            <p><strong>Caution:</strong> Every uncaptured expression in a function is part of the output. A stray <code>$variable</code> on its own line, a <code>Write-Output</code>, or even some method calls will pollute your return value. Use <code>$null = expression</code> or pipe to <code>Out-Null</code> to suppress unwanted output.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Functions (CmdletBinding) -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Advanced Functions (CmdletBinding)</span>
+                    <p>Adding <code>[CmdletBinding()]</code> before <code>param()</code> transforms a simple function into an advanced function. It automatically gains common parameters like <code>-Verbose</code>, <code>-ErrorAction</code>, <code>-Debug</code>, <code>-WarningAction</code>, and more &mdash; the same parameters every compiled cmdlet has.</p>
+                    <pre><code><span class="c-keyword">function</span> <span class="c-cmdlet">Get-DiskSpace</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">Parameter</span>(Mandatory=<span class="c-variable">$true</span>, Position=<span class="c-number">0</span>)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$ComputerName</span>,
+
+        [<span class="c-keyword">Parameter</span>()]
+        [<span class="c-keyword">ValidateSet</span>(<span class="c-string">"GB"</span>, <span class="c-string">"MB"</span>, <span class="c-string">"TB"</span>)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$Unit</span> = <span class="c-string">"GB"</span>,
+
+        [<span class="c-keyword">Parameter</span>()]
+        [<span class="c-keyword">switch</span>]<span class="c-variable">$IncludeRemovable</span>
+    )
+
+    <span class="c-cmdlet">Write-Verbose</span> <span class="c-string">"Querying $ComputerName..."</span>
+    <span class="c-comment"># Function body here</span>
+}
+
+<span class="c-comment"># Call with -Verbose to see debug messages</span>
+<span class="c-cmdlet">Get-DiskSpace</span> -ComputerName <span class="c-string">"web01"</span> -Verbose
+<span class="c-comment"># Positional param: ComputerName is Position=0</span>
+<span class="c-cmdlet">Get-DiskSpace</span> <span class="c-string">"web01"</span> -Unit MB</code></pre>
+                </div>
+
+                <!-- Parameter Validation -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Parameter Validation</span>
+                    <p>Validation attributes enforce constraints before your function body runs. Invalid input produces clear error messages automatically.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Attribute</th>
+                                <th>Purpose</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>[ValidateNotNullOrEmpty()]</code></td>
+                                <td>Reject null/empty values</td>
+                                <td>Required string params</td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidateSet()]</code></td>
+                                <td>Restrict to listed values</td>
+                                <td><code>[ValidateSet("Dev","Prod")]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidateRange()]</code></td>
+                                <td>Numeric min/max range</td>
+                                <td><code>[ValidateRange(1, 65535)]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidatePattern()]</code></td>
+                                <td>Regex pattern match</td>
+                                <td><code>[ValidatePattern('^\d{3}-\d{4}$')]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidateLength()]</code></td>
+                                <td>String length min/max</td>
+                                <td><code>[ValidateLength(1, 50)]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidateCount()]</code></td>
+                                <td>Array element count</td>
+                                <td><code>[ValidateCount(1, 10)]</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>[ValidateScript()]</code></td>
+                                <td>Custom validation logic</td>
+                                <td><code>[ValidateScript({Test-Path $_})]</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-keyword">function</span> <span class="c-cmdlet">New-Deployment</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">ValidateNotNullOrEmpty</span>()]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$AppName</span>,
+
+        [<span class="c-keyword">ValidateSet</span>(<span class="c-string">"Dev"</span>, <span class="c-string">"Staging"</span>, <span class="c-string">"Production"</span>)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$Environment</span> = <span class="c-string">"Dev"</span>,
+
+        [<span class="c-keyword">ValidateRange</span>(<span class="c-number">1</span>, <span class="c-number">65535</span>)]
+        [<span class="c-keyword">int</span>]<span class="c-variable">$Port</span> = <span class="c-number">8080</span>,
+
+        [<span class="c-keyword">ValidateScript</span>({ <span class="c-cmdlet">Test-Path</span> <span class="c-variable">$_</span> })]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$ConfigPath</span>
+    )
+    <span class="c-comment"># All params are validated before this line executes</span>
+    <span class="c-string">"Deploying $AppName to $Environment on port $Port"</span>
+}</code></pre>
+                </div>
+
+                <!-- Pipeline Input -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Pipeline Input</span>
+                    <p>Advanced functions can accept pipeline input using the <code>begin</code> / <code>process</code> / <code>end</code> blocks. The <code>process</code> block runs once per pipeline object, while <code>begin</code> and <code>end</code> run once each.</p>
+                    <pre><code><span class="c-keyword">function</span> <span class="c-cmdlet">Convert-ToUpperCase</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">Parameter</span>(ValueFromPipeline=<span class="c-variable">$true</span>)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$Text</span>
+    )
+    <span class="c-keyword">begin</span>   { <span class="c-variable">$results</span> = @() }
+    <span class="c-keyword">process</span> { <span class="c-variable">$results</span> += <span class="c-variable">$Text</span>.ToUpper() }
+    <span class="c-keyword">end</span>     { <span class="c-variable">$results</span> }
+}
+
+<span class="c-string">"hello"</span>, <span class="c-string">"world"</span> | <span class="c-cmdlet">Convert-ToUpperCase</span>
+<span class="c-comment"># HELLO</span>
+<span class="c-comment"># WORLD</span>
+
+<span class="c-comment"># Accept objects by property name</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Get-FileAge</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">Parameter</span>(ValueFromPipelineByPropertyName=<span class="c-variable">$true</span>)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$FullName</span>
+    )
+    <span class="c-keyword">process</span> {
+        <span class="c-variable">$file</span> = <span class="c-cmdlet">Get-Item</span> <span class="c-variable">$FullName</span>
+        [<span class="c-keyword">PSCustomObject</span>]@{
+            Name = <span class="c-variable">$file</span>.Name
+            Age  = (<span class="c-cmdlet">Get-Date</span>) - <span class="c-variable">$file</span>.LastWriteTime
+        }
+    }
+}
+<span class="c-comment"># Works because FileInfo objects have a FullName property</span>
+<span class="c-cmdlet">Get-ChildItem</span> *.log | <span class="c-cmdlet">Get-FileAge</span></code></pre>
+                </div>
+
+                <!-- ShouldProcess (WhatIf/Confirm) -->
+                <div class="groupbox">
+                    <span class="groupbox-label">ShouldProcess (WhatIf / Confirm)</span>
+                    <p>For functions that modify or delete data, <code>SupportsShouldProcess</code> adds automatic <code>-WhatIf</code> (preview mode) and <code>-Confirm</code> (prompt before each action) parameters. This is expected for any function that follows PowerShell conventions.</p>
+                    <pre><code><span class="c-keyword">function</span> <span class="c-cmdlet">Remove-OldLogs</span> {
+    [<span class="c-keyword">CmdletBinding</span>(SupportsShouldProcess=<span class="c-variable">$true</span>)]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">string</span>]<span class="c-variable">$Path</span>,
+        [<span class="c-keyword">int</span>]<span class="c-variable">$DaysOld</span> = <span class="c-number">30</span>
+    )
+
+    <span class="c-variable">$old</span> = <span class="c-cmdlet">Get-ChildItem</span> <span class="c-variable">$Path</span> -Filter *.log |
+        <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.LastWriteTime <span class="c-operator">-lt</span> (<span class="c-cmdlet">Get-Date</span>).AddDays(-<span class="c-variable">$DaysOld</span>) }
+
+    <span class="c-keyword">foreach</span> (<span class="c-variable">$file</span> <span class="c-keyword">in</span> <span class="c-variable">$old</span>) {
+        <span class="c-keyword">if</span> (<span class="c-variable">$PSCmdlet</span>.ShouldProcess(<span class="c-variable">$file</span>.Name, <span class="c-string">"Delete"</span>)) {
+            <span class="c-cmdlet">Remove-Item</span> <span class="c-variable">$file</span>.FullName
+        }
+    }
+}
+
+<span class="c-comment"># Preview what would be deleted (no actual deletion)</span>
+<span class="c-cmdlet">Remove-OldLogs</span> -Path <span class="c-string">"C:\Logs"</span> -WhatIf
+
+<span class="c-comment"># Ask for confirmation before each deletion</span>
+<span class="c-cmdlet">Remove-OldLogs</span> -Path <span class="c-string">"C:\Logs"</span> -Confirm</code></pre>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Best practice:</strong> Every function that creates, modifies, or deletes data should include <code>SupportsShouldProcess</code>. The <code>-WhatIf</code> flag is invaluable for testing scripts in production &mdash; you can see exactly what would happen without any risk.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 07 — OBJECTS & PIPELINE
+        ============================================================= -->
+        <div class="window" id="objects-pipeline">
+            <div class="window-titlebar">
+                <span class="window-title">07. Objects &amp; Pipeline</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>The pipeline is PowerShell's superpower. Objects flow from one command to the next, preserving their structure. Mastering <code>Select-Object</code>, <code>Where-Object</code>, <code>ForEach-Object</code>, <code>Sort-Object</code>, and <code>Group-Object</code> lets you slice, filter, transform, and summarize data without writing loops or parsing text.</p>
+                </div>
+
+                <!-- Understanding Objects -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Understanding Objects</span>
+                    <p>Everything in PowerShell is a .NET object. Use <code>Get-Member</code> to inspect any object's type, properties, and methods.</p>
+                    <pre><code><span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Get-Member</span>
+<span class="c-comment"># Shows TypeName: System.Diagnostics.Process</span>
+<span class="c-comment"># Lists Properties: Name, Id, CPU, WorkingSet64...</span>
+<span class="c-comment"># Lists Methods: Kill(), Refresh(), ToString()...</span>
+
+<span class="c-comment"># Access properties directly</span>
+(<span class="c-cmdlet">Get-Process</span> pwsh).Id
+(<span class="c-cmdlet">Get-Date</span>).DayOfWeek</code></pre>
+                </div>
+
+                <!-- Select-Object -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Select-Object</span>
+                    <p>Pick specific properties, create calculated properties, or grab the first/last items from a collection.</p>
+                    <pre><code><span class="c-comment"># Pick specific properties</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Select-Object</span> Name, Id, CPU
+
+<span class="c-comment"># Calculated properties (rename/transform)</span>
+<span class="c-cmdlet">Get-ChildItem</span> | <span class="c-cmdlet">Select-Object</span> Name,
+    @{Name=<span class="c-string">'SizeKB'</span>; Expression={[<span class="c-keyword">math</span>]::Round(<span class="c-variable">$_</span>.Length/<span class="c-number">1</span>KB, <span class="c-number">2</span>)}},
+    @{Name=<span class="c-string">'Modified'</span>; Expression={<span class="c-variable">$_</span>.LastWriteTime.ToString(<span class="c-string">'yyyy-MM-dd'</span>)}}
+
+<span class="c-comment"># ExpandProperty (unwrap single property)</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Select-Object</span> -ExpandProperty Name
+
+<span class="c-comment"># First / Last / Skip</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Sort-Object</span> CPU -Descending | <span class="c-cmdlet">Select-Object</span> -First <span class="c-number">5</span>
+<span class="c-cmdlet">Get-EventLog</span> -LogName System -Newest <span class="c-number">100</span> | <span class="c-cmdlet">Select-Object</span> -Last <span class="c-number">10</span></code></pre>
+                </div>
+
+                <!-- Where-Object -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Where-Object</span>
+                    <p>Filter objects with script blocks or simplified syntax. Only objects that match the condition pass through.</p>
+                    <pre><code><span class="c-comment"># Script block syntax</span>
+<span class="c-cmdlet">Get-Service</span> | <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.Status <span class="c-operator">-eq</span> <span class="c-string">'Running'</span> }
+
+<span class="c-comment"># Simplified syntax (PS 3.0+)</span>
+<span class="c-cmdlet">Get-Service</span> | <span class="c-cmdlet">Where-Object</span> Status <span class="c-operator">-eq</span> Running
+
+<span class="c-comment"># Multiple conditions</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Where-Object</span> {
+    <span class="c-variable">$_</span>.CPU <span class="c-operator">-gt</span> <span class="c-number">10</span> <span class="c-operator">-and</span>
+    <span class="c-variable">$_</span>.WorkingSet64 <span class="c-operator">-gt</span> <span class="c-number">100</span>MB
+}
+
+<span class="c-comment"># Comparison with wildcards</span>
+<span class="c-cmdlet">Get-ChildItem</span> | <span class="c-cmdlet">Where-Object</span> Name <span class="c-operator">-like</span> <span class="c-string">"*.log"</span></code></pre>
+                </div>
+
+                <!-- ForEach-Object -->
+                <div class="groupbox">
+                    <span class="groupbox-label">ForEach-Object</span>
+                    <p>Process each pipeline item with a script block, method shorthand, or parallel execution.</p>
+                    <pre><code><span class="c-comment"># Script block</span>
+<span class="c-cmdlet">Get-ChildItem</span> *.txt | <span class="c-cmdlet">ForEach-Object</span> {
+    <span class="c-string">"File: $(<span class="c-variable">$_</span>.Name) — Size: $(<span class="c-variable">$_</span>.Length) bytes"</span>
+}
+
+<span class="c-comment"># Method shorthand (PS 4.0+)</span>
+(<span class="c-cmdlet">Get-Service</span>).Name
+
+<span class="c-comment"># begin/process/end blocks</span>
+<span class="c-number">1</span>..<span class="c-number">10</span> | <span class="c-cmdlet">ForEach-Object</span> -Begin { <span class="c-variable">$sum</span> = <span class="c-number">0</span> } -Process { <span class="c-variable">$sum</span> += <span class="c-variable">$_</span> } -End { <span class="c-string">"Total: $sum"</span> }
+
+<span class="c-comment"># Parallel execution (PS 7+ ONLY)</span>
+<span class="c-number">1</span>..<span class="c-number">50</span> | <span class="c-cmdlet">ForEach-Object</span> -Parallel {
+    <span class="c-cmdlet">Start-Sleep</span> -Milliseconds <span class="c-number">500</span>
+    <span class="c-string">"Processed item $_"</span>
+} -ThrottleLimit <span class="c-number">10</span></code></pre>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Game-changer:</strong> <code>ForEach-Object -Parallel</code> (PowerShell 7+ only) runs script blocks concurrently in separate runspaces. Use <code>-ThrottleLimit</code> to control concurrency. Variables from the parent scope must be passed via <code>$using:</code> &mdash; e.g., <code>$using:myVar</code>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sort-Object, Group-Object, Measure-Object -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Sort-Object, Group-Object, Measure-Object</span>
+                    <p>The trio for ordering, grouping, and summarizing pipeline data.</p>
+                    <pre><code><span class="c-comment"># Sort by one or more properties</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Sort-Object</span> CPU -Descending
+<span class="c-cmdlet">Get-ChildItem</span> | <span class="c-cmdlet">Sort-Object</span> Extension, Name
+
+<span class="c-comment"># Group by property</span>
+<span class="c-cmdlet">Get-Service</span> | <span class="c-cmdlet">Group-Object</span> Status
+<span class="c-comment"># Output: Count Name      Group</span>
+<span class="c-comment">#         76    Running   {AarSvc_2c8db, ...}</span>
+<span class="c-comment">#         86    Stopped   {AJRouter, ...}</span>
+
+<span class="c-comment"># Measure (count, sum, average, min, max)</span>
+<span class="c-cmdlet">Get-ChildItem</span> -File | <span class="c-cmdlet">Measure-Object</span> -Property Length -Sum -Average -Maximum
+<span class="c-comment"># Output: Count: 42, Sum: 1234567, Average: 29394.2, Maximum: 512000</span>
+
+<span class="c-comment"># Compare two collections</span>
+<span class="c-variable">$before</span> = <span class="c-cmdlet">Get-Process</span>
+<span class="c-comment"># ... do something ...</span>
+<span class="c-variable">$after</span> = <span class="c-cmdlet">Get-Process</span>
+<span class="c-cmdlet">Compare-Object</span> <span class="c-variable">$before</span> <span class="c-variable">$after</span> -Property Name</code></pre>
+                </div>
+
+                <!-- Formatting vs Filtering -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Formatting vs Filtering</span>
+                    <p>Format cmdlets produce display objects, not data. They must always be the <strong>last</strong> command in any pipeline.</p>
+                    <div class="alert alert-warning">
+                        <span class="alert-icon">&#9888;</span>
+                        <div class="alert-content">
+                            <p><strong>Critical rule:</strong> <code>Format-Table</code>, <code>Format-List</code>, <code>Format-Wide</code>, and <code>Format-Custom</code> destroy structured data. Never pipe their output to another cmdlet &mdash; the objects become formatting instructions, not usable data.</p>
+                        </div>
+                    </div>
+                    <pre><code><span class="c-comment"># WRONG — formatting destroys data</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Format-Table</span> | <span class="c-cmdlet">Where-Object</span> { <span class="c-variable">$_</span>.CPU <span class="c-operator">-gt</span> <span class="c-number">10</span> }
+
+<span class="c-comment"># RIGHT — filter first, format last</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Where-Object</span> CPU <span class="c-operator">-gt</span> <span class="c-number">10</span> | <span class="c-cmdlet">Format-Table</span> Name, CPU, Id</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 08 — FILE SYSTEM & I/O
+        ============================================================= -->
+        <div class="window" id="filesystem-io">
+            <div class="window-titlebar">
+                <span class="window-title">08. File System &amp; I/O</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell treats the file system as one of many "drives" accessible through a unified provider model. The same <code>Get-ChildItem</code>, <code>Get-Content</code>, and <code>Set-Content</code> cmdlets work on files, registry keys, certificates, and more. This section focuses on everyday file operations and data format conversions.</p>
+                </div>
+
+                <!-- Reading Files -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Reading Files</span>
+                    <pre><code><span class="c-comment"># Read file line by line (returns string array)</span>
+<span class="c-variable">$lines</span> = <span class="c-cmdlet">Get-Content</span> -Path <span class="c-string">"log.txt"</span>
+
+<span class="c-comment"># Read entire file as single string</span>
+<span class="c-variable">$raw</span> = <span class="c-cmdlet">Get-Content</span> -Path <span class="c-string">"config.json"</span> -Raw
+
+<span class="c-comment"># Read first/last N lines</span>
+<span class="c-cmdlet">Get-Content</span> <span class="c-string">"log.txt"</span> -Head <span class="c-number">10</span>
+<span class="c-cmdlet">Get-Content</span> <span class="c-string">"log.txt"</span> -Tail <span class="c-number">20</span>
+
+<span class="c-comment"># Follow a log file (like tail -f)</span>
+<span class="c-cmdlet">Get-Content</span> <span class="c-string">"app.log"</span> -Tail <span class="c-number">10</span> -Wait</code></pre>
+                </div>
+
+                <!-- Writing Files -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Writing Files</span>
+                    <pre><code><span class="c-comment"># Overwrite file</span>
+<span class="c-string">"Hello World"</span> | <span class="c-cmdlet">Set-Content</span> -Path <span class="c-string">"output.txt"</span>
+
+<span class="c-comment"># Append to file</span>
+<span class="c-string">"New entry"</span> | <span class="c-cmdlet">Add-Content</span> -Path <span class="c-string">"log.txt"</span>
+
+<span class="c-comment"># Pipe command output to file</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Out-File</span> -Path <span class="c-string">"processes.txt"</span>
+
+<span class="c-comment"># With encoding control</span>
+<span class="c-cmdlet">Set-Content</span> -Path <span class="c-string">"utf8.txt"</span> -Value <span class="c-string">"Content"</span> -Encoding UTF8</code></pre>
+                </div>
+
+                <!-- Path Operations -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Path Operations</span>
+                    <pre><code><span class="c-comment"># Test if path exists</span>
+<span class="c-cmdlet">Test-Path</span> <span class="c-string">"C:\Projects\file.txt"</span>
+
+<span class="c-comment"># Join path segments (cross-platform safe)</span>
+<span class="c-cmdlet">Join-Path</span> -Path <span class="c-variable">$HOME</span> -ChildPath <span class="c-string">"Documents"</span> <span class="c-string">"scripts"</span>
+
+<span class="c-comment"># Split path components</span>
+<span class="c-cmdlet">Split-Path</span> <span class="c-string">"C:\Users\John\file.txt"</span> -Parent      <span class="c-comment"># C:\Users\John</span>
+<span class="c-cmdlet">Split-Path</span> <span class="c-string">"C:\Users\John\file.txt"</span> -Leaf         <span class="c-comment"># file.txt</span>
+<span class="c-cmdlet">Split-Path</span> <span class="c-string">"C:\Users\John\file.txt"</span> -Extension    <span class="c-comment"># .txt (PS 6+)</span>
+
+<span class="c-comment"># Resolve relative to absolute</span>
+<span class="c-cmdlet">Resolve-Path</span> <span class="c-string">".\relative\path"</span></code></pre>
+                </div>
+
+                <!-- CSV Operations -->
+                <div class="groupbox">
+                    <span class="groupbox-label">CSV Operations</span>
+                    <pre><code><span class="c-comment"># Import CSV (auto-creates objects with column headers as properties)</span>
+<span class="c-variable">$users</span> = <span class="c-cmdlet">Import-Csv</span> <span class="c-string">"users.csv"</span>
+<span class="c-variable">$users</span> | <span class="c-cmdlet">Where-Object</span> Department <span class="c-operator">-eq</span> <span class="c-string">"Engineering"</span>
+
+<span class="c-comment"># Export to CSV</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Select-Object</span> Name, CPU, Id |
+    <span class="c-cmdlet">Export-Csv</span> <span class="c-string">"processes.csv"</span> -NoTypeInformation
+
+<span class="c-comment"># Import with custom delimiter</span>
+<span class="c-cmdlet">Import-Csv</span> <span class="c-string">"data.tsv"</span> -Delimiter <span class="c-string">"`t"</span></code></pre>
+                </div>
+
+                <!-- JSON Operations -->
+                <div class="groupbox">
+                    <span class="groupbox-label">JSON Operations</span>
+                    <pre><code><span class="c-comment"># Read JSON file</span>
+<span class="c-variable">$config</span> = <span class="c-cmdlet">Get-Content</span> <span class="c-string">"config.json"</span> -Raw | <span class="c-cmdlet">ConvertFrom-Json</span>
+<span class="c-variable">$config</span>.database.host
+
+<span class="c-comment"># Create and write JSON</span>
+<span class="c-variable">$data</span> = @{
+    server = <span class="c-string">"localhost"</span>
+    port = <span class="c-number">8080</span>
+    features = @(<span class="c-string">"auth"</span>, <span class="c-string">"logging"</span>, <span class="c-string">"cache"</span>)
+} | <span class="c-cmdlet">ConvertTo-Json</span> -Depth <span class="c-number">10</span>
+
+<span class="c-variable">$data</span> | <span class="c-cmdlet">Set-Content</span> <span class="c-string">"config.json"</span>
+
+<span class="c-comment"># Convert objects to JSON (great for APIs)</span>
+<span class="c-cmdlet">Get-Process</span> | <span class="c-cmdlet">Select-Object</span> Name, Id, CPU |
+    <span class="c-cmdlet">ConvertTo-Json</span> | <span class="c-cmdlet">Set-Content</span> <span class="c-string">"processes.json"</span></code></pre>
+                    <div class="alert alert-warning">
+                        <span class="alert-icon">&#9888;</span>
+                        <div class="alert-content">
+                            <p><strong>Watch out:</strong> In Windows PowerShell 5.1, <code>ConvertTo-Json</code> defaults to <code>-Depth 2</code> &mdash; any nested objects beyond that are silently converted to their <code>.ToString()</code> representation. PowerShell 7+ raised the default to 100, but for cross-version safety, always specify <code>-Depth 10</code> (or higher) explicitly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- XML Operations -->
+                <div class="groupbox">
+                    <span class="groupbox-label">XML Operations</span>
+                    <pre><code><span class="c-comment"># Read XML</span>
+[<span class="c-keyword">xml</span>]<span class="c-variable">$xml</span> = <span class="c-cmdlet">Get-Content</span> <span class="c-string">"data.xml"</span>
+<span class="c-variable">$xml</span>.configuration.appSettings.add
+
+<span class="c-comment"># XPath queries</span>
+<span class="c-variable">$xml</span>.SelectNodes(<span class="c-string">"//setting[@name='timeout']"</span>)
+
+<span class="c-comment"># Create XML from objects</span>
+<span class="c-variable">$data</span> | <span class="c-cmdlet">Export-Clixml</span> <span class="c-string">"backup.xml"</span>
+<span class="c-variable">$restored</span> = <span class="c-cmdlet">Import-Clixml</span> <span class="c-string">"backup.xml"</span></code></pre>
+                </div>
+
+                <!-- File Search -->
+                <div class="groupbox">
+                    <span class="groupbox-label">File Search</span>
+                    <pre><code><span class="c-comment"># Recursive file search</span>
+<span class="c-cmdlet">Get-ChildItem</span> -Path <span class="c-string">"C:\Projects"</span> -Recurse -Filter <span class="c-string">"*.ps1"</span>
+
+<span class="c-comment"># Find large files</span>
+<span class="c-cmdlet">Get-ChildItem</span> -Recurse -File | <span class="c-cmdlet">Where-Object</span> Length <span class="c-operator">-gt</span> <span class="c-number">100</span>MB |
+    <span class="c-cmdlet">Sort-Object</span> Length -Descending |
+    <span class="c-cmdlet">Select-Object</span> FullName, @{N=<span class="c-string">'SizeMB'</span>;E={[<span class="c-keyword">math</span>]::Round(<span class="c-variable">$_</span>.Length/<span class="c-number">1</span>MB)}}
+
+<span class="c-comment"># Search file contents (like grep)</span>
+<span class="c-cmdlet">Get-ChildItem</span> -Recurse -Filter <span class="c-string">"*.ps1"</span> |
+    <span class="c-cmdlet">Select-String</span> -Pattern <span class="c-string">"Write-Error"</span></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 09 — ERROR HANDLING
+        ============================================================= -->
+        <div class="window" id="error-handling">
+            <div class="window-titlebar">
+                <span class="window-title">09. Error Handling</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell has two distinct error types and a rich set of mechanisms for catching, suppressing, and recovering from them. Understanding the difference between terminating and non-terminating errors is the key to writing robust scripts that fail gracefully instead of silently continuing with bad data.</p>
+                </div>
+
+                <!-- Error Types -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Error Types</span>
+                    <p>PowerShell distinguishes between errors that halt execution and errors that report a problem but keep going.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Behavior</th>
+                                <th>Examples</th>
+                                <th>Caught by try/catch?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Terminating</strong></td>
+                                <td>Stops execution immediately</td>
+                                <td><code>throw</code>, command not found, type conversion errors, <code>-ErrorAction Stop</code></td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Non-terminating</strong></td>
+                                <td>Reports error, continues to next item</td>
+                                <td>File not found, permission denied, network timeout</td>
+                                <td>No (unless <code>-ErrorAction Stop</code>)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Key insight:</strong> Most cmdlet errors are <strong>non-terminating</strong> by default. This means <code>try/catch</code> will <em>not</em> catch them unless you add <code>-ErrorAction Stop</code> to the command. This is the most common PowerShell error-handling mistake.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Try / Catch / Finally -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Try / Catch / Finally</span>
+                    <p>The structured error-handling pattern. Catch specific exception types first, then use a general catch-all. The <code>finally</code> block always executes &mdash; ideal for cleanup.</p>
+                    <pre><code><span class="c-keyword">try</span> {
+    <span class="c-variable">$content</span> = <span class="c-cmdlet">Get-Content</span> <span class="c-string">"missing.txt"</span> -ErrorAction Stop
+    <span class="c-variable">$data</span> = <span class="c-variable">$content</span> | <span class="c-cmdlet">ConvertFrom-Json</span>
+}
+<span class="c-keyword">catch</span> [System.IO.FileNotFoundException] {
+    <span class="c-cmdlet">Write-Warning</span> <span class="c-string">"File not found: $(<span class="c-variable">$_</span>.Exception.Message)"</span>
+}
+<span class="c-keyword">catch</span> [System.ArgumentException] {
+    <span class="c-cmdlet">Write-Warning</span> <span class="c-string">"Invalid JSON: $(<span class="c-variable">$_</span>.Exception.Message)"</span>
+}
+<span class="c-keyword">catch</span> {
+    <span class="c-comment"># Catch-all for any other error</span>
+    <span class="c-cmdlet">Write-Error</span> <span class="c-string">"Unexpected error: $(<span class="c-variable">$_</span>.Exception.Message)"</span>
+    <span class="c-cmdlet">Write-Error</span> <span class="c-string">"At line: $(<span class="c-variable">$_</span>.InvocationInfo.ScriptLineNumber)"</span>
+}
+<span class="c-keyword">finally</span> {
+    <span class="c-comment"># Always executes — cleanup code</span>
+    <span class="c-keyword">if</span> (<span class="c-variable">$connection</span>) { <span class="c-variable">$connection</span>.Close() }
+}</code></pre>
+                </div>
+
+                <!-- ErrorAction Parameter -->
+                <div class="groupbox">
+                    <span class="groupbox-label">ErrorAction Parameter</span>
+                    <p>The <code>-ErrorAction</code> common parameter controls how a single command responds to non-terminating errors.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Stop</code></td>
+                                <td>Convert to terminating error (caught by try/catch)</td>
+                            </tr>
+                            <tr>
+                                <td><code>Continue</code></td>
+                                <td>Display error, keep running (default)</td>
+                            </tr>
+                            <tr>
+                                <td><code>SilentlyContinue</code></td>
+                                <td>Suppress display, add to <code>$Error</code>, keep running</td>
+                            </tr>
+                            <tr>
+                                <td><code>Ignore</code></td>
+                                <td>Suppress completely (not added to <code>$Error</code>)</td>
+                            </tr>
+                            <tr>
+                                <td><code>Inquire</code></td>
+                                <td>Prompt user to choose action</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>Best practice: use <code>-ErrorAction</code> per command, not <code>$ErrorActionPreference</code> globally.</p>
+                    <pre><code><span class="c-comment"># Convert non-terminating to terminating (catches in try/catch)</span>
+<span class="c-cmdlet">Get-Item</span> <span class="c-string">"C:\missing"</span> -ErrorAction Stop
+
+<span class="c-comment"># Suppress errors silently</span>
+<span class="c-variable">$result</span> = <span class="c-cmdlet">Get-Item</span> <span class="c-string">"C:\maybe"</span> -ErrorAction SilentlyContinue
+
+<span class="c-comment"># Store error in variable without displaying</span>
+<span class="c-cmdlet">Get-Item</span> <span class="c-string">"C:\maybe"</span> -ErrorAction SilentlyContinue -ErrorVariable err
+<span class="c-keyword">if</span> (<span class="c-variable">$err</span>) { <span class="c-cmdlet">Write-Warning</span> <span class="c-string">"Item not found"</span> }</code></pre>
+                </div>
+
+                <!-- throw vs Write-Error -->
+                <div class="groupbox">
+                    <span class="groupbox-label">throw vs Write-Error</span>
+                    <p>Two ways to signal errors from your own code, with very different outcomes.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Command</th>
+                                <th>Error Type</th>
+                                <th>Use When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>throw</code></td>
+                                <td>Terminating</td>
+                                <td>Critical failure &mdash; cannot continue</td>
+                            </tr>
+                            <tr>
+                                <td><code>Write-Error</code></td>
+                                <td>Non-terminating</td>
+                                <td>Recoverable issue &mdash; process remaining items</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Use throw for critical failures</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Connect-Database</span> {
+    <span class="c-keyword">param</span>([<span class="c-keyword">string</span>]<span class="c-variable">$ConnectionString</span>)
+    <span class="c-keyword">if</span> (<span class="c-operator">-not</span> <span class="c-variable">$ConnectionString</span>) {
+        <span class="c-keyword">throw</span> <span class="c-string">"ConnectionString is required"</span>
+    }
+    <span class="c-comment"># ...</span>
+}
+
+<span class="c-comment"># Use Write-Error for recoverable issues</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Get-UserData</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>([<span class="c-keyword">string</span>[]]<span class="c-variable">$UserNames</span>)
+    <span class="c-keyword">foreach</span> (<span class="c-variable">$name</span> <span class="c-keyword">in</span> <span class="c-variable">$UserNames</span>) {
+        <span class="c-variable">$user</span> = <span class="c-cmdlet">Find-User</span> <span class="c-variable">$name</span>
+        <span class="c-keyword">if</span> (<span class="c-operator">-not</span> <span class="c-variable">$user</span>) {
+            <span class="c-cmdlet">Write-Error</span> <span class="c-string">"User not found: $name"</span>
+            <span class="c-keyword">continue</span>  <span class="c-comment"># Process remaining users</span>
+        }
+        <span class="c-variable">$user</span>
+    }
+}</code></pre>
+                </div>
+
+                <!-- The $Error Collection -->
+                <div class="groupbox">
+                    <span class="groupbox-label">The $Error Collection</span>
+                    <p>PowerShell maintains an automatic <code>$Error</code> ArrayList that stores every error from the current session, most recent first.</p>
+                    <pre><code><span class="c-comment"># View recent errors</span>
+<span class="c-variable">$Error</span>[<span class="c-number">0</span>]                            <span class="c-comment"># Most recent error</span>
+<span class="c-variable">$Error</span>[<span class="c-number">0</span>].Exception.Message          <span class="c-comment"># Just the message</span>
+<span class="c-variable">$Error</span>[<span class="c-number">0</span>].InvocationInfo             <span class="c-comment"># Where it happened</span>
+<span class="c-variable">$Error</span>[<span class="c-number">0</span>].ScriptStackTrace           <span class="c-comment"># Call stack</span>
+<span class="c-variable">$Error</span>.Count                         <span class="c-comment"># Number of errors in session</span>
+<span class="c-variable">$Error</span>.Clear()                       <span class="c-comment"># Reset error collection</span>
+
+<span class="c-comment"># Automatic variables</span>
+<span class="c-variable">$?</span>                                   <span class="c-comment"># $true if last command succeeded</span>
+<span class="c-variable">$LASTEXITCODE</span>                        <span class="c-comment"># Exit code of last native command</span></code></pre>
+                </div>
+
+                <!-- Real-World Error Pattern -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Real-World Error Pattern</span>
+                    <p>A complete, production-ready error-handling template combining typed exceptions, scoped preferences, and re-throw for callers.</p>
+                    <pre><code><span class="c-keyword">function</span> <span class="c-cmdlet">Invoke-SafeOperation</span> {
+    [<span class="c-keyword">CmdletBinding</span>()]
+    <span class="c-keyword">param</span>(
+        [<span class="c-keyword">Parameter</span>(Mandatory)]
+        [<span class="c-keyword">string</span>]<span class="c-variable">$Path</span>
+    )
+
+    <span class="c-variable">$ErrorActionPreference</span> = <span class="c-string">'Stop'</span>  <span class="c-comment"># OK inside function scope</span>
+
+    <span class="c-keyword">try</span> {
+        <span class="c-cmdlet">Write-Verbose</span> <span class="c-string">"Processing: $Path"</span>
+        <span class="c-keyword">if</span> (<span class="c-operator">-not</span> (<span class="c-cmdlet">Test-Path</span> <span class="c-variable">$Path</span>)) {
+            <span class="c-keyword">throw</span> [System.IO.FileNotFoundException]::new(<span class="c-string">"Path not found: $Path"</span>)
+        }
+
+        <span class="c-variable">$data</span> = <span class="c-cmdlet">Get-Content</span> <span class="c-variable">$Path</span> -Raw | <span class="c-cmdlet">ConvertFrom-Json</span>
+        <span class="c-keyword">return</span> <span class="c-variable">$data</span>
+    }
+    <span class="c-keyword">catch</span> [System.IO.FileNotFoundException] {
+        <span class="c-cmdlet">Write-Warning</span> <span class="c-variable">$_</span>.Exception.Message
+        <span class="c-keyword">return</span> <span class="c-variable">$null</span>
+    }
+    <span class="c-keyword">catch</span> [System.Text.Json.JsonException] {
+        <span class="c-cmdlet">Write-Error</span> <span class="c-string">"Invalid JSON in $Path"</span>
+        <span class="c-keyword">return</span> <span class="c-variable">$null</span>
+    }
+    <span class="c-keyword">catch</span> {
+        <span class="c-cmdlet">Write-Error</span> <span class="c-string">"Unexpected: $_"</span>
+        <span class="c-keyword">throw</span>  <span class="c-comment"># Re-throw to caller</span>
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 10 — MODULES & PACKAGE MANAGEMENT
+        ============================================================= -->
+        <div class="window" id="modules">
+            <div class="window-titlebar">
+                <span class="window-title">10. Modules &amp; Package Management</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>Modules are the primary way to extend PowerShell. The PowerShell Gallery (<code>PSGallery</code>) is the central repository &mdash; think npm for PowerShell. Every module is a self-contained package of cmdlets, functions, and resources that you can install, import, and share with a single command.</p>
+                </div>
+
+                <!-- Finding Modules -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Finding Modules</span>
+                    <pre><code><span class="c-comment"># Search the PowerShell Gallery</span>
+<span class="c-cmdlet">Find-Module</span> -Name <span class="c-string">"*Azure*"</span>
+<span class="c-cmdlet">Find-Module</span> -Tag <span class="c-string">"DevOps"</span> | <span class="c-cmdlet">Select-Object</span> Name, Description
+
+<span class="c-comment"># Get module details</span>
+<span class="c-cmdlet">Find-Module</span> PSScriptAnalyzer | <span class="c-cmdlet">Select-Object</span> Name, Version, Description, Author</code></pre>
+                </div>
+
+                <!-- Installing & Managing -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Installing &amp; Managing</span>
+                    <pre><code><span class="c-comment"># Install for current user (no admin needed)</span>
+<span class="c-cmdlet">Install-Module</span> -Name Pester -Scope CurrentUser
+
+<span class="c-comment"># Install specific version</span>
+<span class="c-cmdlet">Install-Module</span> -Name Az -RequiredVersion <span class="c-number">12.0.0</span>
+
+<span class="c-comment"># Update modules</span>
+<span class="c-cmdlet">Update-Module</span> -Name Pester
+
+<span class="c-comment"># List installed modules</span>
+<span class="c-cmdlet">Get-InstalledModule</span>
+<span class="c-cmdlet">Get-Module</span> -ListAvailable    <span class="c-comment"># All available (including built-in)</span>
+
+<span class="c-comment"># Import into current session</span>
+<span class="c-cmdlet">Import-Module</span> -Name Pester
+
+<span class="c-comment"># Remove module</span>
+<span class="c-cmdlet">Uninstall-Module</span> -Name OldModule
+
+<span class="c-comment"># Save for inspection (download without installing)</span>
+<span class="c-cmdlet">Save-Module</span> -Name UnknownModule -Path <span class="c-string">"C:\Inspect"</span></code></pre>
+                </div>
+
+                <!-- Essential Modules -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Essential Modules</span>
+                    <p>Must-know modules from the PowerShell Gallery and built-in library.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Module</th>
+                                <th>Purpose</th>
+                                <th>Install</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>PSReadLine</strong></td>
+                                <td>Command-line editing, prediction</td>
+                                <td>Built-in (PS 7)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Pester</strong></td>
+                                <td>Testing framework</td>
+                                <td><code>Install-Module Pester</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>PSScriptAnalyzer</strong></td>
+                                <td>Static code analysis (linter)</td>
+                                <td><code>Install-Module PSScriptAnalyzer</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Az</strong></td>
+                                <td>Azure management</td>
+                                <td><code>Install-Module Az</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>AWS.Tools</strong></td>
+                                <td>AWS management</td>
+                                <td><code>Install-Module AWS.Tools.Common</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Microsoft.Graph</strong></td>
+                                <td>Microsoft 365 / Entra ID</td>
+                                <td><code>Install-Module Microsoft.Graph</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>ImportExcel</strong></td>
+                                <td>Excel without Office</td>
+                                <td><code>Install-Module ImportExcel</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Plaster</strong></td>
+                                <td>Project scaffolding</td>
+                                <td><code>Install-Module Plaster</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Creating Modules -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Creating Modules</span>
+                    <p>A module is a <code>.psm1</code> file containing functions, paired with an optional <code>.psd1</code> manifest that declares metadata and exports.</p>
+                    <pre><code><span class="c-comment"># File: MyModule/MyModule.psm1</span>
+<span class="c-keyword">function</span> <span class="c-cmdlet">Get-Greeting</span> {
+    <span class="c-keyword">param</span>([<span class="c-keyword">string</span>]<span class="c-variable">$Name</span> = <span class="c-string">"World"</span>)
+    <span class="c-string">"Hello, $Name!"</span>
+}
+
+<span class="c-keyword">function</span> <span class="c-cmdlet">Get-SystemReport</span> {
+    [PSCustomObject]@{
+        Hostname = <span class="c-variable">$env:COMPUTERNAME</span>
+        OS       = (<span class="c-cmdlet">Get-CimInstance</span> Win32_OperatingSystem).Caption
+        Uptime   = (<span class="c-cmdlet">Get-Date</span>) - (<span class="c-cmdlet">Get-CimInstance</span> Win32_OperatingSystem).LastBootUpTime
+        Memory   = <span class="c-string">"{0:N2} GB"</span> <span class="c-operator">-f</span> ((<span class="c-cmdlet">Get-CimInstance</span> Win32_ComputerSystem).TotalPhysicalMemory / <span class="c-number">1</span>GB)
+    }
+}
+
+<span class="c-cmdlet">Export-ModuleMember</span> -Function Get-Greeting, Get-SystemReport
+
+<span class="c-comment"># Create module manifest</span>
+<span class="c-cmdlet">New-ModuleManifest</span> -Path <span class="c-string">"MyModule.psd1"</span> `
+    -RootModule <span class="c-string">"MyModule.psm1"</span> `
+    -ModuleVersion <span class="c-string">"1.0.0"</span> `
+    -Author <span class="c-string">"Your Name"</span> `
+    -Description <span class="c-string">"My custom tools"</span> `
+    -FunctionsToExport @(<span class="c-string">'Get-Greeting'</span>, <span class="c-string">'Get-SystemReport'</span>)</code></pre>
+                </div>
+
+                <!-- Script Analysis -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Script Analysis</span>
+                    <p>PSScriptAnalyzer is the official PowerShell linter. Use it to catch common mistakes, enforce best practices, and auto-fix formatting issues.</p>
+                    <pre><code><span class="c-comment"># Analyze a script for issues</span>
+<span class="c-cmdlet">Invoke-ScriptAnalyzer</span> -Path <span class="c-string">"MyScript.ps1"</span>
+
+<span class="c-comment"># Fix auto-fixable issues</span>
+<span class="c-cmdlet">Invoke-ScriptAnalyzer</span> -Path <span class="c-string">"MyScript.ps1"</span> -Fix
+
+<span class="c-comment"># Check specific rules</span>
+<span class="c-cmdlet">Invoke-ScriptAnalyzer</span> -Path <span class="c-string">"."</span> -IncludeRule PSAvoidUsingCmdletAliases</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 11 — REMOTING
+        ============================================================= -->
+        <div class="window" id="remoting">
+            <div class="window-titlebar">
+                <span class="window-title">11. Remoting</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>PowerShell Remoting lets you run commands on remote machines as if you were sitting at their console. Windows uses WinRM (WS-Management) by default, while PowerShell 7+ adds SSH-based remoting for true cross-platform management &mdash; Windows, Linux, and macOS.</p>
+                </div>
+
+                <!-- WinRM Remoting (Windows) -->
+                <div class="groupbox">
+                    <span class="groupbox-label">WinRM Remoting (Windows)</span>
+                    <pre><code><span class="c-comment"># Enable remoting (run as Administrator)</span>
+<span class="c-cmdlet">Enable-PSRemoting</span> -Force
+
+<span class="c-comment"># Interactive session (one-to-one)</span>
+<span class="c-cmdlet">Enter-PSSession</span> -ComputerName Server01
+hostname          <span class="c-comment"># Shows "Server01"</span>
+<span class="c-cmdlet">Get-Process</span>       <span class="c-comment"># Runs on Server01</span>
+<span class="c-cmdlet">Exit-PSSession</span>
+
+<span class="c-comment"># Run command on remote machines (one-to-many)</span>
+<span class="c-cmdlet">Invoke-Command</span> -ComputerName Server01, Server02, Server03 -ScriptBlock {
+    <span class="c-cmdlet">Get-Service</span> W3SVC | <span class="c-cmdlet">Select-Object</span> Status, Name
+}
+
+<span class="c-comment"># With credentials</span>
+<span class="c-variable">$cred</span> = <span class="c-cmdlet">Get-Credential</span>
+<span class="c-cmdlet">Invoke-Command</span> -ComputerName Server01 -Credential <span class="c-variable">$cred</span> -ScriptBlock {
+    <span class="c-cmdlet">Restart-Service</span> W3SVC
+}
+
+<span class="c-comment"># Persistent session (reusable connection)</span>
+<span class="c-variable">$session</span> = <span class="c-cmdlet">New-PSSession</span> -ComputerName Server01
+<span class="c-cmdlet">Invoke-Command</span> -Session <span class="c-variable">$session</span> -ScriptBlock { <span class="c-cmdlet">Get-Process</span> }
+<span class="c-cmdlet">Invoke-Command</span> -Session <span class="c-variable">$session</span> -ScriptBlock { <span class="c-cmdlet">Get-Service</span> }
+<span class="c-cmdlet">Remove-PSSession</span> <span class="c-variable">$session</span></code></pre>
+                </div>
+
+                <!-- SSH Remoting (PS 7+ Cross-Platform) -->
+                <div class="groupbox">
+                    <span class="groupbox-label">SSH Remoting (PS 7+ Cross-Platform)</span>
+                    <div class="alert alert-tip">
+                        <span class="alert-icon">&#9998;</span>
+                        <div class="alert-content">
+                            <p><strong>Tip:</strong> SSH remoting is a PS 7+ feature that enables true cross-platform management &mdash; connect from Windows to Linux or vice versa. No <code>Enable-PSRemoting</code> needed on the target; just an SSH server with the PowerShell subsystem configured.</p>
+                        </div>
+                    </div>
+                    <pre><code><span class="c-comment"># Connect via SSH (no Enable-PSRemoting needed!)</span>
+<span class="c-cmdlet">Enter-PSSession</span> -HostName user@linux-server.com
+
+<span class="c-comment"># With key-based auth</span>
+<span class="c-cmdlet">Enter-PSSession</span> -HostName server.com -UserName admin -KeyFilePath ~/.ssh/id_rsa
+
+<span class="c-comment"># Run commands on Linux from Windows</span>
+<span class="c-cmdlet">Invoke-Command</span> -HostName ubuntu@192.168.1.50 -ScriptBlock {
+    uname -a
+    <span class="c-cmdlet">Get-Process</span> pwsh
+}
+
+<span class="c-comment"># Multi-machine SSH</span>
+<span class="c-cmdlet">Invoke-Command</span> -HostName admin@web1, admin@web2, admin@web3 -ScriptBlock {
+    systemctl status nginx
+}</code></pre>
+                </div>
+
+                <!-- CIM/WMI Queries -->
+                <div class="groupbox">
+                    <span class="groupbox-label">CIM/WMI Queries</span>
+                    <div class="alert alert-info">
+                        <span class="alert-icon">&#8505;</span>
+                        <div class="alert-content">
+                            <p><strong>Use <code>Get-CimInstance</code></strong> (not <code>Get-WmiObject</code>). CIM uses WS-Man, is more secure, cross-platform compatible, and <code>Get-WmiObject</code> is deprecated in PowerShell 7.</p>
+                        </div>
+                    </div>
+                    <pre><code><span class="c-comment"># System information</span>
+<span class="c-cmdlet">Get-CimInstance</span> Win32_OperatingSystem | <span class="c-cmdlet">Select-Object</span> Caption, Version, LastBootUpTime
+
+<span class="c-comment"># Hardware info</span>
+<span class="c-cmdlet">Get-CimInstance</span> Win32_Processor | <span class="c-cmdlet">Select-Object</span> Name, NumberOfCores, MaxClockSpeed
+<span class="c-cmdlet">Get-CimInstance</span> Win32_PhysicalMemory | <span class="c-cmdlet">Measure-Object</span> Capacity -Sum
+
+<span class="c-comment"># Disk space</span>
+<span class="c-cmdlet">Get-CimInstance</span> Win32_LogicalDisk -Filter <span class="c-string">"DriveType=3"</span> |
+    <span class="c-cmdlet">Select-Object</span> DeviceID,
+        @{N=<span class="c-string">'SizeGB'</span>;E={[math]::Round(<span class="c-variable">$_</span>.Size/<span class="c-number">1</span>GB)}},
+        @{N=<span class="c-string">'FreeGB'</span>;E={[math]::Round(<span class="c-variable">$_</span>.FreeSpace/<span class="c-number">1</span>GB)}}
+
+<span class="c-comment"># Services</span>
+<span class="c-cmdlet">Get-CimInstance</span> Win32_Service | <span class="c-cmdlet">Where-Object</span> StartMode <span class="c-operator">-eq</span> <span class="c-string">'Auto'</span> |
+    <span class="c-cmdlet">Select-Object</span> Name, State, StartMode
+
+<span class="c-comment"># CIM Sessions (efficient for multiple queries)</span>
+<span class="c-variable">$session</span> = <span class="c-cmdlet">New-CimSession</span> -ComputerName Server01
+<span class="c-cmdlet">Get-CimInstance</span> Win32_Process -CimSession <span class="c-variable">$session</span>
+<span class="c-cmdlet">Get-CimInstance</span> Win32_Service -CimSession <span class="c-variable">$session</span>
+<span class="c-cmdlet">Remove-CimSession</span> <span class="c-variable">$session</span></code></pre>
+                </div>
+
+                <!-- Background Jobs -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Background Jobs</span>
+                    <p>Background jobs run commands asynchronously in a separate process. Useful for long-running operations that should not block your session.</p>
+                    <pre><code><span class="c-comment"># Start background job</span>
+<span class="c-variable">$job</span> = <span class="c-cmdlet">Start-Job</span> -ScriptBlock {
+    <span class="c-cmdlet">Get-ChildItem</span> -Recurse <span class="c-string">"C:\LargeDirectory"</span>
+}
+
+<span class="c-comment"># Check job status</span>
+<span class="c-cmdlet">Get-Job</span>
+
+<span class="c-comment"># Get results (waits for completion)</span>
+<span class="c-variable">$results</span> = <span class="c-cmdlet">Receive-Job</span> -Job <span class="c-variable">$job</span> -Wait
+
+<span class="c-comment"># Remove completed jobs</span>
+<span class="c-cmdlet">Get-Job</span> -State Completed | <span class="c-cmdlet">Remove-Job</span>
+
+<span class="c-comment"># Scheduled job</span>
+<span class="c-cmdlet">Register-ScheduledJob</span> -Name <span class="c-string">"NightlyBackup"</span> -ScriptBlock {
+    <span class="c-cmdlet">Copy-Item</span> <span class="c-string">"C:\Data"</span> <span class="c-string">"D:\Backup"</span> -Recurse
+} -Trigger (<span class="c-cmdlet">New-JobTrigger</span> -Daily -At <span class="c-string">"2:00 AM"</span>)</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SECTION 12 — TIPS & TRICKS
+        ============================================================= -->
+        <div class="window" id="tips-tricks">
+            <div class="window-titlebar">
+                <span class="window-title">12. Tips &amp; Tricks</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="section-intro">
+                    <p>Power-user techniques, modern operators, and quality-of-life improvements that make daily PowerShell use faster and more enjoyable. If you only take away one thing from this section, let it be splatting &mdash; it transforms unreadable one-liners into clean, maintainable code.</p>
+                </div>
+
+                <!-- Splatting -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Splatting</span>
+                    <p>Pass parameters as a hashtable with <code>@</code> instead of <code>$</code>. Keeps long commands readable and parameters reusable.</p>
+                    <pre><code><span class="c-comment"># Without splatting (long, hard to read)</span>
+<span class="c-cmdlet">Send-MailMessage</span> -From <span class="c-string">"admin@company.com"</span> -To <span class="c-string">"team@company.com"</span> -Subject <span class="c-string">"Report"</span> -Body <span class="c-variable">$body</span> -SmtpServer <span class="c-string">"smtp.company.com"</span> -Port <span class="c-number">587</span> -UseSsl
+
+<span class="c-comment"># With splatting (clean and reusable)</span>
+<span class="c-variable">$mailParams</span> = @{
+    From       = <span class="c-string">"admin@company.com"</span>
+    To         = <span class="c-string">"team@company.com"</span>
+    Subject    = <span class="c-string">"Report"</span>
+    Body       = <span class="c-variable">$body</span>
+    SmtpServer = <span class="c-string">"smtp.company.com"</span>
+    Port       = <span class="c-number">587</span>
+    UseSsl     = <span class="c-variable">$true</span>
+}
+<span class="c-cmdlet">Send-MailMessage</span> @mailParams</code></pre>
+                </div>
+
+                <!-- PowerShell 7+ Operators -->
+                <div class="groupbox">
+                    <span class="groupbox-label">PowerShell 7+ Operators</span>
+                    <p>Modern operators added in PowerShell 7 that bring the language closer to C# and JavaScript conventions.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Operator</th>
+                                <th>Name</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>? :</code></td>
+                                <td>Ternary</td>
+                                <td><code>$x -gt 5 ? "big" : "small"</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>??</code></td>
+                                <td>Null-coalescing</td>
+                                <td><code>$val ?? "default"</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>??=</code></td>
+                                <td>Null-coalescing assign</td>
+                                <td><code>$x ??= "fallback"</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>&amp;&amp;</code></td>
+                                <td>Pipeline chain (and)</td>
+                                <td><code>cmd1 &amp;&amp; cmd2</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>||</code></td>
+                                <td>Pipeline chain (or)</td>
+                                <td><code>cmd1 || cmd2</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>?.</code></td>
+                                <td>Null-conditional member</td>
+                                <td><code>$obj?.Property</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>?[]</code></td>
+                                <td>Null-conditional index</td>
+                                <td><code>$arr?[0]</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <pre><code><span class="c-comment"># Ternary — replaces if/else for simple assignments</span>
+<span class="c-variable">$status</span> = (<span class="c-cmdlet">Test-Connection</span> -Quiet server01) ? <span class="c-string">"Online"</span> : <span class="c-string">"Offline"</span>
+
+<span class="c-comment"># Null-coalescing — default values without if</span>
+<span class="c-variable">$config</span> = (<span class="c-cmdlet">Get-Content</span> <span class="c-string">"config.json"</span> -Raw -ErrorAction SilentlyContinue) ?? <span class="c-string">'{}'</span>
+<span class="c-variable">$settings</span> = <span class="c-variable">$config</span> | <span class="c-cmdlet">ConvertFrom-Json</span>
+
+<span class="c-comment"># Null-coalescing assignment — set only if null</span>
+<span class="c-variable">$env:LOG_LEVEL</span> ??= <span class="c-string">"INFO"</span>
+
+<span class="c-comment"># Pipeline chain — conditional execution</span>
+<span class="c-cmdlet">Test-Path</span> <span class="c-string">"./build"</span> &amp;&amp; <span class="c-cmdlet">Remove-Item</span> <span class="c-string">"./build"</span> -Recurse
+dotnet build || <span class="c-cmdlet">Write-Error</span> <span class="c-string">"Build failed!"</span></code></pre>
+                </div>
+
+                <!-- Profile Customization -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Profile Customization</span>
+                    <p>Your PowerShell profile is a script that runs at startup. Use it to load modules, set aliases, configure PSReadLine, and customize your prompt.</p>
+                    <pre><code><span class="c-comment"># Find your profile path</span>
+<span class="c-variable">$PROFILE</span>
+
+<span class="c-comment"># Create profile if it doesn't exist</span>
+<span class="c-keyword">if</span> (<span class="c-operator">-not</span> (<span class="c-cmdlet">Test-Path</span> <span class="c-variable">$PROFILE</span>)) {
+    <span class="c-cmdlet">New-Item</span> -Path <span class="c-variable">$PROFILE</span> -ItemType File -Force
+}
+
+<span class="c-comment"># Example profile content:</span>
+<span class="c-comment"># Import modules</span>
+<span class="c-cmdlet">Import-Module</span> PSReadLine
+
+<span class="c-comment"># PSReadLine configuration</span>
+<span class="c-cmdlet">Set-PSReadLineOption</span> -PredictionSource History
+<span class="c-cmdlet">Set-PSReadLineOption</span> -PredictionViewStyle ListView
+<span class="c-cmdlet">Set-PSReadLineKeyHandler</span> -Key UpArrow -Function HistorySearchBackward
+<span class="c-cmdlet">Set-PSReadLineKeyHandler</span> -Key DownArrow -Function HistorySearchForward
+<span class="c-cmdlet">Set-PSReadLineKeyHandler</span> -Key Tab -Function MenuComplete
+
+<span class="c-comment"># Custom aliases</span>
+<span class="c-cmdlet">Set-Alias</span> -Name g -Value git
+<span class="c-cmdlet">Set-Alias</span> -Name k -Value kubectl
+<span class="c-cmdlet">Set-Alias</span> -Name c -Value code
+
+<span class="c-comment"># Custom prompt</span>
+<span class="c-keyword">function</span> prompt {
+    <span class="c-variable">$loc</span> = (<span class="c-cmdlet">Get-Location</span>).Path.Replace(<span class="c-variable">$HOME</span>, <span class="c-string">'~'</span>)
+    <span class="c-variable">$branch</span> = git branch --show-current <span class="c-number">2</span>&gt;<span class="c-variable">$null</span>
+    <span class="c-variable">$prefix</span> = <span class="c-string">"PS"</span>
+    <span class="c-keyword">if</span> (<span class="c-variable">$branch</span>) { <span class="c-variable">$prefix</span> = <span class="c-string">"PS [$branch]"</span> }
+    <span class="c-string">"$prefix $loc&gt; "</span>
+}</code></pre>
+                </div>
+
+                <!-- Useful One-Liners -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Useful One-Liners</span>
+                    <div class="command-grid">
+                        <div class="command-card">
+                            <div class="command-card-title">Find duplicate files</div>
+                            <div class="command-card-desc"><code>Get-ChildItem -Recurse -File | Group-Object Length | Where-Object Count -gt 1</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Monitor a log file</div>
+                            <div class="command-card-desc"><code>Get-Content "app.log" -Tail 50 -Wait</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Get public IP</div>
+                            <div class="command-card-desc"><code>(Invoke-RestMethod ifconfig.me/ip).Trim()</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Kill process by port</div>
+                            <div class="command-card-desc"><code>Get-NetTCPConnection -LocalPort 8080 | Stop-Process -Id { $_.OwningProcess }</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Base64 encode</div>
+                            <div class="command-card-desc"><code>[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("secret"))</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Stopwatch</div>
+                            <div class="command-card-desc"><code>$sw = [Diagnostics.Stopwatch]::StartNew(); &lt;code&gt;; $sw.Elapsed</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Quick HTTP server</div>
+                            <div class="command-card-desc"><code>Start-Process pwsh -ArgumentList "-c", "python -m http.server 8080"</code></div>
+                        </div>
+                        <div class="command-card">
+                            <div class="command-card-title">Clipboard operations</div>
+                            <div class="command-card-desc"><code>Get-Clipboard</code> &middot; <code>Set-Clipboard "text"</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bash to PowerShell Rosetta -->
+                <div class="groupbox">
+                    <span class="groupbox-label">Bash to PowerShell Rosetta</span>
+                    <p>Essential equivalents for developers coming from Linux/macOS. PowerShell aliases many of these (<code>ls</code>, <code>cat</code>, <code>cd</code>) but the native cmdlets give you object output instead of text.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Bash</th>
+                                <th>PowerShell</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>ls -la</code></td>
+                                <td><code>Get-ChildItem -Force</code></td>
+                                <td>Shows hidden files</td>
+                            </tr>
+                            <tr>
+                                <td><code>grep -r "pattern" .</code></td>
+                                <td><code>Get-ChildItem -Recurse | Select-String "pattern"</code></td>
+                                <td>Or <code>sls</code> alias</td>
+                            </tr>
+                            <tr>
+                                <td><code>cat file.txt</code></td>
+                                <td><code>Get-Content file.txt</code></td>
+                                <td>Or <code>gc</code> alias</td>
+                            </tr>
+                            <tr>
+                                <td><code>find . -name "*.txt"</code></td>
+                                <td><code>Get-ChildItem -Recurse -Filter "*.txt"</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>wc -l file</code></td>
+                                <td><code>(Get-Content file).Count</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>sed 's/old/new/g' file</code></td>
+                                <td><code>(Get-Content file) -replace 'old','new' | Set-Content file</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>curl -s url</code></td>
+                                <td><code>Invoke-RestMethod url</code></td>
+                                <td>Returns parsed JSON</td>
+                            </tr>
+                            <tr>
+                                <td><code>ps aux | grep nginx</code></td>
+                                <td><code>Get-Process nginx</code></td>
+                                <td>Direct name parameter</td>
+                            </tr>
+                            <tr>
+                                <td><code>kill -9 PID</code></td>
+                                <td><code>Stop-Process -Id PID -Force</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>export VAR=val</code></td>
+                                <td><code>$env:VAR = "val"</code></td>
+                                <td>Session-scoped</td>
+                            </tr>
+                            <tr>
+                                <td><code>echo $?</code></td>
+                                <td><code>$?</code> or <code>$LASTEXITCODE</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>command || fallback</code></td>
+                                <td><code>command || fallback</code></td>
+                                <td>PS 7+ only</td>
+                            </tr>
+                            <tr>
+                                <td><code>tail -f log</code></td>
+                                <td><code>Get-Content log -Tail 10 -Wait</code></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><code>chmod +x script</code></td>
+                                <td><code>Set-ExecutionPolicy RemoteSigned</code></td>
+                                <td>Different model</td>
+                            </tr>
+                            <tr>
+                                <td><code>source ~/.bashrc</code></td>
+                                <td><code>. $PROFILE</code></td>
+                                <td>Dot-source operator</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="window" style="margin-top: 24px;">
+            <div class="window-titlebar window-titlebar-inactive">
+                <span class="window-title">About PowerShell Tech Guide</span>
+                <div class="window-controls">
+                    <button class="window-btn window-btn-minimize"></button>
+                    <button class="window-btn window-btn-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content" style="text-align: center; padding: 24px;">
+                <p style="margin-bottom: 8px;">Part of <a href="index.html" style="color: var(--win-dark-blue);">Tech Guides</a> &middot; <a href="../index.html" style="color: var(--win-dark-blue);">HTML Style Guides</a></p>
+                <p style="color: var(--text-disabled);">Windows 3.1 Design System &middot; Self-Contained HTML &middot; No Build Tools</p>
+            </div>
+            <div class="window-statusbar">
+                <div class="statusbar-section">PowerShell 5.1 &mdash; 7.5+</div>
+                <div class="statusbar-section">12 Sections</div>
+                <div class="statusbar-section">Zero Dependencies</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

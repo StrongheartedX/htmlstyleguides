@@ -2,7 +2,7 @@
 
 Master mapping of all 103 style guides and their usage across tech guides and stories.
 
-**Used:** 49 styles · **Available:** 54 styles
+**Used:** 50 styles · **Available:** 53 styles
 
 | Style | Tech Guide | Story |
 |-------|-----------|-------|
@@ -106,6 +106,6 @@ Master mapping of all 103 style guides and their usage across tech guides and st
 | visual-novel | | |
 | watercolor | | The Pigment Trail |
 | wes-anderson | | |
-| windows31 | | |
+| windows31 | PowerShell | |
 | wireframe | | |
 | y2k | | |
