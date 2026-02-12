@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD PIPELINES — Tech Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           CI/CD PIPELINES TECH GUIDE // ITALIAN FUTURISM
+           Speed. Automation. Continuous Velocity.
+           Inspired by Marinetti, Boccioni, and the aesthetics
+           of machines in relentless motion.
+           ============================================================ */
+
+        :root {
+            /* FUTURIST PALETTE */
+            --red-aggressive: #D41920;
+            --red-dark: #9B1118;
+            --red-glow: #FF2D2D;
+            --black: #0B0B0B;
+            --black-soft: #1A1A1A;
+            --black-panel: #141414;
+            --silver: #B8BFC6;
+            --silver-light: #D4DAE0;
+            --silver-dark: #7A838C;
+            --blue-electric: #0055FF;
+            --blue-glow: #3388FF;
+            --yellow-industrial: #F5C518;
+            --yellow-bright: #FFE033;
+            --white: #F0F0EC;
+            --white-hot: #FFFFFF;
+            --grey-exhaust: #3A3A3A;
+            --grey-machine: #5C5C5C;
+
+            /* SEMANTIC */
+            --text-primary: var(--white);
+            --text-body: var(--silver);
+            --text-muted: var(--silver-dark);
+            --bg-primary: var(--black);
+            --bg-section: var(--black-soft);
+            --bg-panel: var(--black-panel);
+            --accent: var(--red-aggressive);
+            --accent-secondary: var(--blue-electric);
+            --accent-tertiary: var(--yellow-industrial);
+
+            /* PLATFORM BADGES */
+            --github-color: #2088FF;
+            --gitlab-color: #E24329;
+            --jenkins-color: #D33833;
+            --argo-color: #EF7B4D;
+
+            /* TYPOGRAPHY */
+            --font-display: 'Bebas Neue', 'Impact', sans-serif;
+            --font-heading: 'Oswald', 'Arial Narrow', sans-serif;
+            --font-body: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+
+            /* SPACING */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+        }
+
+        /* RESET */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 56px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--text-body);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* DIAGONAL TEXTURE OVERLAY */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                repeating-linear-gradient(
+                    -45deg,
+                    transparent 0px,
+                    transparent 40px,
+                    rgba(212, 25, 32, 0.015) 40px,
+                    rgba(212, 25, 32, 0.015) 41px
+                ),
+                repeating-linear-gradient(
+                    45deg,
+                    transparent 0px,
+                    transparent 60px,
+                    rgba(0, 85, 255, 0.01) 60px,
+                    rgba(0, 85, 255, 0.01) 61px
+                );
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 var(--space-5);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ============================================================
+           BACK LINK
+           ============================================================ */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--silver-dark);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            padding: var(--space-5) 0 var(--space-3);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--red-aggressive); }
+        .back-link::before { content: '\2190\00a0'; }
+
+        /* ============================================================
+           HEADER — FUTURIST MANIFESTO STYLE
+           ============================================================ */
+        .header {
+            padding: var(--space-7) 0 var(--space-8);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 3px solid var(--red-aggressive);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -20%;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(212,25,32,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .header::after {
+            content: 'VELOCITÀ';
+            position: absolute;
+            bottom: 15px; right: 0;
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 15vw, 10rem);
+            color: rgba(212, 25, 32, 0.04);
+            letter-spacing: 10px;
+            line-height: 1;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .header-label {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--red-aggressive);
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            margin-bottom: var(--space-3);
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 12vw, 7rem);
+            color: var(--white-hot);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            line-height: 0.95;
+            margin-bottom: var(--space-4);
+        }
+
+        .header-title span {
+            color: var(--red-aggressive);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--silver);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            max-width: 700px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: var(--space-6);
+            margin-top: var(--space-5);
+            flex-wrap: wrap;
+        }
+
+        .header-stat {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--silver-dark);
+        }
+
+        .header-stat strong {
+            color: var(--yellow-industrial);
+            font-weight: 700;
+        }
+
+        /* ============================================================
+           JUMP NAV — HORIZONTAL SPEED BAR
+           ============================================================ */
+        .jump-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            white-space: nowrap;
+            background: var(--black);
+            border-bottom: 2px solid var(--red-aggressive);
+            padding: 0;
+            scrollbar-width: none;
+        }
+        .jump-nav::-webkit-scrollbar { display: none; }
+
+        .jump-nav a {
+            font-family: var(--font-heading);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--silver-dark);
+            text-decoration: none;
+            padding: var(--space-3) var(--space-4);
+            border-right: 1px solid rgba(212,25,32,0.15);
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .jump-nav a:first-child { border-left: 1px solid rgba(212,25,32,0.15); }
+
+        .jump-nav a:hover {
+            color: var(--white);
+            background: rgba(212, 25, 32, 0.12);
+        }
+
+        /* ============================================================
+           SECTIONS
+           ============================================================ */
+        .section {
+            padding: var(--space-8) 0;
+            border-bottom: 1px solid var(--grey-exhaust);
+        }
+
+        .section:last-of-type { border-bottom: none; }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--red-aggressive), transparent);
+            align-self: center;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--red-aggressive);
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .section-description {
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            color: var(--silver);
+            margin-bottom: var(--space-6);
+            max-width: 800px;
+            line-height: 1.7;
+        }
+
+        /* SUBSECTIONS */
+        .subsection {
+            margin-bottom: var(--space-7);
+        }
+
+        .subsection-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-4);
+            padding-left: var(--space-3);
+            border-left: 3px solid var(--red-aggressive);
+        }
+
+        /* ============================================================
+           CODE BLOCKS — MACHINE AESTHETIC
+           ============================================================ */
+        pre {
+            background: var(--bg-panel);
+            border: 1px solid var(--grey-exhaust);
+            border-left: 3px solid var(--red-aggressive);
+            padding: var(--space-5);
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        pre::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 0; right: 0;
+            font-family: var(--font-heading);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 2px 10px;
+            background: var(--red-aggressive);
+            color: var(--white);
+        }
+
+        pre code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--silver-light);
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.88rem;
+            color: var(--yellow-industrial);
+            background: rgba(245, 197, 24, 0.08);
+            padding: 1px 6px;
+            border-radius: 2px;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: var(--silver-light);
+        }
+
+        /* SYNTAX HIGHLIGHTING IN CODE */
+        .hl-keyword { color: var(--red-glow); }
+        .hl-string { color: var(--yellow-industrial); }
+        .hl-comment { color: var(--grey-machine); font-style: italic; }
+        .hl-value { color: var(--blue-glow); }
+
+        /* ============================================================
+           TABLES — INDUSTRIAL GRID
+           ============================================================ */
+        .table-wrap {
+            overflow-x: auto;
+            margin-bottom: var(--space-5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        thead th {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--white);
+            background: var(--red-dark);
+            padding: var(--space-3) var(--space-4);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--grey-exhaust);
+            color: var(--silver);
+            vertical-align: top;
+        }
+
+        tbody tr:hover { background: rgba(212, 25, 32, 0.04); }
+
+        tbody td code {
+            font-size: 0.82rem;
+        }
+
+        /* ============================================================
+           COMMAND GRID
+           ============================================================ */
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .command-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--grey-exhaust);
+            padding: var(--space-4);
+            position: relative;
+        }
+
+        .command-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--red-aggressive);
+        }
+
+        .command-card h4 {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--yellow-industrial);
+            margin-bottom: var(--space-2);
+        }
+
+        .command-card code {
+            font-size: 0.82rem;
+            color: var(--silver-light);
+            background: transparent;
+        }
+
+        .command-card p {
+            font-size: 0.85rem;
+            color: var(--silver-dark);
+            margin-top: var(--space-2);
+        }
+
+        /* ============================================================
+           BADGES — PLATFORM INDICATORS
+           ============================================================ */
+        .badge {
+            display: inline-block;
+            font-family: var(--font-heading);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 2px 10px;
+            margin-right: var(--space-2);
+            margin-bottom: var(--space-2);
+            color: var(--white);
+        }
+
+        .badge-github { background: var(--github-color); }
+        .badge-gitlab { background: var(--gitlab-color); }
+        .badge-jenkins { background: var(--jenkins-color); }
+        .badge-argo { background: var(--argo-color); }
+        .badge-all { background: var(--grey-machine); }
+        .badge-tip { background: var(--blue-electric); }
+        .badge-warn { background: var(--red-aggressive); }
+
+        /* ============================================================
+           ALERTS / CALLOUTS
+           ============================================================ */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            margin-bottom: var(--space-5);
+            border-left: 4px solid;
+            position: relative;
+        }
+
+        .alert-title {
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-2);
+        }
+
+        .alert-info {
+            background: rgba(0, 85, 255, 0.06);
+            border-color: var(--blue-electric);
+        }
+        .alert-info .alert-title { color: var(--blue-glow); }
+
+        .alert-warning {
+            background: rgba(245, 197, 24, 0.06);
+            border-color: var(--yellow-industrial);
+        }
+        .alert-warning .alert-title { color: var(--yellow-industrial); }
+
+        .alert-danger {
+            background: rgba(212, 25, 32, 0.06);
+            border-color: var(--red-aggressive);
+        }
+        .alert-danger .alert-title { color: var(--red-glow); }
+
+        /* ============================================================
+           COMPARISON PANELS
+           ============================================================ */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .compare-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--grey-exhaust);
+            padding: var(--space-4);
+        }
+
+        .compare-panel h4 {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding-bottom: var(--space-3);
+            margin-bottom: var(--space-3);
+            border-bottom: 2px solid;
+        }
+
+        .compare-panel.github h4 { color: var(--github-color); border-color: var(--github-color); }
+        .compare-panel.gitlab h4 { color: var(--gitlab-color); border-color: var(--gitlab-color); }
+        .compare-panel.jenkins h4 { color: var(--jenkins-color); border-color: var(--jenkins-color); }
+
+        .compare-panel pre {
+            border-left-color: var(--grey-machine);
+            margin-bottom: 0;
+        }
+
+        /* ============================================================
+           LISTS
+           ============================================================ */
+        ul, ol {
+            padding-left: var(--space-5);
+            margin-bottom: var(--space-4);
+        }
+
+        li {
+            margin-bottom: var(--space-2);
+            color: var(--silver);
+        }
+
+        li strong { color: var(--white); }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        .site-footer {
+            text-align: center;
+            padding: var(--space-7) 0;
+            border-top: 2px solid var(--red-aggressive);
+            margin-top: var(--space-7);
+            position: relative;
+        }
+
+        .site-footer::before {
+            content: 'AVANTI VELOCE';
+            display: block;
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: rgba(212, 25, 32, 0.06);
+            letter-spacing: 10px;
+            margin-bottom: var(--space-4);
+        }
+
+        .site-footer a {
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--silver-dark);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .site-footer a:hover { color: var(--red-aggressive); }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 768px) {
+            html { font-size: 15px; }
+            .container { padding: 0 var(--space-4); }
+            .header-title { letter-spacing: 1px; }
+            .header::after { display: none; }
+            .section { padding: var(--space-6) 0; }
+            .section-header { flex-direction: column; gap: var(--space-2); }
+            .section-header::after { display: none; }
+            .section-number { font-size: 1.8rem; }
+            .section-title { font-size: 1.5rem; letter-spacing: 1px; }
+            .command-grid { grid-template-columns: 1fr; }
+            .compare-grid { grid-template-columns: 1fr; }
+            .header-stats { gap: var(--space-4); }
+            pre { padding: var(--space-4); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">Tech Guides</a>
+
+        <header class="header">
+            <div class="header-label">Continuous Integration &amp; Delivery</div>
+            <h1 class="header-title">CI<span>/</span>CD PIPELINES</h1>
+            <p class="header-subtitle">Automate everything. Build fast. Deploy faster. Never stop moving.</p>
+            <div class="header-stats">
+                <span class="header-stat"><strong>3</strong> Major Platforms</span>
+                <span class="header-stat"><strong>12</strong> Sections</span>
+                <span class="header-stat"><strong>100+</strong> Commands &amp; Patterns</span>
+            </div>
+        </header>
+
+        <!-- JUMP NAV -->
+        <nav class="jump-nav">
+            <a href="#cheatsheet">Cheat Sheet</a>
+            <a href="#concepts">Concepts</a>
+            <a href="#github-actions">GitHub Actions</a>
+            <a href="#gitlab-ci">GitLab CI</a>
+            <a href="#jenkins">Jenkins</a>
+            <a href="#patterns">Patterns</a>
+            <a href="#docker">Docker in CI</a>
+            <a href="#testing">Testing</a>
+            <a href="#deployment">Deployment</a>
+            <a href="#secrets">Secrets</a>
+            <a href="#performance">Performance</a>
+            <a href="#troubleshooting">Troubleshoot</a>
+        </nav>
+
+        <!-- ============================================================
+             01. QUICK REFERENCE
+             ============================================================ -->
+        <section id="cheatsheet" class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2 class="section-title">Quick Reference</h2>
+            </div>
+            <p class="section-description">The most common pipeline operations across all three major platforms — at a glance.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Pipeline Config Files</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>Config File</th>
+                                <th>Trigger</th>
+                                <th>Runs On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge badge-github">GitHub</span></td>
+                                <td><code>.github/workflows/*.yml</code></td>
+                                <td>Events (push, PR, schedule, manual)</td>
+                                <td>GitHub-hosted or self-hosted runners</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-gitlab">GitLab</span></td>
+                                <td><code>.gitlab-ci.yml</code></td>
+                                <td>Push, merge request, API, schedule</td>
+                                <td>GitLab shared or self-managed runners</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-jenkins">Jenkins</span></td>
+                                <td><code>Jenkinsfile</code></td>
+                                <td>SCM poll, webhook, cron, manual</td>
+                                <td>Controller + agent nodes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Minimal Pipeline — Side by Side</h3>
+                <div class="compare-grid">
+                    <div class="compare-panel github">
+                        <h4>GitHub Actions</h4>
+                        <pre><code>name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install
+      - run: npm test</code></pre>
+                    </div>
+                    <div class="compare-panel gitlab">
+                        <h4>GitLab CI</h4>
+                        <pre><code>stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - npm install
+
+test:
+  stage: test
+  script:
+    - npm test</code></pre>
+                    </div>
+                    <div class="compare-panel jenkins">
+                        <h4>Jenkinsfile</h4>
+                        <pre><code>pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        sh 'npm install'
+      }
+    }
+    stage('Test') {
+      steps {
+        sh 'npm test'
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             02. CORE CONCEPTS
+             ============================================================ -->
+        <section id="concepts" class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2 class="section-title">Core Concepts</h2>
+            </div>
+            <p class="section-description">The fundamental building blocks of every CI/CD system — pipelines, stages, jobs, and the runners that execute them.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Pipeline Anatomy</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Concept</th>
+                                <th>Description</th>
+                                <th>GitHub</th>
+                                <th>GitLab</th>
+                                <th>Jenkins</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Pipeline</strong></td>
+                                <td>The full automation run triggered by an event</td>
+                                <td>Workflow</td>
+                                <td>Pipeline</td>
+                                <td>Pipeline</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stage</strong></td>
+                                <td>A logical group of jobs that run together</td>
+                                <td>Implicit (via <code>needs</code>)</td>
+                                <td>Stage</td>
+                                <td>Stage</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job</strong></td>
+                                <td>A unit of work on a single runner/agent</td>
+                                <td>Job</td>
+                                <td>Job</td>
+                                <td>Stage (single)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Step</strong></td>
+                                <td>A single command or action within a job</td>
+                                <td>Step</td>
+                                <td>Script line</td>
+                                <td>Step</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Runner / Agent</strong></td>
+                                <td>Machine that executes jobs</td>
+                                <td>Runner</td>
+                                <td>Runner</td>
+                                <td>Agent / Node</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Artifact</strong></td>
+                                <td>Build output passed between jobs</td>
+                                <td><code>actions/upload-artifact</code></td>
+                                <td><code>artifacts:</code></td>
+                                <td><code>archiveArtifacts</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cache</strong></td>
+                                <td>Reused dependencies across runs</td>
+                                <td><code>actions/cache</code></td>
+                                <td><code>cache:</code></td>
+                                <td>Plugin-based</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">CI vs CD vs CD</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>Continuous Integration</h4>
+                        <p>Automatically build and test every commit. Catch bugs early. Keep main green. Run on every push and pull request.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Continuous Delivery</h4>
+                        <p>Every commit that passes CI is <em>deployable</em>. Artifacts are built, tested, and staged. A human clicks "deploy" to production.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Continuous Deployment</h4>
+                        <p>Every commit that passes CI goes to production <em>automatically</em>. No human gate. Requires rock-solid test coverage and monitoring.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Pipeline Triggers</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trigger Type</th>
+                                <th>When</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Push</strong></td>
+                                <td>Code pushed to a branch</td>
+                                <td>CI builds on every commit</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Pull/Merge Request</strong></td>
+                                <td>PR opened, updated, or synchronized</td>
+                                <td>Validate before merge</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Schedule (cron)</strong></td>
+                                <td>Timed interval</td>
+                                <td>Nightly builds, dependency checks</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Manual</strong></td>
+                                <td>Human clicks a button</td>
+                                <td>Production deploys, releases</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tag</strong></td>
+                                <td>Git tag created</td>
+                                <td>Release builds, publishing</td>
+                            </tr>
+                            <tr>
+                                <td><strong>API / Webhook</strong></td>
+                                <td>External HTTP call</td>
+                                <td>Cross-repo triggers, external events</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             03. GITHUB ACTIONS
+             ============================================================ -->
+        <section id="github-actions" class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2 class="section-title">GitHub Actions</h2>
+            </div>
+            <p class="section-description">Event-driven CI/CD natively integrated into GitHub. YAML workflows, a massive marketplace of reusable actions, and matrix builds out of the box.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Workflow Structure</h3>
+                <pre data-label="YAML"><code>name: Build &amp; Deploy
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'          # Every Monday 6am
+  workflow_dispatch:               # Manual trigger
+    inputs:
+      environment:
+        description: 'Deploy target'
+        required: true
+        default: 'staging'
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.node-version }}
+          path: coverage/
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploying to production"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Key Expressions &amp; Contexts</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>Conditional Execution</h4>
+                        <code>if: github.event_name == 'push'</code>
+                        <br><code>if: contains(github.event.head_commit.message, '[skip ci]') == false</code>
+                        <br><code>if: always()</code> / <code>failure()</code> / <code>success()</code>
+                    </div>
+                    <div class="command-card">
+                        <h4>Environment Variables</h4>
+                        <code>${{ secrets.API_KEY }}</code>
+                        <br><code>${{ github.sha }}</code>
+                        <br><code>${{ runner.os }}</code>
+                        <br><code>${{ matrix.node-version }}</code>
+                    </div>
+                    <div class="command-card">
+                        <h4>Job Outputs</h4>
+                        <code>echo "ver=1.0" >> $GITHUB_OUTPUT</code>
+                        <br>Reference: <code>${{ needs.build.outputs.ver }}</code>
+                    </div>
+                    <div class="command-card">
+                        <h4>Path Filters</h4>
+                        <code>on: push:</code>
+                        <br><code>&nbsp;&nbsp;paths: ['src/**', '*.json']</code>
+                        <br><code>&nbsp;&nbsp;paths-ignore: ['docs/**']</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Reusable Workflows</h3>
+                <pre data-label="CALLER"><code># .github/workflows/release.yml
+jobs:
+  call-build:
+    uses: ./.github/workflows/build.yml
+    with:
+      environment: production
+    secrets: inherit
+
+  call-deploy:
+    needs: call-build
+    uses: org/shared-workflows/.github/workflows/deploy.yml@main
+    with:
+      target: aws
+    secrets:
+      AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}</code></pre>
+                <pre data-label="REUSABLE"><code># .github/workflows/build.yml
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY:
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Building for ${{ inputs.environment }}"</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Essential Marketplace Actions</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>actions/checkout@v4</code></td><td>Check out repository code</td></tr>
+                            <tr><td><code>actions/setup-node@v4</code></td><td>Install Node.js with caching</td></tr>
+                            <tr><td><code>actions/cache@v4</code></td><td>Cache dependencies between runs</td></tr>
+                            <tr><td><code>actions/upload-artifact@v4</code></td><td>Save build artifacts</td></tr>
+                            <tr><td><code>actions/download-artifact@v4</code></td><td>Retrieve artifacts from prior jobs</td></tr>
+                            <tr><td><code>docker/build-push-action@v5</code></td><td>Build and push Docker images</td></tr>
+                            <tr><td><code>docker/login-action@v3</code></td><td>Authenticate to container registries</td></tr>
+                            <tr><td><code>github/codeql-action@v3</code></td><td>Security / code scanning</td></tr>
+                            <tr><td><code>softprops/action-gh-release@v2</code></td><td>Create GitHub releases</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             04. GITLAB CI/CD
+             ============================================================ -->
+        <section id="gitlab-ci" class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2 class="section-title">GitLab CI/CD</h2>
+            </div>
+            <p class="section-description">Built-in CI/CD with powerful DAG pipelines, Auto DevOps, container registry, and environments — all in one platform.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Full Pipeline Example</h3>
+                <pre data-label=".gitlab-ci.yml"><code>variables:
+  NODE_VERSION: "20"
+  DOCKER_HOST: tcp://docker:2376
+
+stages:
+  - install
+  - test
+  - build
+  - deploy
+
+default:
+  image: node:${NODE_VERSION}-alpine
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .npm/
+
+install:
+  stage: install
+  script:
+    - npm ci --cache .npm --prefer-offline
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+lint:
+  stage: test
+  needs: [install]
+  script:
+    - npm run lint
+
+unit-tests:
+  stage: test
+  needs: [install]
+  script:
+    - npm test -- --coverage
+  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+      junit: junit.xml
+
+build:
+  stage: build
+  needs: [lint, unit-tests]
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+deploy-staging:
+  stage: deploy
+  needs: [build]
+  environment:
+    name: staging
+    url: https://staging.example.com
+  script:
+    - echo "Deploy to staging"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-production:
+  stage: deploy
+  needs: [build]
+  environment:
+    name: production
+    url: https://example.com
+  script:
+    - echo "Deploy to production"
+  rules:
+    - if: $CI_COMMIT_TAG
+  when: manual</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Rules &amp; Conditions</h3>
+                <pre data-label="RULES"><code># Run only on main branch
+rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+
+# Run on merge requests only
+rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Run when files change
+rules:
+  - changes:
+      - src/**/*
+      - package.json
+
+# Never run on scheduled pipelines
+rules:
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: never
+  - when: on_success
+
+# Manual with optional auto
+rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: manual
+    allow_failure: true</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Include &amp; Extend</h3>
+                <pre data-label="YAML"><code># Include templates from other files/repos
+include:
+  - local: '/.gitlab/ci/test.yml'
+  - project: 'devops/templates'
+    ref: main
+    file: '/docker-build.yml'
+  - template: Security/SAST.gitlab-ci.yml
+
+# Reusable job templates
+.node-base:
+  image: node:20-alpine
+  before_script:
+    - npm ci
+
+test:
+  extends: .node-base
+  script:
+    - npm test</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">GitLab-Specific Features</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>Environments</h4>
+                        <p>Track deployments per environment with rollback. Protected environments require approvals.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>DAG Pipelines</h4>
+                        <p>Use <code>needs:</code> to define job dependencies independent of stage ordering for faster execution.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Multi-Project Pipelines</h4>
+                        <p>Trigger pipelines in other repos via <code>trigger: project:</code> for cross-repo orchestration.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Review Apps</h4>
+                        <p>Spin up per-branch preview environments automatically. Tear down on merge.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             05. JENKINS
+             ============================================================ -->
+        <section id="jenkins" class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2 class="section-title">Jenkins</h2>
+            </div>
+            <p class="section-description">The veteran CI server. Self-hosted, infinitely extensible with plugins, supports both declarative and scripted Groovy pipelines.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Declarative Pipeline</h3>
+                <pre data-label="Jenkinsfile"><code>pipeline {
+    agent {
+        docker {
+            image 'node:20-alpine'
+            args '-v $HOME/.npm:/root/.npm'
+        }
+    }
+
+    environment {
+        CI = 'true'
+        REGISTRY = credentials('docker-registry')
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    stages {
+        stage('Install') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Parallel Checks') {
+            parallel {
+                stage('Lint') {
+                    steps { sh 'npm run lint' }
+                }
+                stage('Unit Tests') {
+                    steps {
+                        sh 'npm test -- --ci --reporters=jest-junit'
+                    }
+                    post {
+                        always {
+                            junit 'junit.xml'
+                        }
+                    }
+                }
+                stage('Security Scan') {
+                    steps { sh 'npm audit --audit-level=high' }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+                archiveArtifacts artifacts: 'dist/**', fingerprint: true
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            input {
+                message 'Deploy to production?'
+                ok 'Yes, deploy'
+            }
+            steps {
+                sh './scripts/deploy.sh'
+            }
+        }
+    }
+
+    post {
+        success { echo 'Pipeline succeeded!' }
+        failure {
+            mail to: 'team@example.com',
+                 subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Check: ${env.BUILD_URL}"
+        }
+        always { cleanWs() }
+    }
+}</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Scripted vs Declarative</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Declarative</th>
+                                <th>Scripted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Syntax</td>
+                                <td>Structured <code>pipeline { }</code> block</td>
+                                <td>Freeform Groovy with <code>node { }</code></td>
+                            </tr>
+                            <tr>
+                                <td>Flexibility</td>
+                                <td>Opinionated, less flexible</td>
+                                <td>Full Groovy power, any logic</td>
+                            </tr>
+                            <tr>
+                                <td>Error handling</td>
+                                <td><code>post { failure { } }</code></td>
+                                <td><code>try/catch/finally</code></td>
+                            </tr>
+                            <tr>
+                                <td>When to use</td>
+                                <td>Most pipelines (recommended)</td>
+                                <td>Complex conditional logic</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Shared Libraries</h3>
+                <pre data-label="Groovy"><code>// vars/buildPipeline.groovy (in shared library repo)
+def call(Map config = [:]) {
+    pipeline {
+        agent any
+        stages {
+            stage('Build') {
+                steps {
+                    sh "npm ci"
+                    sh "npm run build"
+                }
+            }
+            stage('Test') {
+                steps {
+                    sh "npm test"
+                }
+            }
+            stage('Deploy') {
+                when { branch config.get('deployBranch', 'main') }
+                steps {
+                    sh "./deploy.sh ${config.environment}"
+                }
+            }
+        }
+    }
+}
+
+// Jenkinsfile (consuming project)
+@Library('my-shared-lib') _
+buildPipeline(environment: 'production', deployBranch: 'main')</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             06. PIPELINE PATTERNS
+             ============================================================ -->
+        <section id="patterns" class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2 class="section-title">Pipeline Patterns</h2>
+            </div>
+            <p class="section-description">Reusable strategies for caching, parallel execution, conditional logic, and monorepo workflows.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Dependency Caching</h3>
+                <div class="compare-grid">
+                    <div class="compare-panel github">
+                        <h4>GitHub Actions</h4>
+                        <pre><code>- uses: actions/cache@v4
+  with:
+    path: ~/.npm
+    key: npm-${{ hashFiles('**/package-lock.json') }}
+    restore-keys: npm-
+
+# Or built-in with setup-node:
+- uses: actions/setup-node@v4
+  with:
+    node-version: 20
+    cache: 'npm'</code></pre>
+                    </div>
+                    <div class="compare-panel gitlab">
+                        <h4>GitLab CI</h4>
+                        <pre><code>cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .npm/
+  policy: pull-push    # pull, push, or pull-push</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Matrix Builds</h3>
+                <pre data-label="GitHub Actions"><code>jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [18, 20, 22]
+        exclude:
+          - os: macos-latest
+            node: 18
+        include:
+          - os: ubuntu-latest
+            node: 22
+            experimental: true
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci && npm test</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Fan-Out / Fan-In</h3>
+                <pre data-label="GitHub Actions"><code># Fan-out: parallel jobs, then fan-in to deploy
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps: [...]
+
+  test-unit:
+    runs-on: ubuntu-latest
+    steps: [...]
+
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+    steps: [...]
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps: [...]
+
+  # Fan-in: wait for all test jobs
+  deploy:
+    needs: [lint, test-unit, test-integration, test-e2e]
+    runs-on: ubuntu-latest
+    steps: [...]</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Monorepo — Path-Based Triggers</h3>
+                <pre data-label="GitHub Actions"><code># Only run when specific package changes
+on:
+  push:
+    paths:
+      - 'packages/api/**'
+      - 'packages/shared/**'
+
+# Or use dorny/paths-filter for conditional jobs
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'packages/api/**'
+            web:
+              - 'packages/web/**'
+
+  build-api:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps: [...]
+
+  build-web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps: [...]</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Concurrency Control</h3>
+                <pre data-label="GitHub Actions"><code># Cancel in-progress runs for same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# For deploy jobs, wait instead of cancelling
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             07. DOCKER IN CI/CD
+             ============================================================ -->
+        <section id="docker" class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2 class="section-title">Docker in CI/CD</h2>
+            </div>
+            <p class="section-description">Build images, push to registries, cache layers, and run integration tests with Docker Compose — all inside your pipeline.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Build &amp; Push Image</h3>
+                <pre data-label="GitHub Actions"><code>jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Multi-Stage Dockerfile for CI</h3>
+                <pre data-label="Dockerfile"><code># Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production=false
+
+# Stage 2: Build
+FROM deps AS build
+COPY . .
+RUN npm run build
+RUN npm prune --production
+
+# Stage 3: Test (used in CI only)
+FROM build AS test
+RUN npm test
+
+# Stage 4: Production image
+FROM node:20-alpine AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json .
+USER node
+EXPOSE 3000
+CMD ["node", "dist/index.js"]</code></pre>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">Layer Caching</div>
+                    <p>Use <code>cache-from: type=gha</code> in GitHub Actions or <code>--cache-from</code> in GitLab to reuse Docker layers across builds. Order Dockerfile commands from least to most frequently changed.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Docker Compose for Integration Tests</h3>
+                <pre data-label="GitHub Actions"><code>jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start services
+        run: docker compose -f docker-compose.test.yml up -d
+      - name: Wait for healthy
+        run: |
+          timeout 60 bash -c 'until docker compose -f docker-compose.test.yml ps | grep -q healthy; do sleep 2; done'
+      - name: Run tests
+        run: docker compose -f docker-compose.test.yml exec -T app npm run test:integration
+      - name: Teardown
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             08. TESTING STRATEGIES
+             ============================================================ -->
+        <section id="testing" class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2 class="section-title">Testing Strategies</h2>
+            </div>
+            <p class="section-description">Test pyramids, parallel execution, coverage gates, and test splitting for fast feedback loops.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Test Pyramid in CI</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Layer</th>
+                                <th>Speed</th>
+                                <th>Count</th>
+                                <th>When to Run</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Unit Tests</strong></td>
+                                <td>Fast (seconds)</td>
+                                <td>Many (hundreds+)</td>
+                                <td>Every push, every PR</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Integration Tests</strong></td>
+                                <td>Medium (minutes)</td>
+                                <td>Moderate (dozens)</td>
+                                <td>Every PR, post-merge</td>
+                            </tr>
+                            <tr>
+                                <td><strong>E2E Tests</strong></td>
+                                <td>Slow (5-30 min)</td>
+                                <td>Few (critical paths)</td>
+                                <td>Pre-deploy, nightly</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Smoke Tests</strong></td>
+                                <td>Fast (seconds)</td>
+                                <td>Handful</td>
+                                <td>Post-deploy (verify live)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Parallel Test Splitting</h3>
+                <pre data-label="GitHub Actions"><code># Split tests across N parallel runners
+jobs:
+  test:
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Run test shard
+        run: |
+          # Split test files evenly across shards
+          FILES=$(find src -name '*.test.ts' | sort | awk "NR % 4 == ${{ matrix.shard }} - 1")
+          npx jest $FILES --ci</code></pre>
+                <pre data-label="GitLab CI"><code>test:
+  stage: test
+  parallel: 4
+  script:
+    - FILES=$(find src -name '*.test.ts' | sort | awk "NR % $CI_NODE_TOTAL == $CI_NODE_INDEX")
+    - npx jest $FILES --ci</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Coverage Gates</h3>
+                <pre data-label="GitHub Actions"><code>- name: Check coverage threshold
+  run: |
+    COVERAGE=$(npx jest --coverage --coverageReporters=json-summary \
+      | jq '.total.lines.pct')
+    echo "Coverage: ${COVERAGE}%"
+    if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+      echo "::error::Coverage ${COVERAGE}% is below 80% threshold"
+      exit 1
+    fi</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Service Containers for Tests</h3>
+                <pre data-label="GitHub Actions"><code>jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:integration</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             09. DEPLOYMENT STRATEGIES
+             ============================================================ -->
+        <section id="deployment" class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2 class="section-title">Deployment Strategies</h2>
+            </div>
+            <p class="section-description">Blue-green, canary, rolling updates, feature flags, and GitOps — choose the right strategy for your risk tolerance.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Strategy Comparison</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Downtime</th>
+                                <th>Rollback Speed</th>
+                                <th>Risk</th>
+                                <th>Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Rolling Update</strong></td>
+                                <td>Zero</td>
+                                <td>Minutes</td>
+                                <td>Medium</td>
+                                <td>Stateless services, K8s default</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Blue-Green</strong></td>
+                                <td>Zero</td>
+                                <td>Instant (swap)</td>
+                                <td>Low</td>
+                                <td>Critical services, easy rollback</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Canary</strong></td>
+                                <td>Zero</td>
+                                <td>Fast</td>
+                                <td>Lowest</td>
+                                <td>High-traffic, gradual validation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Recreate</strong></td>
+                                <td>Yes</td>
+                                <td>Slow (redeploy)</td>
+                                <td>High</td>
+                                <td>Dev/staging, DB migrations</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Blue-Green Deploy</h3>
+                <pre data-label="SHELL"><code># Blue-green with AWS ALB target groups
+CURRENT=$(aws elbv2 describe-rules ... | jq -r '.TargetGroupArn')
+if [[ "$CURRENT" == *"blue"* ]]; then
+  DEPLOY_TARGET="green"
+else
+  DEPLOY_TARGET="blue"
+fi
+
+# Deploy to inactive environment
+aws ecs update-service --cluster prod \
+  --service "api-${DEPLOY_TARGET}" \
+  --task-definition "api:${NEW_VERSION}"
+
+# Wait for healthy
+aws ecs wait services-stable --cluster prod \
+  --services "api-${DEPLOY_TARGET}"
+
+# Run smoke tests against new env
+curl -f "https://${DEPLOY_TARGET}.internal/health"
+
+# Switch traffic
+aws elbv2 modify-rule --rule-arn $RULE_ARN \
+  --actions Type=forward,TargetGroupArn=$NEW_TG_ARN</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">GitOps with ArgoCD</h3>
+                <pre data-label="GitHub Actions"><code># CI pipeline updates manifests, ArgoCD syncs
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: org/k8s-manifests
+          token: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: Update image tag
+        run: |
+          cd apps/api/overlays/production
+          kustomize edit set image \
+            api=ghcr.io/org/api:${{ github.sha }}
+
+      - name: Commit &amp; push
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci@example.com"
+          git add .
+          git commit -m "deploy: api ${{ github.sha }}"
+          git push</code></pre>
+
+                <div class="alert alert-info">
+                    <div class="alert-title">GitOps Principle</div>
+                    <p>Git is the single source of truth for desired state. The CI pipeline pushes image tags to a manifests repo. ArgoCD or Flux watches that repo and reconciles the cluster to match.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Canary with Kubernetes</h3>
+                <pre data-label="K8s Manifest"><code># Canary: route 10% of traffic to new version
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api
+spec:
+  hosts: [api.example.com]
+  http:
+    - route:
+        - destination:
+            host: api
+            subset: stable
+          weight: 90
+        - destination:
+            host: api
+            subset: canary
+          weight: 10</code></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             10. SECRETS & SECURITY
+             ============================================================ -->
+        <section id="secrets" class="section">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2 class="section-title">Secrets &amp; Security</h2>
+            </div>
+            <p class="section-description">Manage credentials safely, scan for vulnerabilities, sign artifacts, and harden your supply chain.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Secret Management</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>GitHub Secrets</h4>
+                        <p>Repo/org/environment secrets. Access via <code>${{ secrets.NAME }}</code>. Masked in logs. Environment secrets require approval.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>GitLab Variables</h4>
+                        <p>Project/group CI variables. Mark as <strong>Masked</strong> and <strong>Protected</strong>. Limit to specific environments or branches.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>External Vaults</h4>
+                        <p>HashiCorp Vault, AWS Secrets Manager, Azure Key Vault. Fetch at runtime with OIDC — no stored credentials.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>OIDC Authentication</h4>
+                        <p>Passwordless auth to cloud providers. GitHub/GitLab issue short-lived JWT tokens. No long-lived keys to rotate.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">OIDC with AWS</h3>
+                <pre data-label="GitHub Actions"><code>permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789:role/github-deploy
+          aws-region: us-east-1
+          # No access keys needed! Uses OIDC token
+
+      - run: aws s3 sync dist/ s3://my-bucket/</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Supply Chain Security</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Practice</th>
+                                <th>Tool</th>
+                                <th>What It Does</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Dependency Scanning</strong></td>
+                                <td><code>npm audit</code>, Dependabot, Renovate</td>
+                                <td>Find known CVEs in dependencies</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SAST</strong></td>
+                                <td>CodeQL, Semgrep, SonarQube</td>
+                                <td>Static analysis for bugs and vulnerabilities</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Container Scanning</strong></td>
+                                <td>Trivy, Grype, Snyk</td>
+                                <td>Scan Docker images for CVEs</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Secret Detection</strong></td>
+                                <td>Gitleaks, TruffleHog</td>
+                                <td>Find accidentally committed secrets</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SBOM Generation</strong></td>
+                                <td>Syft, CycloneDX</td>
+                                <td>Software Bill of Materials for audit</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Artifact Signing</strong></td>
+                                <td>Cosign (Sigstore)</td>
+                                <td>Cryptographically sign images and artifacts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Security Scanning Pipeline</h3>
+                <pre data-label="GitHub Actions"><code>jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      - name: Secret detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/org/app:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'</code></pre>
+            </div>
+
+            <div class="alert alert-danger">
+                <div class="alert-title">Never Do This</div>
+                <p>Never echo secrets, pass them as CLI arguments (visible in <code>ps</code>), or store them in build artifacts. Use <code>--mount=type=secret</code> in Docker builds instead of <code>ARG</code> for secrets.</p>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             11. PERFORMANCE & OPTIMIZATION
+             ============================================================ -->
+        <section id="performance" class="section">
+            <div class="section-header">
+                <span class="section-number">11</span>
+                <h2 class="section-title">Performance &amp; Optimization</h2>
+            </div>
+            <p class="section-description">Cut build times, reduce costs, and keep pipelines running at maximum velocity.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Speed Optimization Checklist</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>Cache Everything</h4>
+                        <p>Dependencies (<code>node_modules</code>), Docker layers, build outputs. Use lock file hashes as cache keys.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Parallelize</h4>
+                        <p>Run lint, test, and build concurrently. Split test suites across runners. Use matrix builds.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Skip Unnecessary Work</h4>
+                        <p>Path filters, change detection, <code>[skip ci]</code> commits. Don't rebuild what hasn't changed.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Use Smaller Images</h4>
+                        <p>Alpine-based images. Pre-built CI images with tools installed. Avoid installing system packages at runtime.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Self-Hosted Runners</h4>
+                        <p>Persistent caches, faster hardware, no queue wait. Use for high-volume repos. Warm caches save minutes.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Incremental Builds</h4>
+                        <p>Turborepo, Nx, or Bazel for monorepos. Only rebuild affected packages. Remote caching across team.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Measuring Pipeline Performance</h3>
+                <pre data-label="GitHub Actions"><code># Add timing to each step
+- name: Install dependencies
+  run: |
+    START=$(date +%s)
+    npm ci
+    END=$(date +%s)
+    echo "::notice::Install took $((END-START))s"
+
+# GitHub provides built-in workflow run analytics
+# Settings > Actions > General > view usage
+
+# GitLab: CI/CD > Pipelines > Analytics
+# Shows pipeline duration trends over time</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Cost Optimization</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Savings</th>
+                                <th>Trade-off</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Use <code>ubuntu-latest</code> over macOS/Windows</td>
+                                <td>macOS is 10x, Windows is 2x cost</td>
+                                <td>Cross-platform coverage</td>
+                            </tr>
+                            <tr>
+                                <td>Cancel superseded runs</td>
+                                <td>Stop paying for stale builds</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td>Path-filtered triggers</td>
+                                <td>Only run affected pipelines</td>
+                                <td>May miss cross-cutting bugs</td>
+                            </tr>
+                            <tr>
+                                <td>Self-hosted for high volume</td>
+                                <td>Fixed cost vs. per-minute billing</td>
+                                <td>Maintenance overhead</td>
+                            </tr>
+                            <tr>
+                                <td>Spot/preemptible runners</td>
+                                <td>60-90% cheaper compute</td>
+                                <td>Jobs may be interrupted</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             12. TROUBLESHOOTING
+             ============================================================ -->
+        <section id="troubleshooting" class="section">
+            <div class="section-header">
+                <span class="section-number">12</span>
+                <h2 class="section-title">Troubleshooting</h2>
+            </div>
+            <p class="section-description">Debug failing pipelines, fix common errors, and recover from broken CI.</p>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Common Failures &amp; Fixes</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symptom</th>
+                                <th>Cause</th>
+                                <th>Fix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>npm ci</code> fails with lock file mismatch</td>
+                                <td><code>package-lock.json</code> out of sync</td>
+                                <td>Run <code>npm install</code> locally, commit lock file</td>
+                            </tr>
+                            <tr>
+                                <td>Tests pass locally, fail in CI</td>
+                                <td>Environment differences, timing, missing env vars</td>
+                                <td>Check Node version, OS, timezone. Add debug logging.</td>
+                            </tr>
+                            <tr>
+                                <td>"Resource not accessible by integration"</td>
+                                <td>Missing <code>permissions:</code> in workflow</td>
+                                <td>Add required permissions block (contents, packages, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td>Docker build slow (no layer cache)</td>
+                                <td>Cache not configured or invalidated</td>
+                                <td>Use <code>cache-from: type=gha</code> or registry cache</td>
+                            </tr>
+                            <tr>
+                                <td>Pipeline hangs indefinitely</td>
+                                <td>Interactive prompt or waiting for input</td>
+                                <td>Add <code>--non-interactive</code> flags, set <code>CI=true</code></td>
+                            </tr>
+                            <tr>
+                                <td>Secret is empty / not available</td>
+                                <td>Secret not set for environment/branch</td>
+                                <td>Check secret scope. Fork PRs can't access secrets.</td>
+                            </tr>
+                            <tr>
+                                <td>Out of disk space</td>
+                                <td>Large Docker images or dependencies</td>
+                                <td>Clean workspace, use <code>docker system prune</code>, smaller base images</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Debugging Techniques</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <h4>GitHub: Debug Logging</h4>
+                        <code>ACTIONS_RUNNER_DEBUG=true</code>
+                        <br><code>ACTIONS_STEP_DEBUG=true</code>
+                        <p>Set as repo secrets for verbose logs. Or re-run with debug logging enabled.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>GitHub: SSH Debug</h4>
+                        <pre><code>- uses: mxschmitt/action-tmate@v3
+  if: failure()</code></pre>
+                        <p>SSH into a failed runner to inspect state interactively.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>GitLab: Local Runner</h4>
+                        <code>gitlab-runner exec docker test</code>
+                        <p>Run a job locally with the GitLab Runner CLI to reproduce failures.</p>
+                    </div>
+                    <div class="command-card">
+                        <h4>Act — Local GitHub Actions</h4>
+                        <code>act push</code>
+                        <br><code>act -j build --secret-file .env</code>
+                        <p>Run GitHub Actions workflows locally with <a href="https://github.com/nektos/act" style="color: var(--blue-glow);">nektos/act</a>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Retry Strategies</h3>
+                <pre data-label="GitHub Actions"><code># Retry flaky steps
+- name: Run flaky integration tests
+  uses: nick-fields/retry@v3
+  with:
+    max_attempts: 3
+    timeout_minutes: 10
+    command: npm run test:integration
+
+# Manual retry in GitLab
+# Click "Retry" on failed job in pipeline view
+# Or use API:
+# curl --request POST "https://gitlab.com/api/v4/projects/:id/pipelines/:id/retry"</code></pre>
+
+                <div class="alert alert-warning">
+                    <div class="alert-title">Flaky Tests Are Tech Debt</div>
+                    <p>Retries are a band-aid. Track flaky test frequency. Fix or quarantine tests that fail more than 2% of the time. A consistently-green pipeline builds team trust in CI.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <a href="index.html">Back to Tech Guides</a>
+        </footer>
+    </div>
+</body>
+</html>
