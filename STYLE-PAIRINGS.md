@@ -62,7 +62,7 @@ Master mapping of all 103 style guides and their usage across tech guides and st
 | korean-hanok | | |
 | letterpress | Git | The Press |
 | mac-os-classic | | |
-| marble-gold | | |
+| marble-gold | Engineering Excellence | |
 | memphis | npm / yarn / pnpm | |
 | midcentury | | The Space Race |
 | moroccan | | The Geometer's Garden |
