@@ -1,14 +1,15 @@
 # Style Guide Pairings
 
-Master mapping of all 104 style guides and their usage across tech guides and stories.
+Master mapping of all 105 style guides and their usage across tech guides and stories.
 
-**Used:** 54 styles · **Available:** 50 styles
+**Used:** 54 styles · **Available:** 51 styles
 
 | Style | Tech Guide | Story |
 |-------|-----------|-------|
 | aboriginal-dot-art | | |
 | air-traffic-control | | |
 | apothecary | | |
+| aquarium | | |
 | architectural | SQL, Software Architecture | |
 | arctic | | |
 | art-deco | Linux Distributions | The Jazz Age |
