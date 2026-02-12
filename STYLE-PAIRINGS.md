@@ -2,7 +2,7 @@
 
 Master mapping of all 104 style guides and their usage across tech guides and stories.
 
-**Used:** 52 styles · **Available:** 52 styles
+**Used:** 53 styles · **Available:** 51 styles
 
 | Style | Tech Guide | Story |
 |-------|-----------|-------|
@@ -103,7 +103,7 @@ Master mapping of all 104 style guides and their usage across tech guides and st
 | ukiyo-e | Ruby & Rails | |
 | vaporwave | | The Plaza |
 | verdant-grove | | The Wood Wide Web |
-| vienna-secession | | |
+| vienna-secession | Operational Excellence | |
 | visual-novel | | |
 | watercolor | | The Pigment Trail |
 | wes-anderson | | |
