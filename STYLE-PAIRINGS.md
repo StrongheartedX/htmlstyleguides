@@ -2,7 +2,7 @@
 
 Master mapping of all 103 style guides and their usage across tech guides and stories.
 
-**Used:** 51 styles · **Available:** 52 styles
+**Used:** 52 styles · **Available:** 51 styles
 
 | Style | Tech Guide | Story |
 |-------|-----------|-------|
@@ -70,7 +70,7 @@ Master mapping of all 103 style guides and their usage across tech guides and st
 | neo-void | | |
 | neon-brutal | | The Strip |
 | neumorphism | | |
-| newspaper | | |
+| newspaper | Security Fundamentals | |
 | noir | SSH | The Morrison Case |
 | nordic | | The Long Winter |
 | ocean-maritime | | |
