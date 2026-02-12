@@ -58,7 +58,7 @@ Master mapping of all 103 style guides and their usage across tech guides and st
 | jrpg-menu | | |
 | kente-cloth | | |
 | kinetic-flux | jq | |
-| knolling | | |
+| knolling | API Design & REST | |
 | korean-hanok | | |
 | letterpress | Git | The Press |
 | mac-os-classic | | |
