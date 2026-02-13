@@ -1,0 +1,3217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stitch Puzzle — Cross-Stitch Nonogram</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           STITCH PUZZLE — CROSS-STITCH NONOGRAM
+           ============================================
+           Embroidery design system aesthetic.
+           Thread colors on linen backgrounds.
+           Pixel-like letterforms, stitch borders.
+           ============================================ */
+
+        :root {
+            /* FABRIC BACKGROUNDS */
+            --linen-cream: #f5f0e6;
+            --linen-natural: #e8e0d0;
+            --aida-white: #faf8f5;
+            --aida-ecru: #f0e8d8;
+            --burlap-tan: #d4c4a8;
+            --canvas-beige: #e5dcc8;
+
+            /* THREAD FLOSS PALETTE - DMC Inspired */
+            --thread-red: #c41e3a;
+            --thread-burgundy: #722f37;
+            --thread-coral: #e07a5f;
+            --thread-pink: #e8a0bf;
+            --thread-rose: #d4758c;
+            --thread-orange: #e67e22;
+            --thread-gold: #d4a017;
+            --thread-yellow: #f4d03f;
+            --thread-lime: #8bc34a;
+            --thread-green: #2e8b57;
+            --thread-forest: #228b22;
+            --thread-teal: #008080;
+            --thread-turquoise: #40e0d0;
+            --thread-blue: #4a90d9;
+            --thread-navy: #1a3a5c;
+            --thread-royal: #4169e1;
+            --thread-lavender: #9b7bb8;
+            --thread-purple: #6b3fa0;
+            --thread-brown: #8b4513;
+            --thread-tan: #d2b48c;
+            --thread-black: #2c2c2c;
+            --thread-white: #fefefe;
+            --thread-gray: #808080;
+
+            /* SEMANTIC COLORS */
+            --primary: var(--thread-red);
+            --secondary: var(--thread-blue);
+            --accent: var(--thread-gold);
+            --success: var(--thread-green);
+            --warning: var(--thread-orange);
+            --danger: var(--thread-burgundy);
+
+            /* TEXT COLORS */
+            --text-dark: #3a3530;
+            --text-medium: #5a5550;
+            --text-light: #8a8580;
+
+            /* TYPOGRAPHY */
+            --font-stitch: 'Silkscreen', 'Courier New', monospace;
+            --font-display: 'VT323', monospace;
+            --font-body: 'Nunito', 'Georgia', serif;
+
+            /* SPACING (4px base for pixel alignment) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* STITCH DIMENSIONS */
+            --stitch-size: 4px;
+            --cross-size: 8px;
+
+            /* SHADOWS */
+            --shadow-thread: 1px 1px 0 rgba(0, 0, 0, 0.15);
+            --shadow-raised: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-hoop:
+                inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                0 4px 8px rgba(0, 0, 0, 0.15);
+
+            /* TRANSITIONS */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.65;
+            color: var(--text-dark);
+            background-color: var(--linen-cream);
+            min-height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(139, 119, 101, 0.04) 3px,
+                    rgba(139, 119, 101, 0.04) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(139, 119, 101, 0.04) 3px,
+                    rgba(139, 119, 101, 0.04) 4px
+                );
+            background-attachment: fixed;
+        }
+
+        /* ============================================
+           BACK LINK
+           ============================================ */
+
+        .back-link {
+            position: fixed;
+            top: var(--space-4);
+            left: var(--space-4);
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            color: var(--thread-navy);
+            text-decoration: none;
+            z-index: 100;
+            padding: var(--space-2) var(--space-3);
+            background: var(--aida-white);
+            border: 2px dashed var(--burlap-tan);
+            transition: all var(--transition-base);
+        }
+
+        .back-link:hover {
+            border-color: var(--thread-red);
+            color: var(--thread-red);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-raised);
+        }
+
+        /* ============================================
+           GAME CONTAINER & SCREEN SYSTEM
+           ============================================ */
+
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-6);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .screen.active.visible {
+            opacity: 1;
+        }
+
+        /* ============================================
+           TITLE SCREEN
+           ============================================ */
+
+        .title-hoop {
+            display: inline-block;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            position: relative;
+            background: var(--aida-ecru);
+            background-image:
+                linear-gradient(var(--linen-natural) 1px, transparent 1px),
+                linear-gradient(90deg, var(--linen-natural) 1px, transparent 1px);
+            background-size: 6px 6px;
+            box-shadow: var(--shadow-hoop);
+            margin-bottom: var(--space-6);
+        }
+
+        .title-hoop::before {
+            content: '';
+            position: absolute;
+            top: -16px;
+            left: -16px;
+            right: -16px;
+            bottom: -16px;
+            border: 16px solid transparent;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #deb887, #a67c52, #8b6914, #c9a86c) border-box;
+            box-shadow:
+                inset 3px 3px 6px rgba(255, 255, 255, 0.3),
+                inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+                0 6px 16px rgba(0, 0, 0, 0.25);
+            z-index: -1;
+        }
+
+        .title-hoop::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border: 4px solid #e8c89e;
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .title-hoop-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: var(--space-6);
+        }
+
+        .title-hoop-content h1 {
+            font-family: var(--font-stitch);
+            font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+            font-weight: 700;
+            color: var(--thread-red);
+            text-shadow: var(--shadow-thread);
+            letter-spacing: 0.05em;
+            line-height: 1.3;
+            margin-bottom: var(--space-2);
+        }
+
+        .title-hoop-content p {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-medium);
+            max-width: 180px;
+            line-height: 1.4;
+        }
+
+        .title-decoration {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-3);
+            margin-top: var(--space-3);
+        }
+
+        .cross-stitch-x {
+            position: relative;
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .cross-stitch-x::before,
+        .cross-stitch-x::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 3px;
+            background: var(--thread-red);
+            border-radius: 1px;
+        }
+
+        .cross-stitch-x::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .cross-stitch-x::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .french-knot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 30% 30%, var(--thread-gold) 0%, var(--thread-orange) 100%);
+            border-radius: 50%;
+            box-shadow: var(--shadow-thread);
+        }
+
+        #title-screen h1 {
+            font-family: var(--font-stitch);
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            color: var(--thread-navy);
+            text-shadow: var(--shadow-thread);
+            margin-bottom: var(--space-2);
+            letter-spacing: 0.05em;
+        }
+
+        #title-screen > p {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-medium);
+            margin-bottom: var(--space-5);
+        }
+
+        .controls-hint {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-top: var(--space-4);
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-5);
+            font-family: var(--font-stitch);
+            font-size: 0.8rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-base);
+            background: var(--thread-red);
+            color: var(--thread-white);
+            text-shadow: var(--shadow-thread);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--thread-red);
+        }
+
+        .btn-secondary {
+            background: var(--thread-blue);
+        }
+
+        .btn-outline {
+            background: var(--aida-white);
+            color: var(--thread-red);
+            border: 3px dashed var(--thread-red);
+            text-shadow: none;
+        }
+
+        .btn-outline::before {
+            display: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--thread-red);
+            color: var(--thread-white);
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-3);
+            font-size: 0.7rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-7);
+            font-size: 0.9rem;
+        }
+
+        .btn + .btn {
+            margin-left: var(--space-3);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: var(--space-4);
+        }
+
+        /* ============================================
+           PUZZLE SELECT SCREEN
+           ============================================ */
+
+        #select-screen {
+            overflow-y: auto;
+            padding: var(--space-7) var(--space-5);
+            justify-content: flex-start;
+        }
+
+        #select-screen h2 {
+            font-family: var(--font-stitch);
+            font-size: clamp(1.2rem, 4vw, 1.6rem);
+            color: var(--thread-navy);
+            text-shadow: var(--shadow-thread);
+            margin-bottom: var(--space-5);
+            letter-spacing: 0.05em;
+        }
+
+        #puzzle-tiers {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .tier-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .tier-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            position: relative;
+            background: var(--aida-white);
+            color: var(--thread-navy);
+            text-shadow: var(--shadow-thread);
+        }
+
+        .tier-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 2px dashed currentColor;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .tier-badge-sampler {
+            background: var(--thread-green);
+            color: var(--thread-white);
+        }
+
+        .tier-badge-intermediate {
+            background: var(--thread-blue);
+            color: var(--thread-white);
+        }
+
+        .tier-badge-master {
+            background: var(--thread-purple);
+            color: var(--thread-white);
+        }
+
+        .tier-label {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-medium);
+        }
+
+        .tier-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .puzzle-card {
+            background: var(--aida-white);
+            padding: var(--space-4);
+            position: relative;
+            box-shadow: var(--shadow-raised);
+            transition: all var(--transition-base);
+            cursor: pointer;
+            border: 3px solid var(--burlap-tan);
+            background-image:
+                linear-gradient(var(--linen-natural) 1px, transparent 1px),
+                linear-gradient(90deg, var(--linen-natural) 1px, transparent 1px);
+            background-size: 8px 8px;
+            text-align: center;
+        }
+
+        .puzzle-card::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 2px dashed var(--thread-gold);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .puzzle-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-color: var(--thread-gold);
+        }
+
+        .puzzle-card:hover::after {
+            opacity: 1;
+        }
+
+        .puzzle-card-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto var(--space-2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .puzzle-card-name {
+            font-family: var(--font-stitch);
+            font-size: 0.75rem;
+            color: var(--thread-navy);
+            text-shadow: var(--shadow-thread);
+            margin-bottom: var(--space-1);
+        }
+
+        .puzzle-card-size {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+
+        /* ============================================
+           GAME SCREEN
+           ============================================ */
+
+        #game-screen {
+            padding: var(--space-4);
+            justify-content: flex-start;
+            padding-top: var(--space-7);
+        }
+
+        #game-hud {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: var(--space-4);
+            padding: var(--space-2) var(--space-4);
+            background: var(--aida-white);
+            border: 2px dashed var(--burlap-tan);
+            font-family: var(--font-stitch);
+            font-size: 0.75rem;
+            color: var(--thread-navy);
+        }
+
+        #timer-display {
+            color: var(--thread-red);
+            font-size: 0.85rem;
+            min-width: 50px;
+        }
+
+        #puzzle-name-display {
+            color: var(--text-medium);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        #moves-display {
+            color: var(--thread-blue);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* ============================================
+           NONOGRAM GRID
+           ============================================ */
+
+        #grid-container {
+            display: inline-block;
+            position: relative;
+            background: var(--aida-white);
+            background-image:
+                linear-gradient(var(--linen-natural) 1px, transparent 1px),
+                linear-gradient(90deg, var(--linen-natural) 1px, transparent 1px);
+            background-size: 8px 8px;
+            padding: 12px;
+            box-shadow: var(--shadow-hoop);
+            border: 3px dashed var(--burlap-tan);
+        }
+
+        .nonogram-wrapper {
+            display: grid;
+        }
+
+        /* Clue panels */
+        .clue-corner {
+            /* Empty top-left corner */
+        }
+
+        .clue-panel-cols {
+            display: flex;
+        }
+
+        .clue-panel-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+            padding-bottom: 4px;
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            color: var(--text-dark);
+        }
+
+        .clue-panel-rows {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .clue-panel-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            padding-right: 8px;
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            color: var(--text-dark);
+        }
+
+        .clue-num {
+            display: inline-block;
+            min-width: 12px;
+            text-align: center;
+        }
+
+        /* .clue-satisfied styles handled by enhanced clue panel section */
+
+        .nonogram-grid {
+            display: grid;
+            gap: 1px;
+            background: var(--burlap-tan);
+        }
+
+        .grid-cell {
+            background: var(--aida-white);
+            cursor: pointer;
+            position: relative;
+            transition: background 0.1s;
+        }
+
+        .grid-cell:hover {
+            background: rgba(212, 160, 23, 0.15);
+        }
+
+        /* .grid-cell.filled background handled by cross-stitch rendering section */
+
+        .grid-cell.marked {
+            background: var(--aida-white);
+        }
+
+        .grid-cell.marked::before,
+        .grid-cell.marked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 2px;
+            background: var(--text-light);
+        }
+
+        .grid-cell.marked::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .grid-cell.marked::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        /* Every-5 thick borders */
+        .grid-cell.border-right {
+            border-right: 2px solid var(--thread-navy);
+        }
+
+        .grid-cell.border-bottom {
+            border-bottom: 2px solid var(--thread-navy);
+        }
+
+        /* ============================================
+           PAUSE SCREEN
+           ============================================ */
+
+        #pause-screen {
+            background: rgba(245, 240, 230, 0.95);
+            z-index: 50;
+        }
+
+        #pause-screen h2 {
+            font-family: var(--font-stitch);
+            font-size: 1.8rem;
+            color: var(--thread-navy);
+            text-shadow: var(--shadow-thread);
+            margin-bottom: var(--space-5);
+        }
+
+        /* ============================================
+           COMPLETE SCREEN
+           ============================================ */
+
+        #complete-screen {
+            background: rgba(245, 240, 230, 0.95);
+            z-index: 50;
+        }
+
+        #complete-hoop {
+            display: inline-block;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            position: relative;
+            background: var(--aida-ecru);
+            background-image:
+                linear-gradient(var(--linen-natural) 1px, transparent 1px),
+                linear-gradient(90deg, var(--linen-natural) 1px, transparent 1px);
+            background-size: 6px 6px;
+            box-shadow: var(--shadow-hoop);
+            margin-bottom: var(--space-5);
+            overflow: hidden;
+        }
+
+        #complete-hoop::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border: 12px solid transparent;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #deb887, #a67c52, #8b6914, #c9a86c) border-box;
+            box-shadow:
+                inset 3px 3px 6px rgba(255, 255, 255, 0.3),
+                inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+                0 6px 16px rgba(0, 0, 0, 0.25);
+            z-index: -1;
+        }
+
+        #complete-hoop::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 3px solid #e8c89e;
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #complete-hoop-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: grid;
+            gap: 1px;
+        }
+
+        #complete-hoop-grid .mini-cell {
+            width: 8px;
+            height: 8px;
+        }
+
+        #complete-hoop-grid .mini-cell.on {
+            border-radius: 0;
+        }
+
+        #complete-screen h2 {
+            font-family: var(--font-stitch);
+            font-size: 1.5rem;
+            color: var(--thread-green);
+            text-shadow: var(--shadow-thread);
+            margin-bottom: var(--space-3);
+        }
+
+        #complete-stats {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--text-medium);
+            margin-bottom: var(--space-5);
+        }
+
+        /* ============================================
+           MOBILE MODE TOGGLE
+           ============================================ */
+
+        #mobile-mode-toggle {
+            margin-top: var(--space-4);
+        }
+
+        /* ============================================
+           CURSOR & HIGHLIGHT
+           ============================================ */
+
+        .grid-cell.cursor {
+            outline: 3px solid var(--thread-gold) !important;
+            outline-offset: -3px;
+            z-index: 2;
+        }
+
+        .grid-cell.highlight-row,
+        .grid-cell.highlight-col {
+            background: rgba(212, 160, 23, 0.10);
+        }
+
+        .grid-cell.filled.highlight-row,
+        .grid-cell.filled.highlight-col {
+            filter: brightness(1.08);
+        }
+
+        .grid-cell.marked.highlight-row,
+        .grid-cell.marked.highlight-col {
+            background: rgba(212, 160, 23, 0.10);
+        }
+
+        /* ============================================
+           STRICT MODE FLASH
+           ============================================ */
+
+        @keyframes flash-error {
+            0% { background: var(--thread-red); opacity: 1; }
+            50% { background: #ff4444; opacity: 0.7; }
+            100% { background: var(--aida-white); opacity: 1; }
+        }
+
+        .grid-cell.error-flash {
+            animation: flash-error 0.4s ease-out;
+        }
+
+        /* ============================================
+           STRICT MODE HUD
+           ============================================ */
+
+        #strict-toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
+
+        #strict-toggle-wrapper label {
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            color: var(--text-medium);
+            cursor: pointer;
+        }
+
+        #strict-toggle-wrapper input[type="checkbox"] {
+            accent-color: var(--thread-red);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        #mistakes-display {
+            color: var(--thread-red);
+            font-family: var(--font-stitch);
+            font-size: 0.75rem;
+            min-width: 40px;
+        }
+
+        /* thread-indicator styles moved to enhanced section above */
+
+        /* ============================================
+           COMPLETED BADGE
+           ============================================ */
+
+        .puzzle-card-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--thread-green);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-family: var(--font-stitch);
+            box-shadow: var(--shadow-raised);
+            z-index: 3;
+        }
+
+        .puzzle-card-best-time {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            color: var(--thread-green);
+            margin-top: var(--space-1);
+        }
+
+        /* ============================================
+           CROSS-STITCH X RENDERING ON FILLED CELLS
+           ============================================ */
+
+        .grid-cell.filled {
+            background: var(--stitch-bg-tint, var(--aida-ecru)) !important;
+            position: relative;
+        }
+
+        .grid-cell.filled::before,
+        .grid-cell.filled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70%;
+            height: var(--thread-thickness, 3px);
+            border-radius: 1px;
+            background: var(--thread-color, var(--thread-red));
+        }
+
+        .grid-cell.filled::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+            z-index: 1;
+        }
+
+        .grid-cell.filled::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+            box-shadow: 0 1px 1px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
+
+        /* Thread thickness per cell size */
+        .grid-size-5 .grid-cell.filled::before,
+        .grid-size-5 .grid-cell.filled::after {
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .grid-size-10 .grid-cell.filled::before,
+        .grid-size-10 .grid-cell.filled::after {
+            height: 3px;
+            border-radius: 1px;
+        }
+
+        .grid-size-15 .grid-cell.filled::before,
+        .grid-size-15 .grid-cell.filled::after {
+            height: 2px;
+            border-radius: 1px;
+        }
+
+        /* ============================================
+           GHOST STITCH PREVIEW ON HOVER
+           ============================================ */
+
+        .grid-cell:not(.filled):not(.marked):hover {
+            position: relative;
+        }
+
+        .grid-cell:not(.filled):not(.marked):hover::before,
+        .grid-cell:not(.filled):not(.marked):hover::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70%;
+            height: var(--thread-thickness, 3px);
+            border-radius: 1px;
+            background: var(--thread-color, var(--thread-red));
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .grid-cell:not(.filled):not(.marked):hover::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .grid-cell:not(.filled):not(.marked):hover::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        /* ============================================
+           THREAD SPOOL INDICATOR (ENHANCED)
+           ============================================ */
+
+        #thread-indicator {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: var(--space-2);
+            position: relative;
+            border: 2px solid rgba(0,0,0,0.1);
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(255,255,255,0.25) 2px,
+                    rgba(255,255,255,0.25) 3px
+                );
+            box-shadow:
+                inset 2px 2px 4px rgba(255,255,255,0.35),
+                inset -1px -1px 3px rgba(0,0,0,0.15),
+                0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        #thread-indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.15);
+            transform: translate(-50%, -50%);
+        }
+
+        /* ============================================
+           CLUE PANEL POLISH
+           ============================================ */
+
+        .clue-num.clue-satisfied {
+            text-decoration: line-through;
+            text-decoration-color: var(--thread-color, var(--thread-red));
+            text-decoration-thickness: 2px;
+            opacity: 0.4;
+            transition: opacity 0.3s ease, text-decoration-color 0.3s ease;
+        }
+
+        .clue-panel-col {
+            overflow: hidden;
+        }
+
+        .clue-panel-row {
+            overflow: hidden;
+        }
+
+        /* ============================================
+           GRID BORDER ENHANCEMENT (RUNNING STITCH)
+           ============================================ */
+
+        #grid-container::before {
+            content: '';
+            position: absolute;
+            top: -7px;
+            left: -7px;
+            right: -7px;
+            bottom: -7px;
+            border: 2px dashed var(--thread-gold);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Corner stitch decorations */
+        .grid-corner-stitch {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .grid-corner-stitch::before,
+        .grid-corner-stitch::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 2px;
+            background: var(--thread-gold);
+            border-radius: 1px;
+        }
+
+        .grid-corner-stitch::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .grid-corner-stitch::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .grid-corner-stitch.top-left { top: -10px; left: -10px; }
+        .grid-corner-stitch.top-right { top: -10px; right: -10px; }
+        .grid-corner-stitch.bottom-left { bottom: -10px; left: -10px; }
+        .grid-corner-stitch.bottom-right { bottom: -10px; right: -10px; }
+
+        /* ============================================
+           COMPLETION HOOP REVEAL ANIMATION
+           ============================================ */
+
+        @keyframes stitch-appear {
+            0% { opacity: 0; transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .reveal-cell {
+            opacity: 0;
+            animation: stitch-appear 0.3s ease-out forwards;
+        }
+
+        /* Mini cross-stitch in complete hoop */
+        #complete-hoop-grid .mini-cell.on {
+            position: relative;
+            overflow: visible;
+        }
+
+        #complete-hoop-grid .mini-cell.on::before,
+        #complete-hoop-grid .mini-cell.on::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 1.5px;
+            border-radius: 0.5px;
+            background: var(--hoop-thread-color, var(--thread-red));
+        }
+
+        #complete-hoop-grid .mini-cell.on::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        #complete-hoop-grid .mini-cell.on::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        /* ============================================
+           PUZZLE CARD PREVIEWS
+           ============================================ */
+
+        .puzzle-card-preview {
+            display: grid;
+            margin: var(--space-2) auto;
+            filter: blur(1px);
+            opacity: 0.6;
+        }
+
+        .puzzle-card-preview .preview-cell {
+            width: 3px;
+            height: 3px;
+        }
+
+        /* Thread spool dot on cards */
+        .puzzle-card-spool {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 4px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3), 0 1px 1px rgba(0,0,0,0.15);
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px,
+                    transparent 1px,
+                    rgba(255,255,255,0.2) 1px,
+                    rgba(255,255,255,0.2) 2px
+                );
+        }
+
+        /* ============================================
+           SAMPLER DIVIDER
+           ============================================ */
+
+        .sampler-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin: var(--space-5) 0;
+            position: relative;
+        }
+
+        .sampler-divider::before,
+        .sampler-divider::after {
+            content: '';
+            flex: 1;
+            max-width: 100px;
+            height: 0;
+            border-top: 3px dashed var(--thread-gold);
+        }
+
+        /* ============================================
+           CELEBRATION PARTICLES
+           ============================================ */
+
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .thread-confetti {
+            position: absolute;
+            width: 4px;
+            height: 16px;
+            border-radius: 1px;
+            animation: confettiFly 1.2s ease-out forwards;
+        }
+
+        @keyframes confettiFly {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0); opacity: 0; }
+        }
+
+        .knot-sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--thread-gold), var(--thread-orange));
+            animation: sparklePop 0.8s ease-out forwards;
+        }
+
+        @keyframes sparklePop {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* ============================================
+           HOOP GLOW ON COMPLETION
+           ============================================ */
+
+        @keyframes hoopGlow {
+            0%, 100% { box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.15); }
+            50% { box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.15), 0 0 30px rgba(212,160,23,0.4); }
+        }
+
+        #complete-hoop.glow {
+            animation: hoopGlow 2s ease-in-out infinite;
+        }
+
+        /* ============================================
+           SOUND TOGGLE
+           ============================================ */
+
+        #btn-sound {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            z-index: 100;
+            background: var(--aida-white);
+            color: var(--thread-navy);
+            border: 2px dashed var(--burlap-tan);
+            font-family: var(--font-stitch);
+            font-size: 0.65rem;
+            padding: var(--space-2) var(--space-3);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        #btn-sound:hover {
+            border-color: var(--thread-red);
+            color: var(--thread-red);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-raised);
+        }
+
+        /* ============================================
+           ACCESSIBILITY
+           ============================================ */
+
+        .keyboard-hints {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: var(--space-3);
+            line-height: 1.6;
+        }
+
+        .keyboard-hints kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            font-family: var(--font-stitch);
+            font-size: 0.7rem;
+            background: var(--aida-white);
+            border: 1px solid var(--burlap-tan);
+            border-radius: 3px;
+            box-shadow: 0 1px 0 var(--burlap-tan);
+        }
+
+        .grid-cell:focus-visible {
+            outline: 3px solid var(--thread-gold) !important;
+            outline-offset: -3px;
+            z-index: 2;
+        }
+
+        /* ============================================
+           MOBILE POLISH
+           ============================================ */
+
+        .grid-cell {
+            touch-action: manipulation;
+        }
+
+        #btn-mode-toggle {
+            min-height: 44px;
+            min-width: 140px;
+            font-size: 0.85rem !important;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+
+        @media (max-width: 768px) {
+            .title-hoop {
+                width: 220px;
+                height: 220px;
+            }
+
+            .title-hoop-content h1 {
+                font-size: 1.2rem;
+            }
+
+            .tier-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: var(--space-3);
+            }
+
+            .puzzle-card {
+                padding: var(--space-3);
+            }
+
+            #game-hud {
+                font-size: 0.65rem;
+                padding: var(--space-2) var(--space-3);
+            }
+
+            #game-screen {
+                padding: var(--space-2);
+                padding-top: var(--space-6);
+            }
+
+            .clue-panel-col,
+            .clue-panel-row {
+                font-size: 0.6rem;
+            }
+
+            #mobile-mode-toggle {
+                display: block !important;
+            }
+
+            .btn + .btn {
+                margin-left: 0;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">Back to Games</a>
+    <button id="btn-sound" aria-label="Toggle sound">Sound: On</button>
+    <div id="particles"></div>
+
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div class="screen active" id="title-screen">
+            <div class="title-hoop">
+                <div class="title-hoop-content">
+                    <h1>Stitch Puzzle</h1>
+                    <p>Cross-stitch nonogram puzzles</p>
+                    <div class="title-decoration">
+                        <span class="cross-stitch-x"></span>
+                        <span class="french-knot"></span>
+                        <span class="cross-stitch-x"></span>
+                        <span class="french-knot"></span>
+                        <span class="cross-stitch-x"></span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary btn-lg" id="btn-play">Start Stitching</button>
+            <p class="controls-hint">Left click = stitch, Right click = mark</p>
+        </div>
+
+        <!-- Puzzle Select -->
+        <div class="screen" id="select-screen">
+            <h2>Choose a Pattern</h2>
+            <div id="puzzle-tiers"></div>
+            <div id="strict-toggle-wrapper">
+                <input type="checkbox" id="strict-mode-checkbox">
+                <label for="strict-mode-checkbox">Strict Mode (3 strikes)</label>
+            </div>
+            <div class="sampler-divider">
+                <span class="french-knot"></span>
+                <span class="cross-stitch-x"></span>
+                <span class="french-knot"></span>
+            </div>
+            <button class="btn btn-outline" id="btn-back-title">Back</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="screen" id="game-screen">
+            <div id="game-hud">
+                <span id="timer-display" aria-live="polite" aria-label="Timer">00:00</span>
+                <span><span id="thread-indicator"></span><span id="puzzle-name-display"></span></span>
+                <span id="moves-display" aria-live="polite" aria-label="Move counter">Moves: 0</span>
+                <span id="mistakes-display"></span>
+                <button class="btn btn-sm" id="btn-pause">Pause</button>
+            </div>
+            <div id="grid-container">
+                <!-- renderGrid() populates this -->
+            </div>
+            <div id="mobile-mode-toggle" style="display:none;">
+                <button class="btn btn-primary" id="btn-mode-toggle">Mode: Stitch</button>
+            </div>
+            <div class="keyboard-hints" id="keyboard-hints">
+                <kbd>Arrows</kbd> move &middot; <kbd>Space</kbd> stitch &middot; <kbd>X</kbd> mark &middot; <kbd>P</kbd> pause
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div class="screen" id="pause-screen">
+            <h2>Paused</h2>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btn-resume">Resume</button>
+                <button class="btn btn-outline" id="btn-quit">Quit to Menu</button>
+            </div>
+        </div>
+
+        <!-- Complete Screen -->
+        <div class="screen" id="complete-screen">
+            <div id="complete-hoop">
+                <div id="complete-hoop-grid"></div>
+            </div>
+            <h2>Pattern Complete!</h2>
+            <p id="complete-stats"></p>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btn-next">Next Puzzle</button>
+                <button class="btn btn-outline" id="btn-menu">Back to Patterns</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ======== PUZZLE DATA ========
+        var PUZZLES = [
+            // === SAMPLER 5x5 ===
+            {
+                name: 'Heart',
+                size: 5,
+                tier: 'sampler',
+                threadColor: '--thread-red',
+                data: [
+                    [0,1,0,1,0],
+                    [1,1,1,1,1],
+                    [1,1,1,1,1],
+                    [0,1,1,1,0],
+                    [0,0,1,0,0]
+                ]
+            },
+            {
+                name: 'Flower',
+                size: 5,
+                tier: 'sampler',
+                threadColor: '--thread-pink',
+                data: [
+                    [0,1,0,1,0],
+                    [1,1,1,1,1],
+                    [0,1,1,1,0],
+                    [1,1,1,1,1],
+                    [0,1,0,1,0]
+                ]
+            },
+            {
+                name: 'Star',
+                size: 5,
+                tier: 'sampler',
+                threadColor: '--thread-gold',
+                data: [
+                    [0,0,1,0,0],
+                    [0,1,1,1,0],
+                    [1,1,1,1,1],
+                    [0,1,1,1,0],
+                    [0,0,1,0,0]
+                ]
+            },
+            {
+                name: 'House',
+                size: 5,
+                tier: 'sampler',
+                threadColor: '--thread-brown',
+                data: [
+                    [0,0,1,0,0],
+                    [0,1,1,1,0],
+                    [1,1,1,1,1],
+                    [0,1,0,1,0],
+                    [0,1,0,1,0]
+                ]
+            },
+
+            // === INTERMEDIATE 10x10 ===
+            {
+                name: 'Cat',
+                size: 10,
+                tier: 'intermediate',
+                threadColor: '--thread-navy',
+                data: [
+                    [0,1,0,0,0,0,0,0,1,0],
+                    [1,1,1,0,0,0,0,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [1,1,0,1,1,1,1,0,1,1],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [0,1,1,1,0,0,1,1,1,0],
+                    [0,0,1,1,1,1,1,1,0,0],
+                    [0,0,1,1,1,1,1,1,0,0],
+                    [0,0,1,1,0,0,1,1,0,0],
+                    [0,0,1,1,0,0,1,1,0,0]
+                ]
+            },
+            {
+                name: 'Rose',
+                size: 10,
+                tier: 'intermediate',
+                threadColor: '--thread-rose',
+                data: [
+                    [0,0,0,1,1,1,0,0,0,0],
+                    [0,0,1,1,1,1,1,0,0,0],
+                    [0,1,1,0,0,1,1,1,0,0],
+                    [0,1,1,0,0,0,1,1,0,0],
+                    [1,1,1,1,0,1,1,1,1,0],
+                    [1,1,1,1,1,1,1,1,1,0],
+                    [0,1,1,1,1,1,1,1,0,0],
+                    [0,0,0,1,1,1,0,0,0,0],
+                    [0,0,0,0,1,0,0,0,0,0],
+                    [0,0,0,0,1,0,0,0,0,0]
+                ]
+            },
+            {
+                name: 'Butterfly',
+                size: 10,
+                tier: 'intermediate',
+                threadColor: '--thread-lavender',
+                data: [
+                    [1,1,0,0,0,0,0,0,1,1],
+                    [1,1,1,0,0,0,0,1,1,1],
+                    [1,1,1,1,0,0,1,1,1,1],
+                    [1,0,1,1,0,0,1,1,0,1],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [1,0,1,1,0,0,1,1,0,1],
+                    [1,1,1,1,0,0,1,1,1,1],
+                    [0,1,1,0,0,0,0,1,1,0],
+                    [0,0,1,0,0,0,0,1,0,0]
+                ]
+            },
+            {
+                name: 'Tree',
+                size: 10,
+                tier: 'intermediate',
+                threadColor: '--thread-forest',
+                data: [
+                    [0,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,1,1,1,1,0,0,0],
+                    [0,0,1,1,1,1,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,0],
+                    [0,0,1,1,1,1,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,0],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [0,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,1,1,1,1,0,0,0]
+                ]
+            },
+            {
+                name: 'Teacup',
+                size: 10,
+                tier: 'intermediate',
+                threadColor: '--thread-teal',
+                data: [
+                    [0,0,1,0,1,0,1,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0],
+                    [0,1,1,1,1,1,1,1,0,0],
+                    [1,1,1,1,1,1,1,1,1,0],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,0,1],
+                    [1,1,1,1,1,1,1,1,1,1],
+                    [0,1,1,1,1,1,1,1,1,0],
+                    [0,0,1,1,1,1,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,0]
+                ]
+            },
+
+            // === MASTER 15x15 ===
+            {
+                name: 'Anchor',
+                size: 15,
+                tier: 'master',
+                threadColor: '--thread-blue',
+                data: [
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,1,1,1,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                    [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0],
+                    [0,1,1,0,0,0,1,0,0,0,1,1,0,0,0],
+                    [1,1,0,0,0,0,1,0,0,0,0,1,1,0,0],
+                    [1,0,0,0,0,1,1,1,0,0,0,0,1,0,0],
+                    [1,1,0,0,1,1,1,1,1,0,0,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+                    [0,0,1,1,1,1,1,1,1,1,1,0,0,0,0]
+                ]
+            },
+            {
+                name: 'Sampler Border',
+                size: 15,
+                tier: 'master',
+                threadColor: '--thread-red',
+                data: [
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+                    [1,0,0,0,0,1,1,1,1,1,0,0,0,0,1],
+                    [1,0,1,0,0,1,0,0,0,1,0,0,1,0,1],
+                    [1,0,0,0,0,1,0,1,0,1,0,0,0,0,1],
+                    [1,0,1,0,0,1,0,0,0,1,0,0,1,0,1],
+                    [1,0,0,0,0,1,1,1,1,1,0,0,0,0,1],
+                    [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ]
+            },
+            {
+                name: 'Cottage',
+                size: 15,
+                tier: 'master',
+                threadColor: '--thread-coral',
+                data: [
+                    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+                    [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0],
+                    [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0],
+                    [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0],
+                    [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                    [0,1,1,0,0,1,1,1,1,0,0,1,1,1,0],
+                    [0,1,1,0,0,1,1,1,1,0,0,1,1,1,0],
+                    [0,1,1,0,0,1,0,0,0,0,0,1,1,1,0],
+                    [0,1,1,1,1,1,0,0,0,1,1,1,1,1,0],
+                    [0,1,1,1,1,1,0,0,0,1,1,1,1,1,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ]
+            },
+            {
+                name: 'Bouquet',
+                size: 15,
+                tier: 'master',
+                threadColor: '--thread-purple',
+                data: [
+                    [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,1,1,1,1,0,1,1,1,1,0,0,0],
+                    [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0],
+                    [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+                    [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0],
+                    [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0],
+                    [0,0,0,0,1,1,0,1,0,1,1,0,0,0,0],
+                    [0,0,0,0,0,1,0,1,0,1,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0],
+                    [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0]
+                ]
+            }
+        ];
+
+        // ======== DOM REFERENCES ========
+        var screens = {
+            title: document.getElementById('title-screen'),
+            select: document.getElementById('select-screen'),
+            game: document.getElementById('game-screen'),
+            pause: document.getElementById('pause-screen'),
+            complete: document.getElementById('complete-screen')
+        };
+
+        var els = {
+            btnPlay: document.getElementById('btn-play'),
+            btnBackTitle: document.getElementById('btn-back-title'),
+            btnPause: document.getElementById('btn-pause'),
+            btnResume: document.getElementById('btn-resume'),
+            btnQuit: document.getElementById('btn-quit'),
+            btnNext: document.getElementById('btn-next'),
+            btnMenu: document.getElementById('btn-menu'),
+            btnModeToggle: document.getElementById('btn-mode-toggle'),
+            puzzleTiers: document.getElementById('puzzle-tiers'),
+            gridContainer: document.getElementById('grid-container'),
+            timerDisplay: document.getElementById('timer-display'),
+            puzzleNameDisplay: document.getElementById('puzzle-name-display'),
+            movesDisplay: document.getElementById('moves-display'),
+            mistakesDisplay: document.getElementById('mistakes-display'),
+            threadIndicator: document.getElementById('thread-indicator'),
+            strictCheckbox: document.getElementById('strict-mode-checkbox'),
+            completeHoopGrid: document.getElementById('complete-hoop-grid'),
+            completeStats: document.getElementById('complete-stats'),
+            mobileToggle: document.getElementById('mobile-mode-toggle')
+        };
+
+        // ======== GAME STATE ========
+        var state = {
+            screen: 'title',      // 'title', 'select', 'playing', 'paused', 'complete'
+            currentPuzzleIndex: -1,
+            grid: [],              // player's grid: 0=empty, 1=filled, 2=marked
+            moves: 0,
+            timerSeconds: 0,
+            timerInterval: null,
+            isPaused: false,
+            isComplete: false,
+            mobileMode: 'stitch', // 'stitch' or 'mark'
+            cursorRow: 0,
+            cursorCol: 0,
+            strictMode: false,
+            mistakes: 0,
+            clues: null
+        };
+
+        // ======== COMPLETED PUZZLE TRACKING ========
+        var completedPuzzles = new Set();
+        var bestTimes = {};  // puzzleIndex -> best time in seconds
+
+        // ======== SOUND SYSTEM ========
+        var audioCtx = null;
+        var soundEnabled = true;
+
+        function ensureAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playStitch() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            var bufferSize = audioCtx.sampleRate * 0.05;
+            var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1);
+            }
+            var noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            var bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 2000;
+            bandpass.Q.value = 3;
+            var gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            noise.connect(bandpass);
+            bandpass.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+            noise.stop(now + 0.05);
+        }
+
+        function playMark() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 800;
+            var gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.03);
+        }
+
+        function playUndo() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+            var gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+        }
+
+        function playError() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 150;
+            var gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        }
+
+        function playRowComplete() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            // Note 1: C5
+            var osc1 = audioCtx.createOscillator();
+            osc1.type = 'sine';
+            osc1.frequency.value = 523;
+            var g1 = audioCtx.createGain();
+            g1.gain.setValueAtTime(0.08, now);
+            g1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc1.connect(g1);
+            g1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.1);
+            // Note 2: E5
+            var osc2 = audioCtx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = 659;
+            var g2 = audioCtx.createGain();
+            g2.gain.setValueAtTime(0.001, now);
+            g2.gain.setValueAtTime(0.08, now + 0.08);
+            g2.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            osc2.connect(g2);
+            g2.connect(audioCtx.destination);
+            osc2.start(now + 0.08);
+            osc2.stop(now + 0.18);
+        }
+
+        function playPuzzleComplete() {
+            if (!soundEnabled || !audioCtx) return;
+            var now = audioCtx.currentTime;
+            var notes = [262, 330, 392, 523]; // C4, E4, G4, C5
+            for (var i = 0; i < notes.length; i++) {
+                var t = now + i * 0.12;
+                // Sine layer
+                var osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = notes[i];
+                var g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.1, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                osc.connect(g);
+                g.connect(audioCtx.destination);
+                osc.start(t);
+                osc.stop(t + 0.15);
+                // Triangle layer
+                var osc2 = audioCtx.createOscillator();
+                osc2.type = 'triangle';
+                osc2.frequency.value = notes[i];
+                var g2 = audioCtx.createGain();
+                g2.gain.setValueAtTime(0.06, t);
+                g2.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                osc2.connect(g2);
+                g2.connect(audioCtx.destination);
+                osc2.start(t);
+                osc2.stop(t + 0.15);
+            }
+            // Shimmer
+            var shimmer = audioCtx.createOscillator();
+            shimmer.type = 'sine';
+            shimmer.frequency.value = 2000;
+            var sg = audioCtx.createGain();
+            sg.gain.setValueAtTime(0.001, now);
+            sg.gain.linearRampToValueAtTime(0.04, now + 0.25);
+            sg.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            shimmer.connect(sg);
+            sg.connect(audioCtx.destination);
+            shimmer.start(now);
+            shimmer.stop(now + 0.6);
+        }
+
+        // ======== SOUND TOGGLE ========
+        var btnSound = document.getElementById('btn-sound');
+        btnSound.addEventListener('click', function() {
+            ensureAudio();
+            soundEnabled = !soundEnabled;
+            btnSound.textContent = soundEnabled ? 'Sound: On' : 'Sound: Off';
+        });
+
+        // ======== CELEBRATION PARTICLES ========
+        var THREAD_COLORS = [
+            '#c41e3a', '#e07a5f', '#e8a0bf', '#e67e22', '#d4a017',
+            '#f4d03f', '#8bc34a', '#2e8b57', '#40e0d0', '#4a90d9',
+            '#4169e1', '#9b7bb8', '#6b3fa0', '#d4758c'
+        ];
+
+        function randomThreadColor() {
+            return THREAD_COLORS[Math.floor(Math.random() * THREAD_COLORS.length)];
+        }
+
+        function spawnCelebration() {
+            var container = document.getElementById('particles');
+
+            // 28 thread confetti pieces
+            for (var i = 0; i < 28; i++) {
+                var el = document.createElement('div');
+                el.className = 'thread-confetti';
+                var angle = Math.random() * Math.PI * 2;
+                var dist = 80 + Math.random() * 160;
+                el.style.left = '50%';
+                el.style.top = '50%';
+                el.style.backgroundColor = randomThreadColor();
+                el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                el.style.setProperty('--dy', (Math.sin(angle) * dist - 50) + 'px');
+                el.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+                el.style.animationDelay = (Math.random() * 0.3) + 's';
+                container.appendChild(el);
+                (function(elem) {
+                    setTimeout(function() { if (elem.parentNode) elem.remove(); }, 1500);
+                })(el);
+            }
+
+            // 14 French knot sparkles
+            for (var i = 0; i < 14; i++) {
+                var el = document.createElement('div');
+                el.className = 'knot-sparkle';
+                var angle = Math.random() * Math.PI * 2;
+                var dist = 40 + Math.random() * 100;
+                el.style.left = '50%';
+                el.style.top = '50%';
+                el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                el.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                el.style.animationDelay = (0.1 + Math.random() * 0.4) + 's';
+                container.appendChild(el);
+                (function(elem) {
+                    setTimeout(function() { if (elem.parentNode) elem.remove(); }, 1200);
+                })(el);
+            }
+        }
+
+        // ======== SATISFIED LINE TRACKING (for row/col complete sounds) ========
+        var satisfiedRows = {};
+        var satisfiedCols = {};
+
+        // ======== VISIBILITY CHANGE (auto-pause) ========
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && state.screen === 'playing' && !state.isComplete) {
+                state.isPaused = true;
+                state.screen = 'paused';
+                showScreen('pause-screen');
+            }
+        });
+
+        // ======== RESIZE HANDLER ========
+        var resizeTimer = null;
+        window.addEventListener('resize', function() {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (state.screen === 'playing' && state.currentPuzzleIndex >= 0) {
+                    // Hide keyboard hints on mobile (touch), show on desktop
+                    var hintsEl = document.getElementById('keyboard-hints');
+                    if (hintsEl) {
+                        hintsEl.style.display = ('ontouchstart' in window) ? 'none' : 'block';
+                    }
+                }
+            }, 250);
+        });
+
+        // ======== CLUE COMPUTATION ========
+        function computeClues(data) {
+            var size = data.length;
+            var rows = [];
+            var cols = [];
+
+            // Row clues
+            for (var r = 0; r < size; r++) {
+                var runs = [];
+                var count = 0;
+                for (var c = 0; c < size; c++) {
+                    if (data[r][c] === 1) {
+                        count++;
+                    } else {
+                        if (count > 0) {
+                            runs.push(count);
+                            count = 0;
+                        }
+                    }
+                }
+                if (count > 0) runs.push(count);
+                if (runs.length === 0) runs.push(0);
+                rows.push(runs);
+            }
+
+            // Column clues
+            for (var c = 0; c < size; c++) {
+                var runs = [];
+                var count = 0;
+                for (var r = 0; r < size; r++) {
+                    if (data[r][c] === 1) {
+                        count++;
+                    } else {
+                        if (count > 0) {
+                            runs.push(count);
+                            count = 0;
+                        }
+                    }
+                }
+                if (count > 0) runs.push(count);
+                if (runs.length === 0) runs.push(0);
+                cols.push(runs);
+            }
+
+            return { rows: rows, cols: cols };
+        }
+
+        // ======== CELL SIZING ========
+        function getCellSize(puzzleSize) {
+            if (puzzleSize <= 5) return 48;
+            if (puzzleSize <= 10) return 32;
+            return 24;
+        }
+
+        // ======== COLOR UTILITIES ========
+        function hexToRgb(hex) {
+            hex = hex.replace(/^#/, '');
+            if (hex.length === 3) {
+                hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+            }
+            var num = parseInt(hex, 16);
+            return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+        }
+
+        function computeTintColor(hexColor, amount) {
+            // Mix the color with white by `amount` (0=full color, 1=white)
+            var rgb = hexToRgb(hexColor);
+            var r = Math.round(rgb.r + (255 - rgb.r) * (1 - amount));
+            var g = Math.round(rgb.g + (255 - rgb.g) * (1 - amount));
+            var b = Math.round(rgb.b + (255 - rgb.b) * (1 - amount));
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+
+        // ======== GRID RENDERING ========
+        function renderGrid(puzzle) {
+            var size = puzzle.size;
+            var cellSize = getCellSize(size);
+            var clues = computeClues(puzzle.data);
+
+            // Determine max clue depth for layout
+            var maxRowClueLen = 0;
+            for (var i = 0; i < clues.rows.length; i++) {
+                if (clues.rows[i].length > maxRowClueLen) {
+                    maxRowClueLen = clues.rows[i].length;
+                }
+            }
+            var maxColClueLen = 0;
+            for (var i = 0; i < clues.cols.length; i++) {
+                if (clues.cols[i].length > maxColClueLen) {
+                    maxColClueLen = clues.cols[i].length;
+                }
+            }
+
+            var clueRowWidth = maxRowClueLen * 18 + 8;
+            var clueColHeight = maxColClueLen * 16 + 4;
+            var gridTotalSize = size * (cellSize + 1) - 1;
+
+            // Clear container
+            els.gridContainer.innerHTML = '';
+
+            // Set thread color CSS variable on grid container
+            var threadColorVal = getComputedStyle(document.documentElement)
+                .getPropertyValue(puzzle.threadColor).trim();
+            els.gridContainer.style.setProperty('--thread-color', threadColorVal);
+
+            // Set thread thickness based on puzzle size
+            var threadThickness = size <= 5 ? '4px' : (size <= 10 ? '3px' : '2px');
+            els.gridContainer.style.setProperty('--thread-thickness', threadThickness);
+
+            // Compute lighter tint for filled cell background (mix thread color with white)
+            var tintColor = computeTintColor(threadColorVal, 0.15);
+            els.gridContainer.style.setProperty('--stitch-bg-tint', tintColor);
+
+            // Add corner stitch decorations
+            var corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+            for (var ci = 0; ci < corners.length; ci++) {
+                var cornerEl = document.createElement('div');
+                cornerEl.className = 'grid-corner-stitch ' + corners[ci];
+                els.gridContainer.appendChild(cornerEl);
+            }
+
+            // Build wrapper with CSS grid layout: [clueRowWidth] [gridTotalSize]
+            var wrapper = document.createElement('div');
+            wrapper.className = 'nonogram-wrapper';
+            wrapper.style.gridTemplateColumns = clueRowWidth + 'px ' + gridTotalSize + 'px';
+            wrapper.style.gridTemplateRows = clueColHeight + 'px ' + gridTotalSize + 'px';
+
+            // Top-left corner (empty)
+            var corner = document.createElement('div');
+            corner.className = 'clue-corner';
+            wrapper.appendChild(corner);
+
+            // Column clues
+            var colCluesPanel = document.createElement('div');
+            colCluesPanel.className = 'clue-panel-cols';
+            for (var c = 0; c < size; c++) {
+                var colClue = document.createElement('div');
+                colClue.className = 'clue-panel-col';
+                colClue.setAttribute('data-col', c);
+                colClue.style.width = cellSize + 'px';
+                if (c < size - 1) {
+                    colClue.style.marginRight = '1px';
+                }
+                for (var k = 0; k < clues.cols[c].length; k++) {
+                    var span = document.createElement('span');
+                    span.className = 'clue-num';
+                    span.textContent = clues.cols[c][k];
+                    colClue.appendChild(span);
+                }
+                colCluesPanel.appendChild(colClue);
+            }
+            wrapper.appendChild(colCluesPanel);
+
+            // Row clues
+            var rowCluesPanel = document.createElement('div');
+            rowCluesPanel.className = 'clue-panel-rows';
+            for (var r = 0; r < size; r++) {
+                var rowClue = document.createElement('div');
+                rowClue.className = 'clue-panel-row';
+                rowClue.setAttribute('data-row', r);
+                rowClue.style.height = cellSize + 'px';
+                if (r < size - 1) {
+                    rowClue.style.marginBottom = '1px';
+                }
+                for (var k = 0; k < clues.rows[r].length; k++) {
+                    var span = document.createElement('span');
+                    span.className = 'clue-num';
+                    span.textContent = clues.rows[r][k];
+                    rowClue.appendChild(span);
+                }
+                rowCluesPanel.appendChild(rowClue);
+            }
+            wrapper.appendChild(rowCluesPanel);
+
+            // Puzzle grid
+            var grid = document.createElement('div');
+            grid.className = 'nonogram-grid grid-size-' + size;
+            grid.setAttribute('role', 'grid');
+            grid.setAttribute('aria-label', 'Nonogram puzzle grid, ' + size + ' by ' + size);
+            grid.style.gridTemplateColumns = 'repeat(' + size + ', ' + cellSize + 'px)';
+            grid.style.gridTemplateRows = 'repeat(' + size + ', ' + cellSize + 'px)';
+
+            for (var r = 0; r < size; r++) {
+                for (var c = 0; c < size; c++) {
+                    var cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.setAttribute('role', 'gridcell');
+                    cell.setAttribute('aria-label', 'Row ' + (r + 1) + ', Column ' + (c + 1) + ', empty');
+                    cell.setAttribute('data-row', r);
+                    cell.setAttribute('data-col', c);
+
+                    // Every-5 thick borders for 10x10 and 15x15
+                    if (size >= 10) {
+                        if (c < size - 1 && (c + 1) % 5 === 0) {
+                            cell.classList.add('border-right');
+                        }
+                        if (r < size - 1 && (r + 1) % 5 === 0) {
+                            cell.classList.add('border-bottom');
+                        }
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            wrapper.appendChild(grid);
+            els.gridContainer.appendChild(wrapper);
+
+            // Store clues for Agent 2 validation
+            state.clues = clues;
+        }
+
+        // ======== COMPLETE HOOP RENDERING ========
+        function renderCompleteHoop(puzzle) {
+            var size = puzzle.size;
+            var miniSize = Math.floor(160 / size);
+            if (miniSize < 4) miniSize = 4;
+            var color = getComputedStyle(document.documentElement)
+                .getPropertyValue(puzzle.threadColor).trim();
+
+            // Set thread color for mini cross-stitch pseudo-elements
+            var hoopEl = document.getElementById('complete-hoop');
+            hoopEl.style.setProperty('--hoop-thread-color', color);
+
+            els.completeHoopGrid.innerHTML = '';
+            els.completeHoopGrid.style.gridTemplateColumns = 'repeat(' + size + ', ' + miniSize + 'px)';
+            els.completeHoopGrid.style.gridTemplateRows = 'repeat(' + size + ', ' + miniSize + 'px)';
+            els.completeHoopGrid.style.gap = '1px';
+
+            for (var r = 0; r < size; r++) {
+                for (var c = 0; c < size; c++) {
+                    var cell = document.createElement('div');
+                    cell.className = 'mini-cell';
+                    if (puzzle.data[r][c] === 1) {
+                        cell.classList.add('on');
+                        cell.classList.add('reveal-cell');
+                        // Lighter tint background to show fabric behind stitch
+                        var tint = computeTintColor(color, 0.15);
+                        cell.style.background = tint;
+                        // Stagger animation with diagonal sweep: delay = (row + col) * 40ms
+                        var delay = (r + c) * 40;
+                        cell.style.animationDelay = delay + 'ms';
+                    } else {
+                        cell.style.background = 'transparent';
+                    }
+                    els.completeHoopGrid.appendChild(cell);
+                }
+            }
+        }
+
+        // ======== SCREEN MANAGEMENT ========
+        function showScreen(screenId) {
+            var allScreens = document.querySelectorAll('.screen');
+            // Fade out current active screens
+            for (var i = 0; i < allScreens.length; i++) {
+                allScreens[i].classList.remove('visible');
+            }
+            // After a brief delay, switch display and fade in
+            setTimeout(function() {
+                for (var i = 0; i < allScreens.length; i++) {
+                    allScreens[i].classList.remove('active');
+                }
+                var target = document.getElementById(screenId);
+                if (target) {
+                    target.classList.add('active');
+                    // Force reflow before adding visible class for transition
+                    void target.offsetWidth;
+                    target.classList.add('visible');
+                }
+            }, 80);
+        }
+
+        // ======== PUZZLE SELECT ========
+        function renderPuzzleSelect() {
+            var tiers = [
+                { key: 'sampler', label: 'Sampler', desc: '5x5 beginner', badgeClass: 'tier-badge-sampler' },
+                { key: 'intermediate', label: 'Intermediate', desc: '10x10 medium', badgeClass: 'tier-badge-intermediate' },
+                { key: 'master', label: 'Master', desc: '15x15 hard', badgeClass: 'tier-badge-master' }
+            ];
+
+            els.puzzleTiers.innerHTML = '';
+
+            for (var t = 0; t < tiers.length; t++) {
+                var tier = tiers[t];
+                var section = document.createElement('div');
+                section.className = 'tier-section';
+
+                // Header
+                var header = document.createElement('div');
+                header.className = 'tier-header';
+
+                var badge = document.createElement('span');
+                badge.className = 'tier-badge ' + tier.badgeClass;
+                badge.textContent = tier.label;
+
+                var label = document.createElement('span');
+                label.className = 'tier-label';
+                label.textContent = tier.desc;
+
+                header.appendChild(badge);
+                header.appendChild(label);
+                section.appendChild(header);
+
+                // Grid of puzzle cards
+                var grid = document.createElement('div');
+                grid.className = 'tier-grid';
+
+                for (var p = 0; p < PUZZLES.length; p++) {
+                    if (PUZZLES[p].tier !== tier.key) continue;
+
+                    var card = document.createElement('div');
+                    card.className = 'puzzle-card';
+                    card.setAttribute('data-puzzle-index', p);
+
+                    var color = getComputedStyle(document.documentElement)
+                        .getPropertyValue(PUZZLES[p].threadColor).trim();
+
+                    // Icon (thread spool dot)
+                    var icon = document.createElement('div');
+                    icon.className = 'puzzle-card-icon';
+                    icon.style.background = 'radial-gradient(circle at 35% 35%, ' + color + ', ' + color + ')';
+                    icon.style.borderRadius = '50%';
+                    icon.style.boxShadow = 'inset 2px 2px 4px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.15)';
+
+                    var name = document.createElement('div');
+                    name.className = 'puzzle-card-name';
+                    name.textContent = PUZZLES[p].name;
+
+                    var sizeLabel = document.createElement('div');
+                    sizeLabel.className = 'puzzle-card-size';
+                    sizeLabel.textContent = PUZZLES[p].size + ' x ' + PUZZLES[p].size;
+
+                    // Mini blurred preview of solved pattern
+                    var preview = document.createElement('div');
+                    preview.className = 'puzzle-card-preview';
+                    var pSize = PUZZLES[p].size;
+                    var cellPx = pSize <= 5 ? 4 : (pSize <= 10 ? 3 : 2);
+                    preview.style.gridTemplateColumns = 'repeat(' + pSize + ', ' + cellPx + 'px)';
+                    preview.style.gridTemplateRows = 'repeat(' + pSize + ', ' + cellPx + 'px)';
+                    preview.style.gap = '0px';
+                    for (var pr = 0; pr < pSize; pr++) {
+                        for (var pc = 0; pc < pSize; pc++) {
+                            var previewCell = document.createElement('div');
+                            previewCell.className = 'preview-cell';
+                            previewCell.style.width = cellPx + 'px';
+                            previewCell.style.height = cellPx + 'px';
+                            if (PUZZLES[p].data[pr][pc] === 1) {
+                                previewCell.style.background = color;
+                            } else {
+                                previewCell.style.background = 'transparent';
+                            }
+                            preview.appendChild(previewCell);
+                        }
+                    }
+
+                    card.appendChild(icon);
+                    card.appendChild(preview);
+                    card.appendChild(name);
+                    card.appendChild(sizeLabel);
+
+                    // Completion badge
+                    if (completedPuzzles.has(p)) {
+                        var badgeEl = document.createElement('div');
+                        badgeEl.className = 'puzzle-card-badge';
+                        badgeEl.textContent = '\u2713';
+                        card.appendChild(badgeEl);
+
+                        if (bestTimes[p]) {
+                            var bestTime = document.createElement('div');
+                            bestTime.className = 'puzzle-card-best-time';
+                            bestTime.textContent = formatTime(bestTimes[p]);
+                            card.appendChild(bestTime);
+                        }
+                    }
+
+                    grid.appendChild(card);
+                }
+
+                section.appendChild(grid);
+                els.puzzleTiers.appendChild(section);
+            }
+        }
+
+        // ======== TIMER ========
+        function formatTime(seconds) {
+            var m = Math.floor(seconds / 60);
+            var s = seconds % 60;
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function startTimer() {
+            stopTimer();
+            state.timerSeconds = 0;
+            els.timerDisplay.textContent = '00:00';
+            state.timerInterval = setInterval(function() {
+                if (!state.isPaused) {
+                    state.timerSeconds++;
+                    els.timerDisplay.textContent = formatTime(state.timerSeconds);
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+
+        // ======== START PUZZLE ========
+        function startPuzzle(index) {
+            state.currentPuzzleIndex = index;
+            state.screen = 'playing';
+            var puzzle = PUZZLES[index];
+
+            // Initialize player grid
+            state.grid = [];
+            for (var r = 0; r < puzzle.size; r++) {
+                state.grid[r] = [];
+                for (var c = 0; c < puzzle.size; c++) {
+                    state.grid[r][c] = 0;
+                }
+            }
+
+            state.moves = 0;
+            state.isComplete = false;
+            state.isPaused = false;
+            state.cursorRow = 0;
+            state.cursorCol = 0;
+            state.strictMode = els.strictCheckbox.checked;
+            state.mistakes = 0;
+            els.movesDisplay.textContent = 'Moves: 0';
+            els.puzzleNameDisplay.textContent = puzzle.name;
+
+            // Set thread color indicator
+            var color = getComputedStyle(document.documentElement)
+                .getPropertyValue(puzzle.threadColor).trim();
+            els.threadIndicator.style.background = color;
+
+            // Update mistakes display
+            updateMistakesDisplay();
+
+            // Reset satisfied tracking
+            satisfiedRows = {};
+            satisfiedCols = {};
+
+            // Remove glow from previous completion hoop
+            var hoopEl = document.getElementById('complete-hoop');
+            if (hoopEl) hoopEl.classList.remove('glow');
+
+            renderGrid(puzzle);
+            startTimer();
+            showScreen('game-screen');
+
+            // Initialize cursor
+            updateCursor();
+
+            // Show mobile toggle on touch devices, hide keyboard hints
+            var hintsEl = document.getElementById('keyboard-hints');
+            if ('ontouchstart' in window) {
+                els.mobileToggle.style.display = 'block';
+                if (hintsEl) hintsEl.style.display = 'none';
+            } else {
+                if (hintsEl) hintsEl.style.display = 'block';
+            }
+        }
+
+        // ======== AGENT 2: GAMEPLAY INTERACTIVITY ========
+
+        // --- Drag state ---
+        var isDragging = false;
+        var dragAction = null; // 'fill', 'unfill', 'mark', 'unmark'
+
+        // --- Helpers to get grid DOM elements ---
+        function getGridEl() {
+            return els.gridContainer.querySelector('.nonogram-grid');
+        }
+
+        function getCellEl(row, col) {
+            var gridEl = getGridEl();
+            if (!gridEl) return null;
+            return gridEl.querySelector('.grid-cell[data-row="' + row + '"][data-col="' + col + '"]');
+        }
+
+        function getPuzzleSize() {
+            if (state.currentPuzzleIndex < 0) return 0;
+            return PUZZLES[state.currentPuzzleIndex].size;
+        }
+
+        // --- Update a single cell's visual state ---
+        function updateCellVisual(row, col) {
+            var cell = getCellEl(row, col);
+            if (!cell) return;
+            var val = state.grid[row][col];
+            cell.classList.remove('filled', 'marked');
+            if (val === 1) {
+                cell.classList.add('filled');
+                // Thread color + background tint handled by CSS custom properties
+                // set on #grid-container during renderGrid
+            } else if (val === 2) {
+                cell.classList.add('marked');
+            }
+        }
+
+        // --- Update a cell's aria-label ---
+        function updateCellAria(row, col) {
+            var cell = getCellEl(row, col);
+            if (!cell) return;
+            var val = state.grid[row][col];
+            var stateStr = val === 1 ? 'filled' : (val === 2 ? 'marked' : 'empty');
+            cell.setAttribute('aria-label', 'Row ' + (row + 1) + ', Column ' + (col + 1) + ', ' + stateStr);
+        }
+
+        // --- Handle a cell action (fill or mark) ---
+        function handleCellAction(row, col, actionType) {
+            if (state.screen !== 'playing' || state.isComplete) return;
+            ensureAudio();
+            var puzzle = PUZZLES[state.currentPuzzleIndex];
+            var size = puzzle.size;
+            if (row < 0 || row >= size || col < 0 || col >= size) return;
+
+            var currentVal = state.grid[row][col];
+            var newVal = currentVal;
+
+            if (actionType === 'fill') {
+                if (currentVal === 1) {
+                    newVal = 0; // unfill
+                } else {
+                    // Strict mode check
+                    if (state.strictMode && puzzle.data[row][col] === 0) {
+                        state.mistakes++;
+                        updateMistakesDisplay();
+                        playError();
+                        // Flash error
+                        var cell = getCellEl(row, col);
+                        if (cell) {
+                            cell.classList.remove('error-flash');
+                            void cell.offsetWidth; // force reflow
+                            cell.classList.add('error-flash');
+                            setTimeout(function() { cell.classList.remove('error-flash'); }, 500);
+                        }
+                        if (state.mistakes >= 3) {
+                            showStrikesWarning();
+                        }
+                        state.moves++;
+                        els.movesDisplay.textContent = 'Moves: ' + state.moves;
+                        return;
+                    }
+                    newVal = 1; // fill
+                }
+            } else if (actionType === 'unfill') {
+                if (currentVal === 1) {
+                    newVal = 0;
+                } else {
+                    return; // no change needed
+                }
+            } else if (actionType === 'mark') {
+                if (currentVal === 2) {
+                    newVal = 0; // unmark
+                } else {
+                    newVal = 2; // mark
+                }
+            } else if (actionType === 'unmark') {
+                if (currentVal === 2) {
+                    newVal = 0;
+                } else {
+                    return; // no change needed
+                }
+            }
+
+            if (newVal === currentVal) {
+                // For toggle actions that result in no change, skip
+                // but for fill toggle when already empty -> fill, that's handled above
+            }
+
+            // Play appropriate sound
+            if (newVal === 1 && currentVal !== 1) {
+                playStitch();
+            } else if (newVal === 2 && currentVal !== 2) {
+                playMark();
+            } else if (newVal === 0 && currentVal !== 0) {
+                playUndo();
+            }
+
+            state.grid[row][col] = newVal;
+            state.moves++;
+            els.movesDisplay.textContent = 'Moves: ' + state.moves;
+
+            updateCellVisual(row, col);
+            updateCellAria(row, col);
+            checkClues(puzzle, row, col);
+            checkCompletion();
+        }
+
+        // --- Determine drag action from cell state ---
+        function determineDragAction(row, col, button) {
+            var currentVal = state.grid[row][col];
+            var isMark = (button === 2) || (('ontouchstart' in window) && state.mobileMode === 'mark');
+
+            if (isMark) {
+                return currentVal === 2 ? 'unmark' : 'mark';
+            } else {
+                return currentVal === 1 ? 'unfill' : 'fill';
+            }
+        }
+
+        // --- Apply drag action to a cell ---
+        function applyDragAction(row, col) {
+            if (!dragAction) return;
+            var currentVal = state.grid[row][col];
+
+            if (dragAction === 'fill' && currentVal !== 1) {
+                handleCellAction(row, col, 'fill');
+            } else if (dragAction === 'unfill' && currentVal === 1) {
+                handleCellAction(row, col, 'unfill');
+            } else if (dragAction === 'mark' && currentVal !== 2) {
+                handleCellAction(row, col, 'mark');
+            } else if (dragAction === 'unmark' && currentVal === 2) {
+                handleCellAction(row, col, 'unmark');
+            }
+        }
+
+        // --- Clue checking ---
+        function computeRunLengths(arr) {
+            var runs = [];
+            var count = 0;
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] === 1) {
+                    count++;
+                } else {
+                    if (count > 0) {
+                        runs.push(count);
+                        count = 0;
+                    }
+                }
+            }
+            if (count > 0) runs.push(count);
+            if (runs.length === 0) runs.push(0);
+            return runs;
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (var i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        function checkClues(puzzle, changedRow, changedCol) {
+            if (!state.clues) return;
+            var size = puzzle.size;
+            var newlySatisfied = false;
+
+            // Determine which rows/cols to check
+            var rowsToCheck = [];
+            var colsToCheck = [];
+            if (changedRow !== undefined && changedCol !== undefined) {
+                rowsToCheck = [changedRow];
+                colsToCheck = [changedCol];
+            } else {
+                for (var i = 0; i < size; i++) {
+                    rowsToCheck.push(i);
+                    colsToCheck.push(i);
+                }
+            }
+
+            // Check row clues
+            var rowClueEls = els.gridContainer.querySelectorAll('.clue-panel-row');
+            for (var ri = 0; ri < rowsToCheck.length; ri++) {
+                var r = rowsToCheck[ri];
+                var playerRow = [];
+                for (var c = 0; c < size; c++) {
+                    playerRow.push(state.grid[r][c]);
+                }
+                var runs = computeRunLengths(playerRow);
+                var satisfied = arraysEqual(runs, state.clues.rows[r]);
+
+                if (rowClueEls[r]) {
+                    var clueNums = rowClueEls[r].querySelectorAll('.clue-num');
+                    for (var k = 0; k < clueNums.length; k++) {
+                        if (satisfied) {
+                            clueNums[k].classList.add('clue-satisfied');
+                        } else {
+                            clueNums[k].classList.remove('clue-satisfied');
+                        }
+                    }
+                }
+
+                // Check if newly satisfied
+                if (satisfied && !satisfiedRows[r]) {
+                    satisfiedRows[r] = true;
+                    newlySatisfied = true;
+                } else if (!satisfied) {
+                    satisfiedRows[r] = false;
+                }
+            }
+
+            // Check column clues
+            var colClueEls = els.gridContainer.querySelectorAll('.clue-panel-col');
+            for (var ci = 0; ci < colsToCheck.length; ci++) {
+                var c = colsToCheck[ci];
+                var playerCol = [];
+                for (var r = 0; r < size; r++) {
+                    playerCol.push(state.grid[r][c]);
+                }
+                var runs = computeRunLengths(playerCol);
+                var satisfied = arraysEqual(runs, state.clues.cols[c]);
+
+                if (colClueEls[c]) {
+                    var clueNums = colClueEls[c].querySelectorAll('.clue-num');
+                    for (var k = 0; k < clueNums.length; k++) {
+                        if (satisfied) {
+                            clueNums[k].classList.add('clue-satisfied');
+                        } else {
+                            clueNums[k].classList.remove('clue-satisfied');
+                        }
+                    }
+                }
+
+                // Check if newly satisfied
+                if (satisfied && !satisfiedCols[c]) {
+                    satisfiedCols[c] = true;
+                    newlySatisfied = true;
+                } else if (!satisfied) {
+                    satisfiedCols[c] = false;
+                }
+            }
+
+            if (newlySatisfied) {
+                playRowComplete();
+            }
+        }
+
+        // --- Puzzle completion check ---
+        function checkCompletion() {
+            if (state.isComplete) return;
+            var puzzle = PUZZLES[state.currentPuzzleIndex];
+            var size = puzzle.size;
+
+            for (var r = 0; r < size; r++) {
+                for (var c = 0; c < size; c++) {
+                    var expected = puzzle.data[r][c];
+                    var actual = state.grid[r][c] === 1 ? 1 : 0;
+                    if (expected !== actual) return;
+                }
+            }
+
+            // Puzzle is complete!
+            state.isComplete = true;
+            state.screen = 'complete';
+            stopTimer();
+
+            // Play completion sound and spawn celebration
+            playPuzzleComplete();
+            spawnCelebration();
+
+            // Track completion
+            completedPuzzles.add(state.currentPuzzleIndex);
+            if (!bestTimes[state.currentPuzzleIndex] || state.timerSeconds < bestTimes[state.currentPuzzleIndex]) {
+                bestTimes[state.currentPuzzleIndex] = state.timerSeconds;
+            }
+
+            // Save progress to localStorage
+            saveProgress();
+
+            // Show completion screen
+            renderCompleteHoop(puzzle);
+            var hoopEl = document.getElementById('complete-hoop');
+            hoopEl.classList.add('glow');
+            els.completeStats.innerHTML =
+                'Time: ' + formatTime(state.timerSeconds) + ' &nbsp;&bull;&nbsp; Moves: ' + state.moves +
+                (state.strictMode ? ' &nbsp;&bull;&nbsp; Mistakes: ' + state.mistakes : '');
+            showScreen('complete-screen');
+        }
+
+        // --- Active row/column highlighting ---
+        function clearHighlights() {
+            var highlighted = els.gridContainer.querySelectorAll('.highlight-row, .highlight-col');
+            for (var i = 0; i < highlighted.length; i++) {
+                highlighted[i].classList.remove('highlight-row', 'highlight-col');
+            }
+        }
+
+        function highlightRowCol(row, col) {
+            clearHighlights();
+            var size = getPuzzleSize();
+            if (size === 0) return;
+
+            for (var c = 0; c < size; c++) {
+                var cell = getCellEl(row, c);
+                if (cell) cell.classList.add('highlight-row');
+            }
+            for (var r = 0; r < size; r++) {
+                var cell = getCellEl(r, col);
+                if (cell) cell.classList.add('highlight-col');
+            }
+        }
+
+        // --- Cursor management ---
+        function updateCursor() {
+            // Remove old cursor
+            var oldCursor = els.gridContainer.querySelector('.grid-cell.cursor');
+            if (oldCursor) oldCursor.classList.remove('cursor');
+
+            // Apply new cursor
+            var cell = getCellEl(state.cursorRow, state.cursorCol);
+            if (cell) {
+                cell.classList.add('cursor');
+                highlightRowCol(state.cursorRow, state.cursorCol);
+            }
+        }
+
+        function moveCursor(dr, dc) {
+            var size = getPuzzleSize();
+            if (size === 0) return;
+            state.cursorRow = Math.max(0, Math.min(size - 1, state.cursorRow + dr));
+            state.cursorCol = Math.max(0, Math.min(size - 1, state.cursorCol + dc));
+            updateCursor();
+        }
+
+        // --- Mistakes display ---
+        function updateMistakesDisplay() {
+            if (state.strictMode) {
+                els.mistakesDisplay.textContent = 'X: ' + state.mistakes + '/3';
+            } else {
+                els.mistakesDisplay.textContent = '';
+            }
+        }
+
+        function showStrikesWarning() {
+            // Brief visual flash on mistakes display
+            els.mistakesDisplay.style.fontSize = '1rem';
+            els.mistakesDisplay.style.fontWeight = 'bold';
+            setTimeout(function() {
+                els.mistakesDisplay.style.fontSize = '';
+                els.mistakesDisplay.style.fontWeight = '';
+            }, 1000);
+        }
+
+        // --- Mouse event handlers (delegated on grid container) ---
+        els.gridContainer.addEventListener('mousedown', function(e) {
+            if (state.screen !== 'playing' || state.isComplete) return;
+            var cell = e.target.closest('.grid-cell');
+            if (!cell) return;
+
+            var row = parseInt(cell.dataset.row, 10);
+            var col = parseInt(cell.dataset.col, 10);
+
+            // Update cursor position on click
+            state.cursorRow = row;
+            state.cursorCol = col;
+            updateCursor();
+
+            if (e.button === 0) {
+                // Left click: fill/unfill
+                isDragging = true;
+                dragAction = determineDragAction(row, col, 0);
+                handleCellAction(row, col, dragAction);
+            } else if (e.button === 2) {
+                // Right click: mark/unmark
+                isDragging = true;
+                dragAction = determineDragAction(row, col, 2);
+                handleCellAction(row, col, dragAction);
+            }
+        });
+
+        els.gridContainer.addEventListener('mouseover', function(e) {
+            if (state.screen !== 'playing') return;
+            var cell = e.target.closest('.grid-cell');
+            if (!cell) return;
+
+            var row = parseInt(cell.dataset.row, 10);
+            var col = parseInt(cell.dataset.col, 10);
+            highlightRowCol(row, col);
+
+            if (isDragging && dragAction && !state.isComplete) {
+                applyDragAction(row, col);
+            }
+        });
+
+        els.gridContainer.addEventListener('mouseleave', function() {
+            clearHighlights();
+            // Re-apply cursor highlight if cursor is visible
+            if (state.screen === 'playing') {
+                highlightRowCol(state.cursorRow, state.cursorCol);
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            dragAction = null;
+        });
+
+        // --- Right-click (context menu prevention is already handled below) ---
+        els.gridContainer.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // --- Touch event handlers for mobile ---
+        els.gridContainer.addEventListener('touchstart', function(e) {
+            if (state.screen !== 'playing' || state.isComplete) return;
+            var touch = e.touches[0];
+            var cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!cell) return;
+            cell = cell.closest('.grid-cell');
+            if (!cell) return;
+
+            var row = parseInt(cell.dataset.row, 10);
+            var col = parseInt(cell.dataset.col, 10);
+
+            state.cursorRow = row;
+            state.cursorCol = col;
+            updateCursor();
+
+            var actionType = (state.mobileMode === 'mark') ? 'mark' : 'fill';
+            isDragging = true;
+            dragAction = determineDragAction(row, col, state.mobileMode === 'mark' ? 2 : 0);
+            handleCellAction(row, col, dragAction);
+        }, { passive: true });
+
+        els.gridContainer.addEventListener('touchmove', function(e) {
+            if (!isDragging || state.screen !== 'playing' || state.isComplete) return;
+            var touch = e.touches[0];
+            var cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!cell) return;
+            cell = cell.closest('.grid-cell');
+            if (!cell) return;
+
+            var row = parseInt(cell.dataset.row, 10);
+            var col = parseInt(cell.dataset.col, 10);
+            applyDragAction(row, col);
+        }, { passive: true });
+
+        els.gridContainer.addEventListener('touchend', function() {
+            isDragging = false;
+            dragAction = null;
+        });
+
+        // --- Keyboard navigation ---
+        document.addEventListener('keydown', function(e) {
+            // Global keys
+            if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+                if (state.screen === 'playing' && !state.isComplete) {
+                    e.preventDefault();
+                    state.isPaused = true;
+                    state.screen = 'paused';
+                    showScreen('pause-screen');
+                    return;
+                } else if (state.screen === 'paused') {
+                    e.preventDefault();
+                    state.isPaused = false;
+                    state.screen = 'playing';
+                    showScreen('game-screen');
+                    updateCursor();
+                    return;
+                }
+            }
+
+            if (state.screen !== 'playing' || state.isComplete) return;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    moveCursor(-1, 0);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    moveCursor(1, 0);
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    moveCursor(0, -1);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    moveCursor(0, 1);
+                    break;
+                case ' ':
+                case 'Enter':
+                    e.preventDefault();
+                    handleCellAction(state.cursorRow, state.cursorCol, 'fill');
+                    break;
+                case 'x':
+                case 'X':
+                    e.preventDefault();
+                    handleCellAction(state.cursorRow, state.cursorCol, 'mark');
+                    break;
+            }
+        });
+
+        // ======== AGENT 3 VISUAL POLISH (IMPLEMENTED) ========
+        // Implemented via CSS + JS modifications above:
+        // - Cross-stitch X rendering via ::before/::after pseudo-elements on .grid-cell.filled
+        // - Thread color per-puzzle via --thread-color CSS variable on #grid-container
+        // - Responsive thread thickness (4px/3px/2px) via .grid-size-N classes
+        // - Light tint background on filled cells (fabric behind stitch)
+        // - Ghost stitch preview on hover (transparent X on empty cells)
+        // - Enhanced thread spool indicator in HUD
+        // - Completion hoop reveal animation (diagonal sweep with staggered delays)
+        // - Mini cross-stitches in completion hoop display
+        // - Puzzle card previews (blurred mini-grid of solved pattern)
+        // - Corner stitch decorations on grid frame
+        // - Running stitch (dashed) grid border with outer gold accent border
+        // - Thread-colored strikethrough on satisfied clues
+        // - All 13 puzzle patterns verified for recognizable motifs + unique solutions
+
+        // ======== AGENT 4 FEATURES (IMPLEMENTED) ========
+        // Implemented:
+        // - Procedural Web Audio: stitch, mark, undo, error, row complete, puzzle complete sounds
+        // - Sound toggle (on/off) with fixed button
+        // - Celebration particles: thread confetti + French knot sparkles on puzzle complete
+        // - Hoop glow pulse animation on completion screen
+        // - Screen fade transitions (opacity 0.25s)
+        // - Accessibility: role=grid/gridcell, aria-labels, aria-live on timer/moves, keyboard hints
+        // - Auto-pause on tab visibility change
+        // - Debounced resize handler
+        // - Local storage for progress/best times
+        // - Mobile polish: touch-action manipulation, min-height touch targets, keyboard hints toggle
+        // - Optimized clue checking (only affected row/col)
+        // - Row/column complete chime (tracks newly satisfied lines)
+
+        // ======== LOCAL STORAGE ========
+        function saveProgress() {
+            try {
+                var data = {
+                    completed: Array.from(completedPuzzles),
+                    bestTimes: bestTimes
+                };
+                localStorage.setItem('stitch-puzzle-progress', JSON.stringify(data));
+            } catch (e) {
+                // localStorage not available, silently fail
+            }
+        }
+
+        function loadProgress() {
+            try {
+                var raw = localStorage.getItem('stitch-puzzle-progress');
+                if (raw) {
+                    var data = JSON.parse(raw);
+                    if (data.completed) {
+                        for (var i = 0; i < data.completed.length; i++) {
+                            completedPuzzles.add(data.completed[i]);
+                        }
+                    }
+                    if (data.bestTimes) {
+                        bestTimes = data.bestTimes;
+                    }
+                }
+            } catch (e) {
+                // localStorage not available, silently fail
+            }
+        }
+
+        // ======== NAVIGATION WIRING ========
+        els.btnPlay.addEventListener('click', function() {
+            ensureAudio();
+            state.screen = 'select';
+            renderPuzzleSelect();
+            showScreen('select-screen');
+        });
+
+        els.btnBackTitle.addEventListener('click', function() {
+            state.screen = 'title';
+            showScreen('title-screen');
+        });
+
+        els.btnPause.addEventListener('click', function() {
+            state.isPaused = true;
+            state.screen = 'paused';
+            showScreen('pause-screen');
+        });
+
+        els.btnResume.addEventListener('click', function() {
+            state.isPaused = false;
+            state.screen = 'playing';
+            showScreen('game-screen');
+            updateCursor();
+        });
+
+        els.btnQuit.addEventListener('click', function() {
+            state.isPaused = false;
+            state.screen = 'select';
+            stopTimer();
+            renderPuzzleSelect();
+            showScreen('select-screen');
+        });
+
+        els.btnMenu.addEventListener('click', function() {
+            stopTimer();
+            state.screen = 'select';
+            renderPuzzleSelect();
+            showScreen('select-screen');
+        });
+
+        els.btnNext.addEventListener('click', function() {
+            // Go to next puzzle in the same tier, or wrap around
+            var currentTier = PUZZLES[state.currentPuzzleIndex].tier;
+            var nextIndex = -1;
+            for (var i = state.currentPuzzleIndex + 1; i < PUZZLES.length; i++) {
+                if (PUZZLES[i].tier === currentTier) {
+                    nextIndex = i;
+                    break;
+                }
+            }
+            // If no next in same tier, try first of next tier
+            if (nextIndex === -1) {
+                var tierOrder = ['sampler', 'intermediate', 'master'];
+                var currentTierIdx = tierOrder.indexOf(currentTier);
+                if (currentTierIdx < tierOrder.length - 1) {
+                    var nextTier = tierOrder[currentTierIdx + 1];
+                    for (var i = 0; i < PUZZLES.length; i++) {
+                        if (PUZZLES[i].tier === nextTier) {
+                            nextIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            // If still nothing, go back to select
+            if (nextIndex === -1) {
+                stopTimer();
+                state.screen = 'select';
+                renderPuzzleSelect();
+                showScreen('select-screen');
+            } else {
+                startPuzzle(nextIndex);
+            }
+        });
+
+        // Puzzle card click delegation
+        els.puzzleTiers.addEventListener('click', function(e) {
+            ensureAudio();
+            var card = e.target.closest('.puzzle-card');
+            if (!card) return;
+            var index = parseInt(card.getAttribute('data-puzzle-index'), 10);
+            if (!isNaN(index) && index >= 0 && index < PUZZLES.length) {
+                startPuzzle(index);
+            }
+        });
+
+        // Mobile mode toggle
+        els.btnModeToggle.addEventListener('click', function() {
+            if (state.mobileMode === 'stitch') {
+                state.mobileMode = 'mark';
+                els.btnModeToggle.textContent = 'Mode: Mark';
+                els.btnModeToggle.style.background = 'var(--thread-blue)';
+            } else {
+                state.mobileMode = 'stitch';
+                els.btnModeToggle.textContent = 'Mode: Stitch';
+                els.btnModeToggle.style.background = 'var(--thread-red)';
+            }
+        });
+
+        // Prevent context menu on grid
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.classList.contains('grid-cell')) {
+                e.preventDefault();
+            }
+        });
+
+        // ======== INIT ========
+        loadProgress();
+        state.screen = 'title';
+        // Show title screen immediately (no fade for initial load)
+        var titleScreen = document.getElementById('title-screen');
+        titleScreen.classList.add('active', 'visible');
+    })();
+    </script>
+</body>
+</html>
