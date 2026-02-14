@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Meme Museum -- A Pop Art Interactive Story</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Lilita+One&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           POP ART DESIGN SYSTEM -- Story Build: The Meme Museum
+        ================================================================ */
+
+        :root {
+            /* Pop Art Primary Colors */
+            --pop-red: #E2190C;
+            --pop-yellow: #FFD819;
+            --pop-blue: #0057B8;
+            --pop-pink: #FF1493;
+            --pop-orange: #FF6B1A;
+
+            /* Supporting Colors */
+            --pop-cyan: #00C8FF;
+            --pop-green: #39B54A;
+            --pop-purple: #9B30FF;
+            --black: #1A1A1A;
+            --white: #FFFFFF;
+            --cream: #FFF8E7;
+
+            /* Grays */
+            --gray-100: #F5F5F5;
+            --gray-200: #EEEEEE;
+            --gray-300: #E0E0E0;
+            --gray-500: #9E9E9E;
+            --gray-600: #757575;
+            --gray-700: #616161;
+
+            /* Semantic Colors */
+            --text-primary: var(--black);
+            --text-secondary: var(--gray-700);
+            --text-muted: var(--gray-500);
+            --bg-primary: var(--cream);
+
+            /* Typography */
+            --font-display: 'Bangers', 'Impact', cursive;
+            --font-heading: 'Lilita One', 'Impact', sans-serif;
+            --font-body: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
+            /* Spacing Scale (4px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+
+            /* Borders */
+            --border-thick: 4px solid var(--black);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --transition-pop: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            /* Dot pattern */
+            --dot-size: 3px;
+            --dot-gap: 12px;
+            --dot-color: rgba(0, 0, 0, 0.08);
+        }
+
+        /* --- RESET --- */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ben-Day Dots Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, var(--dot-color) var(--dot-size), transparent var(--dot-size));
+            background-size: var(--dot-gap) var(--dot-gap);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* --- KEYFRAMES --- */
+        @keyframes sceneFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes choicesFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes factSlideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes colorFlash {
+            0% { opacity: 0; }
+            10% { opacity: 1; background: var(--pop-red); }
+            25% { background: var(--pop-yellow); }
+            40% { background: var(--pop-blue); }
+            55% { background: var(--pop-pink); }
+            70% { background: var(--pop-orange); }
+            85% { opacity: 1; background: var(--pop-red); }
+            100% { opacity: 0; }
+        }
+
+        @keyframes burstSpin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+            60% { transform: scale(1.15) rotate(2deg); opacity: 1; }
+            100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+        }
+
+        @keyframes badgePop {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* ================================================================
+           LAYOUT
+        ================================================================ */
+        .game-container {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ================================================================
+           TITLE SCREEN
+        ================================================================ */
+        .title-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 85vh;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 0;
+            left: 0;
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
+            color: var(--text-primary);
+            opacity: 0.6;
+            transition: opacity var(--transition-fast);
+        }
+
+        .back-link:hover {
+            opacity: 1;
+            color: var(--pop-red);
+        }
+
+        .title-screen h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 12vw, 7rem);
+            letter-spacing: 0.05em;
+            line-height: 1;
+            color: var(--pop-red);
+            text-shadow:
+                4px 4px 0 var(--pop-yellow),
+                8px 8px 0 var(--pop-blue);
+            margin-bottom: var(--space-5);
+        }
+
+        .title-tagline {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-7);
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .title-era {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            color: var(--black);
+            padding: var(--space-2) var(--space-5);
+            background: var(--pop-yellow);
+            border: var(--border-thick);
+            display: inline-block;
+            transform: rotate(-2deg);
+            box-shadow: 4px 4px 0 var(--black);
+            margin-bottom: var(--space-6);
+        }
+
+        /* ================================================================
+           BUTTONS
+        ================================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3) var(--space-6);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            text-decoration: none;
+            border: 4px solid var(--black);
+            background: var(--white);
+            color: var(--black);
+            cursor: pointer;
+            transition: all var(--transition-pop);
+            position: relative;
+            box-shadow: 4px 4px 0 var(--black);
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--black);
+        }
+
+        .btn-primary { background: var(--pop-red); color: var(--white); }
+        .btn-secondary { background: var(--pop-blue); color: var(--white); }
+        .btn-accent { background: var(--pop-pink); color: var(--white); }
+        .btn-yellow { background: var(--pop-yellow); color: var(--black); }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: 0.85rem;
+            border-width: 3px;
+            box-shadow: 3px 3px 0 var(--black);
+        }
+
+        .btn-lg {
+            padding: var(--space-5) var(--space-8);
+            font-size: 1.25rem;
+            border-width: 5px;
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .btn-lg:hover { box-shadow: 8px 8px 0 var(--black); }
+
+        /* Starburst button */
+        .btn-burst {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--pop-yellow);
+            color: var(--black);
+            border: none;
+            box-shadow: none;
+            padding: var(--space-5) var(--space-7);
+            clip-path: polygon(
+                50% 0%, 63% 28%, 98% 20%, 75% 45%,
+                100% 70%, 68% 62%, 50% 100%, 32% 62%,
+                0% 70%, 25% 45%, 2% 20%, 37% 28%
+            );
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all var(--transition-pop);
+        }
+
+        .btn-burst:hover {
+            background: var(--pop-orange);
+            color: var(--white);
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* ================================================================
+           SCENE CONTAINER
+        ================================================================ */
+        .scene-wrapper {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            padding-top: 1rem;
+        }
+
+        .scene-wrapper.active { display: flex; }
+
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-5);
+            border: var(--border-thick);
+            background: var(--white);
+            box-shadow: 4px 4px 0 var(--black);
+            position: relative;
+        }
+
+        .scene-era {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+        }
+
+        .scene-year {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
+            color: var(--pop-red);
+        }
+
+        .scene-content {
+            animation: sceneFadeIn 0.6s ease-out;
+        }
+
+        /* ================================================================
+           GALLERY TAG -- colored bar for current gallery room
+        ================================================================ */
+        .gallery-tag {
+            display: inline-block;
+            padding: var(--space-1) var(--space-4);
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 2px 2px 0 var(--black);
+            margin-bottom: var(--space-4);
+        }
+
+        .gallery-tag-red { background: var(--pop-red); }
+        .gallery-tag-yellow { background: var(--pop-yellow); color: var(--black); }
+        .gallery-tag-blue { background: var(--pop-blue); }
+        .gallery-tag-pink { background: var(--pop-pink); }
+
+        /* ================================================================
+           SCENE TYPES
+        ================================================================ */
+        .scene-narration {
+            margin-bottom: var(--space-5);
+        }
+
+        .scene-narration p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+            line-height: 1.7;
+        }
+
+        .scene-investigation {
+            margin-bottom: var(--space-5);
+        }
+
+        .scene-investigation p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+            line-height: 1.7;
+        }
+
+        .scene-confrontation {
+            margin-bottom: var(--space-5);
+        }
+
+        .scene-confrontation p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+            line-height: 1.7;
+        }
+
+        .scene-ending {
+            text-align: center;
+            padding: var(--space-7) var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .scene-ending p {
+            margin: 0 auto var(--space-4);
+            max-width: 55ch;
+            line-height: 1.8;
+        }
+
+        /* Scene title */
+        .scene-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            letter-spacing: 0.05em;
+            line-height: 1.1;
+            margin-bottom: var(--space-5);
+            color: var(--text-primary);
+        }
+
+        .scene-subtitle {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            margin-bottom: var(--space-5);
+            color: var(--text-secondary);
+        }
+
+        /* ================================================================
+           GALLERY-SPECIFIC COLOR TINTS
+        ================================================================ */
+        [data-gallery="1"] .scene-title { color: var(--pop-red); text-shadow: 3px 3px 0 var(--pop-yellow); }
+        [data-gallery="1"] .gallery-accent { border-color: var(--pop-red); }
+        [data-gallery="1"] .scene-header { border-bottom: 4px solid var(--pop-red); }
+
+        [data-gallery="2"] .scene-title { color: var(--pop-yellow); text-shadow: 3px 3px 0 var(--pop-red); }
+        [data-gallery="2"] .gallery-accent { border-color: var(--pop-yellow); }
+        [data-gallery="2"] .scene-header { border-bottom: 4px solid var(--pop-yellow); }
+
+        [data-gallery="3"] .scene-title { color: var(--pop-blue); text-shadow: 3px 3px 0 var(--pop-cyan); }
+        [data-gallery="3"] .gallery-accent { border-color: var(--pop-blue); }
+        [data-gallery="3"] .scene-header { border-bottom: 4px solid var(--pop-blue); }
+
+        [data-gallery="4"] .scene-title { color: var(--pop-pink); text-shadow: 3px 3px 0 var(--pop-purple); }
+        [data-gallery="4"] .gallery-accent { border-color: var(--pop-pink); }
+        [data-gallery="4"] .scene-header { border-bottom: 4px solid var(--pop-pink); }
+
+        /* ================================================================
+           SPEECH BUBBLE
+        ================================================================ */
+        .speech-bubble {
+            position: relative;
+            background: var(--white);
+            border: var(--border-thick);
+            border-radius: 20px;
+            padding: var(--space-5);
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            letter-spacing: 0.03em;
+            line-height: 1.5;
+            margin-bottom: var(--space-6);
+            box-shadow: 4px 4px 0 var(--black);
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 40px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 20px solid var(--black);
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 42px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 17px solid var(--white);
+            z-index: 1;
+        }
+
+        .speech-bubble .speaker {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--pop-pink);
+            margin-bottom: var(--space-2);
+            display: block;
+        }
+
+        /* ================================================================
+           CARDS
+        ================================================================ */
+        .card {
+            border: 4px solid var(--black);
+            padding: var(--space-6);
+            transition: all var(--transition-pop);
+            position: relative;
+            background: var(--white);
+            box-shadow: 6px 6px 0 var(--black);
+            margin-bottom: var(--space-5);
+        }
+
+        .card h3 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            line-height: 1.1;
+            margin-bottom: var(--space-3);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--space-4);
+            border-top: 3px dashed var(--gray-300);
+        }
+
+        /* Warhol Repeat Card */
+        .card-warhol {
+            border: 5px solid var(--black);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            margin-bottom: var(--space-5);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .card-warhol-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-6);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        .card-warhol-cell::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, rgba(0,0,0,0.1) 1.5px, transparent 1.5px);
+            background-size: 5px 5px;
+        }
+
+        .card-warhol-cell:nth-child(1) { background: var(--pop-pink); }
+        .card-warhol-cell:nth-child(2) { background: var(--pop-yellow); }
+        .card-warhol-cell:nth-child(3) { background: var(--pop-cyan); }
+        .card-warhol-cell:nth-child(4) { background: var(--pop-orange); }
+
+        .card-warhol-cell .warhol-icon {
+            font-size: 2.5rem;
+            z-index: 1;
+            position: relative;
+            font-family: var(--font-display);
+            letter-spacing: 0.05em;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            color: var(--white);
+        }
+
+        .card-warhol-label {
+            text-align: center;
+            padding: var(--space-3);
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            border-top: none;
+        }
+
+        /* Comic Panel Card */
+        .card-comic {
+            border: 5px solid var(--black);
+            background: var(--white);
+            position: relative;
+            padding: var(--space-7) var(--space-6) var(--space-6);
+            overflow: hidden;
+            margin-bottom: var(--space-5);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .card-comic::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, var(--pop-cyan) 1px, transparent 1px);
+            background-size: 4px 4px;
+            opacity: 0.15;
+        }
+
+        .card-comic-caption {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: var(--pop-yellow);
+            border-bottom: 4px solid var(--black);
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .card-comic .card-body {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-comic h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-3);
+        }
+
+        .card-comic p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+            max-width: 65ch;
+        }
+
+        /* Lichtenstein Card */
+        .card-lichtenstein {
+            border: 5px solid var(--black);
+            position: relative;
+            overflow: hidden;
+            background: var(--white);
+            margin-bottom: var(--space-5);
+            box-shadow: 6px 6px 0 var(--black);
+        }
+
+        .card-lichtenstein-top {
+            background: var(--pop-red);
+            padding: var(--space-5) var(--space-6);
+            position: relative;
+        }
+
+        .card-lichtenstein-top::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.3) 2px, transparent 2px);
+            background-size: 7px 7px;
+        }
+
+        .card-lichtenstein-top h3 {
+            color: var(--white);
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 0 var(--black);
+            position: relative;
+            z-index: 1;
+            margin-bottom: 0;
+            line-height: 1.1;
+        }
+
+        .card-lichtenstein-body {
+            padding: var(--space-5);
+        }
+
+        .card-lichtenstein-body p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+            max-width: 65ch;
+        }
+
+        .card-lichtenstein-body p:last-child { margin-bottom: 0; }
+
+        /* ================================================================
+           BADGES
+        ================================================================ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            letter-spacing: 0.06em;
+            border: 3px solid var(--black);
+            background: var(--white);
+            text-transform: uppercase;
+            box-shadow: 2px 2px 0 var(--black);
+            margin-right: var(--space-2);
+            margin-bottom: var(--space-2);
+        }
+
+        .badge-red { background: var(--pop-red); color: var(--white); }
+        .badge-yellow { background: var(--pop-yellow); color: var(--black); }
+        .badge-blue { background: var(--pop-blue); color: var(--white); }
+        .badge-pink { background: var(--pop-pink); color: var(--white); }
+        .badge-orange { background: var(--pop-orange); color: var(--white); }
+
+        .badge-row {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        /* ================================================================
+           ALERTS
+        ================================================================ */
+        .alert {
+            padding: var(--space-5);
+            border: 4px solid var(--black);
+            position: relative;
+            margin-bottom: var(--space-5);
+            box-shadow: 4px 4px 0 var(--black);
+            font-weight: 500;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1.5px, transparent 1.5px);
+            background-size: 6px 6px;
+            pointer-events: none;
+        }
+
+        .alert-label {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-2);
+            position: relative;
+        }
+
+        .alert-text {
+            position: relative;
+            margin-bottom: 0;
+            max-width: 65ch;
+        }
+
+        .alert-info {
+            background: #D6EEFF;
+            border-color: var(--pop-blue);
+            box-shadow: 4px 4px 0 var(--pop-blue);
+        }
+
+        .alert-info .alert-label { color: var(--pop-blue); }
+
+        .alert-success {
+            background: #D4EDDA;
+            border-color: var(--pop-green);
+            box-shadow: 4px 4px 0 var(--pop-green);
+        }
+
+        .alert-success .alert-label { color: var(--pop-green); }
+
+        .alert-warning {
+            background: #FFF3CD;
+            border-color: var(--pop-orange);
+            box-shadow: 4px 4px 0 var(--pop-orange);
+        }
+
+        .alert-warning .alert-label { color: var(--pop-orange); }
+
+        .alert-error {
+            background: #FFD6D6;
+            border-color: var(--pop-red);
+            box-shadow: 4px 4px 0 var(--pop-red);
+        }
+
+        .alert-error .alert-label { color: var(--pop-red); }
+
+        /* ================================================================
+           ACTION WORDS
+        ================================================================ */
+        .action-word {
+            font-family: var(--font-display);
+            display: inline-block;
+            padding: var(--space-2) var(--space-4);
+            transform: rotate(-3deg);
+            letter-spacing: 0.05em;
+            font-size: 1.5rem;
+            animation: popIn 0.5s ease-out both;
+        }
+
+        .action-word-red { color: var(--pop-red); text-shadow: 2px 2px 0 var(--pop-yellow); }
+        .action-word-blue { color: var(--pop-blue); text-shadow: 2px 2px 0 var(--pop-cyan); }
+        .action-word-pink { color: var(--pop-pink); text-shadow: 2px 2px 0 var(--pop-purple); }
+        .action-word-yellow { color: var(--pop-yellow); text-shadow: 2px 2px 0 var(--pop-red); }
+
+        /* ================================================================
+           DIVIDER
+        ================================================================ */
+        .divider {
+            height: 4px;
+            margin: var(--space-6) 0;
+            position: relative;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--pop-red) 0px, var(--pop-red) 20px,
+                    var(--pop-yellow) 20px, var(--pop-yellow) 40px,
+                    var(--pop-blue) 40px, var(--pop-blue) 60px,
+                    var(--pop-pink) 60px, var(--pop-pink) 80px,
+                    var(--pop-orange) 80px, var(--pop-orange) 100px
+                );
+        }
+
+        /* ================================================================
+           HALFTONE OVERLAY
+        ================================================================ */
+        .halftone-overlay {
+            position: relative;
+        }
+
+        .halftone-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, rgba(0,0,0,0.15) 1.5px, transparent 1.5px);
+            background-size: 6px 6px;
+            pointer-events: none;
+        }
+
+        /* Text emphasis */
+        .text-pop {
+            text-shadow: 3px 3px 0 var(--black);
+        }
+
+        .text-red { color: var(--pop-red); }
+        .text-yellow { color: var(--pop-yellow); }
+        .text-blue { color: var(--pop-blue); }
+        .text-pink { color: var(--pop-pink); }
+        .text-orange { color: var(--pop-orange); }
+        .text-cyan { color: var(--pop-cyan); }
+
+        /* Comic panel framing */
+        .comic-panel {
+            border: var(--border-thick);
+            box-shadow: 6px 6px 0 var(--black);
+            background: var(--white);
+            padding: var(--space-6);
+            margin-bottom: var(--space-5);
+        }
+
+        /* Lead text */
+        .lead {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ================================================================
+           CHOICES
+        ================================================================ */
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            margin-top: var(--space-6);
+            margin-bottom: var(--space-5);
+            animation: choicesFadeIn 0.5s ease-out 0.3s both;
+        }
+
+        .choice-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-4) var(--space-5);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 4px solid var(--black);
+            background: var(--white);
+            color: var(--black);
+            cursor: pointer;
+            transition: all var(--transition-pop);
+            box-shadow: 4px 4px 0 var(--black);
+            text-align: left;
+        }
+
+        .choice-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--black);
+            background: var(--pop-yellow);
+        }
+
+        .choice-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--black);
+        }
+
+        .choice-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--pop-red);
+            color: var(--white);
+            border: 3px solid var(--black);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        /* ================================================================
+           GAME CONTROLS
+        ================================================================ */
+        .game-controls {
+            margin-top: auto;
+            padding-top: var(--space-6);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .game-controls .btn-sm {
+            opacity: 0.6;
+            transition: opacity var(--transition-fast), all var(--transition-pop);
+        }
+
+        .game-controls .btn-sm:hover { opacity: 1; }
+
+        /* ================================================================
+           FACT TRACKER
+        ================================================================ */
+        .fact-tracker {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            display: none;
+        }
+
+        .fact-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            border: 3px solid var(--black);
+            background: var(--pop-yellow);
+            color: var(--black);
+            cursor: pointer;
+            box-shadow: 3px 3px 0 var(--black);
+            transition: all var(--transition-pop);
+            text-transform: uppercase;
+        }
+
+        .fact-toggle:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 var(--black);
+        }
+
+        .fact-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: var(--pop-red);
+            color: var(--white);
+            border: 2px solid var(--black);
+            font-size: 0.8rem;
+            border-radius: 50%;
+        }
+
+        .fact-panel {
+            display: none;
+            background: var(--white);
+            border: 4px solid var(--black);
+            box-shadow: 6px 6px 0 var(--black);
+            margin-top: var(--space-2);
+            max-width: 320px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .fact-panel.open { display: block; }
+
+        .fact-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.06em;
+            padding: var(--space-3) var(--space-4);
+            background: var(--pop-blue);
+            color: var(--white);
+            border-bottom: 3px solid var(--black);
+            text-transform: uppercase;
+            margin-bottom: 0;
+        }
+
+        .fact-panel .fact-list {
+            padding: var(--space-3);
+        }
+
+        .fact-item {
+            padding: var(--space-3);
+            border-bottom: 2px dashed var(--gray-300);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            animation: factSlideIn 0.3s ease-out;
+        }
+
+        .fact-item:last-child { border-bottom: none; }
+
+        .no-facts {
+            padding: var(--space-4);
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        /* ================================================================
+           TRANSITION OVERLAY
+        ================================================================ */
+        .transition-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .transition-overlay.active {
+            animation: colorFlash 0.8s ease-in-out;
+        }
+
+        /* ================================================================
+           MEME EXHIBIT LIST
+        ================================================================ */
+        .exhibit-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .exhibit-item {
+            border: 3px solid var(--black);
+            background: var(--white);
+            padding: var(--space-4);
+            box-shadow: 3px 3px 0 var(--black);
+        }
+
+        .exhibit-item h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            margin-bottom: var(--space-2);
+            line-height: 1.2;
+        }
+
+        .exhibit-item p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+
+        /* ================================================================
+           SCROLLBAR
+        ================================================================ */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--cream); }
+        ::-webkit-scrollbar-thumb { background: var(--pop-red); border: 2px solid var(--black); }
+        ::selection { background: var(--pop-yellow); color: var(--black); }
+
+        /* ================================================================
+           RESPONSIVE
+        ================================================================ */
+        @media (max-width: 768px) {
+            .game-container { padding: 1rem; }
+            .title-screen h1 { font-size: clamp(2.5rem, 10vw, 5rem); }
+            .fact-tracker { right: 0.5rem; top: 0.5rem; }
+            .fact-panel { max-width: 260px; }
+            .choice-btn { font-size: 0.85rem; padding: var(--space-3) var(--space-4); }
+            .exhibit-list { grid-template-columns: 1fr; }
+            .card-warhol-cell { min-height: 80px; padding: var(--space-4); }
+            .card-warhol-cell .warhol-icon { font-size: 1.8rem; }
+            .scene-title { font-size: clamp(1.5rem, 5vw, 2.5rem); }
+            .speech-bubble { font-size: 1rem; }
+            .action-word { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Transition Overlay -->
+    <div class="transition-overlay" id="transition"></div>
+
+    <!-- Fact Tracker -->
+    <div class="fact-tracker" id="factTracker">
+        <button class="fact-toggle" id="factToggle">
+            Exhibit Notes <span class="fact-count" id="factCount">0</span>
+        </button>
+        <div class="fact-panel" id="factPanel">
+            <h4>Curator's Notes</h4>
+            <div class="fact-list" id="factList">
+                <p class="no-facts">No exhibits curated yet...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <!-- Title Screen -->
+        <div class="title-screen" id="titleScreen">
+            <a href="index.html" class="back-link">&larr; Stories</a>
+            <div class="title-era">An Interactive Exhibition</div>
+            <h1>THE MEME MUSEUM</h1>
+            <p class="title-tagline">From Dawkins to Skibidi Toilet: trace the complete history of internet memes through four pop-art gallery rooms. You are the curator. You decide what goes on the walls.</p>
+            <button class="btn btn-lg btn-primary" id="startBtn">OPEN THE DOORS</button>
+        </div>
+
+        <!-- Scene Wrapper -->
+        <div class="scene-wrapper" id="sceneWrapper">
+            <div class="scene-header" id="sceneHeader">
+                <span class="scene-era" id="sceneEra"></span>
+                <span class="scene-year" id="sceneYear"></span>
+            </div>
+
+            <div id="sceneContent"></div>
+
+            <div class="game-controls">
+                <button class="btn btn-sm" id="restartBtn">Exit Museum</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ================================================================
+    //  THE MEME MUSEUM -- Story Data
+    // ================================================================
+
+    const STORY = {
+
+        // ---- SCENE 1: MUSEUM OPENING NIGHT ----
+        museum_opening_night: {
+            year: '1976-2025',
+            era: 'THE MEME MUSEUM',
+            gallery: 0,
+            content: `
+                <h2 class="scene-title" style="color: var(--pop-red); text-shadow: 4px 4px 0 var(--pop-yellow), 8px 8px 0 var(--pop-blue);">OPENING NIGHT</h2>
+                <div class="scene-narration">
+                    <p class="lead">The lights snap on. Four empty gallery rooms stretch before you, each painted a different color: <span class="text-red" style="font-weight:900;">red</span>, <span class="text-yellow" style="font-weight:900; text-shadow: 1px 1px 0 var(--black);">yellow</span>, <span class="text-blue" style="font-weight:900;">blue</span>, and <span class="text-pink" style="font-weight:900;">pink</span>. Blank walls. Empty frames. The museum opens tomorrow, and you -- the curator -- have twelve hours to fill them.</p>
+                </div>
+
+                <div class="speech-bubble">
+                    <span class="speaker">The Curator (You)</span>
+                    Memes are the pop art of the internet. Mass-produced. Remixed. Endlessly replicated. Andy Warhol silk-screened soup cans. The internet silk-screens everything. Tonight, I decide what goes on these walls.
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="comic-panel">
+                    <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-4);">Before We Begin: Where "Meme" Came From</h3>
+                    <div class="scene-narration">
+                        <p>In <span class="badge badge-yellow">1976</span>, evolutionary biologist <span class="badge badge-pink">Richard Dawkins</span> published <em>The Selfish Gene</em> and coined the word <strong>"meme"</strong> -- derived from the Ancient Greek <em>mimema</em> (imitated thing), shortened to rhyme with "gene." He meant it as a unit of cultural replication: ideas, tunes, catchphrases that spread from brain to brain the way genes spread through reproduction.</p>
+                        <p>Seventeen years later, in <span class="badge badge-yellow">1993</span>, attorney and internet theorist <span class="badge badge-pink">Mike Godwin</span> -- already famous for Godwin's Law (coined 1990, stating that as internet discussions grow longer, the probability of a Nazi comparison approaches 1) -- became one of the first people to use the term <strong>"Internet meme"</strong>, applying Dawkins's concept to the strange new things spreading across Usenet and early bulletin boards.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <p class="alert-label">Museum Guide</p>
+                    <p class="alert-text">Four gallery rooms, four eras. Each room needs exhibits. You will choose which memes to spotlight -- because you can never show everything. Curation IS the art.</p>
+                </div>
+            `,
+            fact: 'Richard Dawkins coined "meme" in The Selfish Gene (1976), from Greek mimema. Mike Godwin coined "Internet meme" in 1993.',
+            choices: [
+                { text: 'Enter Gallery 1: The Primordial Soup', next: 'gallery_one_origins' }
+            ]
+        },
+
+        // ---- SCENE 2: GALLERY ONE ORIGINS ----
+        gallery_one_origins: {
+            year: 'PRE-2005',
+            era: 'GALLERY 1: THE PRIMORDIAL SOUP',
+            gallery: 1,
+            content: `
+                <span class="gallery-tag gallery-tag-red">Gallery 1 -- Pre-2005</span>
+                <h2 class="scene-title">THE PRIMORDIAL SOUP</h2>
+                <div class="scene-subtitle">Before YouTube. Before Facebook. Before "going viral" was a phrase anyone used.</div>
+
+                <div class="scene-investigation">
+                    <p>The first gallery room is bathed in red light. The walls are bare, but the exhibit labels are already printed. You survey the available material -- the earliest internet memes, back when nobody called them that yet.</p>
+                </div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Emoticons :-)</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Sep 19, 1982</span><span class="badge badge-pink">Scott Fahlman</span></div>
+                        <p>Carnegie Mellon professor proposes :-) and :-( as joke markers on a bulletin board. The first standardized emotional expression online.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Dancing Baby</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">1996</span><span class="badge badge-red">First Viral Meme</span></div>
+                        <p>3D rendering demo by Michael Girard and Robert Lurye. Spread via email chains. Appeared on Ally McBeal. Widely considered the first viral internet meme.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Hampster Dance</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">1998</span><span class="badge badge-blue">GeoCities</span></div>
+                        <p>Deidre LaCarte's page of animated hamster GIFs dancing to sped-up "Whistle Stop." From 800 total visits to 200,000 per day.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>All Your Base</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">1998-2001</span><span class="badge badge-blue">Newgrounds</span></div>
+                        <p>Badly translated 1989 Japanese game Zero Wing. February 2001 Newgrounds video photoshops the phrase onto real signs. One of the first remix memes.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Star Wars Kid</h4>
+                        <div class="badge-row"><span class="badge badge-pink">Ghyslain Raza</span><span class="badge badge-red">1B+ Views</span></div>
+                        <p>14-year-old filmed swinging a golf ball retriever like a lightsaber. One of the first involuntary viral celebrities.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Numa Numa</h4>
+                        <div class="badge-row"><span class="badge badge-pink">Gary Brolsma</span><span class="badge badge-yellow">Dec 6, 2004</span></div>
+                        <p>Webcam lip-sync to "Dragostea Din Tei" uploaded to Newgrounds. Over 1 billion combined views.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>Chuck Norris Facts</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Early 2005</span><span class="badge badge-blue">Something Awful</span></div>
+                        <p>Originally "Vin Diesel Facts" on Something Awful forums. The absurdist format outlived its original subject.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-red);">
+                        <h4>O RLY Owl</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">2003-2005</span><span class="badge badge-pink">John White (photo)</span></div>
+                        <p>Northern Saw-whet Owl photo + Something Awful catchphrase. Template for call-and-response image macros.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <h3 style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: var(--space-4);">The Platforms That Built It All</h3>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top">
+                        <h3>SOMETHING AWFUL</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Founded 1999</span><span class="badge badge-pink">Richard "Lowtax" Kyanka</span><span class="badge badge-orange">$10 Registration Fee</span></div>
+                        <p>The paywall that built a culture. Something Awful's forums incubated LOLcats, Chuck Norris Facts, and countless meme formats. The $10 fee kept out the worst trolls -- barely.</p>
+                    </div>
+                </div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-blue);">
+                        <h3>4CHAN</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Oct 1, 2003</span><span class="badge badge-pink">Christopher "moot" Poole</span><span class="badge badge-red">Age 15</span></div>
+                        <p>Anonymous imageboard founded by a 15-year-old, funded by his mom's credit card. Would become the single most prolific meme factory in internet history.</p>
+                    </div>
+                </div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-pink);">
+                        <h3>YTMND</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Apr 1, 2004</span><span class="badge badge-pink">Max Goldberg</span></div>
+                        <p>"You're The Man Now Dog" -- a platform for single-serving sites combining image, text, and sound. Proto-meme creation tool.</p>
+                    </div>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-6);">
+                    <span class="speaker">The Curator (You)</span>
+                    So much material, so little wall space. I need a focus for this room. Do I spotlight the memes themselves -- the first things that went viral? Or do I spotlight the platforms that made it all possible?
+                </div>
+            `,
+            fact: 'Scott Fahlman created the first emoticons :-) and :-( on September 19, 1982, at Carnegie Mellon University.',
+            choices: [
+                { text: 'Focus on the pioneers -- the first viral sensations that proved the internet could make anything famous', next: 'viral_pioneers' },
+                { text: 'Focus on the platforms -- the forums and imageboards that built the meme factory', next: 'platform_builders' }
+            ]
+        },
+
+        // ---- SCENE 3: VIRAL PIONEERS ----
+        viral_pioneers: {
+            year: '1996-2005',
+            era: 'GALLERY 1: VIRAL PIONEERS',
+            gallery: 1,
+            content: `
+                <span class="gallery-tag gallery-tag-red">Gallery 1 -- Pre-2005</span>
+                <h2 class="scene-title">THE FIRST FAMOUS THINGS ON THE INTERNET</h2>
+
+                <div class="scene-narration">
+                    <p>You begin hanging exhibits. The focus: the memes themselves. The accidental celebrities of a network nobody quite understood yet.</p>
+                </div>
+
+                <span class="action-word action-word-red" style="font-size: 2rem; margin-bottom: var(--space-5); display: inline-block;">VIRAL!</span>
+
+                <div class="card-warhol">
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">BABY</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">BABY</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">BABY</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">BABY</span>
+                    </div>
+                </div>
+                <div class="card-warhol-label">DANCING BABY (1996) -- THE WARHOL TREATMENT</div>
+
+                <div class="comic-panel" style="margin-top: var(--space-6);">
+                    <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-3);">The First Viral Meme</h3>
+                    <p>Created by <span class="badge badge-pink">Michael Girard</span> and <span class="badge badge-pink">Robert Lurye</span> as a 3D rendering demo in <span class="badge badge-yellow">1996</span>, the Dancing Baby spread through email chain letters -- the original viral distribution network. When it appeared on the TV show <em>Ally McBeal</em>, it crossed from internet oddity into mainstream culture.</p>
+                    <p>You give it the Warhol treatment: four panels, four colors. Because the Dancing Baby is pop art whether it knows it or not -- mass-produced, endlessly copied, and completely removed from its original context.</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-red);">
+                    <h3>Hampster Dance: The First Web-Native Meme</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">1998</span><span class="badge badge-blue">GeoCities</span><span class="badge badge-pink">Deidre LaCarte</span></div>
+                    <p>A GeoCities page. Rows of animated hamster GIFs. A sped-up sample of Roger Miller's "Whistle Stop." Nothing more. It went from <strong>800 total visits</strong> to <strong>200,000 visits per day</strong>. Nobody could explain why. That was the point.</p>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-red);">
+                    <h3>All Your Base: The First Remix Meme</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Feb 2001</span><span class="badge badge-blue">Newgrounds</span><span class="badge badge-red">Remix Culture</span></div>
+                    <p>A bad translation from a 1989 Japanese arcade game. "All your base are belong to us." Someone on Newgrounds photoshopped it onto road signs, billboards, the Hollywood sign. Hundreds of people added their own versions. This was remix culture before anyone had a word for it.</p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <p class="alert-label">Ethical Note</p>
+                    <p class="alert-text"><span class="badge badge-pink">Ghyslain Raza</span>, the Star Wars Kid, was <strong>14 years old</strong> when his private video was uploaded without consent. He became one of the first involuntary viral celebrities, accumulating over <span class="badge badge-red">1 billion+ views</span>. The room acknowledges both the humor and the human cost -- a tension that will define meme culture for decades.</p>
+                </div>
+
+                <div class="speech-bubble">
+                    <span class="speaker">The Curator (You)</span>
+                    These weren't made by professionals. They were accidents, inside jokes, bad translations. That's what made them revolutionary. The internet didn't need talent. It needed something weirder: the willingness to share.
+                </div>
+
+                <div class="alert alert-success">
+                    <p class="alert-label">Gallery 1 Complete!</p>
+                    <p class="alert-text">The red room is hung. Time to move to the golden age.</p>
+                </div>
+            `,
+            fact: 'The Dancing Baby (1996) is widely considered the first viral internet meme. It spread via email chain letters before appearing on Ally McBeal.',
+            choices: [
+                { text: 'Enter Gallery 2: The Golden Age', next: 'gallery_two_golden_age' }
+            ]
+        },
+
+        // ---- SCENE 4: PLATFORM BUILDERS ----
+        platform_builders: {
+            year: '1999-2004',
+            era: 'GALLERY 1: PLATFORM BUILDERS',
+            gallery: 1,
+            content: `
+                <span class="gallery-tag gallery-tag-red">Gallery 1 -- Pre-2005</span>
+                <h2 class="scene-title">WHERE MEMES WERE BORN</h2>
+
+                <div class="scene-narration">
+                    <p>You begin hanging exhibits. The focus: the infrastructure. Not the memes, but the places that made them possible. The factories behind the art.</p>
+                </div>
+
+                <span class="action-word action-word-red" style="font-size: 2rem; margin-bottom: var(--space-5); display: inline-block;">BUILT!</span>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top">
+                        <h3>SOMETHING AWFUL: THE $10 PAYWALL</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Founded 1999</span><span class="badge badge-pink">Richard "Lowtax" Kyanka</span><span class="badge badge-orange">$10 Fee</span></div>
+                        <p>The unlikely cradle of meme culture. Something Awful charged ten dollars to register for its forums -- a radical idea in 1999, when everything online was free. That small paywall created a community just committed enough to invent new things. LOLcats, Chuck Norris Facts (originally "Vin Diesel Facts"), and dozens of other meme templates were born here.</p>
+                        <p>The forums proved a fundamental truth: memes need communities, not just individuals. A meme isn't a meme until someone shares it, remixes it, and passes it on.</p>
+                    </div>
+                </div>
+
+                <div class="card-comic">
+                    <div class="card-comic-caption">Meanwhile, in a teenager's bedroom...</div>
+                    <div class="card-body">
+                        <h3 style="font-family: var(--font-display); font-size: 1.8rem;">4CHAN: THE ANONYMOUS FACTORY</h3>
+                        <div class="badge-row"><span class="badge badge-yellow">Oct 1, 2003</span><span class="badge badge-pink">Christopher "moot" Poole</span><span class="badge badge-red">Founder Age: 15</span></div>
+                        <p>A fifteen-year-old named Christopher Poole, using the handle "moot," founded 4chan on <strong>October 1, 2003</strong>. He paid for the server with his mother's credit card. It was modeled after Japan's Futaba Channel -- an anonymous imageboard where posts disappeared after a set time.</p>
+                        <p>The anonymity was the key. Without usernames, without reputations, without consequences, people were free to create without inhibition. 4chan would go on to produce more memes than any other single platform in internet history: Rickrolling, Rage Comics, Trollface, Advice Animals, Pepe the Frog, and hundreds more.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-pink);">
+                    <h3>YTMND: The Proto-Meme Machine</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Apr 1, 2004</span><span class="badge badge-pink">Max Goldberg</span></div>
+                    <p>"You're The Man Now Dog" launched on April Fool's Day 2004. The concept was simple: one image, one text overlay, one looping sound. That constraint -- like the sonnet, like the haiku -- forced creativity. YTMND proved that limitations breed innovation.</p>
+                </div>
+
+                <div class="alert alert-info">
+                    <p class="alert-label">Curatorial Insight</p>
+                    <p class="alert-text">These platforms shared three critical features: <strong>anonymity</strong> encouraged experimentation, <strong>low barriers</strong> enabled mass participation, and the <strong>lack of algorithms</strong> meant content spread organically through human sharing, not machine curation. The memes that survived were the ones people actively chose to pass on.</p>
+                </div>
+
+                <div class="speech-bubble">
+                    <span class="speaker">The Curator (You)</span>
+                    Every art movement needs a studio. Impressionists had Parisian cafes. Pop artists had The Factory. Internet meme culture had Something Awful, 4chan, and YTMND -- the most chaotic, anonymous, ungovernable creative spaces humanity has ever built.
+                </div>
+
+                <div class="alert alert-success">
+                    <p class="alert-label">Gallery 1 Complete!</p>
+                    <p class="alert-text">The red room tells the story of where it all began. On to the golden age.</p>
+                </div>
+            `,
+            fact: '4chan was founded on October 1, 2003, by 15-year-old Christopher "moot" Poole, funded by his mother\'s credit card. It became the most prolific meme factory in internet history.',
+            choices: [
+                { text: 'Enter Gallery 2: The Golden Age', next: 'gallery_two_golden_age' }
+            ]
+        },
+
+        // ---- SCENE 5: GALLERY TWO GOLDEN AGE ----
+        gallery_two_golden_age: {
+            year: '2006-2012',
+            era: 'GALLERY 2: THE GOLDEN AGE',
+            gallery: 2,
+            content: `
+                <span class="gallery-tag gallery-tag-yellow">Gallery 2 -- 2006-2012</span>
+                <h2 class="scene-title">THE GOLDEN AGE</h2>
+                <div class="scene-subtitle">YouTube existed. Social media was rising. And memes went from niche curiosity to global phenomenon.</div>
+
+                <div class="scene-narration">
+                    <p>The second room glows yellow. This is the era when everything changed -- when memes crossed over from forum culture to the mainstream, when the first meme millionaires emerged, and when the internet discovered it could make <em>anything</em> famous.</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>I Can Has Cheezburger</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Jan 11, 2007</span><span class="badge badge-orange">Sold for $2M</span></div>
+                        <p>Eric Nakagawa posts a cat photo with misspelled caption from Something Awful. 1.5 million daily hits at peak. Sold for $2 million in September 2007.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Rickrolling</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">May 15, 2007</span><span class="badge badge-red">1.6B YouTube Views</span></div>
+                        <p>Shawn Cotter posts the first Rickroll on 4chan's /v/ board. Bait-and-switch linking to Rick Astley's 1987 "Never Gonna Give You Up."</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Chocolate Rain</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Apr 22, 2007</span><span class="badge badge-pink">Tay Zonday</span></div>
+                        <p>Original song by a deep-voiced YouTube creator. 140 million+ views. One of the first YouTube-native memes.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>"Leave Britney Alone"</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Sep 2007</span><span class="badge badge-pink">Chris Crocker</span></div>
+                        <p>Tearful defense of Britney Spears. 2 million views in 24 hours. Proved emotional authenticity could go as viral as absurdity.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Rage Comics / Trollface</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Aug 2008</span><span class="badge badge-blue">4chan /b/</span><span class="badge badge-orange">$100K+ Licensing</span></div>
+                        <p>Rage Comics debut on 4chan. Trollface drawn by Carlos Ramirez (age 18) in MS Paint on Sep 19, 2008. Earned $100K+ in licensing.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Nyan Cat</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Apr 2, 2011</span><span class="badge badge-pink">Christopher Torres</span></div>
+                        <p>Pop-Tart cat trailing a rainbow through space. 205 million+ YouTube views. Pure, distilled internet absurdity.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Grumpy Cat</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Sep 22, 2012</span><span class="badge badge-red">1M Imgur Views in 48 Hours</span></div>
+                        <p>Tardar Sauce the cat's perpetually displeased expression became a global brand generating millions.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-yellow);">
+                        <h4>Doge</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Late 2013</span><span class="badge badge-pink">Kabosu (Shiba Inu)</span></div>
+                        <p>Photo from February 13, 2010. Exploded late 2013. Named #1 meme of the 2010s decade. Much wow. Very culture.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-yellow);">
+                    <h3>The Record Breaker</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Jul 15, 2012</span><span class="badge badge-pink">PSY</span><span class="badge badge-red">First to 1 Billion YouTube Views</span></div>
+                    <p><strong>Gangnam Style</strong> became the first YouTube video to reach 1 billion views on December 21, 2012. It now exceeds 5 billion. A South Korean pop song with a horse-riding dance became the most-watched video in human history. The meme had gone fully global.</p>
+                    <div style="text-align: center; margin-top: var(--space-4);">
+                        <span class="btn-burst" style="font-size: 1.3rem; padding: var(--space-6) var(--space-8);">FIRST TO 1 BILLION!</span>
+                    </div>
+                </div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-yellow); color: var(--black);">
+                        <h3 style="color: var(--black); text-shadow: none;">KNOW YOUR MEME</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Dec 2007</span><span class="badge badge-pink">Kenyatta Cheese</span><span class="badge badge-blue">Rocketboom</span></div>
+                        <p>The definitive meme encyclopedia. Founded by Kenyatta Cheese and colleagues at Rocketboom. An institution that tried to catalog the uncatalogable -- internet culture's own Library of Alexandria.</p>
+                    </div>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-5);">
+                    <span class="speaker">The Curator (You)</span>
+                    This era has two stories fighting to be told. On one side: memes became serious money. LOLcats sold for $2 million. Trollface earned $100K in licensing. On the other: this was peak creative anarchy. Rickrolling. Nyan Cat. Rage Comics. Pure, unmonetized weirdness. Which story does this room tell?
+                </div>
+            `,
+            fact: 'I Can Has Cheezburger, created January 11, 2007 by Eric Nakagawa, was sold to the Cheezburger Network for $2 million in September 2007 -- proving memes could be monetized.',
+            choices: [
+                { text: 'Spotlight memes becoming money -- LOLcats, Trollface licensing, the Cheezburger empire', next: 'memes_become_money' },
+                { text: 'Spotlight the anarchic creativity -- Rickrolling, Rage Comics, Nyan Cat, the beautiful absurdity', next: 'beautiful_absurdity' }
+            ]
+        },
+
+        // ---- SCENE 6: MEMES BECOME MONEY ----
+        memes_become_money: {
+            year: '2007-2012',
+            era: 'GALLERY 2: MEMES BECOME MONEY',
+            gallery: 2,
+            content: `
+                <span class="gallery-tag gallery-tag-yellow">Gallery 2 -- 2006-2012</span>
+                <h2 class="scene-title">WHEN MEMES GOT A PRICE TAG</h2>
+
+                <div class="scene-narration">
+                    <p>You build the exhibit around a single question: what happens when something created for free, by anonymous people, for fun... becomes worth millions?</p>
+                </div>
+
+                <span class="action-word action-word-yellow" style="font-size: 2.5rem; margin-bottom: var(--space-5); display: inline-block;">SOLD!</span>
+
+                <div class="comic-panel">
+                    <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-4);">The Meme Economy: By the Numbers</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+                        <div style="text-align: center; padding: var(--space-4); background: var(--pop-yellow); border: 3px solid var(--black);">
+                            <div style="font-family: var(--font-display); font-size: 2rem; color: var(--black);">$2M</div>
+                            <div style="font-size: 0.85rem; font-weight: 700;">I Can Has Cheezburger Sale</div>
+                            <span class="badge badge-yellow" style="margin-top: var(--space-2);">Sep 2007</span>
+                        </div>
+                        <div style="text-align: center; padding: var(--space-4); background: var(--pop-orange); border: 3px solid var(--black); color: var(--white);">
+                            <div style="font-family: var(--font-display); font-size: 2rem;">$100K+</div>
+                            <div style="font-size: 0.85rem; font-weight: 700;">Trollface Licensing Fees</div>
+                            <span class="badge badge-pink" style="margin-top: var(--space-2);">Carlos Ramirez</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-orange);">
+                    <h3>I Can Has Cheezburger: The $2 Million Cat</h3>
+                    <div class="badge-row"><span class="badge badge-pink">Eric Nakagawa</span><span class="badge badge-yellow">Jan 11, 2007</span><span class="badge badge-orange">$2M Sale</span><span class="badge badge-red">1.5M Daily Hits</span></div>
+                    <p>Eric Nakagawa found a cat photo with a misspelled caption on Something Awful and built a website around it. Within months, it was getting 1.5 million daily hits. In September 2007, <span class="badge badge-pink">Ben Huh</span>'s Cheezburger Network acquired it for <strong>$2 million</strong>.</p>
+                    <p>A cat photo someone found on a forum. Two million dollars. The internet economy had officially arrived.</p>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-orange);">
+                    <h3>Trollface: The MS Paint Millionaire</h3>
+                    <div class="badge-row"><span class="badge badge-pink">Carlos Ramirez</span><span class="badge badge-yellow">Sep 19, 2008</span><span class="badge badge-orange">$100K+ Licensing</span><span class="badge badge-red">Age 18</span></div>
+                    <p>An 18-year-old drew a grinning face in MS Paint. That face -- the Trollface -- became one of the most recognizable images on the internet. Carlos Ramirez copyrighted it and eventually earned over <strong>$100,000 in licensing fees</strong>. The kid who drew a troll in MS Paint made more money from it than most fine artists make in a career.</p>
+                </div>
+
+                <div style="text-align: center; margin: var(--space-6) 0;">
+                    <span class="btn-burst" style="font-size: 1.5rem; padding: var(--space-7) var(--space-8); background: var(--pop-orange);">FIRST TO 1 BILLION!</span>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-yellow);">
+                    <h3>Gangnam Style: The Billion-View Breakthrough</h3>
+                    <div class="badge-row"><span class="badge badge-pink">PSY</span><span class="badge badge-yellow">Jul 15, 2012</span><span class="badge badge-red">5B+ Views</span></div>
+                    <p>On December 21, 2012, PSY's "Gangnam Style" became the first YouTube video to reach <strong>1 billion views</strong>. It now exceeds 5 billion. The song generated an estimated <strong>$8 million in YouTube revenue alone</strong>, plus tens of millions more in licensing, endorsements, and appearances.</p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <p class="alert-label">Curatorial Tension</p>
+                    <p class="alert-text">When a meme becomes a product, does it stop being a meme? The Cheezburger Network, Know Your Meme (acquired by Cheezburger on March 28, 2011), and Grumpy Cat merchandise all raised the same question: can you own something that was created by everyone and no one?</p>
+                </div>
+
+                <div class="speech-bubble">
+                    <span class="speaker">The Curator (You)</span>
+                    Andy Warhol turned commercial art into fine art. The internet turned memes into commerce. The circle is complete. But I can't help wondering: did putting a price tag on memes make them more legitimate, or did it kill something essential about them?
+                </div>
+
+                <div class="alert alert-success">
+                    <p class="alert-label">Gallery 2 Complete!</p>
+                    <p class="alert-text">The yellow room tells the story of memes becoming an industry. The blue room awaits.</p>
+                </div>
+            `,
+            fact: 'Trollface was drawn by 18-year-old Carlos Ramirez in MS Paint on September 19, 2008. He copyrighted it and earned over $100,000 in licensing fees.',
+            choices: [
+                { text: 'Enter Gallery 3: The Mainstream Era', next: 'gallery_three_mainstream' }
+            ]
+        },
+
+        // ---- SCENE 7: BEAUTIFUL ABSURDITY ----
+        beautiful_absurdity: {
+            year: '2007-2012',
+            era: 'GALLERY 2: THE GOLDEN AGE OF WEIRD',
+            gallery: 2,
+            content: `
+                <span class="gallery-tag gallery-tag-yellow">Gallery 2 -- 2006-2012</span>
+                <h2 class="scene-title">THE GOLDEN AGE OF WEIRD</h2>
+
+                <div class="scene-narration">
+                    <p>You build the exhibit around a single feeling: the joyful, ungovernable weirdness of the internet at its creative peak. Before algorithms. Before influencers. Before anyone was trying to "go viral" on purpose.</p>
+                </div>
+
+                <span class="action-word action-word-yellow" style="font-size: 2.5rem; margin-bottom: var(--space-5); display: inline-block;">WEIRD!</span>
+
+                <div class="card-warhol">
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">RICK</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">RICK</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">RICK</span>
+                    </div>
+                    <div class="card-warhol-cell">
+                        <span class="warhol-icon">RICK</span>
+                    </div>
+                </div>
+                <div class="card-warhol-label">RICKROLL (2007) -- THE WARHOL TREATMENT</div>
+
+                <div class="comic-panel" style="margin-top: var(--space-6);">
+                    <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-3);">The Anatomy of a Perfect Prank</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">May 15, 2007</span><span class="badge badge-pink">Shawn Cotter</span><span class="badge badge-blue">4chan /v/</span><span class="badge badge-red">1.6B YouTube Views</span></div>
+                    <p>On May 15, 2007, a user named Shawn Cotter posted a link on 4chan's /v/ (video games) board. The link promised a trailer for the hotly anticipated game Grand Theft Auto IV. Instead, it played Rick Astley's 1987 music video "Never Gonna Give You Up."</p>
+                    <p>The Rickroll. A bait-and-switch link. That's it. That's the whole joke. And it has been repeated <strong>billions</strong> of times. The original video now has over <strong>1.6 billion YouTube views</strong>. Rick Astley himself has embraced it, calling it "a gift that keeps on giving."</p>
+                    <p>You give it the Warhol treatment -- because what is a Warhol print if not the same thing repeated until it transcends its original meaning?</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card-comic">
+                    <div class="card-comic-caption">Meanwhile, in the infinite loop...</div>
+                    <div class="card-body">
+                        <h3 style="font-family: var(--font-display); font-size: 1.8rem;">NYAN CAT</h3>
+                        <div class="badge-row"><span class="badge badge-yellow">Apr 2, 2011</span><span class="badge badge-pink">Christopher Torres</span><span class="badge badge-red">205M+ Views</span></div>
+                        <p>A pixelated cat with a Pop-Tart body trailing a rainbow through space, set to a Japanese pop song on infinite loop. <strong>205 million+ YouTube views</strong>. It means nothing. It means everything. It is the internet's Sistine Chapel ceiling -- absurd, beautiful, and completely inexplicable to anyone who wasn't there.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-yellow);">
+                    <h3>Rage Comics: The Internet's First Native Art Form</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Aug 2008</span><span class="badge badge-blue">4chan /b/</span><span class="badge badge-red">MS Paint Art</span></div>
+                    <p>Crude four-panel comics drawn in MS Paint. Deliberately ugly. Deliberately simple. Anyone could make one. That was the point.</p>
+                    <p>Rage Comics were the internet's answer to pop art's central question: does art require skill? Warhol said no -- art is mass production. Rage Comics agreed. MS Paint was the new silkscreen. The "FUUUU" face was the new Marilyn Monroe.</p>
+                    <p>The f7u12 subreddit launched in January 2009 and became one of Reddit's most popular communities. For a brief, glorious moment, stick figures and wobbly text were the dominant art form of the internet.</p>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-cyan);">
+                    <h3>Bonus Exhibit: Keyboard Cat</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">1984 Video / Viral 2009</span><span class="badge badge-pink">Charlie Schmidt</span></div>
+                    <p>A video of a cat named Fatso "playing" a keyboard, filmed in 1984 by Charlie Schmidt. It went viral in 2009 -- 25 years after it was created. The internet does not care about your timeline. The internet decides when something is funny, and it decided Keyboard Cat was funny in 2009.</p>
+                </div>
+
+                <div class="speech-bubble">
+                    <span class="speaker">The Curator (You)</span>
+                    Nobody was trying to go viral. Nobody was building a brand. They were just being weird on the internet, and the internet loved them for it. This room is a monument to the last era when that was still true.
+                </div>
+
+                <div class="alert alert-success">
+                    <p class="alert-label">Gallery 2 Complete!</p>
+                    <p class="alert-text">The yellow room glows with chaotic creative energy. Time for the blue room -- where things get complicated.</p>
+                </div>
+            `,
+            fact: 'The first Rickroll was posted on 4chan\'s /v/ board on May 15, 2007, by Shawn Cotter. Rick Astley\'s "Never Gonna Give You Up" video now has over 1.6 billion YouTube views.',
+            choices: [
+                { text: 'Enter Gallery 3: The Mainstream Era', next: 'gallery_three_mainstream' }
+            ]
+        },
+
+        // ---- SCENE 8: GALLERY THREE MAINSTREAM ----
+        gallery_three_mainstream: {
+            year: '2013-2019',
+            era: 'GALLERY 3: THE MAINSTREAM ERA',
+            gallery: 3,
+            content: `
+                <span class="gallery-tag gallery-tag-blue">Gallery 3 -- 2013-2019</span>
+                <h2 class="scene-title">THE MAINSTREAM ERA</h2>
+                <div class="scene-subtitle">Memes escaped the internet. They entered politics, raised millions, and divided nations.</div>
+
+                <div class="scene-narration">
+                    <p>The third room is bathed in blue light -- cooler, deeper, more serious than the rooms before it. This is the era when memes stopped being an internet curiosity and became a cultural force. Platforms scaled to billions. A cartoon frog became a hate symbol. A bucket of ice raised $115 million. Nothing would ever be the same.</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-blue);">
+                        <h3>TIKTOK: THE NEW FACTORY</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Aug 2018</span><span class="badge badge-red">International Launch</span><span class="badge badge-blue">Musical.ly Merger</span></div>
+                        <p>TikTok launched internationally in August 2018 after merging with Musical.ly, and within two years it had fundamentally rewritten the rules of meme creation. Short-form video replaced image macros. The algorithm replaced organic sharing. The meme factory had been automated.</p>
+                    </div>
+                </div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-cyan);">
+                        <h3>VINE: 6 SECONDS OF GENIUS</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Jan 24, 2013</span><span class="badge badge-red">200M Users</span><span class="badge badge-orange">Shut Down Jan 17, 2017</span></div>
+                        <p>Six seconds. That was all you got. Vine's brutal constraint produced some of the most creative content the internet has ever seen -- and reshaped meme grammar forever. 200 million users. Acquired by Twitter. Then killed by Twitter. The internet still hasn't forgiven them.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Ice Bucket Challenge</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Summer 2014</span><span class="badge badge-orange">$115M Raised</span></div>
+                        <p>17 million videos. 10 billion views. $115 million raised for ALS research. The meme that proved internet culture could save lives.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>The Dress</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Feb 2015</span><span class="badge badge-red">37M BuzzFeed Views</span></div>
+                        <p>Blue and black? White and gold? A single photo divided the entire internet. 37 million BuzzFeed views in one day.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Harambe</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">May 28, 2016</span><span class="badge badge-red">2016 Meme of the Year</span></div>
+                        <p>A gorilla shot at the Cincinnati Zoo became the internet's strangest memorial. "2016's meme of the year." The line between grief and absurdity dissolved completely.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Damn Daniel</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Feb 15, 2016</span><span class="badge badge-pink">Joshua Holz</span></div>
+                        <p>"Damn Daniel, back at it again with the white Vans!" 45 million views in days. Pure Vine energy distilled into a catchphrase.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Distracted Boyfriend</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">2017</span><span class="badge badge-pink">Antonio Guillem</span></div>
+                        <p>A stock photo by Antonio Guillem became the decade's most versatile meme template. Won Best Meme at the Shorty Awards. Proof that context is everything.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Area 51 Raid</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Jun 27, 2019</span><span class="badge badge-pink">Matty Roberts</span></div>
+                        <p>2 million RSVPs. ~150 people showed up. The meme that almost became a military incident, created by Matty Roberts as a joke.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>OK Boomer</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Oct 2019</span><span class="badge badge-blue">TikTok</span></div>
+                        <p>Two words that declared generational war. Went from TikTok to the New Zealand Parliament when MP Chloe Swarbrick deployed it mid-speech.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-blue);">
+                        <h4>Baby Yoda</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Nov 12, 2019</span><span class="badge badge-red">2M Tweets in 3 Weeks</span></div>
+                        <p>The Mandalorian debuted and the internet melted. 2 million tweets in three weeks. Pure wholesome energy in an increasingly dark timeline.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <p class="alert-label">Controversy Alert</p>
+                    <p class="alert-text"><strong>Pepe the Frog</strong> -- created by <span class="badge badge-pink">Matt Furie</span> as an innocent comic character in <span class="badge badge-yellow">2005</span>, adopted by 4chan in 2008. By September 2016, the Anti-Defamation League designated Pepe as a hate symbol. A cartoon frog became the most contested image on the internet. The room cannot ignore this.</p>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-6);">
+                    <span class="speaker">The Curator (You)</span>
+                    This room is the hardest to curate. The memes of this era pulled in two directions at once -- toward hope and toward darkness. Ice buckets and hate symbols. Baby Yoda and political warfare. I have to choose a lens for this room. What story does Gallery 3 tell?
+                </div>
+            `,
+            fact: 'The Ice Bucket Challenge (summer 2014) raised $115 million for ALS research with 17 million videos and 10 billion total views.',
+            choices: [
+                { text: 'Spotlight how memes became political and dangerous', next: 'memes_go_political' },
+                { text: 'Spotlight how memes became a force for good', next: 'memes_for_good' }
+            ]
+        },
+
+        // ---- SCENE 9: MEMES GO POLITICAL ----
+        memes_go_political: {
+            year: '2016-2019',
+            era: 'GALLERY 3: WHEN MEMES GOT SERIOUS',
+            gallery: 3,
+            content: `
+                <span class="gallery-tag gallery-tag-blue">Gallery 3 -- 2013-2019</span>
+                <h2 class="scene-title">WHEN MEMES GOT SERIOUS</h2>
+
+                <div class="scene-investigation">
+                    <p>You build the most provocative exhibit in the museum. The blue walls darken. The halftone dots feel heavier. This room asks the question nobody wanted to ask: what happens when memes stop being funny?</p>
+                </div>
+
+                <span class="action-word action-word-blue" style="font-size: 2.5rem; margin-bottom: var(--space-5); display: inline-block;">WEAPONIZED!</span>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-blue);">
+                        <h3>PEPE THE FROG: THE FULL ARC</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-pink">Matt Furie</span><span class="badge badge-yellow">2005 Origin</span><span class="badge badge-blue">4chan Adoption 2008</span><span class="badge badge-red">ADL Hate Symbol Sep 2016</span></div>
+                        <p>In 2005, Matt Furie drew a chill cartoon frog for his comic <em>Boy's Club</em>. By 2008, 4chan had adopted the "Feels Good Man" face. By 2016, that same face was being used to spread white supremacist propaganda. In September 2016, the Anti-Defamation League officially designated Pepe as a hate symbol.</p>
+                        <p>Furie fought back. He sued, he reclaimed, he tried to wrest his creation from the people who had stolen it. The story of Pepe is the story of what happens when a meme escapes its creator entirely.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-error">
+                    <p class="alert-label">Hate Symbol Designation</p>
+                    <p class="alert-text">The ADL's September 2016 designation of Pepe the Frog as a hate symbol was unprecedented -- the first time an internet meme was formally classified alongside swastikas and burning crosses. The designation remains controversial: is Pepe inherently hateful, or was he hijacked? The exhibit presents both sides.</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-blue);">
+                    <h3>OK Boomer: Generational Warfare in Two Words</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Oct 2019</span><span class="badge badge-blue">TikTok</span><span class="badge badge-red">Parliament Floor</span></div>
+                    <p>It started as a TikTok trend in October 2019. Within weeks, it was everywhere -- on merchandise, in think pieces, in heated debates about whether it constituted age discrimination. Then New Zealand MP <span class="badge badge-pink">Chloe Swarbrick</span>, age 25, dropped it casually while defending climate policy in Parliament. The chamber erupted. A meme had reached the floor of a national legislature.</p>
+                    <p>Two words. An entire generation's frustration compressed into a dismissal. The most efficient weapon the internet ever produced.</p>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-blue);">
+                    <h3>Harambe: How the Internet Mourns</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">May 28, 2016</span><span class="badge badge-red">2016 Meme of the Year</span></div>
+                    <p>A gorilla named Harambe was shot at the Cincinnati Zoo on May 28, 2016, after a child fell into his enclosure. What followed was the strangest memorial service in human history: millions of ironic tributes, fake petitions, "dicks out for Harambe" -- grief and absurdity so thoroughly tangled that nobody could tell where one ended and the other began.</p>
+                    <p>Was it disrespectful? Was it cathartic? Was it both? Harambe was named "2016's meme of the year," and the exhibit lets visitors sit with the discomfort of laughing at something sad.</p>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-6);">
+                    <span class="speaker">The Curator (You)</span>
+                    Here is the thing about irony: it protects you from sincerity, but it also protects you from accountability. The same ironic distance that made Rickrolling harmless made Pepe dangerous. When everything is a joke, nothing is off limits. And when nothing is off limits, the people who want to do harm have the perfect camouflage.
+                </div>
+
+                <div class="alert alert-info">
+                    <p class="alert-label">Gallery 3 Complete</p>
+                    <p class="alert-text">The blue room confronts the uncomfortable truth: memes are powerful, and power can be used for anything. Time for the final gallery.</p>
+                </div>
+            `,
+            fact: 'In September 2016, the Anti-Defamation League designated Pepe the Frog as a hate symbol -- the first internet meme to receive such a classification.',
+            choices: [
+                { text: 'Memes are a mirror -- they reflect whatever we put into them', next: 'gallery_four_now' },
+                { text: 'Memes are a weapon -- and we need to understand who wields them', next: 'gallery_four_now' }
+            ]
+        },
+
+        // ---- SCENE 10: MEMES FOR GOOD ----
+        memes_for_good: {
+            year: '2014-2019',
+            era: 'GALLERY 3: MEMES THAT CHANGED THE WORLD',
+            gallery: 3,
+            content: `
+                <span class="gallery-tag gallery-tag-blue">Gallery 3 -- 2013-2019</span>
+                <h2 class="scene-title">MEMES THAT CHANGED THE WORLD</h2>
+
+                <div class="scene-narration">
+                    <p>You build the most hopeful exhibit in the museum. The blue walls feel warm, almost electric. This room answers a question with real data: can memes actually do good in the world?</p>
+                </div>
+
+                <span class="action-word action-word-blue" style="font-size: 2.5rem; margin-bottom: var(--space-5); display: inline-block;">SPLASH!</span>
+
+                <div class="card-comic">
+                    <div class="card-comic-caption">The exhibit that dominates the room...</div>
+                    <div class="card-body">
+                        <h3 style="font-family: var(--font-display); font-size: 1.8rem;">THE ICE BUCKET CHALLENGE</h3>
+                        <div class="badge-row"><span class="badge badge-yellow">Summer 2014</span><span class="badge badge-orange">$115M Raised</span><span class="badge badge-red">17M Videos</span></div>
+                        <p>The single most impactful meme in internet history. In the summer of 2014, people around the world dumped buckets of ice water on their heads, filmed it, and challenged others to do the same or donate to ALS research. Most people did both.</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper" style="margin-bottom: var(--space-5); overflow-x: auto;">
+                    <table class="table" style="width: 100%; border-collapse: collapse; border: 4px solid var(--black); box-shadow: 4px 4px 0 var(--black);">
+                        <thead>
+                            <tr style="background: var(--pop-blue); color: var(--white);">
+                                <th style="padding: var(--space-3) var(--space-4); font-family: var(--font-display); letter-spacing: 0.06em; text-align: left; border-bottom: 3px solid var(--black);">Metric</th>
+                                <th style="padding: var(--space-3) var(--space-4); font-family: var(--font-display); letter-spacing: 0.06em; text-align: right; border-bottom: 3px solid var(--black);">Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: var(--white);">
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300);">Total Money Raised</td>
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300); text-align: right; font-weight: 900; color: var(--pop-blue);">$115,000,000</td>
+                            </tr>
+                            <tr style="background: var(--gray-100);">
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300);">Videos Created</td>
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300); text-align: right; font-weight: 900; color: var(--pop-blue);">17,000,000</td>
+                            </tr>
+                            <tr style="background: var(--white);">
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300);">Total Views</td>
+                                <td style="padding: var(--space-3) var(--space-4); border-bottom: 2px dashed var(--gray-300); text-align: right; font-weight: 900; color: var(--pop-blue);">10,000,000,000</td>
+                            </tr>
+                            <tr style="background: var(--gray-100);">
+                                <td style="padding: var(--space-3) var(--space-4);">Beneficiary</td>
+                                <td style="padding: var(--space-3) var(--space-4); text-align: right; font-weight: 700;">ALS Association</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card-lichtenstein">
+                    <div class="card-lichtenstein-top" style="background: var(--pop-cyan);">
+                        <h3>VINE: THE MOST DEMOCRATIC PLATFORM</h3>
+                    </div>
+                    <div class="card-lichtenstein-body">
+                        <div class="badge-row"><span class="badge badge-yellow">Jan 24, 2013</span><span class="badge badge-red">200M Users</span><span class="badge badge-blue">6-Second Format</span></div>
+                        <p>Six seconds. No editing suite needed. No budget required. Just a phone and an idea. Vine was the most democratic creative platform the internet had ever produced -- 200 million users making art with nothing but time constraints and imagination. It launched careers, invented formats, and proved that creativity thrives under limitation.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-blue);">
+                    <h3>The Dress: The Meme That United Us</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Feb 2015</span><span class="badge badge-red">37M BuzzFeed Views</span></div>
+                    <p>Blue and black or white and gold? For one glorious day in February 2015, the entire internet argued about the same dress. No politics. No outrage. Just a genuine, harmless disagreement about color perception that generated 37 million BuzzFeed views. The Dress was proof that memes could still bring people together -- even if it was to argue about something completely meaningless.</p>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-blue);">
+                    <h3>Baby Yoda: Pure Wholesome Joy</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Nov 12, 2019</span><span class="badge badge-red">2M Tweets in 3 Weeks</span></div>
+                    <p>When The Mandalorian debuted on Disney+ on November 12, 2019, and revealed a tiny green alien sipping soup, the internet collectively lost its mind. 2 million tweets in three weeks. No agenda. No controversy. Just a small creature with big eyes that made everyone feel something good during a particularly dark year online.</p>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-6);">
+                    <span class="speaker">The Curator (You)</span>
+                    For every dark meme, there are a thousand that just made someone laugh at their desk. For every weaponized image, there's an ice bucket that raised $115 million. The internet is not a dark place with bright spots. It's a bright place with dark spots. This room proves it.
+                </div>
+
+                <div class="alert alert-success">
+                    <p class="alert-label">Gallery 3 Complete!</p>
+                    <p class="alert-text">The blue room glows with hope. One gallery remains -- the most chaotic room of all.</p>
+                </div>
+            `,
+            fact: 'Vine launched January 24, 2013, with its 6-second format, reached 200 million users, and was shut down by Twitter on January 17, 2017.',
+            choices: [
+                { text: 'Memes are humanity\'s most democratic art form', next: 'gallery_four_now' },
+                { text: 'Memes connect us -- they\'re the shared language of the internet generation', next: 'gallery_four_now' }
+            ]
+        },
+
+        // ---- SCENE 11: GALLERY FOUR NOW ----
+        gallery_four_now: {
+            year: '2020-2025',
+            era: 'GALLERY 4: THE NOW',
+            gallery: 4,
+            content: `
+                <span class="gallery-tag gallery-tag-pink">Gallery 4 -- 2020-2025</span>
+                <h2 class="scene-title">THE NOW</h2>
+                <div class="scene-subtitle">Pandemic. Chaos. 65 billion views for a toilet. Welcome to the present.</div>
+
+                <div class="scene-narration">
+                    <p>The final room pulses pink. The lights are brighter, the walls more crowded, the energy more frenetic than any gallery before it. This is the era you are still living through -- where memes became a coping mechanism for a global pandemic, a tool for crashing stock markets, and a $6.1 billion industry drowning in AI-generated slop.</p>
+                </div>
+
+                <div class="alert alert-error">
+                    <p class="alert-label">March 2020: The World Stops</p>
+                    <p class="alert-text">COVID-19 lockdowns begin. The internet becomes humanity's only shared space. Memes explode: Tiger King, sourdough starters, #FlattenTheCurve. Humor becomes the primary coping mechanism for billions of people trapped in their homes.</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Among Us</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Sep 2020</span><span class="badge badge-red">60M Daily Players</span></div>
+                        <p>A 2018 game nobody played exploded during lockdown. 60 million daily active players in September 2020. "Sus" entered the dictionary.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Coffin Dance</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Mar 2020</span><span class="badge badge-pink">Benjamin Aidoo</span></div>
+                        <p>Ghana pallbearers dancing with a coffin to "Astronomia." Led by Benjamin Aidoo. The world was dying and the internet turned death itself into a meme.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Bernie Mittens</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Jan 20, 2021</span><span class="badge badge-orange">$1.8M Charity</span></div>
+                        <p>Bernie Sanders at the inauguration in handmade mittens by Jen Ellis. Photo by Brendan Smialowski. Raised $1.8 million for Vermont charities. The last truly wholesome viral moment.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Sea Shanty TikTok</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Dec 2020</span><span class="badge badge-pink">Nathan Evans</span></div>
+                        <p>Nathan Evans sang "Wellerman" on TikTok. Millions joined in. It hit #1 on the UK Singles Chart. Centuries-old sailor songs, resurrected by an algorithm.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="card-comic">
+                    <div class="card-comic-caption">The meme that broke Wall Street...</div>
+                    <div class="card-body">
+                        <h3 style="font-family: var(--font-display); font-size: 1.8rem;">GAMESTOP: MEMES VS. WALL STREET</h3>
+                        <div class="badge-row"><span class="badge badge-yellow">Jan 2021</span><span class="badge badge-pink">Keith Gill</span><span class="badge badge-orange">$17 to $483</span></div>
+                        <p>Keith Gill, posting as "DeepFuckingValue" on Reddit's r/WallStreetBets, liked the stock. Millions of retail investors followed. GameStop shares rocketed from <strong>$17 to $483</strong>. Hedge funds lost billions. Congressional hearings were held. A meme moved more money than most countries' GDP.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="exhibit-list">
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Grimace Shake</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Jun 2023</span><span class="badge badge-red">2.9B TikTok Views</span></div>
+                        <p>First video by Austin Frazier. People pretended to die after drinking a purple McDonald's milkshake. 2.9 billion TikTok views. McDonald's sales rose 10%. Dark humor as free advertising.</p>
+                    </div>
+                    <div class="exhibit-item" style="border-top: 6px solid var(--pop-pink);">
+                        <h4>Moo Deng</h4>
+                        <div class="badge-row"><span class="badge badge-yellow">Sep 2024</span><span class="badge badge-orange">$533K Ticket Revenue</span></div>
+                        <p>A baby pygmy hippo in Thailand doubled zoo visitors and generated $533,000 in ticket revenue in two weeks. The internet's favorite animal since Grumpy Cat.</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: var(--space-6) 0;">
+                    <span class="btn-burst" style="font-size: 1.5rem; padding: var(--space-7) var(--space-8); background: var(--pop-pink); color: var(--white);">65 BILLION VIEWS!</span>
+                </div>
+
+                <div class="card" style="border-top: 8px solid var(--pop-pink);">
+                    <h3>Skibidi Toilet: The Event Horizon</h3>
+                    <div class="badge-row"><span class="badge badge-yellow">Feb 7, 2023</span><span class="badge badge-pink">Alexey Gerasimov</span><span class="badge badge-red">65B+ Total Views</span></div>
+                    <p>A head emerging from a toilet, singing a distorted song. Created by <span class="badge badge-pink">Alexey Gerasimov</span> in Source Filmmaker. <strong>65 billion+ total views.</strong> Adults cannot understand it. Children cannot stop watching it. It is either the apotheosis of meme culture or its final form. Nobody is sure which.</p>
+                </div>
+
+                <div class="alert alert-error">
+                    <p class="alert-label">Crisis Point: 2024-2025</p>
+                    <p class="alert-text"><strong>"Brain Rot"</strong> was named Oxford's Word of the Year 2024, with a 230% usage increase. <strong>"Slop"</strong> -- coined by <span class="badge badge-pink">Simon Willison</span> in May 2024 to describe AI-generated junk content -- became Merriam-Webster's Word of the Year 2025. Meanwhile, the Supreme Court upheld the TikTok ban on <span class="badge badge-yellow">January 17, 2025</span>, with Trump postponing enforcement by 75 days. The meme factory's future has never been less certain.</p>
+                </div>
+
+                <div class="speech-bubble" style="margin-top: var(--space-6);">
+                    <span class="speaker">The Curator (You)</span>
+                    This is it. The last room. The walls are full. The museum opens tomorrow. But I need to choose how it ends. What is the final message visitors take with them when they walk out these doors?
+                </div>
+            `,
+            fact: 'Skibidi Toilet, created by Alexey Gerasimov on February 7, 2023, has accumulated over 65 billion total views, making it one of the most-watched series in internet history.',
+            choices: [
+                { text: 'End with hope -- memes will always find a way', next: 'ending_hope' },
+                { text: 'End with a warning -- AI slop and brain rot threaten everything', next: 'ending_warning' },
+                { text: 'End with the full picture -- memes are complicated, and that\'s the point', next: 'ending_balanced' }
+            ]
+        },
+
+        // ---- SCENE 12: ENDING HOPE ----
+        ending_hope: {
+            year: 'THE FUTURE',
+            era: 'GRAND OPENING',
+            content: `
+                <div class="scene-ending">
+                    <h2 class="scene-title" style="color: var(--pop-green); text-shadow: 4px 4px 0 var(--pop-yellow);">THE MEME MUSEUM IS OPEN</h2>
+
+                    <p class="lead" style="font-size: 1.3rem; margin-bottom: var(--space-6);">Opening night. The doors swing wide. The crowd floods in.</p>
+
+                    <div class="alert alert-success" style="text-align: left;">
+                        <p class="alert-label">Rave Reviews</p>
+                        <p class="alert-text">"A love letter to internet creativity." -- <em>The Verge</em><br>"The most important cultural exhibition of the decade." -- <em>Wired</em><br>"I laughed. I cried. I got Rickrolled in the gift shop." -- <em>Visitor #4,822</em></p>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="comic-panel" style="text-align: left;">
+                        <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-4);">The Final Wall</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">From Dawkins's cultural gene to Skibidi Toilet's 65 billion views, memes are proof that human creativity cannot be contained. They evolve. They adapt. They survive -- leaping from platform to platform, format to format, generation to generation. Just like the genes they were named after.</p>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">Vine died, and Vine culture lived on through TikTok. Forums died, and forum humor lived on through Reddit. The meme always finds a way. It always will.</p>
+                    </div>
+
+                    <div style="text-align: center; margin: var(--space-7) 0;">
+                        <span class="btn-burst" style="font-size: 1.5rem; padding: var(--space-7) var(--space-8);">IN THE FUTURE, EVERYONE WILL BE WORLD-FAMOUS FOR 15 SECONDS</span>
+                    </div>
+
+                    <div class="speech-bubble" style="text-align: left;">
+                        <span class="speaker">The Curator (You)</span>
+                        Warhol said everyone would be famous for 15 minutes. He was wrong about the timeframe -- it is 15 seconds now, maybe less. But he was right about the democracy of it. Anyone can make a meme. Anyone can be famous. Anyone can change the world with a bucket of ice, a cartoon frog, or a six-second video. That is beautiful. That is terrifying. That is pop art.
+                    </div>
+
+                    <div class="alert alert-success" style="text-align: left;">
+                        <p class="alert-label">Exhibition Complete</p>
+                        <p class="alert-text">The Meme Museum is a hit. The gift shop sells out of Rickroll greeting cards in the first hour. Somewhere, Andy Warhol is smiling.</p>
+                    </div>
+                </div>
+            `,
+            fact: 'Andy Warhol predicted "In the future, everyone will be world-famous for 15 minutes." In the meme age, the timeframe has compressed to seconds.',
+            choices: [
+                { text: 'Curate Again', next: 'museum_opening_night' },
+                { text: 'Back to Stories', next: '_exit' }
+            ]
+        },
+
+        // ---- SCENE 13: ENDING WARNING ----
+        ending_warning: {
+            year: 'THE RECKONING',
+            era: 'GRAND OPENING',
+            content: `
+                <div class="scene-ending">
+                    <h2 class="scene-title" style="color: var(--pop-red); text-shadow: 4px 4px 0 var(--pop-orange);">THE MEME MUSEUM IS OPEN</h2>
+
+                    <p class="lead" style="font-size: 1.3rem; margin-bottom: var(--space-6);">Opening night. The reviews are... divided.</p>
+
+                    <div class="alert alert-warning" style="text-align: left;">
+                        <p class="alert-label">Polarized Reception</p>
+                        <p class="alert-text">"An unflinching look at what we've become." -- <em>The Atlantic</em><br>"Doom-scrolling turned into an art exhibit." -- <em>The New York Times</em><br>"I feel personally attacked by Gallery 4." -- <em>Visitor #1,337</em></p>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="comic-panel" style="text-align: left;">
+                        <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-4);">The Final Wall</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">In 2024, Oxford named <strong>"Brain Rot"</strong> its Word of the Year -- a 230% increase in usage. In 2025, Merriam-Webster chose <strong>"Slop"</strong>. The meme, once the purest expression of internet creativity, now risks drowning in algorithmically generated noise.</p>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">The question is no longer <em>"Are memes art?"</em></p>
+                        <p style="font-size: 1.4rem; line-height: 1.8; font-family: var(--font-display); letter-spacing: 0.03em;">The question is: <em>"Are they still human?"</em></p>
+                    </div>
+
+                    <div class="alert alert-warning" style="text-align: left;">
+                        <p class="alert-label">Industry Reality Check</p>
+                        <p class="alert-text">The global meme industry is now worth <span class="badge badge-orange">$6.1 Billion</span>. But the TikTok ban looms. AI slop floods every platform. And the next generation of internet users may never know what it felt like to share something human-made, for free, just because it was funny.</p>
+                    </div>
+
+                    <div class="alert alert-error" style="text-align: left;">
+                        <p class="alert-label">TikTok Ban</p>
+                        <p class="alert-text">The Supreme Court upheld the TikTok ban on January 17, 2025. The most powerful meme platform in history -- the place where Sea Shanties, Grimace Shake, and OK Boomer were born -- faces an uncertain future. If it falls, what replaces it? And who controls the replacement?</p>
+                    </div>
+
+                    <div class="speech-bubble" style="text-align: left;">
+                        <span class="speaker">The Curator (You)</span>
+                        I built this museum to celebrate memes. But standing in the final room, I wonder if what I have actually built is a memorial. The golden age is over. The factories are being automated. The art is being generated by machines trained on the art of humans who made things for free, for fun, because they could. What comes next is not a meme. It is slop. And we should be honest about that.
+                    </div>
+
+                    <div class="alert alert-warning" style="text-align: left;">
+                        <p class="alert-label">Exhibition Complete</p>
+                        <p class="alert-text">The Meme Museum is open. It is uncomfortable. It is necessary. The gift shop sells AI-generated prints and nobody laughs at the irony.</p>
+                    </div>
+                </div>
+            `,
+            fact: '"Brain Rot" was named Oxford Word of the Year 2024 (230% usage increase). "Slop" was named Merriam-Webster Word of the Year 2025.',
+            choices: [
+                { text: 'Curate Again', next: 'museum_opening_night' },
+                { text: 'Back to Stories', next: '_exit' }
+            ]
+        },
+
+        // ---- SCENE 14: ENDING BALANCED ----
+        ending_balanced: {
+            year: 'THE FULL PICTURE',
+            era: 'GRAND OPENING',
+            content: `
+                <div class="scene-ending">
+                    <h2 class="scene-title" style="color: var(--pop-purple); text-shadow: 4px 4px 0 var(--pop-pink);">THE MEME MUSEUM IS OPEN</h2>
+
+                    <p class="lead" style="font-size: 1.3rem; margin-bottom: var(--space-6);">Opening night. The most-discussed cultural event of the season.</p>
+
+                    <div class="alert alert-info" style="text-align: left;">
+                        <p class="alert-label">Critical Acclaim</p>
+                        <p class="alert-text">"Neither celebration nor condemnation -- something rarer: understanding." -- <em>The Guardian</em><br>"The exhibit that finally treats internet culture with the seriousness it deserves." -- <em>Wired</em><br>"I came for the memes. I stayed for the existential crisis." -- <em>Visitor #6,969</em></p>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="comic-panel" style="text-align: left;">
+                        <h3 style="font-family: var(--font-heading); margin-bottom: var(--space-4);">The Final Wall</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">Andy Warhol said art is what you can get away with.</p>
+                        <p style="font-size: 1.1rem; line-height: 1.8;">By that definition, the internet has been the greatest art studio in human history. <strong>65 billion views</strong> for a toilet with a head. <strong>$115 million</strong> raised with a bucket of ice. A frog that went from comic book to hate symbol to cryptocurrency.</p>
+                        <p style="font-size: 1.2rem; line-height: 1.8; font-family: var(--font-heading);">This is us. All of us. And it is beautiful, and terrible, and absolutely, unmistakably pop art.</p>
+                    </div>
+
+                    <div class="alert alert-info" style="text-align: left;">
+                        <p class="alert-label">The Numbers</p>
+                        <p class="alert-text">The global meme industry reached <span class="badge badge-orange">$6.1 Billion</span> in 2025, up from $2.3 billion in 2020. In that same period, "Brain Rot" became Oxford's Word of the Year and "Slop" became Merriam-Webster's. The meme economy is booming. Whether that is a triumph or a tragedy depends entirely on which room of this museum you spend the most time in.</p>
+                    </div>
+
+                    <div class="card-warhol" style="margin-top: var(--space-5);">
+                        <div class="card-warhol-cell">
+                            <span class="warhol-icon">MEME</span>
+                        </div>
+                        <div class="card-warhol-cell">
+                            <span class="warhol-icon">MEME</span>
+                        </div>
+                        <div class="card-warhol-cell">
+                            <span class="warhol-icon">MEME</span>
+                        </div>
+                        <div class="card-warhol-cell">
+                            <span class="warhol-icon">MEME</span>
+                        </div>
+                    </div>
+                    <div class="card-warhol-label">THE MEME (1976-FOREVER) -- THE WARHOL TREATMENT</div>
+
+                    <div class="speech-bubble" style="text-align: left; margin-top: var(--space-6);">
+                        <span class="speaker">The Curator (You)</span>
+                        I set out to answer a question: are memes art? I have spent all night filling four rooms with evidence, and my answer is: it does not matter. Memes are not asking for permission. They never were. From a dancing baby in 1996 to a toilet with 65 billion views in 2023, memes are what happens when you give everyone a canvas and no rules. Some of it is beautiful. Some of it is terrible. All of it is human. And that is enough.
+                    </div>
+
+                    <div class="alert alert-info" style="text-align: left;">
+                        <p class="alert-label">Exhibition Complete</p>
+                        <p class="alert-text">The Meme Museum is open. It contains everything and judges nothing. The gift shop is, appropriately, a chaotic mess. Andy Warhol would have approved.</p>
+                    </div>
+                </div>
+            `,
+            fact: 'The global meme industry reached $6.1 billion in 2025, up from $2.3 billion in 2020 -- a 165% increase in five years.',
+            choices: [
+                { text: 'Curate Again', next: 'museum_opening_night' },
+                { text: 'Back to Stories', next: '_exit' }
+            ]
+        }
+
+    };
+
+    // ================================================================
+    //  THE MEME MUSEUM -- Engine
+    // ================================================================
+
+    const engine = {
+        currentScene: null,
+        history: [],
+        facts: [],
+        factsPanelOpen: false,
+
+        init() {
+            document.getElementById('startBtn').addEventListener('click', () => this.start());
+            document.getElementById('restartBtn').addEventListener('click', () => this.restart());
+            document.getElementById('factToggle').addEventListener('click', () => this.toggleFacts());
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '1' && e.key <= '9') {
+                    const idx = parseInt(e.key) - 1;
+                    const btns = document.querySelectorAll('.choice-btn');
+                    if (btns[idx]) btns[idx].click();
+                }
+            });
+        },
+
+        start() {
+            document.getElementById('titleScreen').style.display = 'none';
+            document.getElementById('sceneWrapper').classList.add('active');
+            document.getElementById('factTracker').style.display = 'block';
+            this.goTo('museum_opening_night');
+        },
+
+        restart() {
+            this.currentScene = null;
+            this.history = [];
+            this.facts = [];
+            this.factsPanelOpen = false;
+            document.getElementById('factPanel').classList.remove('open');
+            document.getElementById('sceneWrapper').classList.remove('active');
+            document.getElementById('titleScreen').style.display = 'flex';
+            document.getElementById('factTracker').style.display = 'none';
+            this.updateFactUI();
+            window.scrollTo(0, 0);
+        },
+
+        goTo(sceneId) {
+            if (sceneId === '_exit') {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (sceneId === '_restart') {
+                this.restart();
+                return;
+            }
+
+            const scene = STORY[sceneId];
+            if (!scene) return;
+
+            // Transition
+            if (this.currentScene) {
+                const overlay = document.getElementById('transition');
+                overlay.classList.add('active');
+                setTimeout(() => {
+                    this.renderScene(sceneId, scene);
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                }, 300);
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 800);
+            } else {
+                this.renderScene(sceneId, scene);
+            }
+
+            if (this.currentScene) {
+                this.history.push(this.currentScene);
+            }
+            this.currentScene = sceneId;
+        },
+
+        renderScene(sceneId, scene) {
+            // Update header
+            const eraEl = document.getElementById('sceneEra');
+            const yearEl = document.getElementById('sceneYear');
+            eraEl.textContent = scene.era || '';
+            yearEl.textContent = scene.year || '';
+
+            // Set gallery data attribute for color theming
+            const wrapper = document.getElementById('sceneWrapper');
+            if (scene.gallery) {
+                wrapper.setAttribute('data-gallery', scene.gallery);
+            } else {
+                wrapper.removeAttribute('data-gallery');
+            }
+
+            // Build scene HTML
+            const container = document.getElementById('sceneContent');
+            const gameControls = document.querySelector('.game-controls');
+            if (gameControls) gameControls.style.display = sceneId.startsWith('ending') ? 'none' : '';
+
+            let html = '<div class="scene-content">';
+
+            // Scene content (raw HTML)
+            html += scene.content;
+
+            // Fact notification
+            if (scene.fact && !this.facts.includes(scene.fact)) {
+                this.addFact(scene.fact);
+            }
+
+            // Choices
+            if (scene.choices && scene.choices.length > 0) {
+                html += '<div class="choices">';
+                scene.choices.forEach((choice, i) => {
+                    html += `<button class="choice-btn" onclick="engine.goTo('${choice.next}')">`;
+                    html += `<span class="choice-key">${i + 1}</span>`;
+                    html += choice.text;
+                    html += '</button>';
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+
+            this.updateFactUI();
+        },
+
+        addFact(fact) {
+            if (!this.facts.includes(fact)) {
+                this.facts.push(fact);
+            }
+        },
+
+        updateFactUI() {
+            const count = this.facts.length;
+            document.getElementById('factCount').textContent = count;
+
+            const list = document.getElementById('factList');
+            if (count === 0) {
+                list.innerHTML = '<p class="no-facts">No exhibits curated yet...</p>';
+            } else {
+                list.innerHTML = this.facts.map(f => '<div class="fact-item">' + f + '</div>').join('');
+            }
+        },
+
+        toggleFacts() {
+            this.factsPanelOpen = !this.factsPanelOpen;
+            document.getElementById('factPanel').classList.toggle('open', this.factsPanelOpen);
+        }
+    };
+
+    // Boot
+    engine.init();
+    </script>
+</body>
+</html>

@@ -83,7 +83,7 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | persian-miniature | | |
 | pixel-art | | Player One |
 | plain-chaos | | |
-| pop-art | | |
+| pop-art | | The Meme Museum |
 | psychedelic | | The Summer of Love |
 | retro-futurism | Bash Scripting | |
 | retro-terminal | tmux | The Machine |
