@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survivors Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blood: #8b0000;
+            --gold: #d4af37;
+            --bone: #e8dcc8;
+            --shadow: #0a0a0f;
+            --mist: #b0a090;
+            --cyber-pink: #ff2d95;
+            --cyber-blue: #00f0ff;
+            --cosmic-purple: #9b30ff;
+            --cosmic-blue: #4169e1;
+            --forest-green: #2d8b46;
+            --forest-gold: #c8a84e;
+            --squad-orange: #e8721a;
+            --squad-bronze: #cd853f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            color: var(--bone);
+            background: var(--shadow);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== BACK LINK ==================== */
+        .back-link {
+            display: inline-block;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 8px 16px;
+            border: 1px solid rgba(212,175,55,0.3);
+            background: rgba(139,0,0,0.15);
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+
+        .back-link:hover {
+            background: rgba(139,0,0,0.4);
+            border-color: var(--gold);
+            box-shadow: 0 0 16px rgba(212,175,55,0.2);
+        }
+
+        .back-link::before {
+            content: '\2190  ';
+        }
+
+        /* ==================== HEADER ==================== */
+        .header {
+            padding: 56px 0 40px;
+            text-align: center;
+            position: relative;
+            border-bottom: 1px solid rgba(212,175,55,0.15);
+        }
+
+        .header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.8rem, 8vw, 4.5rem);
+            font-weight: 900;
+            color: var(--blood);
+            text-shadow:
+                0 0 40px rgba(139,0,0,0.5),
+                0 0 80px rgba(139,0,0,0.2);
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .header-tagline {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            font-style: italic;
+            color: var(--gold);
+            opacity: 0.8;
+        }
+
+        .header-count {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--mist);
+            margin-top: 16px;
+            opacity: 0.6;
+        }
+
+        /* Decorative divider */
+        .ornament {
+            text-align: center;
+            padding: 20px 0;
+            color: var(--gold);
+            opacity: 0.3;
+            font-size: 1.2rem;
+            letter-spacing: 0.4em;
+        }
+
+        /* ==================== GAME CARDS ==================== */
+        .games-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding-bottom: 48px;
+        }
+
+        .game-card {
+            display: flex;
+            border: 1px solid rgba(212,175,55,0.15);
+            background: rgba(15,10,10,0.8);
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .game-card:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(139,0,0,0.3), 0 0 60px rgba(139,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Colored left accent strip */
+        .game-card-stripe {
+            width: 6px;
+            flex-shrink: 0;
+        }
+
+        .stripe-gothic { background: linear-gradient(180deg, var(--blood), #4a0000); }
+        .stripe-cyberpunk { background: linear-gradient(180deg, var(--cyber-pink), var(--cyber-blue)); }
+        .stripe-cosmic { background: linear-gradient(180deg, var(--cosmic-purple), var(--cosmic-blue)); }
+        .stripe-forest { background: linear-gradient(180deg, var(--forest-green), var(--forest-gold)); }
+        .stripe-squad { background: linear-gradient(180deg, var(--squad-orange), var(--squad-bronze)); }
+
+        .game-card-body {
+            flex: 1;
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .game-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .game-card-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .card-gothic .game-card-title { color: var(--blood); }
+        .card-cyberpunk .game-card-title { color: var(--cyber-pink); }
+        .card-cosmic .game-card-title { color: var(--cosmic-purple); }
+        .card-forest .game-card-title { color: var(--forest-green); }
+        .card-squad .game-card-title { color: var(--squad-orange); }
+
+        .game-card-subtitle {
+            font-style: italic;
+            color: var(--mist);
+            font-size: 0.95rem;
+        }
+
+        .game-card-desc {
+            font-size: 0.95rem;
+            color: rgba(232,220,200,0.6);
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+
+        .game-card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .tag {
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border: 1px solid rgba(212,175,55,0.2);
+            color: var(--gold);
+            opacity: 0.7;
+        }
+
+        .play-arrow {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--gold);
+            opacity: 0.5;
+            flex-shrink: 0;
+            padding-top: 4px;
+            transition: opacity 0.2s;
+        }
+
+        .game-card:hover .play-arrow {
+            opacity: 1;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            padding: 32px 0;
+            border-top: 1px solid rgba(212,175,55,0.1);
+            text-align: center;
+        }
+
+        .footer-text {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--mist);
+            opacity: 0.4;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .header {
+                padding: 40px 0 32px;
+            }
+
+            .game-card-body {
+                padding: 18px 20px;
+            }
+
+            .game-card-title {
+                font-size: 1.25rem;
+            }
+
+            .game-card-desc {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <a href="../index.html" class="back-link">Games Arcade</a>
+            <h1>Survivors Arena</h1>
+            <p class="header-tagline">Survive the Endless Horde</p>
+            <p class="header-count">5 Arenas Available</p>
+        </div>
+    </header>
+
+    <div class="ornament">&diams; &diams; &diams;</div>
+
+    <main>
+        <div class="container">
+            <div class="games-grid">
+
+                <!-- Gothic Survivors -->
+                <a href="gothic.html" class="game-card card-gothic">
+                    <div class="game-card-stripe stripe-gothic"></div>
+                    <div class="game-card-body">
+                        <div class="game-card-top">
+                            <div>
+                                <h2 class="game-card-title">Gothic Survivors</h2>
+                                <p class="game-card-subtitle">Survive the Endless Night</p>
+                            </div>
+                            <span class="play-arrow">Play &rarr;</span>
+                        </div>
+                        <p class="game-card-desc">Survive against skeletons, wraiths, and vampires. Collect holy weapons, level up, and hold out as long as you can in this dark fantasy arena.</p>
+                        <div class="game-card-tags">
+                            <span class="tag">Dark Fantasy</span>
+                            <span class="tag">Roguelite</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Cyberpunk Survivors -->
+                <a href="cyberpunk.html" class="game-card card-cyberpunk">
+                    <div class="game-card-stripe stripe-cyberpunk"></div>
+                    <div class="game-card-body">
+                        <div class="game-card-top">
+                            <div>
+                                <h2 class="game-card-title">Cyberpunk Survivors</h2>
+                                <p class="game-card-subtitle">Neon-Drenched Digital Warzone</p>
+                            </div>
+                            <span class="play-arrow">Play &rarr;</span>
+                        </div>
+                        <p class="game-card-desc">Survive the grid against rogue drones, mechs, and glitch bugs. Wield plasma weapons and EMP blasts in a neon-soaked battlefield.</p>
+                        <div class="game-card-tags">
+                            <span class="tag">Neon Cyber</span>
+                            <span class="tag">Roguelite</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Cosmic Survivors -->
+                <a href="cosmic.html" class="game-card card-cosmic">
+                    <div class="game-card-stripe stripe-cosmic"></div>
+                    <div class="game-card-body">
+                        <div class="game-card-top">
+                            <div>
+                                <h2 class="game-card-title">Cosmic Survivors</h2>
+                                <p class="game-card-subtitle">Lost Among the Stars</p>
+                            </div>
+                            <span class="play-arrow">Play &rarr;</span>
+                        </div>
+                        <p class="game-card-desc">Fend off alien spores, void wraiths, and cosmic horrors. Fire plasma bolts and ion beams through a parallax starfield.</p>
+                        <div class="game-card-tags">
+                            <span class="tag">Space</span>
+                            <span class="tag">Roguelite</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Forest Survivors -->
+                <a href="forest.html" class="game-card card-forest">
+                    <div class="game-card-stripe stripe-forest"></div>
+                    <div class="game-card-body">
+                        <div class="game-card-top">
+                            <div>
+                                <h2 class="game-card-title">Forest Survivors</h2>
+                                <p class="game-card-subtitle">Defend the Grove</p>
+                            </div>
+                            <span class="play-arrow">Play &rarr;</span>
+                        </div>
+                        <p class="game-card-desc">Defend the grove from beetles, wasps, spiders, and corrupted treants. Harness nature's power with thorn shots, sunbeams, and fairy allies.</p>
+                        <div class="game-card-tags">
+                            <span class="tag">Nature</span>
+                            <span class="tag">Roguelite</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Squad Survivors -->
+                <a href="../squad-survivors.html" class="game-card card-squad">
+                    <div class="game-card-stripe stripe-squad"></div>
+                    <div class="game-card-body">
+                        <div class="game-card-top">
+                            <div>
+                                <h2 class="game-card-title">Squad Survivors</h2>
+                                <p class="game-card-subtitle">Command Your Growing Army</p>
+                            </div>
+                            <span class="play-arrow">Play &rarr;</span>
+                        </div>
+                        <p class="game-card-desc">Command a growing squad of knights, archers, mages and more. Draft new units on each level-up and survive escalating waves of fantasy monsters.</p>
+                        <div class="game-card-tags">
+                            <span class="tag">Medieval</span>
+                            <span class="tag">Squad Tactics</span>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">Survivors Arena &mdash; HTML Style Guide Games</p>
+        </div>
+    </footer>
+
+</body>
+</html>
