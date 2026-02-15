@@ -714,6 +714,7 @@
             lives = 3;
             currentLevel = 0;
             totalBubblesPopped = 0;
+            dying = false;
             initBackground();
             loadLevel(0);
         }
@@ -1121,6 +1122,18 @@
         function update(dt) {
             if (state !== STATE.PLAYING) return;
 
+            // After final death, only animate particles and shake
+            if (dying) {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    if (p.type !== 'ring') { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 100 * dt; }
+                    p.life -= dt;
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+                if (shakeDuration > 0) { shakeDuration -= dt; shakeAmount *= 0.92; }
+                return;
+            }
+
             // Player movement
             let moveDir = 0;
             if (keys['ArrowLeft'] || keys['KeyA'] || mobileLeft) moveDir -= 1;
@@ -1375,7 +1388,11 @@
             }
         }
 
+        let gameOverTimeout = null;
+        let dying = false;
+
         function playerDeath() {
+            if (dying) return; // Already dead, prevent re-trigger
             sfx.death();
             spawnDeathEffect(player.x, player.y);
             shakeAmount = 10;
@@ -1383,7 +1400,8 @@
             lives--;
 
             if (lives <= 0) {
-                setTimeout(() => showGameOver(), 800);
+                dying = true;
+                gameOverTimeout = setTimeout(() => showGameOver(), 800);
             } else {
                 // Reset position, brief invulnerability
                 invulnTimer = 2;
@@ -1442,6 +1460,7 @@
         }
 
         function startGame() {
+            if (gameOverTimeout) { clearTimeout(gameOverTimeout); gameOverTimeout = null; }
             ensureAudio();
             initGame();
             state = STATE.PLAYING;
