@@ -50,6 +50,6 @@ Suggested themes/styles not yet in the collection. Organized by category.
 - [x] Cozy Game UI — Stardew Valley / Animal Crossing warmth, soft pixels, pastel palette
 
 ## Typography-Focused
-- [ ] Blackletter/Fraktur — gothic calligraphy, medieval manuscript, heavy strokes
-- [ ] Grunge Typography — 90s zine culture, distressed type, xerox textures, collage
-- [ ] Vintage Signage — hand-painted shop signs, fairground lettering, aged paint
+- [x] Blackletter/Fraktur — gothic calligraphy, medieval manuscript, heavy strokes
+- [x] Grunge Typography — 90s zine culture, distressed type, xerox textures, collage
+- [x] Vintage Signage — hand-painted shop signs, fairground lettering, aged paint
