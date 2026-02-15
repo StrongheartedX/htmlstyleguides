@@ -15,18 +15,18 @@ Suggested themes/styles not yet in the collection. Organized by category.
 - [x] Mayan/Aztec — geometric step patterns, jade/gold/obsidian palette
 - [x] Thai/Southeast Asian — ornate temple gold, lotus motifs, intricate borders
 - [x] Ethiopian/Ge'ez — manuscript-inspired, rich earth tones, cross motifs
-- [ ] Russian Propaganda Poster — bold red/black, heroic figures, stark typography
-- [ ] Indian Rangoli — vibrant symmetrical patterns, festival colors, fine detail
-- [ ] Polynesian/Tapa Cloth — bold geometric bark cloth patterns, earth tones
+- [x] Russian Propaganda Poster — bold red/black, heroic figures, stark typography
+- [x] Indian Rangoli — vibrant symmetrical patterns, festival colors, fine detail
+- [x] Polynesian/Tapa Cloth — bold geometric bark cloth patterns, earth tones
 
 ## Modern Design Trends
-- [ ] Bento Grid — Apple-style bento box layout, rounded cards, clean hierarchy
-- [ ] Neubrutalism — raw borders, bright accents, thick black shadows, modern web trend
-- [ ] Y2K — early 2000s futurism, chrome, bubble fonts, iridescent surfaces
-- [ ] Barbiecore — hot pink maximalism, glam, bold feminine energy
-- [ ] Dark Mode Material — Material Design 3 dark theme, subtle elevation, tonal surfaces
-- [ ] Notion-style — clean productivity aesthetic, toggle blocks, neutral palette
-- [ ] Mono/Developer — monospace everything, code-editor-as-design-system, syntax colors
+- [x] Bento Grid — Apple-style bento box layout, rounded cards, clean hierarchy
+- [x] Neubrutalism — raw borders, bright accents, thick black shadows, modern web trend
+- [x] Y2K — early 2000s futurism, chrome, bubble fonts, iridescent surfaces
+- [x] Barbiecore — hot pink maximalism, glam, bold feminine energy
+- [x] Dark Mode Material — Material Design 3 dark theme, subtle elevation, tonal surfaces
+- [x] Notion-style — clean productivity aesthetic, toggle blocks, neutral palette
+- [x] Mono/Developer — monospace everything, code-editor-as-design-system, syntax colors
 
 ## Nature / Environment
 - [ ] Volcanic — lava reds, basalt blacks, ember glows, cracked earth textures
