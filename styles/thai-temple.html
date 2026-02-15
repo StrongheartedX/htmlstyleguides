@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thai Temple (Wat) Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Typography */
+            --font-display: 'Cinzel Decorative', serif;
+            --font-heading: 'Cormorant Garamond', serif;
+            --font-body: 'Noto Serif', serif;
+
+            /* Spacing Scale (4px base) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* Thai Temple Color Palette */
+            --temple-gold: #d4a012;
+            --gold-bright: #f0c848;
+            --gold-pale: #f8e8a0;
+            --gold-dark: #9a7510;
+            --saffron: #e8a020;
+            --saffron-light: #f0c060;
+            --saffron-dark: #b87810;
+            --ruby: #a01030;
+            --ruby-light: #c82040;
+            --ruby-dark: #701020;
+            --emerald: #1a7a3a;
+            --emerald-light: #28a050;
+            --emerald-dark: #105828;
+            --midnight: #0a0a2a;
+            --midnight-light: #141440;
+            --midnight-deep: #050518;
+            --ivory: #f5f0e0;
+            --ivory-warm: #f0e8d0;
+            --cream: #e8dcc0;
+            --teak: #4a2a10;
+            --teak-light: #6a4020;
+            --teak-dark: #2a1808;
+
+            /* Semantic Colors */
+            --text-primary: var(--ivory);
+            --text-secondary: rgba(245, 240, 224, 0.72);
+            --text-gold: var(--gold-bright);
+            --text-dark: var(--midnight);
+            --bg-primary: var(--midnight);
+            --bg-secondary: var(--midnight-light);
+            --bg-surface: rgba(212, 160, 18, 0.06);
+            --accent-primary: var(--temple-gold);
+            --accent-secondary: var(--ruby);
+            --accent-tertiary: var(--emerald);
+
+            /* Gold Gradient (gilded surface) */
+            --gold-gradient: linear-gradient(135deg, #f0c848 0%, #d4a012 30%, #9a7510 50%, #d4a012 70%, #f0c848 100%);
+            --gold-gradient-horizontal: linear-gradient(90deg, #d4a012 0%, #f0c848 25%, #d4a012 50%, #f0c848 75%, #d4a012 100%);
+
+            /* Shadows & Effects */
+            --shadow-gold: 0 0 30px rgba(212, 160, 18, 0.35);
+            --shadow-gold-intense: 0 0 50px rgba(212, 160, 18, 0.5), 0 0 100px rgba(212, 160, 18, 0.2);
+            --shadow-soft: 0 8px 32px rgba(5, 5, 24, 0.6);
+            --shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-lift: 0 12px 40px rgba(5, 5, 24, 0.5);
+
+            /* Border Radius */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-lg: 8px;
+        }
+
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes gold-pulse {
+            0%, 100% { opacity: 0.04; }
+            50% { opacity: 0.08; }
+        }
+
+        @keyframes flame-flicker {
+            0%, 100% { transform: scaleY(1) translateY(0); }
+            25% { transform: scaleY(1.03) translateY(-1px); }
+            75% { transform: scaleY(0.97) translateY(1px); }
+        }
+
+        @keyframes lotus-bloom {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            font-weight: 400;
+            line-height: 1.75;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           KRANOK PATTERN BACKGROUND
+           Flame-like repeating motif, subtle overlay
+           ============================================ */
+        .kranok-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 0;
+            animation: gold-pulse 6s ease-in-out infinite;
+        }
+
+        .kranok-bg svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ============================================
+           CONTAINER & LAYOUT
+           ============================================ */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-7) var(--space-5);
+        }
+
+        /* ============================================
+           HEADER
+           Evokes the layered prasat (tower) silhouette
+           ============================================ */
+        header {
+            text-align: center;
+            padding: var(--space-9) var(--space-5) var(--space-8);
+            position: relative;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(ellipse at center, rgba(212, 160, 18, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-ornament {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: var(--space-6);
+        }
+
+        .header-ornament svg {
+            width: 120px;
+            height: auto;
+            filter: drop-shadow(0 0 12px rgba(212, 160, 18, 0.4));
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: var(--gold-bright);
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 40px rgba(212, 160, 18, 0.5), 0 2px 4px rgba(0, 0, 0, 0.6);
+            margin-bottom: var(--space-4);
+            line-height: 1.2;
+        }
+
+        header .subtitle {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 300;
+            color: var(--text-secondary);
+            font-style: italic;
+            letter-spacing: 0.04em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* ============================================
+           SECTION STYLING
+           Each section framed like a gilded panel
+           ============================================ */
+        section {
+            margin-bottom: var(--space-9);
+            padding: var(--space-7);
+            background: linear-gradient(180deg, rgba(212, 160, 18, 0.04) 0%, rgba(10, 10, 42, 0.95) 100%);
+            border: 1px solid rgba(212, 160, 18, 0.2);
+            position: relative;
+        }
+
+        section::before,
+        section::after {
+            content: '';
+            position: absolute;
+            pointer-events: none;
+        }
+
+        /* Outer gold border glow */
+        section::before {
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border: 2px solid rgba(212, 160, 18, 0.15);
+            z-index: -1;
+        }
+
+        /* Inner ornamental border */
+        section::after {
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 160, 18, 0.1);
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--temple-gold);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: var(--space-2);
+            opacity: 0.8;
+        }
+
+        section h2 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold-bright);
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-5);
+            text-shadow: 0 0 20px rgba(212, 160, 18, 0.3);
+            position: relative;
+            padding-bottom: var(--space-4);
+        }
+
+        section h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 2px;
+            background: var(--gold-gradient-horizontal);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        section h3 {
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--saffron);
+            letter-spacing: 0.03em;
+            margin-top: var(--space-6);
+            margin-bottom: var(--space-4);
+        }
+
+        section p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            max-width: 72ch;
+        }
+
+        /* ============================================
+           ORNAMENTAL DIVIDERS
+           Kranok flame pattern between sections
+           ============================================ */
+        .divider {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: var(--space-7) 0;
+            gap: var(--space-4);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--temple-gold), transparent);
+        }
+
+        .divider svg {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        /* ============================================
+           I. COLOR PALETTE
+           ============================================ */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: var(--space-5);
+            margin-top: var(--space-5);
+        }
+
+        .color-swatch {
+            border: 1px solid rgba(212, 160, 18, 0.2);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .swatch-color {
+            height: 100px;
+            position: relative;
+        }
+
+        .swatch-color::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(transparent, rgba(10, 10, 42, 0.3));
+        }
+
+        .swatch-info {
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+        }
+
+        .swatch-name {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--gold-bright);
+            display: block;
+        }
+
+        .swatch-hex {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: block;
+            margin-top: 2px;
+        }
+
+        .swatch-use {
+            font-size: 0.75rem;
+            color: rgba(245, 240, 224, 0.5);
+            display: block;
+            margin-top: var(--space-1);
+            font-style: italic;
+        }
+
+        /* ============================================
+           II. TYPOGRAPHY
+           ============================================ */
+        .type-sample {
+            margin-bottom: var(--space-6);
+            padding: var(--space-5);
+            border-left: 3px solid var(--temple-gold);
+            background: rgba(212, 160, 18, 0.03);
+        }
+
+        .type-label {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--saffron);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-2);
+            display: block;
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: var(--gold-bright);
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(212, 160, 18, 0.3);
+        }
+
+        .type-heading {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--ivory);
+            line-height: 1.3;
+        }
+
+        .type-body {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+
+        .type-caption {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: rgba(245, 240, 224, 0.5);
+            line-height: 1.5;
+        }
+
+        .type-scale {
+            margin-top: var(--space-6);
+        }
+
+        .type-scale-row {
+            display: flex;
+            align-items: baseline;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid rgba(212, 160, 18, 0.08);
+            gap: var(--space-5);
+        }
+
+        .type-scale-size {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--saffron);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+
+        .type-scale-text {
+            font-family: var(--font-heading);
+            color: var(--ivory);
+        }
+
+        /* ============================================
+           III. SPACING
+           ============================================ */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+            margin-top: var(--space-5);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--saffron);
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: var(--gold-gradient);
+            background-size: 200% 100%;
+            opacity: 0.7;
+            border: 1px solid rgba(212, 160, 18, 0.3);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: attr(data-px);
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           IV. BUTTONS
+           Gilded, layered border treatment
+           ============================================ */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-5);
+            margin-top: var(--space-5);
+            align-items: flex-start;
+        }
+
+        .btn {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            padding: var(--space-3) var(--space-6);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        /* Primary: Gold on dark, layered borders */
+        .btn-primary {
+            background: var(--temple-gold);
+            color: var(--midnight);
+            box-shadow: 0 0 0 1px var(--gold-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--temple-gold);
+        }
+
+        .btn-primary:hover {
+            background: var(--gold-bright);
+            box-shadow: 0 0 0 1px var(--gold-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--gold-bright), var(--shadow-gold);
+            transform: translateY(-2px);
+        }
+
+        /* Secondary: Outlined gold */
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold-bright);
+            border: 2px solid var(--temple-gold);
+            box-shadow: inset 0 0 0 1px rgba(212, 160, 18, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 160, 18, 0.1);
+            border-color: var(--gold-bright);
+            box-shadow: inset 0 0 0 1px rgba(240, 200, 72, 0.3), var(--shadow-gold);
+            transform: translateY(-2px);
+        }
+
+        /* Ruby accent button */
+        .btn-ruby {
+            background: var(--ruby);
+            color: var(--ivory);
+            box-shadow: 0 0 0 1px var(--ruby-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--ruby);
+        }
+
+        .btn-ruby:hover {
+            background: var(--ruby-light);
+            box-shadow: 0 0 0 1px var(--ruby-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--ruby-light), 0 0 20px rgba(160, 16, 48, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Emerald accent button */
+        .btn-emerald {
+            background: var(--emerald);
+            color: var(--ivory);
+            box-shadow: 0 0 0 1px var(--emerald-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--emerald);
+        }
+
+        .btn-emerald:hover {
+            background: var(--emerald-light);
+            box-shadow: 0 0 0 1px var(--emerald-dark), 0 0 0 3px var(--midnight), 0 0 0 4px var(--emerald-light), 0 0 20px rgba(26, 122, 58, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Disabled state */
+        .btn-disabled {
+            background: rgba(212, 160, 18, 0.15);
+            color: rgba(245, 240, 224, 0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Small button */
+        .btn-sm {
+            font-size: 0.85rem;
+            padding: var(--space-2) var(--space-4);
+        }
+
+        /* Large button */
+        .btn-lg {
+            font-size: 1.15rem;
+            padding: var(--space-4) var(--space-8);
+        }
+
+        /* ============================================
+           V. FORMS
+           Inputs styled like gilded inscription frames
+           ============================================ */
+        .form-group {
+            margin-bottom: var(--space-5);
+            max-width: 480px;
+        }
+
+        .form-group label {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--saffron);
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: var(--space-2);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ivory);
+            background: rgba(10, 10, 42, 0.8);
+            border: 1px solid rgba(212, 160, 18, 0.3);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--temple-gold);
+            box-shadow: 0 0 0 1px var(--temple-gold), 0 0 15px rgba(212, 160, 18, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: rgba(245, 240, 224, 0.3);
+            font-style: italic;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--ivory);
+            background: rgba(10, 10, 42, 0.8);
+            border: 1px solid rgba(212, 160, 18, 0.3);
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4a012'%3E%3Cpath d='M12 16l-6-6h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            border-color: var(--temple-gold);
+            box-shadow: 0 0 0 1px var(--temple-gold), 0 0 15px rgba(212, 160, 18, 0.15);
+        }
+
+        .form-select option {
+            background: var(--midnight);
+            color: var(--ivory);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Checkbox & Radio */
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+            cursor: pointer;
+        }
+
+        .form-check input[type="checkbox"],
+        .form-check input[type="radio"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(212, 160, 18, 0.4);
+            background: rgba(10, 10, 42, 0.8);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .form-check input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .form-check input[type="checkbox"]:checked,
+        .form-check input[type="radio"]:checked {
+            border-color: var(--temple-gold);
+            background: var(--temple-gold);
+            box-shadow: 0 0 8px rgba(212, 160, 18, 0.3);
+        }
+
+        .form-check input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--midnight);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .form-check input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--midnight);
+        }
+
+        .form-check label {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        /* ============================================
+           VI. CARDS
+           Styled like gilded temple panels / viharn walls
+           ============================================ */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--space-6);
+            margin-top: var(--space-5);
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(20, 20, 64, 0.95) 0%, rgba(10, 10, 42, 0.98) 100%);
+            border: 1px solid rgba(212, 160, 18, 0.25);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-gold), var(--shadow-lift);
+        }
+
+        /* Card top ornament: pointed arch / chofa shape */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gold-gradient-horizontal);
+            background-size: 200% 100%;
+            animation: shimmer 4s ease-in-out infinite;
+        }
+
+        /* Inner card border */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 160, 18, 0.08);
+            pointer-events: none;
+        }
+
+        .card-header {
+            padding: var(--space-5) var(--space-5) var(--space-3);
+            position: relative;
+        }
+
+        .card-header h4 {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gold-bright);
+        }
+
+        .card-body {
+            padding: 0 var(--space-5) var(--space-5);
+        }
+
+        .card-body p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .card-footer {
+            padding: var(--space-3) var(--space-5);
+            border-top: 1px solid rgba(212, 160, 18, 0.12);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Featured card variant */
+        .card-featured {
+            border-color: rgba(212, 160, 18, 0.45);
+            background: linear-gradient(180deg, rgba(212, 160, 18, 0.08) 0%, rgba(10, 10, 42, 0.98) 100%);
+        }
+
+        .card-featured::before {
+            height: 6px;
+        }
+
+        /* Card with image banner */
+        .card-banner {
+            height: 160px;
+            background: linear-gradient(135deg, var(--midnight-light) 0%, var(--teak-dark) 50%, var(--midnight-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(212, 160, 18, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-banner svg {
+            width: 60px;
+            height: 60px;
+            opacity: 0.6;
+        }
+
+        .card-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(212, 160, 18, 0.1) 0%, transparent 70%);
+        }
+
+        /* ============================================
+           VII. ALERTS & BADGES
+           ============================================ */
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            margin-bottom: var(--space-4);
+            position: relative;
+            font-size: 0.95rem;
+            border-left: 4px solid;
+        }
+
+        .alert-title {
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: var(--space-1);
+            display: block;
+        }
+
+        .alert-gold {
+            background: rgba(212, 160, 18, 0.08);
+            border-color: var(--temple-gold);
+            color: var(--gold-pale);
+        }
+
+        .alert-gold .alert-title {
+            color: var(--gold-bright);
+        }
+
+        .alert-ruby {
+            background: rgba(160, 16, 48, 0.1);
+            border-color: var(--ruby);
+            color: rgba(200, 140, 150, 0.9);
+        }
+
+        .alert-ruby .alert-title {
+            color: var(--ruby-light);
+        }
+
+        .alert-emerald {
+            background: rgba(26, 122, 58, 0.08);
+            border-color: var(--emerald);
+            color: rgba(150, 210, 170, 0.9);
+        }
+
+        .alert-emerald .alert-title {
+            color: var(--emerald-light);
+        }
+
+        .alert-saffron {
+            background: rgba(232, 160, 32, 0.08);
+            border-color: var(--saffron);
+            color: var(--saffron-light);
+        }
+
+        .alert-saffron .alert-title {
+            color: var(--saffron);
+        }
+
+        /* Badges */
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-top: var(--space-5);
+        }
+
+        .badge {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            padding: var(--space-1) var(--space-3);
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+
+        .badge-gold {
+            background: var(--temple-gold);
+            color: var(--midnight);
+        }
+
+        .badge-ruby {
+            background: var(--ruby);
+            color: var(--ivory);
+        }
+
+        .badge-emerald {
+            background: var(--emerald);
+            color: var(--ivory);
+        }
+
+        .badge-saffron {
+            background: var(--saffron);
+            color: var(--midnight);
+        }
+
+        .badge-outline {
+            background: transparent;
+            border: 1px solid var(--temple-gold);
+            color: var(--gold-bright);
+        }
+
+        .badge-teak {
+            background: var(--teak);
+            color: var(--gold-pale);
+        }
+
+        /* ============================================
+           VIII. DESIGN PRINCIPLES
+           ============================================ */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: var(--space-6);
+            margin-top: var(--space-6);
+        }
+
+        .principle {
+            text-align: center;
+            padding: var(--space-6) var(--space-4);
+            border: 1px solid rgba(212, 160, 18, 0.15);
+            background: rgba(212, 160, 18, 0.03);
+            position: relative;
+        }
+
+        .principle::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: var(--temple-gold);
+        }
+
+        .principle-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto var(--space-4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .principle-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .principle h4 {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--gold-bright);
+            letter-spacing: 0.04em;
+            margin-bottom: var(--space-3);
+        }
+
+        .principle p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            max-width: none;
+        }
+
+        /* ============================================
+           LOTUS ORNAMENT (inline SVG component)
+           ============================================ */
+        .lotus-ornament {
+            display: flex;
+            justify-content: center;
+            margin: var(--space-6) 0;
+        }
+
+        .lotus-ornament svg {
+            width: 60px;
+            height: 40px;
+            opacity: 0.5;
+        }
+
+        /* ============================================
+           NAGA BORDER COMPONENT
+           Serpent-scale repeating pattern
+           ============================================ */
+        .naga-border {
+            height: 16px;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 6px,
+                rgba(212, 160, 18, 0.15) 6px,
+                rgba(212, 160, 18, 0.15) 8px,
+                transparent 8px,
+                transparent 14px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent 3px,
+                transparent 9px,
+                rgba(212, 160, 18, 0.08) 9px,
+                rgba(212, 160, 18, 0.08) 11px,
+                transparent 11px,
+                transparent 17px
+            );
+            position: relative;
+            margin: var(--space-5) 0;
+        }
+
+        .naga-border::before,
+        .naga-border::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(212, 160, 18, 0.2);
+        }
+
+        .naga-border::before { top: 0; }
+        .naga-border::after { bottom: 0; }
+
+        /* ============================================
+           MOSAIC SHIMMER EFFECT
+           Tiny glass tile / mirror mosaic texture
+           ============================================ */
+        .mosaic-panel {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mosaic-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(212, 160, 18, 0.02) 3px,
+                    rgba(212, 160, 18, 0.02) 4px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(240, 200, 72, 0.015) 3px,
+                    rgba(240, 200, 72, 0.015) 4px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ============================================
+           TIERED ROOFLINE COMPONENT
+           Layered horizontal lines evoking prasat tiers
+           ============================================ */
+        .tiered-roof {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            margin: var(--space-5) 0;
+        }
+
+        .tiered-roof .tier {
+            height: 2px;
+            background: var(--gold-gradient-horizontal);
+            background-size: 200% 100%;
+        }
+
+        .tiered-roof .tier:nth-child(1) { width: 30%; }
+        .tiered-roof .tier:nth-child(2) { width: 45%; }
+        .tiered-roof .tier:nth-child(3) { width: 60%; }
+        .tiered-roof .tier:nth-child(4) { width: 75%; }
+        .tiered-roof .tier:nth-child(5) { width: 90%; }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        footer {
+            text-align: center;
+            padding: var(--space-8) var(--space-5);
+            border-top: 1px solid rgba(212, 160, 18, 0.15);
+            margin-top: var(--space-7);
+        }
+
+        footer p {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            max-width: none;
+        }
+
+        footer .footer-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--temple-gold);
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-2);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+            }
+
+            header {
+                padding: var(--space-7) var(--space-4) var(--space-6);
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            header .subtitle {
+                font-size: 1.05rem;
+            }
+
+            section {
+                padding: var(--space-5) var(--space-4);
+                margin-bottom: var(--space-7);
+            }
+
+            section h2 {
+                font-size: 1.4rem;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: var(--space-4);
+            }
+
+            .swatch-color {
+                height: 75px;
+            }
+
+            .type-display {
+                font-size: 1.6rem;
+            }
+
+            .type-heading {
+                font-size: 1.3rem;
+            }
+
+            .type-scale-row {
+                flex-direction: column;
+                gap: var(--space-1);
+            }
+
+            .button-grid {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                justify-content: center;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .spacing-bar::after {
+                right: -45px;
+            }
+
+            .header-ornament svg {
+                width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================
+     BACKGROUND PATTERN: Kranok flame motif
+     ============================================ -->
+<div class="kranok-bg">
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+        <defs>
+            <pattern id="kranok" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                <!-- Flame-pointed kranok motif -->
+                <path d="M30 5 Q35 20 30 30 Q25 20 30 5Z" fill="#d4a012" opacity="0.3"/>
+                <path d="M30 30 Q40 25 45 35 Q35 35 30 30Z" fill="#d4a012" opacity="0.2"/>
+                <path d="M30 30 Q20 25 15 35 Q25 35 30 30Z" fill="#d4a012" opacity="0.2"/>
+                <path d="M15 5 Q18 12 15 18 Q12 12 15 5Z" fill="#d4a012" opacity="0.15"/>
+                <path d="M45 5 Q48 12 45 18 Q42 12 45 5Z" fill="#d4a012" opacity="0.15"/>
+                <!-- Small diamond accents -->
+                <rect x="28" y="42" width="4" height="4" transform="rotate(45 30 44)" fill="#f0c848" opacity="0.15"/>
+                <rect x="0" y="28" width="3" height="3" transform="rotate(45 1.5 29.5)" fill="#f0c848" opacity="0.1"/>
+                <rect x="57" y="28" width="3" height="3" transform="rotate(45 58.5 29.5)" fill="#f0c848" opacity="0.1"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#kranok)"/>
+    </svg>
+</div>
+
+<div class="container">
+
+    <!-- ============================================
+         HEADER
+         ============================================ -->
+    <header>
+        <div class="header-ornament">
+            <!-- Chofa (sky tassel) finial ornament -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140" fill="none">
+                <!-- Central spire -->
+                <path d="M50 0 L55 30 Q55 40 50 45 Q45 40 45 30 Z" fill="#f0c848" opacity="0.9"/>
+                <!-- Flame wings -->
+                <path d="M50 45 Q65 35 75 20 Q70 40 60 50 Q55 48 50 45Z" fill="#d4a012" opacity="0.8"/>
+                <path d="M50 45 Q35 35 25 20 Q30 40 40 50 Q45 48 50 45Z" fill="#d4a012" opacity="0.8"/>
+                <!-- Outer flame tendrils -->
+                <path d="M75 20 Q80 15 82 8 Q78 18 70 25Z" fill="#f0c848" opacity="0.6"/>
+                <path d="M25 20 Q20 15 18 8 Q22 18 30 25Z" fill="#f0c848" opacity="0.6"/>
+                <!-- Lotus base -->
+                <path d="M35 55 Q42 48 50 55 Q58 48 65 55 Q58 62 50 58 Q42 62 35 55Z" fill="#d4a012" opacity="0.7"/>
+                <path d="M30 65 Q40 55 50 65 Q60 55 70 65 Q60 72 50 68 Q40 72 30 65Z" fill="#d4a012" opacity="0.6"/>
+                <path d="M25 78 Q37 68 50 78 Q63 68 75 78 Q63 85 50 80 Q37 85 25 78Z" fill="#d4a012" opacity="0.5"/>
+                <!-- Base pedestal -->
+                <rect x="30" y="85" width="40" height="4" fill="#d4a012" opacity="0.6" rx="1"/>
+                <rect x="25" y="92" width="50" height="3" fill="#d4a012" opacity="0.5" rx="1"/>
+                <rect x="20" y="98" width="60" height="3" fill="#d4a012" opacity="0.4" rx="1"/>
+                <!-- Naga serpent curves at base -->
+                <path d="M20 105 Q10 115 15 125 Q20 120 25 115 Q30 110 35 108" fill="none" stroke="#d4a012" stroke-width="2" opacity="0.4"/>
+                <path d="M80 105 Q90 115 85 125 Q80 120 75 115 Q70 110 65 108" fill="none" stroke="#d4a012" stroke-width="2" opacity="0.4"/>
+                <!-- Naga heads (small) -->
+                <circle cx="15" cy="126" r="3" fill="#d4a012" opacity="0.4"/>
+                <circle cx="85" cy="126" r="3" fill="#d4a012" opacity="0.4"/>
+            </svg>
+        </div>
+        <h1>Thai Temple</h1>
+        <p class="subtitle">A design system inspired by the gilded splendor of Wat Phra Kaew, the flame-like silhouettes of Wat Arun, and the sacred ornament of Southeast Asian Buddhist architecture</p>
+
+        <div class="tiered-roof" style="margin-top: var(--space-6);">
+            <div class="tier"></div>
+            <div class="tier"></div>
+            <div class="tier"></div>
+            <div class="tier"></div>
+            <div class="tier"></div>
+        </div>
+    </header>
+
+    <!-- ============================================
+         I. COLOR PALETTE
+         ============================================ -->
+    <section>
+        <span class="section-number">Section I</span>
+        <h2>Color Palette</h2>
+        <p>Drawn from the materials of Thai temple decoration: beaten gold leaf, ruby and emerald gemstones inlaid in lacquered teak, saffron-dyed monks' robes against midnight sky, and the pale ivory of stucco walls. Each hue carries symbolic weight -- gold for enlightenment, ruby for devotion, emerald for the Emerald Buddha's sacred jade.</p>
+
+        <h3>Primary Gold</h3>
+        <div class="color-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #d4a012;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Temple Gold</span>
+                    <span class="swatch-hex">#d4a012</span>
+                    <span class="swatch-use">Gilded surfaces, primary accent</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #f0c848;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Gold Bright</span>
+                    <span class="swatch-hex">#f0c848</span>
+                    <span class="swatch-use">Highlights, headings</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #f8e8a0;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Gold Pale</span>
+                    <span class="swatch-hex">#f8e8a0</span>
+                    <span class="swatch-use">Light text on dark</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #9a7510;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Gold Dark</span>
+                    <span class="swatch-hex">#9a7510</span>
+                    <span class="swatch-use">Depth, shadow tones</span>
+                </div>
+            </div>
+        </div>
+
+        <h3>Saffron &amp; Warmth</h3>
+        <div class="color-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #e8a020;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Saffron</span>
+                    <span class="swatch-hex">#e8a020</span>
+                    <span class="swatch-use">Monk's robes, warmth</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #f0c060;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Saffron Light</span>
+                    <span class="swatch-hex">#f0c060</span>
+                    <span class="swatch-use">Subtle warm highlight</span>
+                </div>
+            </div>
+        </div>
+
+        <h3>Gemstone Accents</h3>
+        <div class="color-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #a01030;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Ruby</span>
+                    <span class="swatch-hex">#a01030</span>
+                    <span class="swatch-use">Deep gemstone red</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #c82040;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Ruby Light</span>
+                    <span class="swatch-hex">#c82040</span>
+                    <span class="swatch-use">Error states, emphasis</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #1a7a3a;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Emerald</span>
+                    <span class="swatch-hex">#1a7a3a</span>
+                    <span class="swatch-use">Jeweled green, success</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #28a050;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Emerald Light</span>
+                    <span class="swatch-hex">#28a050</span>
+                    <span class="swatch-use">Active states, growth</span>
+                </div>
+            </div>
+        </div>
+
+        <h3>Foundations</h3>
+        <div class="color-grid">
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #0a0a2a;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Midnight</span>
+                    <span class="swatch-hex">#0a0a2a</span>
+                    <span class="swatch-use">Primary background</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #141440;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Midnight Light</span>
+                    <span class="swatch-hex">#141440</span>
+                    <span class="swatch-use">Elevated surfaces</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #f5f0e0;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Ivory</span>
+                    <span class="swatch-hex">#f5f0e0</span>
+                    <span class="swatch-use">Primary text color</span>
+                </div>
+            </div>
+            <div class="color-swatch">
+                <div class="swatch-color" style="background: #4a2a10;"></div>
+                <div class="swatch-info">
+                    <span class="swatch-name">Teak</span>
+                    <span class="swatch-hex">#4a2a10</span>
+                    <span class="swatch-use">Dark wood, carved panels</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lotus divider -->
+    <div class="divider">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="#d4a012">
+            <path d="M20 5 Q23 12 20 18 Q17 12 20 5Z" opacity="0.8"/>
+            <path d="M20 18 Q28 14 32 8 Q28 18 22 22Z" opacity="0.6"/>
+            <path d="M20 18 Q12 14 8 8 Q12 18 18 22Z" opacity="0.6"/>
+            <path d="M14 25 Q17 20 20 25 Q23 20 26 25 Q23 30 20 27 Q17 30 14 25Z" opacity="0.5"/>
+            <path d="M10 32 Q15 27 20 32 Q25 27 30 32 Q25 36 20 33 Q15 36 10 32Z" opacity="0.4"/>
+        </svg>
+    </div>
+
+    <!-- ============================================
+         II. TYPOGRAPHY
+         ============================================ -->
+    <section>
+        <span class="section-number">Section II</span>
+        <h2>Typography</h2>
+        <p>Three complementary typefaces create a hierarchy that mirrors the layered ornamentation of Thai temple facades. Cinzel Decorative evokes the ornate finials and inscribed stone tablets. Cormorant Garamond lends the elegance of royal edicts inscribed in gold. Noto Serif provides quiet legibility, like the steady voice of a monk's chant beneath the temple bells.</p>
+
+        <div class="type-sample">
+            <span class="type-label">Display &mdash; Cinzel Decorative</span>
+            <span class="type-display">Wat Phra Kaew</span>
+        </div>
+
+        <div class="type-sample">
+            <span class="type-label">Heading &mdash; Cormorant Garamond</span>
+            <span class="type-heading">The Temple of the Emerald Buddha</span>
+        </div>
+
+        <div class="type-sample">
+            <span class="type-label">Body &mdash; Noto Serif</span>
+            <span class="type-body">The Grand Palace complex in Bangkok contains over a hundred buildings, their layered rooflines covered in tiles of orange and green, their gables adorned with gilded nagas and garudas. Every surface shimmers with mirror mosaic and gold leaf, a testament to the Thai belief that beauty in architecture is an offering to the divine.</span>
+        </div>
+
+        <div class="type-sample">
+            <span class="type-label">Caption &mdash; Noto Serif</span>
+            <span class="type-caption">Lotus blossoms represent purity of mind arising from the muddy waters of material existence. In Thai temple art, the lotus appears at every scale, from the massive bud-shaped prangs of Wat Arun to the tiny stamped gold-leaf ornaments on votive tablets.</span>
+        </div>
+
+        <h3>Type Scale</h3>
+        <div class="type-scale">
+            <div class="type-scale-row">
+                <span class="type-scale-size">3rem / 48px</span>
+                <span class="type-scale-text" style="font-size: 3rem; font-weight: 700; font-family: var(--font-display); color: var(--gold-bright);">Prasat</span>
+            </div>
+            <div class="type-scale-row">
+                <span class="type-scale-size">2.4rem / 38px</span>
+                <span class="type-scale-text" style="font-size: 2.4rem; font-weight: 700;">Golden Chedi</span>
+            </div>
+            <div class="type-scale-row">
+                <span class="type-scale-size">1.8rem / 29px</span>
+                <span class="type-scale-text" style="font-size: 1.8rem; font-weight: 600;">Naga Staircase</span>
+            </div>
+            <div class="type-scale-row">
+                <span class="type-scale-size">1.35rem / 22px</span>
+                <span class="type-scale-text" style="font-size: 1.35rem; font-weight: 500;">Lotus Pedestal</span>
+            </div>
+            <div class="type-scale-row">
+                <span class="type-scale-size">1.1rem / 18px</span>
+                <span class="type-scale-text" style="font-size: 1.1rem; font-weight: 400;">Mirror mosaic tessellation</span>
+            </div>
+            <div class="type-scale-row">
+                <span class="type-scale-size">0.9rem / 14px</span>
+                <span class="type-scale-text" style="font-size: 0.9rem; font-weight: 400; color: var(--text-secondary);">Gold leaf inscription detail</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="naga-border"></div>
+
+    <!-- ============================================
+         III. SPACING
+         ============================================ -->
+    <section>
+        <span class="section-number">Section III</span>
+        <h2>Spacing</h2>
+        <p>Thai temple architecture is governed by precise proportional relationships. Each tier of a chedi narrows in a mathematically determined ratio. Our spacing scale follows a 4px base unit, expanding through a progression that echoes these sacred proportions -- from the tightest gold-leaf detail to the generous courtyards between temple halls.</p>
+
+        <div class="spacing-demo">
+            <div class="spacing-row">
+                <span class="spacing-label">--space-1</span>
+                <div class="spacing-bar" style="width: 4px;" data-px="4px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-2</span>
+                <div class="spacing-bar" style="width: 8px;" data-px="8px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-3</span>
+                <div class="spacing-bar" style="width: 12px;" data-px="12px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-4</span>
+                <div class="spacing-bar" style="width: 16px;" data-px="16px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-5</span>
+                <div class="spacing-bar" style="width: 24px;" data-px="24px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-6</span>
+                <div class="spacing-bar" style="width: 32px;" data-px="32px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-7</span>
+                <div class="spacing-bar" style="width: 48px;" data-px="48px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-8</span>
+                <div class="spacing-bar" style="width: 64px;" data-px="64px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-9</span>
+                <div class="spacing-bar" style="width: 96px;" data-px="96px"></div>
+            </div>
+            <div class="spacing-row">
+                <span class="spacing-label">--space-10</span>
+                <div class="spacing-bar" style="width: 128px;" data-px="128px"></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="lotus-ornament">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 50" fill="#d4a012">
+            <!-- Lotus blossom -->
+            <path d="M40 8 Q44 18 40 25 Q36 18 40 8Z" opacity="0.8"/>
+            <path d="M40 25 Q52 18 58 10 Q52 24 44 30Z" opacity="0.65"/>
+            <path d="M40 25 Q28 18 22 10 Q28 24 36 30Z" opacity="0.65"/>
+            <path d="M40 25 Q58 22 65 16 Q56 30 46 33Z" opacity="0.5"/>
+            <path d="M40 25 Q22 22 15 16 Q24 30 34 33Z" opacity="0.5"/>
+            <path d="M28 38 Q34 32 40 38 Q46 32 52 38 Q46 44 40 40 Q34 44 28 38Z" opacity="0.45"/>
+        </svg>
+    </div>
+
+    <!-- ============================================
+         IV. BUTTONS
+         ============================================ -->
+    <section>
+        <span class="section-number">Section IV</span>
+        <h2>Buttons</h2>
+        <p>Buttons in the Thai temple system carry the layered border treatment found in gilded door frames and window surrounds. Multiple concentric outlines create depth, while hover states add the warm glow of candlelight reflecting off beaten gold. Like the gates of a temple compound, they invite passage through clear visual hierarchy.</p>
+
+        <h3>Primary Actions</h3>
+        <div class="button-grid">
+            <button class="btn btn-primary">Enter the Temple</button>
+            <button class="btn btn-primary btn-sm">Offer Merit</button>
+            <button class="btn btn-primary btn-lg">Begin Pilgrimage</button>
+        </div>
+
+        <h3>Secondary Actions</h3>
+        <div class="button-grid">
+            <button class="btn btn-secondary">View Gallery</button>
+            <button class="btn btn-secondary btn-sm">Details</button>
+            <button class="btn btn-secondary btn-lg">Explore the Grounds</button>
+        </div>
+
+        <h3>Gemstone Variants</h3>
+        <div class="button-grid">
+            <button class="btn btn-ruby">Ruby Offering</button>
+            <button class="btn btn-emerald">Emerald Path</button>
+        </div>
+
+        <h3>Disabled State</h3>
+        <div class="button-grid">
+            <button class="btn btn-disabled" disabled>Temple Closed</button>
+            <button class="btn btn-disabled btn-sm" disabled>Unavailable</button>
+        </div>
+    </section>
+
+    <div class="divider">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="#d4a012">
+            <!-- Naga serpent head -->
+            <path d="M20 4 Q24 8 22 14 L20 18 L18 14 Q16 8 20 4Z" opacity="0.8"/>
+            <path d="M20 18 Q26 22 28 30 Q24 26 20 24 Q16 26 12 30 Q14 22 20 18Z" opacity="0.6"/>
+            <circle cx="18" cy="10" r="1.5" fill="#f0c848" opacity="0.7"/>
+            <circle cx="22" cy="10" r="1.5" fill="#f0c848" opacity="0.7"/>
+            <path d="M12 30 Q10 34 8 36 Q12 35 14 32Z" opacity="0.4"/>
+            <path d="M28 30 Q30 34 32 36 Q28 35 26 32Z" opacity="0.4"/>
+        </svg>
+    </div>
+
+    <!-- ============================================
+         V. FORMS
+         ============================================ -->
+    <section>
+        <span class="section-number">Section V</span>
+        <h2>Forms</h2>
+        <p>Form elements are styled as gilded inscription frames. Focus states illuminate the golden border, suggesting the way candlelight catches the edge of a lacquered panel. Labels carry the warm saffron of a monk's guidance -- clear, authoritative, benevolent.</p>
+
+        <div class="form-group">
+            <label for="temple-name">Temple Name</label>
+            <input type="text" id="temple-name" class="form-input" placeholder="e.g., Wat Phra Kaew">
+        </div>
+
+        <div class="form-group">
+            <label for="province">Province</label>
+            <select id="province" class="form-select">
+                <option value="">Select a province...</option>
+                <option value="bangkok">Bangkok</option>
+                <option value="chiang-mai">Chiang Mai</option>
+                <option value="ayutthaya">Ayutthaya</option>
+                <option value="sukhothai">Sukhothai</option>
+                <option value="nakhon-pathom">Nakhon Pathom</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" class="form-input" placeholder="Describe the temple's architectural features, history, and spiritual significance..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Architectural Features</label>
+            <div class="form-check">
+                <input type="checkbox" id="chedi" checked>
+                <label for="chedi">Chedi (stupa)</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="prang">
+                <label for="prang">Prang (Khmer-style tower)</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="viharn" checked>
+                <label for="viharn">Viharn (assembly hall)</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="ubosot">
+                <label for="ubosot">Ubosot (ordination hall)</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Period</label>
+            <div class="form-check">
+                <input type="radio" name="period" id="sukhothai-period" checked>
+                <label for="sukhothai-period">Sukhothai (1238-1438)</label>
+            </div>
+            <div class="form-check">
+                <input type="radio" name="period" id="ayutthaya-period">
+                <label for="ayutthaya-period">Ayutthaya (1351-1767)</label>
+            </div>
+            <div class="form-check">
+                <input type="radio" name="period" id="rattanakosin-period">
+                <label for="rattanakosin-period">Rattanakosin (1782-present)</label>
+            </div>
+        </div>
+    </section>
+
+    <div class="tiered-roof">
+        <div class="tier"></div>
+        <div class="tier"></div>
+        <div class="tier"></div>
+        <div class="tier"></div>
+        <div class="tier"></div>
+    </div>
+
+    <!-- ============================================
+         VI. CARDS
+         ============================================ -->
+    <section>
+        <span class="section-number">Section VI</span>
+        <h2>Cards</h2>
+        <p>Content cards are gilded panels, each a self-contained scene like the mural paintings that line the walls of a temple's inner gallery. The layered border treatment -- outer glow, mid frame, inner line -- mirrors the concentric walls of a temple compound. Hover states lift the card as if raising a votive offering toward the light.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-banner">
+                    <!-- Chedi silhouette -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80" fill="#d4a012">
+                        <path d="M30 0 L33 15 Q33 20 30 22 Q27 20 27 15Z" opacity="0.7"/>
+                        <ellipse cx="30" cy="25" rx="8" ry="4" opacity="0.5"/>
+                        <path d="M22 29 Q22 25 30 22 Q38 25 38 29 L38 50 Q38 55 30 58 Q22 55 22 50Z" opacity="0.5"/>
+                        <rect x="20" y="58" width="20" height="4" rx="1" opacity="0.4"/>
+                        <rect x="17" y="64" width="26" height="4" rx="1" opacity="0.35"/>
+                        <rect x="14" y="70" width="32" height="4" rx="1" opacity="0.3"/>
+                    </svg>
+                </div>
+                <div class="card-header">
+                    <h4>Wat Phra Kaew</h4>
+                </div>
+                <div class="card-body">
+                    <p>The Temple of the Emerald Buddha, regarded as the most sacred Buddhist temple in Thailand. Located within the Grand Palace grounds, it enshrines the Phra Kaew Morakot, a figurine carved from a single block of jade.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-gold">Royal Temple</span>
+                    <span class="type-caption">Bangkok</span>
+                </div>
+            </div>
+
+            <div class="card card-featured">
+                <div class="card-banner">
+                    <!-- Prang silhouette -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80" fill="#d4a012">
+                        <path d="M30 0 L32 8 Q32 10 30 12 Q28 10 28 8Z" opacity="0.8"/>
+                        <path d="M25 12 Q25 10 30 8 Q35 10 35 12 L37 35 Q37 40 30 42 Q23 40 23 35Z" opacity="0.5"/>
+                        <path d="M37 35 Q42 33 44 28" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.4"/>
+                        <path d="M23 35 Q18 33 16 28" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.4"/>
+                        <rect x="20" y="42" width="20" height="6" rx="1" opacity="0.4"/>
+                        <path d="M18 48 L42 48 L40 65 Q40 70 30 72 Q20 70 20 65Z" opacity="0.35"/>
+                        <rect x="16" y="72" width="28" height="4" rx="1" opacity="0.3"/>
+                    </svg>
+                </div>
+                <div class="card-header">
+                    <h4>Wat Arun</h4>
+                </div>
+                <div class="card-body">
+                    <p>The Temple of Dawn rises beside the Chao Phraya River, its central prang encrusted with thousands of pieces of Chinese porcelain and colored glass that catch the first light. Its silhouette is among the most recognized in Southeast Asia.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-saffron">Iconic Landmark</span>
+                    <span class="type-caption">Thonburi</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4>Thai Silk Traditions</h4>
+                </div>
+                <div class="card-body">
+                    <p>Thai silk weaving is an art form inseparable from temple culture. The iridescent shot-silk fabrics, with warp and weft in contrasting colors, echo the shimmering quality of glass mosaic inlay. Patterns often derive from the same flame-like kranok motifs found on temple walls.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-ruby">Heritage Craft</span>
+                    <span class="type-caption">Jim Thompson</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="naga-border"></div>
+
+    <!-- ============================================
+         VII. ALERTS & BADGES
+         ============================================ -->
+    <section>
+        <span class="section-number">Section VII</span>
+        <h2>Alerts &amp; Badges</h2>
+        <p>Alert components use the left-border idiom drawn from gilded manuscript illumination, where a vertical stripe of gold marks the beginning of a sacred passage. Each gemstone color carries its traditional meaning: gold for wisdom, ruby for warning, emerald for prosperity, saffron for spiritual counsel.</p>
+
+        <h3>Alerts</h3>
+
+        <div class="alert alert-gold">
+            <span class="alert-title">Golden Wisdom</span>
+            The gilded chedi contains relics of great significance. Approach with reverence and mindful attention to the layered symbolism within.
+        </div>
+
+        <div class="alert alert-ruby">
+            <span class="alert-title">Sacred Boundary</span>
+            This area is within the sima boundary stones. Proper attire is required -- shoulders and knees must be covered, as is customary in all Thai temples.
+        </div>
+
+        <div class="alert alert-emerald">
+            <span class="alert-title">Merit Earned</span>
+            Your offering has been received. Like the lotus that rises from muddy water to bloom in sunlight, may your generosity bring clarity and peace.
+        </div>
+
+        <div class="alert alert-saffron">
+            <span class="alert-title">Monk's Counsel</span>
+            The morning alms round begins before dawn. Devotees may prepare offerings of rice and food along the designated route within the temple grounds.
+        </div>
+
+        <h3>Badges</h3>
+        <div class="badge-row">
+            <span class="badge badge-gold">Gilded</span>
+            <span class="badge badge-ruby">Ruby</span>
+            <span class="badge badge-emerald">Emerald</span>
+            <span class="badge badge-saffron">Saffron</span>
+            <span class="badge badge-outline">Outlined</span>
+            <span class="badge badge-teak">Teak</span>
+        </div>
+
+        <div style="margin-top: var(--space-5);">
+            <h3>Contextual Badges</h3>
+            <div class="badge-row">
+                <span class="badge badge-gold">Royal First Class</span>
+                <span class="badge badge-emerald">UNESCO Heritage</span>
+                <span class="badge badge-ruby">Active Monastery</span>
+                <span class="badge badge-saffron">Open to Visitors</span>
+                <span class="badge badge-outline">Sukhothai Era</span>
+                <span class="badge badge-teak">Teak Construction</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="#d4a012">
+            <!-- Dharma wheel -->
+            <circle cx="20" cy="20" r="12" fill="none" stroke="#d4a012" stroke-width="1.5" opacity="0.5"/>
+            <circle cx="20" cy="20" r="4" fill="none" stroke="#d4a012" stroke-width="1" opacity="0.6"/>
+            <line x1="20" y1="8" x2="20" y2="32" stroke="#d4a012" stroke-width="1" opacity="0.4"/>
+            <line x1="8" y1="20" x2="32" y2="20" stroke="#d4a012" stroke-width="1" opacity="0.4"/>
+            <line x1="11.5" y1="11.5" x2="28.5" y2="28.5" stroke="#d4a012" stroke-width="1" opacity="0.4"/>
+            <line x1="28.5" y1="11.5" x2="11.5" y2="28.5" stroke="#d4a012" stroke-width="1" opacity="0.4"/>
+        </svg>
+    </div>
+
+    <!-- ============================================
+         VIII. DESIGN PRINCIPLES
+         ============================================ -->
+    <section>
+        <span class="section-number">Section VIII</span>
+        <h2>Design Principles</h2>
+        <p>Four principles guide this design system, each drawn from a fundamental quality of Thai temple architecture. Together they create interfaces that feel both lavishly ornate and spiritually centered -- a digital echo of the extraordinary craftsmanship found at Wat Phra Kaew and the great temples of Southeast Asia.</p>
+
+        <div class="principles-grid">
+            <div class="principle">
+                <div class="principle-icon">
+                    <!-- Sacred harmony: balanced lotus -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#d4a012">
+                        <path d="M32 8 Q36 18 32 26 Q28 18 32 8Z" opacity="0.85"/>
+                        <path d="M32 26 Q44 20 50 12 Q44 28 36 34Z" opacity="0.65"/>
+                        <path d="M32 26 Q20 20 14 12 Q20 28 28 34Z" opacity="0.65"/>
+                        <path d="M32 26 Q48 24 56 18 Q48 34 38 38Z" opacity="0.45"/>
+                        <path d="M32 26 Q16 24 8 18 Q16 34 26 38Z" opacity="0.45"/>
+                        <path d="M22 44 Q27 38 32 44 Q37 38 42 44 Q37 50 32 46 Q27 50 22 44Z" opacity="0.5"/>
+                        <path d="M16 52 Q24 46 32 52 Q40 46 48 52 Q40 58 32 54 Q24 58 16 52Z" opacity="0.35"/>
+                    </svg>
+                </div>
+                <h4>Sacred Harmony</h4>
+                <p>Every element exists in balanced relationship with its neighbors. Like the symmetrical layout of a temple compound -- ubosot at center, chedis at the cardinal points -- our compositions find equilibrium through mindful alignment, consistent spacing, and rhythmic repetition.</p>
+            </div>
+
+            <div class="principle">
+                <div class="principle-icon">
+                    <!-- Layered ornament: concentric borders -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#d4a012">
+                        <rect x="4" y="4" width="56" height="56" stroke-width="2" opacity="0.3"/>
+                        <rect x="10" y="10" width="44" height="44" stroke-width="1.5" opacity="0.4"/>
+                        <rect x="16" y="16" width="32" height="32" stroke-width="1" opacity="0.5"/>
+                        <rect x="22" y="22" width="20" height="20" stroke-width="1" opacity="0.6"/>
+                        <rect x="27" y="27" width="10" height="10" fill="#d4a012" stroke="none" opacity="0.7"/>
+                    </svg>
+                </div>
+                <h4>Layered Ornament</h4>
+                <p>Thai temples are never flat. Surfaces are built up in layers -- base, frame, inner panel, carved relief, gold leaf, mirror inlay. Our design layers borders within borders, gradients within containers, and subtle textures upon backgrounds to create depth that rewards close examination.</p>
+            </div>
+
+            <div class="principle">
+                <div class="principle-icon">
+                    <!-- Gilded splendor: gold shimmer -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#d4a012">
+                        <!-- Star burst pattern -->
+                        <path d="M32 4 L35 24 L32 20 L29 24Z" opacity="0.8"/>
+                        <path d="M32 60 L35 40 L32 44 L29 40Z" opacity="0.8"/>
+                        <path d="M4 32 L24 29 L20 32 L24 35Z" opacity="0.8"/>
+                        <path d="M60 32 L40 29 L44 32 L40 35Z" opacity="0.8"/>
+                        <path d="M12 12 L26 26 L24 24Z" opacity="0.5"/>
+                        <path d="M52 12 L38 26 L40 24Z" opacity="0.5"/>
+                        <path d="M12 52 L26 38 L24 40Z" opacity="0.5"/>
+                        <path d="M52 52 L38 38 L40 40Z" opacity="0.5"/>
+                        <circle cx="32" cy="32" r="6" opacity="0.7"/>
+                        <circle cx="32" cy="32" r="3" fill="#f0c848" opacity="0.9"/>
+                    </svg>
+                </div>
+                <h4>Gilded Splendor</h4>
+                <p>Gold is not mere decoration but a symbol of spiritual radiance. Our palette centers on gold as the primary accent, used with the same reverence as the artisans who apply gold leaf at Wat Phra Kaew -- deliberately, luminously, and in service of something greater than aesthetics alone.</p>
+            </div>
+
+            <div class="principle">
+                <div class="principle-icon">
+                    <!-- Spiritual symmetry: temple floor plan -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#d4a012">
+                        <!-- Central axis -->
+                        <line x1="32" y1="4" x2="32" y2="60" stroke-width="1" opacity="0.3"/>
+                        <line x1="4" y1="32" x2="60" y2="32" stroke-width="1" opacity="0.3"/>
+                        <!-- Temple plan -->
+                        <rect x="24" y="8" width="16" height="24" stroke-width="1.5" opacity="0.6"/>
+                        <rect x="20" y="36" width="24" height="20" stroke-width="1.5" opacity="0.5"/>
+                        <!-- Chofa points -->
+                        <path d="M32 4 L34 8 L30 8Z" fill="#d4a012" stroke="none" opacity="0.7"/>
+                        <!-- Corner chedis -->
+                        <circle cx="12" cy="12" r="4" stroke-width="1" opacity="0.4"/>
+                        <circle cx="52" cy="12" r="4" stroke-width="1" opacity="0.4"/>
+                        <circle cx="12" cy="52" r="4" stroke-width="1" opacity="0.4"/>
+                        <circle cx="52" cy="52" r="4" stroke-width="1" opacity="0.4"/>
+                        <!-- Central point -->
+                        <circle cx="32" cy="32" r="2" fill="#d4a012" stroke="none" opacity="0.8"/>
+                    </svg>
+                </div>
+                <h4>Spiritual Symmetry</h4>
+                <p>Thai temple plans are oriented to the cosmos. The ubosot faces east, toward the rising sun and enlightenment. Our layouts honor this axiality -- centered headings, balanced grids, mirrored ornaments -- creating compositions that feel ordered by something deeper than visual preference.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================
+         FOOTER
+         ============================================ -->
+    <footer>
+        <div class="lotus-ornament">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 50" fill="#d4a012">
+                <path d="M40 8 Q44 18 40 25 Q36 18 40 8Z" opacity="0.8"/>
+                <path d="M40 25 Q52 18 58 10 Q52 24 44 30Z" opacity="0.65"/>
+                <path d="M40 25 Q28 18 22 10 Q28 24 36 30Z" opacity="0.65"/>
+                <path d="M28 38 Q34 32 40 38 Q46 32 52 38 Q46 44 40 40 Q34 44 28 38Z" opacity="0.45"/>
+            </svg>
+        </div>
+
+        <div class="tiered-roof" style="margin-bottom: var(--space-5);">
+            <div class="tier"></div>
+            <div class="tier"></div>
+            <div class="tier"></div>
+        </div>
+
+        <p class="footer-title">Thai Temple Design System</p>
+        <p>Inspired by the gilded architecture of Wat Phra Kaew, the porcelain-encrusted prang of Wat Arun, the sacred jade of the Emerald Buddha, and the flame-like silhouettes of Southeast Asian Buddhist temple art. Built with reverence for the artisans who apply gold leaf, carve teak, and set mirror mosaics in service of the sublime.</p>
+        <p style="margin-top: var(--space-4); font-size: 0.8rem; color: rgba(245, 240, 224, 0.4);">Typefaces: Cinzel Decorative, Cormorant Garamond, Noto Serif &mdash; via Google Fonts</p>
+    </footer>
+
+</div>
+
+</body>
+</html>

@@ -8,13 +8,13 @@ Suggested themes/styles not yet in the collection. Organized by category.
 - [x] Pre-Raphaelite — lush, romantic, medieval revival painting aesthetic
 - [x] Minimalism — formal art movement, extreme reduction, white space
 - [x] Cubism — fragmented geometry, multiple perspectives, Picasso/Braque-inspired
-- [ ] Surrealism — dreamlike distortions, Dali/Magritte-inspired, unexpected juxtapositions
-- [ ] Fauvism — wild, bold, unnatural color, Matisse-inspired
+- [x] Surrealism — dreamlike distortions, Dali/Magritte-inspired, unexpected juxtapositions
+- [x] Fauvism — wild, bold, unnatural color, Matisse-inspired
 
 ## Cultural / Regional
-- [ ] Mayan/Aztec — geometric step patterns, jade/gold/obsidian palette
-- [ ] Thai/Southeast Asian — ornate temple gold, lotus motifs, intricate borders
-- [ ] Ethiopian/Ge'ez — manuscript-inspired, rich earth tones, cross motifs
+- [x] Mayan/Aztec — geometric step patterns, jade/gold/obsidian palette
+- [x] Thai/Southeast Asian — ornate temple gold, lotus motifs, intricate borders
+- [x] Ethiopian/Ge'ez — manuscript-inspired, rich earth tones, cross motifs
 - [ ] Russian Propaganda Poster — bold red/black, heroic figures, stark typography
 - [ ] Indian Rangoli — vibrant symmetrical patterns, festival colors, fine detail
 - [ ] Polynesian/Tapa Cloth — bold geometric bark cloth patterns, earth tones
