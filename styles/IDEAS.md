@@ -43,11 +43,11 @@ Suggested themes/styles not yet in the collection. Organized by category.
 
 ## Genre / Vibe
 - [x] Steampunk — brass gears, Victorian + industrial, riveted metal, aged copper
-- [ ] Witchcore — dark occult aesthetic, herbs, candles, moon phases, aged paper
-- [ ] Outrun — sunset gradients, palm silhouettes, chrome grid, 80s driving aesthetic
-- [ ] Cassette Futurism — Alien/2001-era analog sci-fi, CRT screens, chunky switches
-- [ ] Dieselpunk — 1930s-40s industrial futurism, riveted steel, propeller-age machinery
-- [ ] Cozy Game UI — Stardew Valley / Animal Crossing warmth, soft pixels, pastel palette
+- [x] Witchcore — dark occult aesthetic, herbs, candles, moon phases, aged paper
+- [x] Outrun — sunset gradients, palm silhouettes, chrome grid, 80s driving aesthetic
+- [x] Cassette Futurism — Alien/2001-era analog sci-fi, CRT screens, chunky switches
+- [x] Dieselpunk — 1930s-40s industrial futurism, riveted steel, propeller-age machinery
+- [x] Cozy Game UI — Stardew Valley / Animal Crossing warmth, soft pixels, pastel palette
 
 ## Typography-Focused
 - [ ] Blackletter/Fraktur — gothic calligraphy, medieval manuscript, heavy strokes

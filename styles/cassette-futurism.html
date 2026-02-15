@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassette Futurism — HTML Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CASSETTE FUTURISM DESIGN SYSTEM
+           ============================================
+           Analog sci-fi. Nostromo bridge consoles.
+           2001: A Space Odyssey readouts. Alien's
+           MU/TH/UR 6000. Chunky toggle switches on
+           beige plastic housings. Amber phosphor CRT
+           displays behind smoked glass. Reel-to-reel
+           tapes spinning in machine bays. The future
+           as imagined through magnetic tape and
+           cathode rays.
+           ============================================ */
+
+        :root {
+            /* AMBER CRT PHOSPHOR */
+            --amber-bright: #FFB000;
+            --amber-mid: #D49200;
+            --amber-dim: #A06E00;
+            --amber-dark: #6B4A00;
+            --amber-ghost: #3A2800;
+            --amber-faint: #1F1500;
+
+            /* GREEN CRT PHOSPHOR */
+            --green-bright: #33FF33;
+            --green-mid: #00CC00;
+            --green-dim: #009900;
+            --green-dark: #006600;
+
+            /* HOUSING & CHASSIS */
+            --beige-light: #D4C5A0;
+            --beige-mid: #B8A882;
+            --beige-dark: #8C7E64;
+            --cream: #E8DCC8;
+            --plastic-shadow: #6B6150;
+
+            /* SCREEN & PANEL DARKS */
+            --screen-black: #0A0800;
+            --screen-deep: #141000;
+            --screen-surface: #1E1800;
+            --screen-elevated: #282010;
+            --panel-bg: #1A1610;
+            --chassis-dark: #121010;
+
+            /* STATUS INDICATORS */
+            --status-info: #4AADCC;
+            --status-success: #33FF33;
+            --status-warning: #FFB000;
+            --status-error: #FF3B30;
+
+            /* INDICATOR LIGHTS */
+            --led-red: #FF2D20;
+            --led-green: #33FF33;
+            --led-amber: #FFB000;
+            --led-off: #332820;
+
+            /* TYPOGRAPHY */
+            --font-display: 'VT323', monospace;
+            --font-mono: 'Share Tech Mono', monospace;
+            --font-body: 'IBM Plex Mono', monospace;
+
+            /* SPACING SCALE (4px base) */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --space-3xl: 64px;
+
+            /* GLOW EFFECTS */
+            --glow-amber: 0 0 6px var(--amber-bright), 0 0 14px var(--amber-dim);
+            --glow-amber-strong: 0 0 8px var(--amber-bright), 0 0 20px var(--amber-mid), 0 0 40px var(--amber-dark);
+            --glow-green: 0 0 6px var(--green-bright), 0 0 14px var(--green-dim);
+            --glow-red: 0 0 6px var(--led-red), 0 0 14px #990000;
+
+            /* BORDER RADIUS */
+            --radius-none: 0;
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-lg: 8px;
+
+            /* TRANSITIONS */
+            --transition-fast: 0.1s ease;
+            --transition-normal: 0.25s ease;
+        }
+
+        /* GLOBAL RESET */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--chassis-dark);
+            color: var(--amber-mid);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           CRT SCANLINE OVERLAY
+           ============================================ */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px
+                );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Screen edge vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 0%,
+                transparent 55%,
+                rgba(10, 8, 0, 0.3) 75%,
+                rgba(10, 8, 0, 0.7) 100%
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes crt-flicker {
+            0%, 100% { opacity: 1; }
+            90% { opacity: 1; }
+            91% { opacity: 0.85; }
+            92% { opacity: 1; }
+            96% { opacity: 0.92; }
+            97% { opacity: 1; }
+        }
+
+        @keyframes blink-cursor {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes led-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes tape-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes glow-breathe {
+            0%, 100% { text-shadow: 0 0 4px var(--amber-bright), 0 0 10px var(--amber-dim); }
+            50% { text-shadow: 0 0 8px var(--amber-bright), 0 0 20px var(--amber-mid), 0 0 35px var(--amber-dark); }
+        }
+
+        /* ============================================
+           MAIN CONTAINER
+           ============================================ */
+        .console-housing {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+            animation: crt-flicker 12s infinite;
+        }
+
+        /* ============================================
+           HEADER — COMPUTER TERMINAL BOOT
+           ============================================ */
+        header {
+            background: var(--panel-bg);
+            border: 3px solid var(--beige-dark);
+            border-top: 6px solid var(--beige-mid);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-2xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top bezel indicator lights */
+        header::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: var(--space-lg);
+            width: 10px;
+            height: 10px;
+            background: var(--led-red);
+            border-radius: 50%;
+            box-shadow: var(--glow-red),
+                         28px 0 0 0 var(--led-amber),
+                         28px 0 6px 0 var(--amber-dark),
+                         56px 0 0 0 var(--led-green),
+                         56px 0 6px 0 var(--green-dark);
+            animation: led-pulse 2s infinite;
+        }
+
+        /* Recessed screen area */
+        .screen-inset {
+            background: var(--screen-black);
+            border: 2px solid var(--amber-ghost);
+            padding: var(--space-xl);
+            box-shadow: inset 0 0 40px rgba(255, 176, 0, 0.05);
+        }
+
+        .header-system-id {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-sm);
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: 52px;
+            color: var(--amber-bright);
+            text-shadow: var(--glow-amber-strong);
+            letter-spacing: 6px;
+            line-height: 1;
+            margin-bottom: var(--space-sm);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--amber-dim);
+            letter-spacing: 2px;
+        }
+
+        .header-subtitle::before {
+            content: 'MUTHUR> ';
+            color: var(--amber-bright);
+        }
+
+        .header-subtitle::after {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--amber-bright);
+            vertical-align: middle;
+            margin-left: 4px;
+            animation: blink-cursor 1s infinite;
+            box-shadow: var(--glow-amber);
+        }
+
+        .header-meta {
+            margin-top: var(--space-lg);
+            display: flex;
+            gap: var(--space-xl);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            letter-spacing: 1px;
+        }
+
+        /* ============================================
+           SECTION PANELS — EQUIPMENT BAY STYLE
+           ============================================ */
+        .section {
+            margin-bottom: var(--space-3xl);
+            position: relative;
+        }
+
+        /* Beige plastic housing frame */
+        .section-housing {
+            background: var(--panel-bg);
+            border: 3px solid var(--beige-dark);
+            border-top: 5px solid var(--beige-mid);
+            overflow: hidden;
+        }
+
+        /* Section label strip (embossed label tape) */
+        .section-label {
+            background: linear-gradient(180deg, var(--beige-mid) 0%, var(--beige-dark) 100%);
+            padding: var(--space-sm) var(--space-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 14px;
+            color: var(--chassis-dark);
+            background: var(--cream);
+            padding: 2px 8px;
+            letter-spacing: 2px;
+            border: 1px solid var(--beige-dark);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            color: var(--chassis-dark);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+
+        .section-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--led-green);
+            border-radius: 50%;
+            box-shadow: var(--glow-green);
+            animation: led-pulse 1.5s infinite;
+        }
+
+        /* Screen content area */
+        .section-screen {
+            background: var(--screen-black);
+            border: 2px solid var(--amber-ghost);
+            margin: var(--space-md);
+            padding: var(--space-xl);
+            box-shadow: inset 0 0 30px rgba(255, 176, 0, 0.03);
+            position: relative;
+        }
+
+        .section-description {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--amber-dark);
+            letter-spacing: 1px;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--amber-ghost);
+        }
+
+        .section-description::before {
+            content: 'SYS> ';
+            color: var(--amber-dim);
+        }
+
+        /* ============================================
+           01. COLOR PALETTE
+           ============================================ */
+        .color-group {
+            margin-bottom: var(--space-xl);
+        }
+
+        .color-group-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--amber-bright);
+            text-shadow: 0 0 4px var(--amber-dark);
+            margin-bottom: var(--space-md);
+            letter-spacing: 2px;
+        }
+
+        .color-group-title::before {
+            content: '/// ';
+            color: var(--amber-dim);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-sm);
+        }
+
+        .color-swatch {
+            background: var(--screen-deep);
+            border: 1px solid var(--amber-ghost);
+            overflow: hidden;
+        }
+
+        .color-preview {
+            height: 70px;
+            position: relative;
+        }
+
+        .color-preview.glow {
+            box-shadow: inset 0 0 25px currentColor;
+        }
+
+        .color-info {
+            padding: var(--space-sm);
+            border-top: 1px solid var(--amber-ghost);
+        }
+
+        .color-name {
+            font-family: var(--font-display);
+            font-size: 14px;
+            color: var(--amber-bright);
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+        }
+
+        .color-hex {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dim);
+        }
+
+        /* ============================================
+           02. TYPOGRAPHY
+           ============================================ */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            color: var(--amber-bright);
+            text-shadow: 0 0 4px var(--amber-dark);
+            letter-spacing: 2px;
+            line-height: 1.2;
+            font-weight: normal;
+        }
+
+        h1 { font-size: 48px; text-shadow: var(--glow-amber); }
+        h2 { font-size: 36px; }
+        h3 { font-size: 28px; color: var(--amber-mid); }
+        h4 { font-size: 24px; color: var(--amber-mid); }
+        h5 { font-size: 20px; color: var(--amber-dim); }
+        h6 { font-size: 16px; color: var(--amber-dim); text-transform: uppercase; }
+
+        p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--amber-mid);
+            margin-bottom: var(--space-md);
+            line-height: 1.7;
+        }
+
+        a {
+            color: var(--amber-bright);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--amber-dim);
+            transition: var(--transition-fast);
+        }
+
+        a:hover {
+            text-shadow: var(--glow-amber);
+            border-bottom-style: solid;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            background: var(--screen-surface);
+            padding: 2px 6px;
+            border: 1px solid var(--amber-ghost);
+            color: var(--amber-bright);
+            font-size: 13px;
+        }
+
+        pre {
+            font-family: var(--font-mono);
+            background: var(--screen-black);
+            border: 1px solid var(--amber-dark);
+            padding: var(--space-md);
+            overflow-x: auto;
+            margin-bottom: var(--space-md);
+            font-size: 13px;
+            color: var(--amber-mid);
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .type-sample {
+            padding: var(--space-md);
+            border-left: 2px solid var(--amber-dark);
+            margin-bottom: var(--space-md);
+        }
+
+        .type-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--amber-dark);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-xs);
+        }
+
+        .text-bright {
+            color: var(--amber-bright);
+            text-shadow: var(--glow-amber);
+        }
+
+        .text-dim {
+            color: var(--amber-ghost);
+        }
+
+        .text-green {
+            color: var(--green-bright);
+            text-shadow: var(--glow-green);
+        }
+
+        /* ============================================
+           03. SPACING SCALE
+           ============================================ */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .spacing-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--amber-dim);
+            width: 120px;
+            flex-shrink: 0;
+            letter-spacing: 1px;
+        }
+
+        .spacing-bar {
+            height: 16px;
+            background: linear-gradient(90deg, var(--amber-bright), var(--amber-dim));
+            border: 1px solid var(--amber-dark);
+            box-shadow: 0 0 4px var(--amber-dark);
+            position: relative;
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3px,
+                rgba(0, 0, 0, 0.2) 3px,
+                rgba(0, 0, 0, 0.2) 4px
+            );
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            width: 40px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* ============================================
+           04. BUTTONS — MECHANICAL SWITCHES
+           ============================================ */
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+            align-items: center;
+        }
+
+        .button-row-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            width: 100%;
+            margin-bottom: var(--space-xs);
+            padding-bottom: var(--space-xs);
+            border-bottom: 1px solid var(--amber-ghost);
+        }
+
+        .btn {
+            font-family: var(--font-display);
+            font-size: 18px;
+            padding: var(--space-sm) var(--space-lg);
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            transition: var(--transition-fast);
+            outline: none;
+        }
+
+        /* Primary — Amber backlit key */
+        .btn-primary {
+            background: var(--amber-bright);
+            color: var(--screen-black);
+            border: 2px solid var(--amber-mid);
+            box-shadow: 0 3px 0 var(--amber-dark),
+                        0 4px 8px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #FFC233;
+            box-shadow: 0 3px 0 var(--amber-dark),
+                        0 4px 8px rgba(0, 0, 0, 0.4),
+                        var(--glow-amber),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 1px 0 var(--amber-dark),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.3);
+            transform: translateY(2px);
+        }
+
+        /* Secondary — Beige plastic key */
+        .btn-secondary {
+            background: linear-gradient(180deg, var(--beige-light) 0%, var(--beige-mid) 100%);
+            color: var(--chassis-dark);
+            border: 2px solid var(--beige-dark);
+            box-shadow: 0 3px 0 var(--plastic-shadow),
+                        0 4px 8px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(180deg, var(--cream) 0%, var(--beige-light) 100%);
+        }
+
+        .btn-secondary:active {
+            box-shadow: 0 1px 0 var(--plastic-shadow),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(2px);
+        }
+
+        /* Ghost — Outline on dark panel */
+        .btn-ghost {
+            background: transparent;
+            color: var(--amber-mid);
+            border: 1px solid var(--amber-dark);
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--amber-bright);
+            color: var(--amber-bright);
+            text-shadow: var(--glow-amber);
+        }
+
+        .btn-ghost:active {
+            background: var(--amber-ghost);
+        }
+
+        /* Danger — Red indicator */
+        .btn-danger {
+            background: var(--led-red);
+            color: #FFFFFF;
+            border: 2px solid #CC2218;
+            box-shadow: 0 3px 0 #881810,
+                        0 4px 8px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 3px 0 #881810,
+                        var(--glow-red),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger:active {
+            box-shadow: 0 1px 0 #881810,
+                        inset 0 1px 2px rgba(0, 0, 0, 0.3);
+            transform: translateY(2px);
+        }
+
+        /* Disabled — Dead switch */
+        .btn:disabled, .btn[disabled] {
+            background: var(--screen-elevated);
+            color: var(--amber-ghost);
+            border: 2px solid var(--screen-surface);
+            box-shadow: none;
+            cursor: not-allowed;
+            text-shadow: none;
+        }
+
+        .btn:disabled:hover, .btn[disabled]:hover {
+            background: var(--screen-elevated);
+            color: var(--amber-ghost);
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Button sizes */
+        .btn-sm {
+            font-size: 14px;
+            padding: var(--space-xs) var(--space-md);
+        }
+
+        .btn-lg {
+            font-size: 24px;
+            padding: var(--space-md) var(--space-xl);
+        }
+
+        /* ============================================
+           05. FORM ELEMENTS — CONSOLE INPUTS
+           ============================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-xl);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 16px;
+            color: var(--amber-mid);
+            margin-bottom: var(--space-sm);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .form-label::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--led-amber);
+            border-radius: 50%;
+            margin-right: var(--space-sm);
+            box-shadow: 0 0 3px var(--amber-dim);
+            vertical-align: middle;
+        }
+
+        /* Text inputs — CRT input field */
+        .form-input {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--screen-black);
+            border: 1px solid var(--amber-dark);
+            color: var(--amber-bright);
+            caret-color: var(--amber-bright);
+            transition: var(--transition-fast);
+        }
+
+        .form-input::placeholder {
+            color: var(--amber-ghost);
+            font-style: italic;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--amber-bright);
+            box-shadow: var(--glow-amber), inset 0 0 15px rgba(255, 176, 0, 0.03);
+        }
+
+        .form-input:disabled {
+            background: var(--screen-surface);
+            color: var(--amber-ghost);
+            border-color: var(--screen-elevated);
+            cursor: not-allowed;
+        }
+
+        .form-help {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            margin-top: var(--space-xs);
+            letter-spacing: 1px;
+        }
+
+        /* Textarea */
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Select */
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFB000' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        /* Checkbox — toggle indicator */
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--amber-mid);
+            margin-bottom: var(--space-sm);
+        }
+
+        .form-checkbox input { display: none; }
+
+        .checkbox-mark {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--amber-dark);
+            background: var(--screen-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 16px;
+            color: var(--amber-bright);
+            transition: var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .form-checkbox input:checked + .checkbox-mark {
+            border-color: var(--amber-bright);
+            box-shadow: var(--glow-amber);
+        }
+
+        .form-checkbox input:checked + .checkbox-mark::after {
+            content: 'X';
+            text-shadow: var(--glow-amber);
+        }
+
+        .form-checkbox:hover .checkbox-mark {
+            border-color: var(--amber-mid);
+        }
+
+        /* Radio — circular indicator light */
+        .form-radio {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--amber-mid);
+            margin-bottom: var(--space-sm);
+        }
+
+        .form-radio input { display: none; }
+
+        .radio-mark {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--amber-dark);
+            border-radius: 50%;
+            background: var(--screen-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .form-radio input:checked + .radio-mark {
+            border-color: var(--amber-bright);
+            box-shadow: var(--glow-amber);
+        }
+
+        .form-radio input:checked + .radio-mark::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--amber-bright);
+            border-radius: 50%;
+            box-shadow: var(--glow-amber);
+        }
+
+        .form-radio:hover .radio-mark {
+            border-color: var(--amber-mid);
+        }
+
+        /* ============================================
+           06. CARDS — DATA DISPLAY MODULES
+           ============================================ */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 2px solid var(--beige-dark);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top bezel with embossed label */
+        .card-bezel {
+            background: linear-gradient(180deg, var(--beige-mid) 0%, var(--beige-dark) 100%);
+            padding: var(--space-xs) var(--space-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-bezel-title {
+            font-family: var(--font-display);
+            font-size: 14px;
+            color: var(--chassis-dark);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .card-bezel-led {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--led-green);
+            box-shadow: var(--glow-green);
+            animation: led-pulse 2s infinite;
+        }
+
+        .card-bezel-led.amber {
+            background: var(--led-amber);
+            box-shadow: 0 0 4px var(--amber-dim);
+        }
+
+        .card-bezel-led.red {
+            background: var(--led-red);
+            box-shadow: var(--glow-red);
+        }
+
+        .card-bezel-led.off {
+            background: var(--led-off);
+            box-shadow: none;
+            animation: none;
+        }
+
+        /* Card screen area */
+        .card-screen {
+            background: var(--screen-black);
+            border: 2px solid var(--amber-ghost);
+            margin: var(--space-sm);
+            padding: var(--space-md);
+            box-shadow: inset 0 0 20px rgba(255, 176, 0, 0.02);
+        }
+
+        .card-screen-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--amber-bright);
+            text-shadow: 0 0 4px var(--amber-dark);
+            letter-spacing: 2px;
+            margin-bottom: var(--space-sm);
+        }
+
+        .card-screen p {
+            font-size: 12px;
+            color: var(--amber-dim);
+            line-height: 1.6;
+        }
+
+        .card-actions {
+            padding: var(--space-sm);
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        /* Card variant: green phosphor */
+        .card-green .card-screen {
+            border-color: var(--green-dark);
+            box-shadow: inset 0 0 20px rgba(51, 255, 51, 0.02);
+        }
+
+        .card-green .card-screen-title {
+            color: var(--green-bright);
+            text-shadow: var(--glow-green);
+        }
+
+        .card-green .card-screen p {
+            color: var(--green-dim);
+        }
+
+        /* Card variant: highlighted/priority */
+        .card-priority {
+            border-color: var(--amber-mid);
+            box-shadow: 0 0 10px var(--amber-ghost);
+        }
+
+        .card-priority .card-bezel {
+            background: linear-gradient(180deg, var(--amber-dim) 0%, var(--amber-dark) 100%);
+        }
+
+        .card-priority .card-bezel-title {
+            color: var(--cream);
+        }
+
+        /* ============================================
+           07. ALERTS — SYSTEM NOTIFICATIONS
+           ============================================ */
+        .alert-stack {
+            display: grid;
+            gap: var(--space-md);
+        }
+
+        .alert {
+            padding: var(--space-md);
+            border-left: 4px solid var(--amber-dark);
+            background: var(--screen-deep);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+            position: relative;
+        }
+
+        .alert-badge {
+            font-family: var(--font-display);
+            font-size: 12px;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-xs);
+        }
+
+        .alert-text {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        /* Info */
+        .alert-info {
+            border-left-color: var(--status-info);
+        }
+
+        .alert-info .alert-badge {
+            background: var(--status-info);
+            color: var(--screen-black);
+        }
+
+        .alert-info .alert-title {
+            color: var(--status-info);
+        }
+
+        .alert-info .alert-text {
+            color: #3D8FA8;
+        }
+
+        /* Success */
+        .alert-success {
+            border-left-color: var(--status-success);
+        }
+
+        .alert-success .alert-badge {
+            background: var(--status-success);
+            color: var(--screen-black);
+        }
+
+        .alert-success .alert-title {
+            color: var(--status-success);
+            text-shadow: var(--glow-green);
+        }
+
+        .alert-success .alert-text {
+            color: var(--green-dim);
+        }
+
+        /* Warning */
+        .alert-warning {
+            border-left-color: var(--status-warning);
+        }
+
+        .alert-warning .alert-badge {
+            background: var(--status-warning);
+            color: var(--screen-black);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--status-warning);
+            text-shadow: 0 0 4px var(--amber-dark);
+        }
+
+        .alert-warning .alert-text {
+            color: var(--amber-dim);
+        }
+
+        /* Error */
+        .alert-error {
+            border-left-color: var(--status-error);
+        }
+
+        .alert-error .alert-badge {
+            background: var(--status-error);
+            color: #FFFFFF;
+        }
+
+        .alert-error .alert-title {
+            color: var(--status-error);
+            text-shadow: var(--glow-red);
+        }
+
+        .alert-error .alert-text {
+            color: #B83028;
+        }
+
+        /* System broadcast */
+        .alert-system {
+            background: var(--screen-black);
+            border-left: none;
+            border: 2px solid var(--amber-bright);
+            text-align: center;
+            justify-content: center;
+            animation: glow-breathe 3s infinite;
+        }
+
+        .alert-system .alert-content {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--amber-bright);
+            letter-spacing: 3px;
+        }
+
+        /* ============================================
+           TAPE REEL DECORATION
+           ============================================ */
+        .tape-reel {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 3px solid var(--beige-dark);
+            border-radius: 50%;
+            position: relative;
+            vertical-align: middle;
+        }
+
+        .tape-reel::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--beige-mid);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .tape-reel.spinning::before {
+            border: 2px dashed var(--beige-dark);
+            background: transparent;
+            animation: tape-spin 2s linear infinite;
+        }
+
+        /* ============================================
+           READOUT DISPLAY
+           ============================================ */
+        .readout {
+            font-family: var(--font-display);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-xs) var(--space-md);
+            background: var(--screen-black);
+            border: 1px solid var(--amber-dark);
+        }
+
+        .readout-label {
+            font-size: 12px;
+            color: var(--amber-dim);
+            letter-spacing: 1px;
+        }
+
+        .readout-value {
+            font-size: 20px;
+            color: var(--amber-bright);
+            text-shadow: var(--glow-amber);
+            letter-spacing: 3px;
+        }
+
+        .readout-value.green {
+            color: var(--green-bright);
+            text-shadow: var(--glow-green);
+        }
+
+        /* ============================================
+           UTILITY CLASSES
+           ============================================ */
+        .mt-sm { margin-top: var(--space-sm); }
+        .mt-md { margin-top: var(--space-md); }
+        .mt-lg { margin-top: var(--space-lg); }
+        .mb-sm { margin-bottom: var(--space-sm); }
+        .mb-md { margin-bottom: var(--space-md); }
+        .mb-lg { margin-bottom: var(--space-lg); }
+        .mb-xl { margin-bottom: var(--space-xl); }
+
+        .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .gap-sm { gap: var(--space-sm); }
+        .gap-md { gap: var(--space-md); }
+        .items-center { align-items: center; }
+
+        /* ============================================
+           DIVIDERS
+           ============================================ */
+        .divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--amber-dark), transparent);
+            margin: var(--space-lg) 0;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        footer {
+            background: var(--panel-bg);
+            border: 3px solid var(--beige-dark);
+            border-top: 5px solid var(--beige-mid);
+            padding: var(--space-lg);
+            text-align: center;
+        }
+
+        .footer-readouts {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+        }
+
+        .footer-text {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--amber-dark);
+            letter-spacing: 2px;
+        }
+
+        .footer-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            color: var(--amber-mid);
+            letter-spacing: 3px;
+            margin-bottom: var(--space-sm);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .console-housing {
+                padding: var(--space-md);
+            }
+
+            .header-title {
+                font-size: 32px;
+                letter-spacing: 3px;
+            }
+
+            .header-meta {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .section-label {
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .section-screen {
+                margin: var(--space-sm);
+                padding: var(--space-md);
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-row {
+                gap: var(--space-sm);
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: var(--space-xs) var(--space-md);
+            }
+
+            .btn-lg {
+                font-size: 18px;
+                padding: var(--space-sm) var(--space-lg);
+            }
+
+            .spacing-label {
+                width: 80px;
+                font-size: 10px;
+            }
+
+            h1 { font-size: 32px; }
+            h2 { font-size: 28px; }
+            h3 { font-size: 22px; }
+
+            .footer-readouts {
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-md);
+            }
+
+            .readout {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="console-housing">
+
+        <!-- ============================================
+             HEADER
+             ============================================ -->
+        <header>
+            <div class="screen-inset">
+                <div class="header-system-id">Weyland-Yutani Corp. // Interface Design Division</div>
+                <h1 class="header-title">CASSETTE FUTURISM</h1>
+                <p class="header-subtitle">Analog Sci-Fi Design System v2.1</p>
+                <div class="header-meta">
+                    <span>DATE: 2122.06.12</span>
+                    <span>SYSTEM: MU/TH/UR 6000</span>
+                    <span>STATUS: NOMINAL</span>
+                    <span>CREW: 7</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ============================================
+             01. COLOR PALETTE
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">01</span>
+                    <span class="section-title">Color Palette</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Phosphor emission spectra and housing material tones</p>
+
+                    <div class="color-group">
+                        <h4 class="color-group-title">Amber CRT Phosphor</h4>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--amber-bright); color: var(--amber-bright);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Bright</div>
+                                    <div class="color-hex">#FFB000</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--amber-mid); color: var(--amber-mid);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Mid</div>
+                                    <div class="color-hex">#D49200</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--amber-dim);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Dim</div>
+                                    <div class="color-hex">#A06E00</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--amber-dark);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Dark</div>
+                                    <div class="color-hex">#6B4A00</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--amber-ghost);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Ghost</div>
+                                    <div class="color-hex">#3A2800</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--amber-faint);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Amber Faint</div>
+                                    <div class="color-hex">#1F1500</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="color-group">
+                        <h4 class="color-group-title">Green CRT Phosphor</h4>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--green-bright); color: var(--green-bright);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Green Bright</div>
+                                    <div class="color-hex">#33FF33</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--green-mid); color: var(--green-mid);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Green Mid</div>
+                                    <div class="color-hex">#00CC00</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--green-dim);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Green Dim</div>
+                                    <div class="color-hex">#009900</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--green-dark);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Green Dark</div>
+                                    <div class="color-hex">#006600</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="color-group">
+                        <h4 class="color-group-title">Housing & Chassis</h4>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--cream);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Cream</div>
+                                    <div class="color-hex">#E8DCC8</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--beige-light);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Beige Light</div>
+                                    <div class="color-hex">#D4C5A0</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--beige-mid);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Beige Mid</div>
+                                    <div class="color-hex">#B8A882</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--beige-dark);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Beige Dark</div>
+                                    <div class="color-hex">#8C7E64</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--plastic-shadow);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Plastic Shadow</div>
+                                    <div class="color-hex">#6B6150</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview" style="background: var(--chassis-dark); border: 1px solid var(--amber-ghost);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Chassis Dark</div>
+                                    <div class="color-hex">#121010</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="color-group">
+                        <h4 class="color-group-title">Status Indicators</h4>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--status-info); color: var(--status-info);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Info</div>
+                                    <div class="color-hex">#4AADCC</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--status-success); color: var(--status-success);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Success</div>
+                                    <div class="color-hex">#33FF33</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--status-warning); color: var(--status-warning);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Warning</div>
+                                    <div class="color-hex">#FFB000</div>
+                                </div>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-preview glow" style="background: var(--status-error); color: var(--status-error);"></div>
+                                <div class="color-info">
+                                    <div class="color-name">Error</div>
+                                    <div class="color-hex">#FF3B30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             02. TYPOGRAPHY
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">02</span>
+                    <span class="section-title">Typography</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Font rendering across CRT display subsystems</p>
+
+                    <div class="type-sample">
+                        <div class="type-label">Display // VT323 48px</div>
+                        <h1>NOSTROMO UPLINK</h1>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Heading 2 // VT323 36px</div>
+                        <h2>SPECIAL ORDER 937</h2>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Heading 3 // VT323 28px</div>
+                        <h3>Crew Priority Override</h3>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Heading 4 // VT323 24px</div>
+                        <h4>Navigation Subsystem</h4>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Heading 5 // VT323 20px</div>
+                        <h5>Atmospheric Processor Log</h5>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Heading 6 // VT323 16px</div>
+                        <h6>DIAGNOSTIC OUTPUT</h6>
+                    </div>
+
+                    <hr class="divider">
+
+                    <div class="type-sample">
+                        <div class="type-label">Body // IBM Plex Mono 14px</div>
+                        <p>The bridge console hums with the low-frequency drone of cooling fans and magnetic tape drives. Amber characters flicker across recessed CRT displays, their phosphor glow reflecting off beige plastic housings worn smooth by years of deep-space transit. Every surface is a tactile interface: chunky rocker switches, heavy-throw toggles, and backlit membrane keys designed for operation in pressure suits with thick gloves.</p>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Monospace // Share Tech Mono 14px</div>
+                        <p style="font-family: var(--font-mono);">INTERFACE 2037 READY> _<br>TRACKING SIGNAL: LV-426<br>DISTANCE: 39.2 LIGHT YEARS<br>ETA: 10 MONTHS 12 DAYS</p>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Code Block</div>
+                        <pre><code>MUTHUR> QUERY CREW_STATUS
+RESULT: 7 ACTIVE / 0 HYPERSLEEP
+MUTHUR> QUERY CARGO_HOLD
+RESULT: MINERAL ORE / 20M TONS
+MUTHUR> SET COURSE LV-426
+COURSE CONFIRMED. ADJUSTING HEADING.</code></pre>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="type-label">Inline Elements</div>
+                        <p>Access the <a href="#">navigation database</a> or review <code>FLIGHT.LOG</code> for trajectory data. <span class="text-bright">Critical readouts</span> are rendered at full phosphor brightness while <span class="text-dim">secondary data</span> fades to conserve CRT lifespan. <span class="text-green">Green phosphor</span> is used for secondary displays.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             03. SPACING
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">03</span>
+                    <span class="section-title">Spacing</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">4px base unit spacing scale for interface layout</p>
+
+                    <div class="spacing-demo">
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-xs</span>
+                            <div class="spacing-bar" style="width: 4px;"></div>
+                            <span class="spacing-value">4px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-sm</span>
+                            <div class="spacing-bar" style="width: 8px;"></div>
+                            <span class="spacing-value">8px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-md</span>
+                            <div class="spacing-bar" style="width: 16px;"></div>
+                            <span class="spacing-value">16px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-lg</span>
+                            <div class="spacing-bar" style="width: 24px;"></div>
+                            <span class="spacing-value">24px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-xl</span>
+                            <div class="spacing-bar" style="width: 32px;"></div>
+                            <span class="spacing-value">32px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-2xl</span>
+                            <div class="spacing-bar" style="width: 48px;"></div>
+                            <span class="spacing-value">48px</span>
+                        </div>
+                        <div class="spacing-row">
+                            <span class="spacing-label">--space-3xl</span>
+                            <div class="spacing-bar" style="width: 64px;"></div>
+                            <span class="spacing-value">64px</span>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <p style="font-size: 12px; color: var(--amber-dark);">Spacing derives from a 4px base grid. Console hardware interfaces use multiples of 4 to ensure alignment with CRT raster lines and physical button pitch on membrane keyboards.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             04. BUTTONS
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">04</span>
+                    <span class="section-title">Buttons</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Mechanical switch and membrane key interface elements</p>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Primary Actions</div>
+                        <button class="btn btn-primary">EXECUTE</button>
+                        <button class="btn btn-primary">CONFIRM</button>
+                        <button class="btn btn-primary">ENGAGE</button>
+                    </div>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Secondary Actions</div>
+                        <button class="btn btn-secondary">STANDBY</button>
+                        <button class="btn btn-secondary">OPTIONS</button>
+                        <button class="btn btn-secondary">REVIEW</button>
+                    </div>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Ghost / Outline</div>
+                        <button class="btn btn-ghost">CANCEL</button>
+                        <button class="btn btn-ghost">BACK</button>
+                        <button class="btn btn-ghost">DISMISS</button>
+                    </div>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Danger / Emergency</div>
+                        <button class="btn btn-danger">ABORT</button>
+                        <button class="btn btn-danger">PURGE</button>
+                        <button class="btn btn-danger">DESTRUCT</button>
+                    </div>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Disabled</div>
+                        <button class="btn" disabled>OFFLINE</button>
+                        <button class="btn btn-primary" disabled>LOCKED</button>
+                        <button class="btn btn-danger" disabled>UNAVAILABLE</button>
+                    </div>
+
+                    <div class="button-row">
+                        <div class="button-row-label">Sizes</div>
+                        <button class="btn btn-primary btn-sm">SMALL</button>
+                        <button class="btn btn-primary">DEFAULT</button>
+                        <button class="btn btn-primary btn-lg">LARGE</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             05. FORMS
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">05</span>
+                    <span class="section-title">Forms</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Console data entry interface elements</p>
+
+                    <div class="form-grid">
+                        <div>
+                            <div class="form-group">
+                                <label class="form-label">Crew ID</label>
+                                <input type="text" class="form-input" placeholder="Enter crew identification...">
+                                <div class="form-help">ALPHANUMERIC / 8 CHARS MAX</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Access Code</label>
+                                <input type="password" class="form-input" placeholder="Enter security clearance...">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Department</label>
+                                <select class="form-input form-select">
+                                    <option>NAVIGATION</option>
+                                    <option>ENGINEERING</option>
+                                    <option>SCIENCE</option>
+                                    <option>MEDICAL</option>
+                                    <option>COMMAND</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Mission Log Entry</label>
+                                <textarea class="form-input form-textarea" placeholder="Record mission log..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Disabled Field</label>
+                                <input type="text" class="form-input" value="SYSTEM LOCKED" disabled>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="form-group">
+                                <label class="form-label">Subsystem Toggle</label>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" checked>
+                                    <span class="checkbox-mark"></span>
+                                    <span>Life Support Active</span>
+                                </label>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" checked>
+                                    <span class="checkbox-mark"></span>
+                                    <span>Navigation Online</span>
+                                </label>
+                                <label class="form-checkbox">
+                                    <input type="checkbox">
+                                    <span class="checkbox-mark"></span>
+                                    <span>Weapons Armed</span>
+                                </label>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" checked>
+                                    <span class="checkbox-mark"></span>
+                                    <span>Comms Relay Open</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Alert Level</label>
+                                <label class="form-radio">
+                                    <input type="radio" name="alert-level" checked>
+                                    <span class="radio-mark"></span>
+                                    <span>Standard</span>
+                                </label>
+                                <label class="form-radio">
+                                    <input type="radio" name="alert-level">
+                                    <span class="radio-mark"></span>
+                                    <span>Yellow Alert</span>
+                                </label>
+                                <label class="form-radio">
+                                    <input type="radio" name="alert-level">
+                                    <span class="radio-mark"></span>
+                                    <span>Red Alert</span>
+                                </label>
+                                <label class="form-radio">
+                                    <input type="radio" name="alert-level">
+                                    <span class="radio-mark"></span>
+                                    <span>Emergency</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Error State</label>
+                                <input type="text" class="form-input" value="INVALID_CLEARANCE" style="border-color: var(--status-error);">
+                                <div class="form-help" style="color: var(--status-error);">ERR: Authentication failed. Contact sysadmin.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             06. CARDS / PANELS
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">06</span>
+                    <span class="section-title">Cards / Panels</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Data display module containers</p>
+
+                    <div class="card-grid">
+                        <!-- Standard card -->
+                        <div class="card">
+                            <div class="card-bezel">
+                                <span class="card-bezel-title">Nav Computer</span>
+                                <span class="card-bezel-led"></span>
+                            </div>
+                            <div class="card-screen">
+                                <div class="card-screen-title">TRAJECTORY PLOT</div>
+                                <p>Current heading: 284.7 mark 12. Velocity: 0.42c relative to Sol. ETA to destination: 10 months, 12 days. Fuel reserves at 78% capacity. All navigation beacons responding.</p>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-primary btn-sm">PLOT</button>
+                                <button class="btn btn-ghost btn-sm">DETAILS</button>
+                            </div>
+                        </div>
+
+                        <!-- Green phosphor card -->
+                        <div class="card card-green">
+                            <div class="card-bezel">
+                                <span class="card-bezel-title">Life Support</span>
+                                <span class="card-bezel-led"></span>
+                            </div>
+                            <div class="card-screen">
+                                <div class="card-screen-title">ATMOSPHERE STATUS</div>
+                                <p>O2: 20.9% nominal. CO2 scrubbers: active. Cabin pressure: 14.7 PSI. Temperature: 22.1C. Humidity: 45%. All environmental parameters within tolerance.</p>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-ghost btn-sm">MONITOR</button>
+                            </div>
+                        </div>
+
+                        <!-- Priority card -->
+                        <div class="card card-priority">
+                            <div class="card-bezel">
+                                <span class="card-bezel-title">Priority Alert</span>
+                                <span class="card-bezel-led red"></span>
+                            </div>
+                            <div class="card-screen">
+                                <div class="card-screen-title">PROXIMITY WARNING</div>
+                                <p>Unidentified signal detected on bearing 159 mark 33. Signal characteristics: non-natural origin. Distance: 1.2 AU. Automated distress beacon pattern confirmed. Company directive requires investigation.</p>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-primary btn-sm">INVESTIGATE</button>
+                                <button class="btn btn-danger btn-sm">OVERRIDE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <!-- Readout strip -->
+                    <div class="flex flex-wrap gap-md items-center" style="justify-content: center;">
+                        <div class="readout">
+                            <span class="readout-label">HULL</span>
+                            <span class="readout-value">098%</span>
+                        </div>
+                        <div class="readout">
+                            <span class="readout-label">FUEL</span>
+                            <span class="readout-value">078%</span>
+                        </div>
+                        <div class="readout">
+                            <span class="readout-label">O2</span>
+                            <span class="readout-value green">20.9</span>
+                        </div>
+                        <div class="readout">
+                            <span class="readout-label">TEMP</span>
+                            <span class="readout-value">22.1C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             07. ALERTS / NOTIFICATIONS
+             ============================================ -->
+        <section class="section">
+            <div class="section-housing">
+                <div class="section-label">
+                    <span class="section-number">07</span>
+                    <span class="section-title">Alerts / Notifications</span>
+                    <span class="section-indicator"></span>
+                </div>
+                <div class="section-screen">
+                    <p class="section-description">Ship-wide notification and warning system output</p>
+
+                    <div class="alert-stack">
+                        <div class="alert alert-info">
+                            <span class="alert-badge">INFO</span>
+                            <div class="alert-content">
+                                <div class="alert-title">COURSE ADJUSTMENT</div>
+                                <p class="alert-text">Automated course correction applied. Heading adjusted by 0.003 degrees to compensate for gravitational drift from nearby stellar body. No crew action required.</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <span class="alert-badge">OK</span>
+                            <div class="alert-content">
+                                <div class="alert-title">HYPERSLEEP CYCLE COMPLETE</div>
+                                <p class="alert-text">All crew members revived successfully. Vital signs nominal across all seven pods. Post-hypersleep medical scan scheduled in 4 hours.</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <span class="alert-badge">WARN</span>
+                            <div class="alert-content">
+                                <div class="alert-title">COOLANT PRESSURE LOW</div>
+                                <p class="alert-text">Reactor coolant loop B pressure has dropped below nominal threshold. Current reading: 12.3 PSI (min: 14.0 PSI). Engineering inspection recommended within 48 hours.</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-error">
+                            <span class="alert-badge">CRIT</span>
+                            <div class="alert-content">
+                                <div class="alert-title">HULL BREACH DETECTED</div>
+                                <p class="alert-text">Micro-fracture detected in cargo bay 3, section 12-Alpha. Atmospheric containment field activated. Immediate EVA repair required. All non-essential personnel: evacuate affected deck.</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-system">
+                            <div class="alert-content">
+                                &gt;&gt;&gt; ATTENTION ALL PERSONNEL: SELF-DESTRUCT SEQUENCE T-MINUS 10:00:00 &lt;&lt;&lt;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             FOOTER
+             ============================================ -->
+        <footer>
+            <div class="footer-readouts">
+                <div class="readout">
+                    <span class="readout-label">SYS</span>
+                    <span class="readout-value green">OK</span>
+                </div>
+                <div class="readout">
+                    <span class="readout-label">NET</span>
+                    <span class="readout-value green">UP</span>
+                </div>
+                <div class="readout">
+                    <span class="readout-label">MEM</span>
+                    <span class="readout-value">64K</span>
+                </div>
+            </div>
+            <div class="footer-title">CASSETTE FUTURISM DESIGN SYSTEM</div>
+            <p class="footer-text">WEYLAND-YUTANI CORP // INTERFACE STANDARDS DIVISION</p>
+            <p class="footer-text" style="margin-top: var(--space-sm);">ANALOG SCI-FI AESTHETIC // CRT PHOSPHOR + BEIGE PLASTIC + CHUNKY SWITCHES</p>
+            <p class="footer-text" style="margin-top: var(--space-sm); color: var(--amber-ghost);">VT323 / SHARE TECH MONO / IBM PLEX MONO</p>
+        </footer>
+
+    </div>
+</body>
+</html>
