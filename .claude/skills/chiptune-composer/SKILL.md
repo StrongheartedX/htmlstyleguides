@@ -45,6 +45,24 @@ Build the song JSON section by section. For each section:
 - **Phrase structure**: Use 4-bar or 8-bar phrases (16 or 32 rows at rpb=4). End phrases with clear cadences.
 - **Dynamic arc**: Build intensity across the song. Use sparser textures for intros and bridges, denser for climaxes.
 
+### Pattern Transition Techniques
+
+Smooth transitions between patterns are critical — abrupt simultaneous channel switches create a jarring "seam" effect. Use these techniques to create musical flow across pattern boundaries:
+
+- **Cross-boundary sustains**: End patterns with notes whose `d` extends past the pattern length. The engine handles this via timed note-off scheduling — a note at row 28 with `d: 8` in a 32-row pattern will sustain 4 rows into the next pattern. Use this on melody or pad channels to glue sections together.
+
+- **Pickup notes / anacrusis**: Place 1-2 melody notes in the last 1-2 rows of the preceding pattern to lead into the downbeat of the next section. This is the most natural transition technique — the listener's ear follows the pickup into the new phrase. Example: in a 32-row pattern, add a note at row 30 or 31 that anticipates the melody of the next pattern.
+
+- **Transition patterns**: Write short 8-16 row bridge patterns (drum fills, bass walk-ups, scalar runs, cymbal rolls) to insert between major sections. These don't need to be unique per transition — a single 8-row fill pattern can be reused at multiple section boundaries.
+
+- **Staggered channel changes**: Use independent per-channel sequencing instead of switching all 4 channels simultaneously. For example, `[5, 3, 3, 3]` keeps bass/drums/harmony on the old pattern while melody switches, then `[5, 5, 5, 5]` on the next row completes the transition. Not every row needs this — reserve it for the biggest section changes (intro→verse, verse→chorus, bridge→final chorus).
+
+- **Harmonic preparation**: In the last 2-4 rows of a pattern, prepare the harmony of the next section. Use dominant→tonic resolution, leading tone movement, or bass walk-ups to the new root. A bass channel walking up chromatically in the last 4 rows (e.g., E→F→F#→G to arrive at G) creates a smooth harmonic bridge.
+
+- **Avoid hard cuts on all channels**: Don't place `n: -1` note-offs on the final row of every channel simultaneously. Instead, let some channels ring through (via cross-boundary `d`) while others cut, creating a staggered fade rather than an abrupt wall of silence.
+
+- **Drum fills at section boundaries**: Replace the last 4-8 rows of a percussion pattern with a fill (rapid snare hits, tom rolls, accelerating hi-hats) to signal an upcoming section change. This is the most universally effective transition — listeners instinctively recognize drum fills as section markers.
+
 ### Pattern & Sequence Math
 
 For a 3-4 minute song:

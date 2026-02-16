@@ -13,6 +13,7 @@
 - **Structure**: Intro (4 bars) → A section (8 bars) → B section (8 bars) → A' with intensification → Bridge → Final A with all channels maxed → Tag ending
 - **Techniques**: Use stacked 4ths and 5ths with tritones for "power chord" feel. Chromatic movement in melody creates "beautiful maliciousness."
 - **Example**: Undertale's Megalovania — D minor, i-iv-v, ostinato-first layering, parallel periods (8-bar question/answer)
+- **Transitions**: Use drum fills (snare rolls, rapid hi-hat) in the last 4 rows before section changes. Bass can walk chromatically to the new root. Stagger channel changes at verse→bridge boundaries — keep drums driving while melody shifts.
 
 ## RPG Boss Battle
 
@@ -26,6 +27,7 @@
 - **Percussion**: Double-kick patterns, snare fills every 4 bars, hi-hat accelerates toward climax
 - **Structure**: Needs more sections than regular battle — 4+ unique patterns minimum. Build in waves of intensity.
 - **Techniques**: Ganondorf's OoT theme uses 23/16 time. FFVI "Dancing Mad" uses mode changes (C# Dorian). Sequence chains: repeat a 2-bar riff at successively lower/higher pitches through the circle of fifths.
+- **Transitions**: Intensifying drum patterns (double-time hi-hat → full fills) at section breaks. Cross-boundary sustains on bass to maintain momentum. Pickup notes on melody before each new wave of intensity.
 
 ## Overworld / Adventure
 
@@ -37,6 +39,7 @@
 - **Percussion**: Moderate — not as driving as battle. Kick on 1, snare on 3, hi-hat swinging eighths.
 - **Structure**: Intro → Theme A (8 bars) → Theme A repeat with ornament → Theme B (contrast, new key) → Theme A return → Bridge → Final statement. ABACBA or AABA.
 - **Techniques**: Kondo uses chromatic passing chords to prevent static harmony. Modal interchange (borrow from parallel minor for color: bVI, bVII). The overworld theme needs to sustain repeated listening — add subtle variations on each repeat.
+- **Transitions**: Pickup notes on melody leading into each new theme section. Stagger bass/melody changes at episode boundaries. Use cross-boundary sustains on harmony pads for continuity.
 
 ## Town / Village
 
@@ -49,6 +52,7 @@
 - **Percussion**: Minimal — light hi-hat taps, gentle kick on downbeats, or no percussion at all
 - **Structure**: ABA or AABB with smooth transitions. Short enough to loop comfortably but varied enough not to grate.
 - **Techniques**: Mitsuda's Chrono Trigger towns use Dorian mode shifts. Use jazz voicings — 7th chords make simple progressions feel sophisticated. Harp-like arpeggiation on the harmony channel.
+- **Transitions**: Gentle ritardando patterns (progressively longer note durations in last 4 rows). Cross-boundary sustains on harmony pads. Avoid drum fills — use melodic pickup notes or arpeggiated lead-ins instead.
 
 ## Dungeon / Cave
 
@@ -60,6 +64,7 @@
 - **Percussion**: Very sparse — occasional low tom or distant snare. Noise channel for ambient texture (dripping, wind).
 - **Structure**: Through-composed or very long loops. Sections blend into each other. "Perpetual development" — transformation without arrival.
 - **Techniques**: Augmented chords for unease. Tritone (the "devil's interval") as a structural device. Leave channels empty for bars at a time — silence is powerful. Use the triangle channel at high octaves for a "flute-like" eerie tone instead of bass.
+- **Transitions**: Common-tone holds — sustain one drone note across pattern boundaries while other channels shift. Fade channels in/out independently (stagger entries). Avoid abrupt section changes — dungeon music should feel like perpetual evolution.
 
 ## Shop / Inn
 
@@ -72,6 +77,7 @@
 - **Percussion**: Light — brushed hi-hat feel, gentle kick
 - **Structure**: Very short — 2-4 unique patterns, heavily reused in sequence. AABB or ABA.
 - **Techniques**: Keep it simple. These tracks serve a functional purpose (brief rest between action). Pentatonic scales are impossible to make sound bad.
+- **Transitions**: Minimal — these are short loops. Use cross-boundary sustains on pads for seamless looping. A gentle bass walk-up in the last 2 rows smooths the loop point.
 
 ## Victory Fanfare
 
@@ -83,6 +89,7 @@
 - **Percussion**: Military-style snare rolls, strong downbeats, cymbal crashes
 - **Structure**: Non-looping or very short loop. Fanfare intro (2-4 bars) → Celebratory section (4-8 bars) → Optional sustained chord ending. Total: 15-30 seconds.
 - **Techniques**: Use square wave at 50% duty for "trumpet" quality. Staccato notes for the fanfare, legato for the celebration.
+- **Transitions**: Fanfares are typically non-looping or short. If looping, use a cymbal roll (rapid noise hits) into the repeat. Cross-boundary sustain on the final chord into the celebratory section.
 
 ## Classical Arrangement
 
@@ -102,6 +109,8 @@ When arranging a known classical piece for 4 channels:
 - **Chopin**: Arpeggiated left-hand patterns on the bass channel (wide-ranging Alberti bass). Ornamental runs on the melody channel.
 - **Debussy**: Parallel motion between channels (planing). Avoid resolving dissonances. Use whole-tone and pentatonic scales. Arpeggiate extended chords across beats.
 
+- **Transitions**: Respect the original piece's phrasing — transitions should occur at natural phrase boundaries. Use cross-boundary sustains for tied notes across bar lines. For arrangements with multiple movements or sections, insert a short 8-row bridge pattern with a ritardando feel (longer note durations). Stagger channel entries when bringing in new voices.
+
 ### Implied Polyphony (Bach Cello Suite Technique)
 A single channel can imply multiple voices by:
 - Alternating between registers (bass note → melody note → bass note)
@@ -119,6 +128,7 @@ A single channel can imply multiple voices by:
 - **Percussion**: Minimal or none. Occasional noise bursts for texture (rain, wind).
 - **Structure**: Through-composed. Evolving without repeating. Use very long patterns (32-64 rows) with sparse events.
 - **Techniques**: Debussy's non-functional harmony — chords don't need to resolve. Pedal points create stability while harmonies drift. Common-tone modulation for seamless key shifts. Wagner held an Eb pedal for 162 bars in Das Rheingold — sustained tension works.
+- **Transitions**: Common-tone holds are essential — always sustain at least one note (usually the drone/pedal) across pattern boundaries. Stagger channel entries heavily — bring in one voice at a time across 2-3 sequence rows. Cross-boundary `d` values on pads and drones. Never cut all channels at once.
 
 ## Synthwave / Neon
 
@@ -130,6 +140,7 @@ A single channel can imply multiple voices by:
 - **Percussion**: Four-on-the-floor kick (every beat). Clap/snare on 2 and 4. Open hi-hat on upbeats. Closed hi-hat on sixteenths.
 - **Structure**: Intro (8 bars, building) → Drop/Main (16 bars) → Breakdown (8 bars, strip layers) → Build (4 bars) → Drop 2 (16 bars with variation) → Outro
 - **Instruments**: Use `sawtooth` with `detuneOsc: true, detuneAmount: 8` for the classic synthwave lead. `sawtooth` with `filterType: "lowpass", filterFreq: 800` for bass.
+- **Transitions**: Use breakdowns and builds — strip layers before drops, then re-add. Drum fills (snare rolls) before drops. Bass sustains across breakdown→build boundaries. Stagger the drop re-entry: kick first, then bass, then lead (across 2-3 sequence rows with independent channel sequencing).
 
 ---
 
