@@ -550,10 +550,13 @@ const enemies = new Pool(
     e.isBoss = isBoss || false;
     e.isElite = false;
     e._dead = false;
-    const hpMult = 1 + gameTime / 120;
-    e.hp = e.maxHp = isBoss ? type.hp * (1 + gameTime / 80) * 1.5 : type.hp * hpMult;
+    // Steeper HP scaling: base 1.3x early, ramps faster over time
+    const hpMult = 1.3 + gameTime / 80 + Math.pow(gameTime / 300, 1.5) * 0.5;
+    e.hp = e.maxHp = isBoss ? type.hp * (1.3 + gameTime / 60) * 1.5 : type.hp * hpMult;
     e.size = type.size;
-    e.speed = type.speed;
+    // Early-game speed boost: enemies are 15% faster in the first 2 minutes
+    const earlySpeedMult = gameTime < 120 ? 1.15 : 1.0;
+    e.speed = type.speed * earlySpeedMult;
     e.xpValue = type.xp;
     e.spawnTime = gameTime;
     e.hitFlash = 0;
@@ -764,7 +767,7 @@ WEAPON_HANDLERS.projectile = function(w, stats) {
     const d = Math.hypot(e.x-player.x, e.y-player.y);
     if(d < minDist) { minDist = d; target = e; }
   }
-  const totalCount = stats.count + (player.permMultiProjectile ? 2 : 0);
+  const totalCount = stats.count + getEffectiveMultiProjectile();
   for(let i = 0; i < totalCount; i++) {
     let angle;
     if(target) {
@@ -777,7 +780,7 @@ WEAPON_HANDLERS.projectile = function(w, stats) {
       Math.cos(angle)*stats.speed, Math.sin(angle)*stats.speed,
       stats.damage, stats.life, 'projectile', w.level
     );
-    if(player.permPiercing) p.pierce += 3;
+    p.pierce += getEffectivePiercing();
   }
 };
 
@@ -1133,7 +1136,7 @@ MOVEMENT_HANDLERS.divebomber = function(e, dt, player) {
     if(ms.timer <= 0) {
       // Impact: spawn AoE damage effect
       const impactRadius = 60 + (e.isElite ? 20 : 0);
-      const impactDmg = (8 + gameTime * 0.04) * (e.isElite ? 1.5 : 1);
+      const impactDmg = (8 + gameTime * 0.04) * (e.isElite ? 1.5 : 1) * getWorldDifficultyMult();
       activeEffects.push({
         type: 'divebomberImpact', x: e.x, y: e.y,
         radius: 0, maxRadius: impactRadius,
@@ -1177,7 +1180,8 @@ const BOSS_ATTACK_HANDLERS = {};
 
 // Expanding damage ring — player must move out
 BOSS_ATTACK_HANDLERS.shockwave = function(boss) {
-  const dmg = 15 + gameTime * 0.05;
+  const powerMult = 1 + getPlayerPowerLevel() * 0.02;
+  const dmg = (15 + gameTime * 0.05) * powerMult;
   activeEffects.push({
     type: 'bossShockwave', x: boss.x, y: boss.y,
     radius: 0, maxRadius: 200 + boss.size,
@@ -1201,7 +1205,8 @@ BOSS_ATTACK_HANDLERS.shockwave = function(boss) {
 // Telegraph line then boss dashes across it
 BOSS_ATTACK_HANDLERS.charge = function(boss) {
   const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-  const dmg = 15 + gameTime * 0.05;
+  const powerMult = 1 + getPlayerPowerLevel() * 0.02;
+  const dmg = (15 + gameTime * 0.05) * powerMult;
   activeEffects.push({
     type: 'bossChargeLine', x: boss.x, y: boss.y, angle: angle,
     range: 400, width: boss.size * 0.8,
@@ -1230,7 +1235,8 @@ BOSS_ATTACK_HANDLERS.summon = function(boss) {
 // Sweeping beam that rotates — must dodge
 BOSS_ATTACK_HANDLERS.beam = function(boss) {
   const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-  const dmg = 15 + gameTime * 0.05;
+  const powerMult = 1 + getPlayerPowerLevel() * 0.02;
+  const dmg = (15 + gameTime * 0.05) * powerMult;
   activeEffects.push({
     type: 'bossSweepBeam', x: boss.x, y: boss.y,
     startAngle: angle - 0.8, angle: angle - 0.8, targetAngle: angle + 0.8,
@@ -1259,6 +1265,32 @@ function updateBossAttacks(dt) {
 }
 
 // ============================================================
+// STAT SOFT CAPS (applied at usage time, not storage time)
+// ============================================================
+const STAT_CAPS = {
+  critChance: 0.60,       // 60% max crit chance
+  lifesteal: 0.25,        // 25% max lifesteal
+  multiProjectile: 3,     // +3 extra projectiles max
+  piercing: 3             // +3 piercing max
+};
+
+function getEffectiveCritChance() {
+  return Math.min(player.permCritChance || 0, STAT_CAPS.critChance);
+}
+
+function getEffectiveLifesteal() {
+  return Math.min(player.permLifesteal || 0, STAT_CAPS.lifesteal);
+}
+
+function getEffectiveMultiProjectile() {
+  return player.permMultiProjectile ? Math.min(2, STAT_CAPS.multiProjectile) : 0;
+}
+
+function getEffectivePiercing() {
+  return player.permPiercing ? Math.min(3, STAT_CAPS.piercing) : 0;
+}
+
+// ============================================================
 // ENEMY / DAMAGE
 // ============================================================
 function damageEnemy(e, dmg) {
@@ -1268,7 +1300,8 @@ function damageEnemy(e, dmg) {
     dmg *= player.permBerserker.mult;
   }
   // Permanent crit chance: crit damage on crit (base 2x, boosted by skill tree)
-  if(player.permCritChance && Math.random() < player.permCritChance) {
+  const effectiveCrit = getEffectiveCritChance();
+  if(effectiveCrit > 0 && Math.random() < effectiveCrit) {
     dmg *= 2 + (player.permCritDamage || 0);
     spawnParticles(e.x, e.y, 4, '#ffff00', 3); // yellow crit flash
   }
@@ -1276,9 +1309,10 @@ function damageEnemy(e, dmg) {
   e.hitFlash = 0.1;
   Audio.hitSound();
   spawnParticles(e.x, e.y, 2, '#ff4444', 2);
-  // Permanent lifesteal: heal % of damage dealt
-  if(player.permLifesteal) {
-    player.hp = Math.min(player.hp + dmg * player.permLifesteal, player.maxHp);
+  // Permanent lifesteal: heal % of damage dealt (soft-capped)
+  const effectiveLifesteal = getEffectiveLifesteal();
+  if(effectiveLifesteal > 0) {
+    player.hp = Math.min(player.hp + dmg * effectiveLifesteal, player.maxHp);
   }
   if(e.hp <= 0) {
     killEnemy(e);
@@ -1325,6 +1359,36 @@ function spawnParticles(x, y, count, color, size) {
 // ============================================================
 // SPAWNING
 // ============================================================
+
+// Cached difficulty values (refreshed once per run at start, and on spawn)
+let _cachedPowerLevel = 0;
+let _cachedWorldDiffMult = 1;
+let _diffCacheDirty = true;
+
+function _refreshDifficultyCache() {
+  const saveData = SaveManager.load();
+  const upgradeCount = Object.keys(saveData.upgrades || {}).length;
+  const skillCount = Object.keys(saveData.skillTree || {}).filter(k => saveData.skillTree[k]).length;
+  const equippedCount = (saveData.equipped || []).length;
+  _cachedPowerLevel = upgradeCount + skillCount + equippedCount;
+  const world = saveData.currentWorld || 0;
+  // Each completed world adds 12% to enemy stats
+  _cachedWorldDiffMult = 1 + world * 0.12;
+  _diffCacheDirty = false;
+}
+
+// Count total permanent upgrades the player owns (for scaling enemies)
+function getPlayerPowerLevel() {
+  if(_diffCacheDirty) _refreshDifficultyCache();
+  return _cachedPowerLevel;
+}
+
+// Get world difficulty multiplier (scales with completed worlds for NG+ feel)
+function getWorldDifficultyMult() {
+  if(_diffCacheDirty) _refreshDifficultyCache();
+  return _cachedWorldDiffMult;
+}
+
 function spawnEnemy() {
   const available = THEME.enemies.filter(e => gameTime >= e.spawnAfter);
   if(available.length === 0) return;
@@ -1334,6 +1398,25 @@ function spawnEnemy() {
   const x = player.x + Math.cos(angle) * dist;
   const y = player.y + Math.sin(angle) * dist;
   const e = enemies.get(x, y, type, false);
+
+  // --- Difficulty scaling ---
+  const powerLevel = getPlayerPowerLevel();
+  const worldMult = getWorldDifficultyMult();
+  // Player power scaling: each upgrade adds 3% to enemy HP
+  const powerHpMult = 1 + powerLevel * 0.03;
+
+  // Apply HP scaling: steeper time curve + player power + world difficulty
+  e.hp *= powerHpMult * worldMult;
+  e.maxHp *= powerHpMult * worldMult;
+
+  // Speed scaling: after 5 minutes, enemies get progressively faster
+  if(gameTime > 300) {
+    const speedBoost = 1 + Math.min(0.4, (gameTime - 300) / 600);
+    e.speed *= speedBoost * worldMult;
+  } else {
+    e.speed *= worldMult;
+  }
+
   // Elite variant: after 3 minutes, increasing chance to spawn as elite
   // Elites have +60% HP, +25% speed, +30% size, and a glow effect
   if(gameTime >= 180) {
@@ -1355,11 +1438,22 @@ function spawnBoss() {
   Audio.bossWarning();
   const angle = Math.random() * Math.PI * 2;
   const dist = Math.max(W, H) * 0.5;
-  enemies.get(
+  const boss = enemies.get(
     player.x + Math.cos(angle)*dist,
     player.y + Math.sin(angle)*dist,
     type, true
   );
+
+  // Boss scaling with player power level and world difficulty
+  const powerLevel = getPlayerPowerLevel();
+  const worldMult = getWorldDifficultyMult();
+  // Boss HP scales with player power (5% per upgrade) and world
+  const bossHpMult = (1 + powerLevel * 0.05) * worldMult;
+  boss.hp *= bossHpMult;
+  boss.maxHp *= bossHpMult;
+  // Boss speed scales more gently (2% per upgrade)
+  boss.speed *= (1 + powerLevel * 0.02) * worldMult;
+
   bossIdx++;
 }
 
@@ -1550,8 +1644,10 @@ function gameLoop(timestamp) {
   // Movement + Dash
   const DASH_SPEED_MULT = 4 * (player.dashDistance || 1);
   const DASH_DURATION = 0.15;
-  const baseDashCooldown = 1.2;
-  const DASH_COOLDOWN = baseDashCooldown * (1 - (player.dashCooldownReduction || 0));
+  const baseDashCooldown = 1.6;
+  // Cap total dash cooldown reduction at 50% from all sources combined
+  const cappedDashReduction = Math.min(player.dashCooldownReduction || 0, 0.50);
+  const DASH_COOLDOWN = baseDashCooldown * (1 - cappedDashReduction);
   const DASH_INVULN = 0.15;
 
   let mx = 0, my = 0;
@@ -1865,7 +1961,8 @@ function gameLoop(timestamp) {
 
     // Hit player
     if(d < e.size + 12 && player.invulnTime <= 0) {
-      const dmg = (e.isBoss ? 15 + gameTime * 0.05 : 5 + gameTime*0.02) * player.defense;
+      const contactWorldMult = getWorldDifficultyMult();
+      const dmg = (e.isBoss ? 15 + gameTime * 0.05 : 5 + gameTime*0.02) * player.defense * contactWorldMult;
       player.hp -= dmg;
       player.invulnTime = 0.5;
       damageFlash = 0.15;
@@ -2526,7 +2623,7 @@ function render(dt) {
   if(player.dashCooldown > 0) {
     ctx.save();
     ctx.translate(W/2, H/2);
-    const cdProgress = 1 - player.dashCooldown / 1.2;
+    const cdProgress = 1 - player.dashCooldown / 1.6;
     ctx.strokeStyle = `rgba(${THEME.effectColors.invuln.rgb},${0.4 * cdProgress})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -2850,7 +2947,7 @@ function startGame() {
   if (skillTree.defense_4) player.permSecondLife = true;
   // Utility branch
   if (skillTree.utility_1) player.dashDistance = (player.dashDistance || 1) * 1.40;
-  if (skillTree.utility_2) player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.30;
+  if (skillTree.utility_2) player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.18;
   if (skillTree.utility_3) player.pickupRadius += 40;
   if (skillTree.utility_4) player.permXpMult = (player.permXpMult || 1) * 1.25;
   // --- End skill tree bonuses ---
@@ -2890,6 +2987,9 @@ function startGame() {
     }
   }
   // --- End equipped loot effects ---
+
+  // Refresh difficulty cache at run start
+  _diffCacheDirty = true;
 
   enemies.releaseAll();
   projectiles.releaseAll();
@@ -2983,7 +3083,7 @@ const SKILL_TREE_DEF = {
     label: 'Utility', color: '#2ecc71', icon: '\u2728',
     nodes: [
       { id: 'utility_1', name: 'Long Dash',       desc: '+40% dash distance' },
-      { id: 'utility_2', name: 'Quick Recovery',   desc: '-30% dash cooldown' },
+      { id: 'utility_2', name: 'Quick Recovery',   desc: '-18% dash cooldown' },
       { id: 'utility_3', name: 'Magnet Range',     desc: '+40 pickup radius' },
       { id: 'utility_4', name: 'XP Multiplier',    desc: '+25% XP from all sources' }
     ]
@@ -3203,6 +3303,7 @@ function pauseUnlockSkill(skillId) {
   }
   saveData.skillTree[skillId] = true;
   SaveManager.save(saveData);
+  _diffCacheDirty = true;
   applySkillToPlayer(skillId);
   renderPauseMenu();
 }
@@ -3217,7 +3318,7 @@ function applySkillToPlayer(skillId) {
   if(skillId === 'defense_3') player.defense *= 0.85;
   if(skillId === 'defense_4') player.permSecondLife = true;
   if(skillId === 'utility_1') player.dashDistance = (player.dashDistance || 1) * 1.40;
-  if(skillId === 'utility_2') player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.30;
+  if(skillId === 'utility_2') player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.18;
   if(skillId === 'utility_3') player.pickupRadius += 40;
   if(skillId === 'utility_4') player.permXpMult = (player.permXpMult || 1) * 1.25;
 }
@@ -3258,7 +3359,7 @@ function reapplyEquippedItems() {
   if(skillTree.defense_3) baseDefense *= 0.85;
   if(skillTree.defense_4) player.permSecondLife = true;
   if(skillTree.utility_1) baseDashDist *= 1.40;
-  if(skillTree.utility_2) baseDashCdReduction += 0.30;
+  if(skillTree.utility_2) baseDashCdReduction += 0.18;
   if(skillTree.utility_3) basePickup += 40;
   if(skillTree.utility_4) baseXpMult = (baseXpMult || 1) * 1.25;
 
