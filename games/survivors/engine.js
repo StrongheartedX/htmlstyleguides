@@ -1408,6 +1408,10 @@ function damageEnemy(e, dmg) {
   if(player.permBerserker && player.hp < player.maxHp * player.permBerserker.threshold) {
     dmg *= player.permBerserker.mult;
   }
+  // Warlock: Mass Increase — pulled enemies take +25% damage
+  if(player.permMassIncrease && e._pulled) {
+    dmg *= 1.25;
+  }
   // Permanent crit chance: crit damage on crit (base 2x, boosted by skill tree)
   const effectiveCrit = getEffectiveCritChance();
   if(effectiveCrit > 0 && Math.random() < effectiveCrit) {
@@ -1422,6 +1426,30 @@ function damageEnemy(e, dmg) {
   const effectiveLifesteal = getEffectiveLifesteal();
   if(effectiveLifesteal > 0) {
     player.hp = Math.min(player.hp + dmg * effectiveLifesteal, player.maxHp);
+  }
+  // Gunner: Headshot — kill enemies below 15% HP instantly
+  if(player.permHeadshot && e.hp > 0 && e.hp < e.maxHp * 0.15 && !e.isBoss) {
+    e.hp = 0;
+    spawnParticles(e.x, e.y, 6, '#ff0000', 4);
+  }
+  // Ranger: Poison DoT application
+  if(player.permPoison && !e._poisoned) {
+    e._poisoned = true;
+    e._poisonTimer = 3;
+    e._poisonDps = 3 * (player.abilityPowerMult || 1);
+  }
+  // Ranger: Root Snare — 25% chance to slow 50% for 2s
+  if(player.permRootSnare && Math.random() < 0.25) {
+    e._rootedUntil = gameTime + 2;
+  }
+  // Gunner: EMP Burst — 10% chance to stun all nearby enemies 1s
+  if(player.permEmpBurst && Math.random() < 0.10) {
+    const empNearby = enemyHash.query(e.x, e.y, 100);
+    for(const en of empNearby) {
+      en._rootedUntil = Math.max(en._rootedUntil || 0, gameTime + 1);
+    }
+    spawnParticles(e.x, e.y, 8, '#44aaff', 3);
+    Audio.note(1200, 0.1, 'square', 0.04);
   }
   if(e.hp <= 0) {
     killEnemy(e);
@@ -1454,6 +1482,43 @@ function killEnemy(e) {
       lootDrops.get(e.x, e.y, lootItem);
     }
   }
+
+  // --- Class skill on-kill effects ---
+  // Gunner: Overdrive — kill streaks grant 2x fire rate for 3s
+  if(player.permOverdrive) {
+    player.overdriveKills = (player.overdriveKills || 0) + 1;
+    if(player.overdriveKills >= 3) {
+      player.overdriveTimer = 3;
+      player.overdriveKills = 0;
+    }
+  }
+  // Dark Knight: Blood Frenzy — +15% attack speed on kill for 3s
+  if(player.permBloodFrenzy) {
+    player.bloodFrenzyTimer = 3;
+  }
+  // Ranger: Virulent — poison spreads to nearby on death
+  if(player.permVirulent && e._poisoned) {
+    const spreadNearby = enemyHash.query(e.x, e.y, 80);
+    for(const en of spreadNearby) {
+      if(!en._poisoned && !en._dead) {
+        en._poisoned = true;
+        en._poisonTimer = 3;
+        en._poisonDps = 3 * (player.abilityPowerMult || 1);
+      }
+    }
+    spawnParticles(e.x, e.y, 6, '#27ae60', 3);
+  }
+  // Ranger: Overgrowth — poisoned enemies leave toxic ground on death
+  if(player.permOvergrowth && e._poisoned) {
+    activeEffects.push({
+      type: 'field', x: e.x, y: e.y,
+      radius: 50, damage: player.damage * 1.5 * (player.abilityPowerMult || 1),
+      life: 4, maxLife: 4, tickTimer: 0
+    });
+    spawnParticles(e.x, e.y, 8, '#27ae60', 3);
+  }
+  // --- End class skill on-kill effects ---
+
   enemies.release(e);
 }
 
@@ -1826,6 +1891,26 @@ function gameLoop(timestamp) {
     player.invulnTime = Math.max(player.invulnTime, player.permShieldOnDash ? 0.6 : DASH_INVULN);
     spawnParticles(player.x, player.y, 8, `rgb(${THEME.effectColors.invuln.rgb})`, 3);
     if(player.permShieldOnDash) spawnParticles(player.x, player.y, 12, '#44aaff', 4);
+    // Warlock: Time Bubble — leave slow field on dash
+    if(player.permTimeBubble) {
+      activeEffects.push({
+        type: 'field', x: player.x, y: player.y,
+        radius: 80, damage: 0,
+        life: 3, maxLife: 3, tickTimer: 0,
+        isTimeBubble: true
+      });
+      // Slow enemies in the bubble zone
+      const bubbleNearby = enemyHash.query(player.x, player.y, 100);
+      for(const be of bubbleNearby) {
+        be._rootedUntil = Math.max(be._rootedUntil || 0, gameTime + 3);
+      }
+      spawnParticles(player.x, player.y, 8, '#3498db', 3);
+    }
+    // Ranger: Phantom Step — leave decoy that draws enemies for 3s
+    if(player.permPhantomStep) {
+      player.decoys.push({ x: player.x, y: player.y, life: 3 });
+      spawnParticles(player.x, player.y, 6, '#2ecc71', 3);
+    }
     Audio.dashSound();
   }
   dashRequested = false;
@@ -1850,6 +1935,337 @@ function gameLoop(timestamp) {
       player.hp = Math.min(player.hp + 1, player.maxHp);
     }
   }
+
+  // ---- CLASS SKILL RUNTIME LOGIC ----
+
+  // Gunner: Overdrive timer decay
+  if(player.permOverdrive && player.overdriveTimer > 0) {
+    player.overdriveTimer -= dt;
+  }
+
+  // Gunner: Auto-Turret (deploy every 30s)
+  if(player.permAutoTurret) {
+    player.turretTimer = (player.turretTimer || 0) + dt;
+    if(player.turretTimer >= 30) {
+      player.turretTimer -= 30;
+      player.turrets.push({ x: player.x, y: player.y, life: 15, fireTimer: 0 });
+    }
+    // Update turrets
+    for(let ti = player.turrets.length - 1; ti >= 0; ti--) {
+      const t = player.turrets[ti];
+      t.life -= dt;
+      if(t.life <= 0) { player.turrets.splice(ti, 1); continue; }
+      t.fireTimer -= dt;
+      if(t.fireTimer <= 0 && enemies.count > 0) {
+        t.fireTimer = 0.5;
+        let nearest = null, minD = 300;
+        enemies.forEach(e => {
+          const d = Math.hypot(e.x - t.x, e.y - t.y);
+          if(d < minD) { minD = d; nearest = e; }
+        });
+        if(nearest) {
+          const dx = nearest.x - t.x, dy = nearest.y - t.y;
+          const d = Math.hypot(dx, dy);
+          projectiles.get(t.x, t.y, (dx/d)*400, (dy/d)*400, player.damage * 0.8, 1.0, 'projectile', 1);
+        }
+      }
+    }
+  }
+
+  // Gunner: Drone (orbiting shooter)
+  if(player.permDrone) {
+    player.droneAngle = (player.droneAngle || 0) + dt * 2.5;
+    player.droneFireTimer = (player.droneFireTimer || 0) - dt;
+    if(player.droneFireTimer <= 0 && enemies.count > 0) {
+      player.droneFireTimer = 0.8;
+      const droneX = player.x + Math.cos(player.droneAngle) * 50;
+      const droneY = player.y + Math.sin(player.droneAngle) * 50;
+      let nearest = null, minD = 250;
+      enemies.forEach(e => {
+        const d = Math.hypot(e.x - droneX, e.y - droneY);
+        if(d < minD) { minD = d; nearest = e; }
+      });
+      if(nearest) {
+        const dx = nearest.x - droneX, dy = nearest.y - droneY;
+        const d = Math.hypot(dx, dy);
+        projectiles.get(droneX, droneY, (dx/d)*350, (dy/d)*350, player.damage * 0.5, 0.8, 'projectile', 1);
+      }
+    }
+  }
+
+  // Dark Knight: Blood Frenzy timer decay
+  if(player.permBloodFrenzy && player.bloodFrenzyTimer > 0) {
+    player.bloodFrenzyTimer -= dt;
+  }
+
+  // Dark Knight: Death Aura (constant 3/s AoE damage around player)
+  if(player.permDeathAura) {
+    const auraRadius = 80;
+    const auraDps = 3 * player.damage * (player.abilityPowerMult || 1);
+    const nearby = enemyHash.query(player.x, player.y, auraRadius + 30);
+    for(const e of nearby) {
+      const d = Math.hypot(e.x - player.x, e.y - player.y);
+      if(d < auraRadius + e.size) {
+        damageEnemy(e, auraDps * dt);
+      }
+    }
+  }
+
+  // Dark Knight: Skeletons (summon allies)
+  if(player.permSkeletons > 0) {
+    // Maintain skeleton count
+    while(player.skeletons.length < player.permSkeletons) {
+      const angle = Math.random() * Math.PI * 2;
+      player.skeletons.push({
+        x: player.x + Math.cos(angle) * 60,
+        y: player.y + Math.sin(angle) * 60,
+        hp: 30, speed: 120, attackTimer: 0, shootTimer: 0
+      });
+    }
+    for(let si = player.skeletons.length - 1; si >= 0; si--) {
+      const sk = player.skeletons[si];
+      // Chase nearest enemy
+      let nearest = null, minD = 300;
+      enemies.forEach(e => {
+        const d = Math.hypot(e.x - sk.x, e.y - sk.y);
+        if(d < minD) { minD = d; nearest = e; }
+      });
+      if(nearest) {
+        const dx = nearest.x - sk.x, dy = nearest.y - sk.y;
+        const d = Math.hypot(dx, dy);
+        if(d > 20) {
+          sk.x += (dx/d) * sk.speed * dt;
+          sk.y += (dy/d) * sk.speed * dt;
+        }
+        // Melee attack on contact
+        if(d < 25) {
+          sk.attackTimer -= dt;
+          if(sk.attackTimer <= 0) {
+            sk.attackTimer = 0.8;
+            damageEnemy(nearest, player.damage * 0.6);
+          }
+        }
+        // Skeleton Mage: ranged attacks
+        if(player.permSkeletonMage) {
+          sk.shootTimer = (sk.shootTimer || 0) - dt;
+          if(sk.shootTimer <= 0 && d < 200 && d > 30) {
+            sk.shootTimer = 1.5;
+            projectiles.get(sk.x, sk.y, (dx/d)*250, (dy/d)*250, player.damage * 0.4, 0.8, 'projectile', 1);
+          }
+        }
+      } else {
+        // Follow player if no enemies
+        const dx = player.x - sk.x, dy = player.y - sk.y;
+        const d = Math.hypot(dx, dy);
+        if(d > 80) {
+          sk.x += (dx/d) * sk.speed * dt;
+          sk.y += (dy/d) * sk.speed * dt;
+        }
+      }
+    }
+  }
+
+  // Dark Knight: Army of Darkness (mass summon every 45s)
+  if(player.permArmyOfDarkness) {
+    player.armyTimer = (player.armyTimer || 0) + dt;
+    if(player.armyTimer >= 45) {
+      player.armyTimer -= 45;
+      for(let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        player.skeletons.push({
+          x: player.x + Math.cos(angle) * 40,
+          y: player.y + Math.sin(angle) * 40,
+          hp: 20, speed: 140, attackTimer: 0, shootTimer: 0,
+          tempLife: 10 // temporary skeletons
+        });
+      }
+      spawnParticles(player.x, player.y, 15, '#8e44ad', 4);
+      Audio.levelUpSound();
+    }
+    // Decay temporary skeletons
+    for(let si = player.skeletons.length - 1; si >= 0; si--) {
+      const sk = player.skeletons[si];
+      if(sk.tempLife !== undefined) {
+        sk.tempLife -= dt;
+        if(sk.tempLife <= 0) { player.skeletons.splice(si, 1); }
+      }
+    }
+  }
+
+  // Dark Knight: Fortify (standing still 2s grants +25% defense)
+  if(player.permFortify) {
+    const isMoving = mlen > 0.1 || player.dashTimer > 0;
+    if(!isMoving) {
+      player.fortifyStillTimer = (player.fortifyStillTimer || 0) + dt;
+      if(player.fortifyStillTimer >= 2 && !player.fortifyActive) {
+        player.fortifyActive = true;
+        spawnParticles(player.x, player.y, 8, '#2c3e50', 3);
+      }
+    } else {
+      player.fortifyStillTimer = 0;
+      player.fortifyActive = false;
+    }
+  }
+
+  // Ranger: Traps (auto-place every 15s)
+  if(player.permTraps > 0) {
+    player.trapTimer = (player.trapTimer || 0) + dt;
+    if(player.trapTimer >= 15 && player.traps.length < player.permTraps) {
+      player.trapTimer -= 15;
+      player.traps.push({ x: player.x, y: player.y, life: 30, triggered: false });
+    }
+    // Update traps
+    for(let ti = player.traps.length - 1; ti >= 0; ti--) {
+      const trap = player.traps[ti];
+      trap.life -= dt;
+      if(trap.life <= 0 || trap.triggered) { player.traps.splice(ti, 1); continue; }
+      // Check enemy collision
+      const nearby = enemyHash.query(trap.x, trap.y, 30);
+      for(const e of nearby) {
+        const d = Math.hypot(e.x - trap.x, e.y - trap.y);
+        if(d < 25) {
+          trap.triggered = true;
+          const trapDmg = player.damage * 3 * (player.permTrapMastery ? 1.5 : 1);
+          damageEnemy(e, trapDmg);
+          // Root: slow nearby enemies
+          const rootNearby = enemyHash.query(trap.x, trap.y, 60);
+          for(const re of rootNearby) {
+            re._rootedUntil = gameTime + 2;
+          }
+          spawnParticles(trap.x, trap.y, 10, '#d35400', 3);
+          Audio.note(200, 0.2, 'sine', 0.08);
+          break;
+        }
+      }
+    }
+  }
+
+  // Ranger: Net Launcher (AoE slow every 20s)
+  if(player.permNetLauncher) {
+    player.netTimer = (player.netTimer || 0) + dt;
+    if(player.netTimer >= 20) {
+      player.netTimer -= 20;
+      const netRadius = 150;
+      const nearby = enemyHash.query(player.x, player.y, netRadius + 30);
+      for(const e of nearby) {
+        const d = Math.hypot(e.x - player.x, e.y - player.y);
+        if(d < netRadius) {
+          e._rootedUntil = gameTime + 3;
+        }
+      }
+      spawnParticles(player.x, player.y, 12, '#d35400', 3);
+      Audio.note(150, 0.3, 'triangle', 0.06);
+    }
+  }
+
+  // Ranger: Decoy updates (from Phantom Step)
+  for(let di = player.decoys.length - 1; di >= 0; di--) {
+    const dec = player.decoys[di];
+    dec.life -= dt;
+    if(dec.life <= 0) { player.decoys.splice(di, 1); }
+  }
+
+  // Warlock: Pull Aura (nearby enemies slowly pulled toward player)
+  if(player.permPullAura) {
+    const pullRadius = 120;
+    const pullStr = 40;
+    const nearby = enemyHash.query(player.x, player.y, pullRadius + 30);
+    for(const e of nearby) {
+      const dx = player.x - e.x, dy = player.y - e.y;
+      const d = Math.hypot(dx, dy);
+      if(d < pullRadius && d > 20) {
+        e.x += (dx/d) * pullStr * dt;
+        e.y += (dy/d) * pullStr * dt;
+        e._pulled = true;
+      }
+    }
+  }
+
+  // Warlock: Gravity Well (every 25s, vortex pulls enemies)
+  if(player.permGravityWell) {
+    player.gravityWellTimer = (player.gravityWellTimer || 0) + dt;
+    if(player.gravityWellTimer >= 25) {
+      player.gravityWellTimer -= 25;
+      // Create a gravity well effect at player position
+      activeEffects.push({
+        type: 'field', x: player.x, y: player.y,
+        radius: 200, damage: player.damage * 0.5 * (player.abilityPowerMult || 1),
+        life: 3, maxLife: 3, tickTimer: 0,
+        isGravityWell: true
+      });
+      spawnParticles(player.x, player.y, 15, '#9b59b6', 4);
+    }
+  }
+
+  // Warlock: Black Hole (massive pull + damage every 60s)
+  if(player.permBlackHole) {
+    player.blackHoleTimer = (player.blackHoleTimer || 0) + dt;
+    if(player.blackHoleTimer >= 60) {
+      player.blackHoleTimer -= 60;
+      const bhRadius = 250;
+      const nearby = enemyHash.query(player.x, player.y, bhRadius + 50);
+      for(const e of nearby) {
+        const dx = player.x - e.x, dy = player.y - e.y;
+        const d = Math.hypot(dx, dy);
+        if(d < bhRadius) {
+          // Teleport enemies inward and damage
+          e.x += (dx/d) * Math.min(d * 0.7, 150);
+          e.y += (dy/d) * Math.min(d * 0.7, 150);
+          e._pulled = true;
+          damageEnemy(e, player.damage * 5 * (player.abilityPowerMult || 1));
+        }
+      }
+      spawnParticles(player.x, player.y, 25, '#6c3483', 6);
+      Audio.note(80, 0.5, 'sawtooth', 0.1);
+    }
+  }
+
+  // Warlock: Void Bolt (periodic magic projectile every 3s)
+  if(player.permVoidBolt) {
+    player.voidBoltTimer = (player.voidBoltTimer || 0) + dt;
+    if(player.voidBoltTimer >= 3 && enemies.count > 0) {
+      player.voidBoltTimer -= 3;
+      let nearest = null, minD = 400;
+      enemies.forEach(e => {
+        const d = Math.hypot(e.x - player.x, e.y - player.y);
+        if(d < minD) { minD = d; nearest = e; }
+      });
+      if(nearest) {
+        const dx = nearest.x - player.x, dy = nearest.y - player.y;
+        const d = Math.hypot(dx, dy);
+        projectiles.get(player.x, player.y, (dx/d)*300, (dy/d)*300,
+          player.damage * 2 * (player.abilityPowerMult || 1), 1.2, 'projectile', 2);
+        spawnParticles(player.x, player.y, 4, '#e74c3c', 3);
+      }
+    }
+  }
+
+  // Warlock: Singularity (massive AoE every 45s)
+  if(player.permSingularity) {
+    player.singularityTimer = (player.singularityTimer || 0) + dt;
+    if(player.singularityTimer >= 45) {
+      player.singularityTimer -= 45;
+      activeEffects.push({
+        type: 'area', x: player.x, y: player.y,
+        radius: 0, maxRadius: 250,
+        damage: player.damage * 8 * (player.abilityPowerMult || 1),
+        life: 0.6, maxLife: 0.6, hit: new Set()
+      });
+      spawnParticles(player.x, player.y, 20, '#e74c3c', 5);
+      Audio.note(100, 0.4, 'sawtooth', 0.08);
+    }
+  }
+
+  // Warlock: Rewind HP logging (track last 5s of HP for rewind skill)
+  if(player.permRewind && !player.rewindUsed) {
+    player.rewindHpLog.push({ time: gameTime, hp: player.hp });
+    // Keep only last 5 seconds
+    while(player.rewindHpLog.length > 0 && player.rewindHpLog[0].time < gameTime - 5) {
+      player.rewindHpLog.shift();
+    }
+  }
+
+  // ---- END CLASS SKILL RUNTIME LOGIC ----
 
   // Spawn enemies
   spawnTimer -= dt;
@@ -1878,6 +2294,9 @@ function gameLoop(timestamp) {
 
   // Weapon firing — don't fire until enemies exist (avoids phantom explosions at round start)
   const hasEnemies = enemies.count > 0;
+  // Compute fire rate multipliers from class skills
+  const overdriveFireMult = (player.permOverdrive && player.overdriveTimer > 0) ? 0.5 : 1.0;
+  const frenzyFireMult = (player.permBloodFrenzy && player.bloodFrenzyTimer > 0) ? 0.85 : 1.0;
   for(const w of player.weapons) {
     if(w.type === 'orbit') continue; // continuous
     if(!weaponTimers[w.type]) weaponTimers[w.type] = 0;
@@ -1885,7 +2304,10 @@ function gameLoop(timestamp) {
     weaponTimers[w.type] -= dt;
     if(weaponTimers[w.type] <= 0) {
       const stats = getWeaponStats(w.type, w.level);
-      weaponTimers[w.type] = stats.cooldown;
+      let cd = stats.cooldown * overdriveFireMult * frenzyFireMult * (player.cooldownMult || 1);
+      // Warlock: Temporal Loop — 15% chance to not consume cooldown
+      if(player.permTemporalLoop && Math.random() < 0.15) cd = 0.05;
+      weaponTimers[w.type] = cd;
       fireWeapon(w);
     }
   }
@@ -1944,7 +2366,20 @@ function gameLoop(timestamp) {
         }
         damageEnemy(e, p.damage);
         p.pierce--;
-        if(p.pierce <= 0) { projectiles.release(p); return; }
+        if(p.pierce <= 0) {
+          // Gunner: Explosive Rounds — explode on final hit
+          if(player.permExplosiveRounds && p.weaponType === 'projectile') {
+            activeEffects.push({
+              type: 'area', x: p.x, y: p.y,
+              radius: 0, maxRadius: 60,
+              damage: p.damage * 0.5,
+              life: 0.3, maxLife: 0.3, hit: new Set()
+            });
+            spawnParticles(p.x, p.y, 8, '#f39c12', 3);
+            Audio.note(200, 0.15, 'sine', 0.06);
+          }
+          projectiles.release(p); return;
+        }
       }
     }
   });
@@ -2095,9 +2530,35 @@ function gameLoop(timestamp) {
   // Update enemies
   player.invulnTime -= dt;
   enemies.forEach(e => {
-    // Movement dispatch
+    // Poison DoT processing
+    if(e._poisoned && e._poisonTimer > 0) {
+      e._poisonTimer -= dt;
+      e.hp -= (e._poisonDps || 3) * dt;
+      if(e._poisonTimer <= 0) e._poisoned = false;
+      if(e.hp <= 0 && !e._dead) { killEnemy(e); return; }
+    }
+
+    // Rooted/slowed enemies: reduce movement
+    const isRooted = e._rootedUntil && gameTime < e._rootedUntil;
+    const rootSpeedMult = isRooted ? 0.5 : 1.0;
+
+    // Decoy attraction: if decoys exist, chase nearest decoy instead of player
+    let targetX = player.x, targetY = player.y;
+    if(player.decoys && player.decoys.length > 0 && !e.isBoss) {
+      let minDD = Infinity;
+      for(const dec of player.decoys) {
+        const dd = Math.hypot(dec.x - e.x, dec.y - e.y);
+        if(dd < minDD && dd < 200) { minDD = dd; targetX = dec.x; targetY = dec.y; }
+      }
+    }
+
+    // Movement dispatch (with speed modifier for root/slow)
+    const origSpeed = e.speed;
+    e.speed *= rootSpeedMult;
     const handler = MOVEMENT_HANDLERS[e.movementType] || MOVEMENT_HANDLERS.chase;
     handler(e, dt, player);
+    e.speed = origSpeed;
+
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const d = Math.hypot(dx, dy);
@@ -2121,7 +2582,8 @@ function gameLoop(timestamp) {
     if(d < e.size + 12 && player.invulnTime <= 0) {
       if (tryEvadeHit()) { player.invulnTime = 0.2; } else {
       const contactWorldMult = getWorldDifficultyMult();
-      const dmg = (e.isBoss ? 15 + gameTime * 0.05 : 5 + gameTime*0.02) * player.defense * contactWorldMult;
+      const fortifyMult = (player.permFortify && player.fortifyActive) ? 0.75 : 1.0;
+      const dmg = (e.isBoss ? 15 + gameTime * 0.05 : 5 + gameTime*0.02) * player.defense * contactWorldMult * fortifyMult;
       player.hp -= dmg;
       player.invulnTime = 0.5;
       damageFlash = 0.15;
@@ -2141,6 +2603,25 @@ function gameLoop(timestamp) {
       } // end evasion else
     }
   });
+
+  // Dark Knight: Vampiric Nova — when dropping below 30% HP, heal burst + damage wave
+  if(player.permVampiricNova && !player.vampiricNovaUsed && player.hp > 0 && player.hp < player.maxHp * 0.3) {
+    player.vampiricNovaUsed = true;
+    const healAmt = Math.floor(player.maxHp * 0.25);
+    player.hp = Math.min(player.hp + healAmt, player.maxHp);
+    player.invulnTime = 1.5;
+    // Damage wave
+    const novaDmg = player.damage * 5 * (player.abilityPowerMult || 1);
+    const novaRadius = 150;
+    const novaNearby = enemyHash.query(player.x, player.y, novaRadius);
+    for(const ne of novaNearby) {
+      const nd = Math.hypot(ne.x - player.x, ne.y - player.y);
+      if(nd < novaRadius) damageEnemy(ne, novaDmg);
+    }
+    spawnParticles(player.x, player.y, 20, '#c0392b', 5);
+    Audio.levelUpSound();
+    lootPickupTexts.push({ text: 'VAMPIRIC NOVA!', rarity: 'legendary', x: player.x, y: player.y - 30, life: 2.0, maxLife: 2.0 });
+  }
 
   // Victory condition check
   if(checkVictoryCondition()) {
@@ -2680,6 +3161,91 @@ function render(dt) {
     ctx.restore();
   });
 
+  // --- Class skill entity rendering ---
+  // Death Aura visual
+  if(player.permDeathAura) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(192,57,43,0.08)';
+    ctx.strokeStyle = 'rgba(192,57,43,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(player.x, player.y, 80, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  // Pull Aura visual
+  if(player.permPullAura) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(155,89,182,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(player.x, player.y, 120, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+  // Skeletons
+  if(player.skeletons) {
+    for(const sk of player.skeletons) {
+      ctx.save();
+      ctx.fillStyle = sk.tempLife !== undefined ? 'rgba(142,68,173,0.7)' : '#aaa';
+      ctx.beginPath(); ctx.arc(sk.x, sk.y, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('\uD83D\uDC80', sk.x, sk.y);
+      ctx.restore();
+    }
+  }
+  // Turrets
+  if(player.turrets) {
+    for(const t of player.turrets) {
+      ctx.save();
+      ctx.fillStyle = '#555';
+      ctx.strokeStyle = '#0ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.rect(t.x - 8, t.y - 8, 16, 16); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#0ff';
+      ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('\u2699', t.x, t.y);
+      ctx.restore();
+    }
+  }
+  // Traps
+  if(player.traps) {
+    for(const trap of player.traps) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(211,84,0,0.4)';
+      ctx.strokeStyle = '#d35400';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(trap.x, trap.y, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d35400';
+      ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('\u26A0', trap.x, trap.y);
+      ctx.restore();
+    }
+  }
+  // Decoys
+  if(player.decoys) {
+    for(const dec of player.decoys) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, dec.life / 3);
+      ctx.fillStyle = 'rgba(46,204,113,0.5)';
+      ctx.beginPath(); ctx.arc(dec.x, dec.y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+  // Drone
+  if(player.permDrone) {
+    const droneX = player.x + Math.cos(player.droneAngle || 0) * 50;
+    const droneY = player.y + Math.sin(player.droneAngle || 0) * 50;
+    ctx.save();
+    ctx.fillStyle = '#0af';
+    ctx.strokeStyle = '#0cf';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(droneX, droneY, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  // --- End class skill entity rendering ---
+
   // Dash afterimage trail
   if(player.dashTimer > 0) {
     const pr = 16;
@@ -3150,23 +3716,9 @@ function startGame() {
   }
   // --- End permanent upgrades ---
 
-  // --- Apply skill tree bonuses from save state ---
-  const skillTree = permSave.skillTree || {};
-  // Offense branch
-  if (skillTree.offense_1) player.permCritChance = (player.permCritChance || 0) + 0.08;
-  if (skillTree.offense_2) player.permCritDamage = (player.permCritDamage || 0) + 0.50;
-  if (skillTree.offense_3) player.permMultiProjectile = true;
-  if (skillTree.offense_4) player.permPiercing = true;
-  // Defense branch
-  if (skillTree.defense_1) { player.permRegen = true; player.permRegenTimer = 0; }
-  if (skillTree.defense_2) player.permShieldOnDash = true;
-  if (skillTree.defense_3) player.defense *= 0.85;
-  if (skillTree.defense_4) player.permSecondLife = true;
-  // Utility branch
-  if (skillTree.utility_1) player.dashDistance = (player.dashDistance || 1) * 1.40;
-  if (skillTree.utility_2) player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.18;
-  if (skillTree.utility_3) player.pickupRadius += 40;
-  if (skillTree.utility_4) player.permXpMult = (player.permXpMult || 1) * 1.25;
+  // --- Apply skill tree bonuses from save state (dynamic per class) ---
+  const skillTreeSave = permSave.skillTree || {};
+  applyAllSkills(player, skillTreeSave);
   // --- End skill tree bonuses ---
 
   // --- Apply equipped loot item effects ---
@@ -3247,6 +3799,18 @@ function startGame() {
 }
 
 function checkSecondLife() {
+  // Warlock: Rewind — undo last 5s of damage (restore HP from log)
+  if(player.permRewind && !player.rewindUsed && player.rewindHpLog && player.rewindHpLog.length > 0) {
+    player.rewindUsed = true;
+    const oldHp = player.rewindHpLog[0].hp;
+    player.hp = Math.min(oldHp, player.maxHp);
+    player.invulnTime = 1.5;
+    player.rewindHpLog = [];
+    spawnParticles(player.x, player.y, 15, '#3498db', 4);
+    Audio.levelUpSound();
+    lootPickupTexts.push({ text: 'REWIND!', rarity: 'legendary', x: player.x, y: player.y - 30, life: 2.0, maxLife: 2.0 });
+    return true;
+  }
   if(player.permSecondLife && !player.secondLifeUsed) {
     player.secondLifeUsed = true;
     player.hp = Math.floor(player.maxHp * 0.3);
@@ -3752,18 +4316,8 @@ function pauseUnlockSkill(skillId) {
 }
 
 function applySkillToPlayer(skillId) {
-  if(skillId === 'offense_1') player.permCritChance = (player.permCritChance || 0) + 0.08;
-  if(skillId === 'offense_2') player.permCritDamage = (player.permCritDamage || 0) + 0.50;
-  if(skillId === 'offense_3') player.permMultiProjectile = true;
-  if(skillId === 'offense_4') player.permPiercing = true;
-  if(skillId === 'defense_1') { player.permRegen = true; player.permRegenTimer = 0; }
-  if(skillId === 'defense_2') player.permShieldOnDash = true;
-  if(skillId === 'defense_3') player.defense *= 0.85;
-  if(skillId === 'defense_4') player.permSecondLife = true;
-  if(skillId === 'utility_1') player.dashDistance = (player.dashDistance || 1) * 1.40;
-  if(skillId === 'utility_2') player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.18;
-  if(skillId === 'utility_3') player.pickupRadius += 40;
-  if(skillId === 'utility_4') player.permXpMult = (player.permXpMult || 1) * 1.25;
+  const node = findSkillNode(skillId);
+  if (node && node.apply) node.apply(player);
 }
 
 function reapplyEquippedItems() {
@@ -3789,25 +4343,65 @@ function reapplyEquippedItems() {
   if(permUpgrades.p_lifesteal) baseLifesteal += 0.01;
   if(permUpgrades.p_xpboost) baseXpMult = 1.10;
 
+  // Reset boolean skill flags before re-applying
   player.permMultiProjectile = false;
   player.permPiercing = false;
   player.permShieldOnDash = false;
   player.permSecondLife = false;
-  if(skillTree.offense_1) baseCritChance += 0.08;
-  if(skillTree.offense_2) baseCritDamage += 0.50;
-  if(skillTree.offense_3) player.permMultiProjectile = true;
-  if(skillTree.offense_4) player.permPiercing = true;
-  if(skillTree.defense_1) { player.permRegen = true; }
-  if(skillTree.defense_2) player.permShieldOnDash = true;
-  if(skillTree.defense_3) baseDefense *= 0.85;
-  if(skillTree.defense_4) player.permSecondLife = true;
-  if(skillTree.utility_1) baseDashDist *= 1.40;
-  if(skillTree.utility_2) baseDashCdReduction += 0.18;
-  if(skillTree.utility_3) basePickup += 40;
-  if(skillTree.utility_4) baseXpMult = (baseXpMult || 1) * 1.25;
+  player.permHeadshot = false;
+  player.permOverdrive = false;
+  player.permExplosiveRounds = false;
+  player.permAutoTurret = false;
+  player.permDrone = false;
+  player.permEmpBurst = false;
+  player.permBloodFrenzy = false;
+  player.permDeathAura = false;
+  player.permSkeletons = 0; player.permSkeletonMage = false; player.permArmyOfDarkness = false;
+  player.permFortify = false;
+  player.permVampiricNova = false;
+  player.permPoison = false; player.permVirulent = false;
+  player.permRootSnare = false; player.permOvergrowth = false;
+  player.permDoubleDash = false; player.permPhantomStep = false;
+  player.permTraps = 0; player.permTrapMastery = false;
+  player.permNetLauncher = false;
+  player.permPullAura = false; player.permGravityWell = false;
+  player.permMassIncrease = false; player.permBlackHole = false;
+  player.permTimeBubble = false; player.permRewind = false;
+  player.permTemporalLoop = false;
+  player.permVoidBolt = false; player.permSingularity = false;
+
+  // Build a temporary player-like object for skill application, then extract stat deltas
+  // We apply skills directly to player since they set flags + modify base stats
+  // First store current base values, apply skills, then extract the numeric changes
+  const _preDefense = baseDefense;
+  const _preSpeed = baseSpeed;
+  player.defense = baseDefense;
+  player.speed = baseSpeed;
+  player.evasionChance = 0;
+  player.abilityPowerMult = 1;
+  player.cooldownMult = 1;
+  player.permCritChance = baseCritChance;
+  player.permCritDamage = baseCritDamage;
+  player.permLifesteal = baseLifesteal;
+  player.permXpMult = baseXpMult;
+  player.dashDistance = baseDashDist;
+  player.dashCooldownReduction = baseDashCdReduction;
+  player.pickupRadius = basePickup;
+  applyAllSkills(player, skillTree);
+  // Extract the modified values back to base accumulators
+  baseDefense = player.defense;
+  baseSpeed = player.speed;
+  baseCritChance = player.permCritChance;
+  baseCritDamage = player.permCritDamage;
+  baseLifesteal = player.permLifesteal;
+  baseXpMult = player.permXpMult;
+  baseDashDist = player.dashDistance;
+  baseDashCdReduction = player.dashCooldownReduction;
+  basePickup = player.pickupRadius;
 
   player.permBerserker = null;
-  player.permThorns = 0;
+  const skillThorns = player.permThorns || 0; // preserve thorns from skill tree
+  player.permThorns = skillThorns;
   player.permPhoenixRevive = false;
   for(const itemId of equippedItems) {
     const loot = getLootById(itemId);
