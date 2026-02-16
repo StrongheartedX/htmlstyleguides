@@ -470,6 +470,8 @@
 
         // Harpoons
         let harpoons = [];
+        let blinkTimer = 0; // eye blink cooldown animation
+        let prevHarpoonCount = 0;
         const HARPOON_SPEED = 500;
         const HARPOON_WIDTH = 3;
         let maxHarpoons = 1;
@@ -741,6 +743,8 @@
             freezeTimer = 0;
             maxHarpoons = 1;
             invulnTimer = 0;
+            blinkTimer = 0;
+            prevHarpoonCount = 0;
 
             levelTime = lvl.time;
             levelTimeMax = lvl.time;
@@ -955,6 +959,22 @@
             ctx.arc(0, eyeY, 4, 0, Math.PI * 2);
             ctx.stroke();
             ctx.shadowBlur = 0;
+
+            // Blink eyelid
+            if (blinkTimer > 0) {
+                // 0.35 → 0: close fast (0.35-0.2), pause (0.2-0.15), open (0.15-0)
+                let lidClose;
+                if (blinkTimer > 0.2) lidClose = 1 - (blinkTimer - 0.2) / 0.15; // closing
+                else if (blinkTimer > 0.15) lidClose = 1; // fully closed
+                else lidClose = blinkTimer / 0.15; // opening
+                lidClose = Math.max(0, Math.min(1, lidClose));
+                if (lidClose > 0) {
+                    ctx.fillStyle = `hsl(${bodyHue + 60}, 80%, 60%)`;
+                    ctx.beginPath();
+                    ctx.ellipse(0, eyeY - 4 + lidClose * 4, 5, lidClose * 5, 0, 0, Math.PI);
+                    ctx.fill();
+                }
+            }
 
             ctx.restore();
         }
@@ -1408,6 +1428,13 @@
                     }
                 }
             }
+
+            // Eye blink when all harpoons gone
+            if (prevHarpoonCount > 0 && harpoons.length === 0) {
+                blinkTimer = 0.35;
+            }
+            prevHarpoonCount = harpoons.length;
+            if (blinkTimer > 0) blinkTimer -= dt;
 
             // Power-up items
             for (let i = powerupItems.length - 1; i >= 0; i--) {
