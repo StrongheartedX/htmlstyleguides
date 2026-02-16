@@ -903,31 +903,54 @@
             ctx.arc(0, -18, 8, 0, Math.PI * 2);
             ctx.fill();
 
-            // Cyclops eye (looking up)
+            // Cyclops eye (looking up) — lights up when shooting
             const eyeY = -21;
-            ctx.fillStyle = '#fff';
+            const isShooting = harpoons.length > 0;
+            const beamHue = (tripPhase * 60) % 360;
+
+            // Firing glow behind eye
+            if (isShooting) {
+                ctx.shadowColor = `hsl(${beamHue}, 100%, 70%)`;
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = `hsla(${beamHue}, 100%, 80%, 0.4)`;
+                ctx.beginPath();
+                ctx.arc(0, eyeY, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Eye white (brighter when shooting)
+            ctx.fillStyle = isShooting ? `hsl(${beamHue}, 100%, 95%)` : '#fff';
             ctx.beginPath();
             ctx.arc(0, eyeY, 4, 0, Math.PI * 2);
             ctx.fill();
             // Iris with trippy hue cycling
             const irisGrad = ctx.createRadialGradient(0, eyeY, 0.5, 0, eyeY, 3);
-            irisGrad.addColorStop(0, `hsl(${bodyHue + 120}, 100%, 80%)`);
-            irisGrad.addColorStop(0.6, `hsl(${bodyHue + 200}, 100%, 50%)`);
-            irisGrad.addColorStop(1, `hsl(${bodyHue + 280}, 80%, 30%)`);
+            if (isShooting) {
+                irisGrad.addColorStop(0, `hsl(${beamHue}, 100%, 95%)`);
+                irisGrad.addColorStop(0.4, `hsl(${beamHue}, 100%, 70%)`);
+                irisGrad.addColorStop(1, `hsl(${beamHue + 40}, 100%, 50%)`);
+            } else {
+                irisGrad.addColorStop(0, `hsl(${bodyHue + 120}, 100%, 80%)`);
+                irisGrad.addColorStop(0.6, `hsl(${bodyHue + 200}, 100%, 50%)`);
+                irisGrad.addColorStop(1, `hsl(${bodyHue + 280}, 80%, 30%)`);
+            }
             ctx.fillStyle = irisGrad;
             ctx.beginPath();
             ctx.arc(0, eyeY - 0.5, 2.5, 0, Math.PI * 2);
             ctx.fill();
-            // Pupil
-            ctx.fillStyle = '#000';
+            // Pupil (tiny bright dot when shooting, dark when idle)
+            ctx.fillStyle = isShooting ? `hsl(${beamHue}, 100%, 95%)` : '#000';
             ctx.beginPath();
-            ctx.arc(0, eyeY - 0.8, 1.2, 0, Math.PI * 2);
+            ctx.arc(0, eyeY - 0.8, isShooting ? 0.8 : 1.2, 0, Math.PI * 2);
             ctx.fill();
-            // Eye glow
-            ctx.shadowColor = `hsl(${bodyHue + 200}, 100%, 60%)`;
-            ctx.shadowBlur = 6;
-            ctx.strokeStyle = `hsla(${bodyHue + 200}, 100%, 70%, 0.4)`;
-            ctx.lineWidth = 0.8;
+            // Eye glow ring
+            ctx.shadowColor = isShooting ? `hsl(${beamHue}, 100%, 70%)` : `hsl(${bodyHue + 200}, 100%, 60%)`;
+            ctx.shadowBlur = isShooting ? 14 : 6;
+            ctx.strokeStyle = isShooting
+                ? `hsla(${beamHue}, 100%, 80%, 0.7)`
+                : `hsla(${bodyHue + 200}, 100%, 70%, 0.4)`;
+            ctx.lineWidth = isShooting ? 1.5 : 0.8;
             ctx.beginPath();
             ctx.arc(0, eyeY, 4, 0, Math.PI * 2);
             ctx.stroke();
