@@ -26,7 +26,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #title-screen{background:radial-gradient(ellipse at center,#101025 0%,#050510 70%)}
 #game-over-screen{background:rgba(3,3,8,0.92);display:none}
 #level-up-screen{background:rgba(3,3,8,0.85);display:none}
-#pause-screen{background:rgba(0,0,0,0.8);display:none}
+#pause-screen{background:rgba(0,0,0,0.88);display:none;overflow-y:auto}
 .screen-title{font-family:'Exo 2',sans-serif;font-size:clamp(2.5rem,8vw,5rem);font-weight:900;color:#9933ff;text-shadow:0 0 40px rgba(153,51,255,0.6),0 0 80px rgba(153,51,255,0.3),0 0 4px rgba(255,215,0,0.4);margin-bottom:8px;text-align:center;letter-spacing:0.05em}
 .screen-subtitle{font-family:'Space Mono',monospace;font-size:clamp(1rem,3vw,1.4rem);color:#ffd700;font-style:italic;margin-bottom:32px;text-align:center}
 .btn{font-family:'Exo 2',sans-serif;font-size:1.1rem;font-weight:700;padding:14px 40px;border:2px solid #ffd700;background:rgba(153,51,255,0.3);color:#d0d8f0;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:all 0.2s;pointer-events:auto}
@@ -126,7 +126,10 @@ const THEME = {
     { name:'Swarm Drone', color:'#aaaacc', size:12, speed:75, hp:3, xp:1, spawnAfter:0, draw:'swarmdrone', movementType:'orbit' },
     { name:'Asteroid Beast', color:'#996633', size:20, speed:30, hp:10, xp:3, spawnAfter:30, draw:'asteroid', movementType:'charge' },
     { name:'Void Wraith', color:'#6600cc', size:14, speed:85, hp:5, xp:3, spawnAfter:90, draw:'voidwraith', movementType:'strafe' },
+    { name:'Phase Stalker', color:'#00ccff', size:13, speed:92, hp:4, xp:3, spawnAfter:120, draw:'phasestalker', movementType:'flanker' },
     { name:'Hive Swarm', color:'#ffaa00', size:11, speed:100, hp:3, xp:2, spawnAfter:180, draw:'hiveswarm', movementType:'ambush' },
+    { name:'Meteor Fiend', color:'#ff6633', size:15, speed:65, hp:6, xp:4, spawnAfter:180, draw:'meteor', movementType:'divebomber' },
+    { name:'Sentinel', color:'#8888aa', size:19, speed:30, hp:18, xp:5, spawnAfter:240, draw:'sentinel', movementType:'shieldbearer' },
     { name:'Cosmic Horror', color:'#ff0066', size:18, speed:55, hp:20, xp:8, spawnAfter:300, draw:'cosmichorror', movementType:'orbit' }
   ],
   bosses: [
@@ -304,6 +307,64 @@ const THEME = {
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#000';
       ctx.beginPath(); ctx.arc(0, 0, s*0.08, 0, Math.PI*2); ctx.fill();
+    } else if(type.draw==='phasestalker') {
+      // Ghostly blue figure that flickers
+      const flicker = 0.6 + 0.4 * Math.sin(time * 8 + e.spawnTime * 3);
+      ctx.globalAlpha = flicker;
+      ctx.fillStyle = type.color;
+      ctx.shadowColor = type.color;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(0, -s*0.5);
+      ctx.lineTo(s*0.35, s*0.1);
+      ctx.lineTo(s*0.2, s*0.5);
+      ctx.lineTo(-s*0.2, s*0.5);
+      ctx.lineTo(-s*0.35, s*0.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(-s*0.08, -s*0.15, 2, 0, Math.PI*2); ctx.arc(s*0.08, -s*0.15, 2, 0, Math.PI*2); ctx.fill();
+    } else if(type.draw==='meteor') {
+      // Flaming rock that hovers
+      const hover = Math.sin(time * 3 + e.spawnTime) * 4;
+      ctx.translate(0, hover);
+      ctx.fillStyle = type.color;
+      ctx.shadowColor = '#ff4400';
+      ctx.shadowBlur = 10;
+      // Irregular rock shape
+      ctx.beginPath();
+      ctx.moveTo(0, -s*0.45);
+      ctx.lineTo(s*0.35, -s*0.2);
+      ctx.lineTo(s*0.4, s*0.2);
+      ctx.lineTo(s*0.1, s*0.4);
+      ctx.lineTo(-s*0.3, s*0.35);
+      ctx.lineTo(-s*0.4, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Flame trail
+      ctx.fillStyle = '#ffaa00';
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.arc(0, -s*0.55, s*0.15, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ff4400';
+      ctx.beginPath(); ctx.arc(s*0.1, -s*0.6, s*0.1, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if(type.draw==='sentinel') {
+      // Armored alien construct with frontal shield
+      ctx.fillStyle = type.color;
+      ctx.fillRect(-s*0.35, -s*0.45, s*0.7, s*0.9);
+      // Visor
+      ctx.fillStyle = '#4444ff';
+      ctx.shadowColor = '#4444ff';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(-s*0.25, -s*0.3, s*0.5, s*0.15);
+      ctx.shadowBlur = 0;
+      // Armor plates
+      ctx.strokeStyle = '#666688';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-s*0.35, -s*0.45, s*0.7, s*0.9);
     }
     ctx.restore();
   },

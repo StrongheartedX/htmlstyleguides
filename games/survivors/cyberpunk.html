@@ -126,7 +126,9 @@ const THEME = {
     { name:'Mech', color:'#888899', size:18, speed:30, hp:8, xp:2, spawnAfter:0, draw:'mech', movementType:'chase' },
     { name:'Glitch Bug', color:'#ff00ff', size:11, speed:85, hp:2, xp:2, spawnAfter:30, draw:'glitch', movementType:'ambush' },
     { name:'Cyber-wolf', color:'#39ff14', size:14, speed:95, hp:4, xp:3, spawnAfter:90, draw:'cyberwolf', movementType:'charge' },
-    { name:'Heavy Tank', color:'#ff6600', size:20, speed:25, hp:12, xp:5, spawnAfter:180, draw:'tank', movementType:'chase' },
+    { name:'Stealth Flanker', color:'#cc44ff', size:13, speed:90, hp:5, xp:3, spawnAfter:120, draw:'flanker', movementType:'flanker' },
+    { name:'Heavy Tank', color:'#ff6600', size:20, speed:25, hp:12, xp:5, spawnAfter:180, draw:'tank', movementType:'shieldbearer' },
+    { name:'Bomber Drone', color:'#ff8800', size:14, speed:70, hp:6, xp:4, spawnAfter:180, draw:'bomber', movementType:'divebomber' },
     { name:'Rogue AI', color:'#ffffff', size:16, speed:70, hp:18, xp:8, spawnAfter:300, draw:'rogueai', movementType:'orbit' }
   ],
   bosses: [
@@ -332,6 +334,38 @@ const THEME = {
       // Core
       ctx.fillStyle = '#00ffff';
       ctx.beginPath(); ctx.arc(0, 0, s*0.15, 0, Math.PI*2); ctx.fill();
+    } else if(type.draw==='flanker') {
+      // Sleek angular stealth drone shape
+      const rot = time * 2;
+      ctx.fillStyle = type.color;
+      ctx.shadowColor = type.color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(0, -s*0.6);
+      ctx.lineTo(s*0.5, s*0.3);
+      ctx.lineTo(0, s*0.1);
+      ctx.lineTo(-s*0.5, s*0.3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#1a0033';
+      ctx.beginPath(); ctx.arc(0, -s*0.1, s*0.12, 0, Math.PI*2); ctx.fill();
+    } else if(type.draw==='bomber') {
+      // Round body with propellers/wings
+      const hover = Math.sin(time * 3 + e.spawnTime) * 3;
+      ctx.translate(0, hover);
+      ctx.fillStyle = type.color;
+      ctx.shadowColor = type.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(0, 0, s*0.45, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      // Wings
+      ctx.fillStyle = '#664400';
+      ctx.fillRect(-s*0.7, -s*0.1, s*0.3, s*0.2);
+      ctx.fillRect(s*0.4, -s*0.1, s*0.3, s*0.2);
+      // Bomb indicator
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath(); ctx.arc(0, s*0.2, s*0.12, 0, Math.PI*2); ctx.fill();
     }
     ctx.restore();
   },

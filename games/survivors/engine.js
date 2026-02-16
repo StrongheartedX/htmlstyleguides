@@ -542,12 +542,13 @@ const cam = { x: 0, y: 0 };
 const enemyHash = new SpatialHash(100);
 
 const enemies = new Pool(
-  () => ({ x:0, y:0, hp:0, maxHp:0, size:0, speed:0, type:null, xpValue:0, isBoss:false, spawnTime:0, hitFlash:0,
-    movementType:'chase', movementState:null, attackTimer:0, attackPattern:null }),
+  () => ({ x:0, y:0, hp:0, maxHp:0, size:0, speed:0, type:null, xpValue:0, isBoss:false, isElite:false, spawnTime:0, hitFlash:0,
+    movementType:'chase', movementState:null, attackTimer:0, attackPattern:null, shieldAngle:0 }),
   (e, x, y, type, isBoss) => {
     e.x = x; e.y = y;
     e.type = type;
     e.isBoss = isBoss || false;
+    e.isElite = false;
     e._dead = false;
     const hpMult = 1 + gameTime / 120;
     e.hp = e.maxHp = isBoss ? type.hp * (1 + gameTime / 80) * 1.5 : type.hp * hpMult;
@@ -557,9 +558,10 @@ const enemies = new Pool(
     e.spawnTime = gameTime;
     e.hitFlash = 0;
     e.movementType = type.movementType || 'chase';
-    e.movementState = { timer: 0, phase: 'approach', dashAngle: 0, anchorX: 0, anchorY: 0, orbitAngle: 0, waitX: 0, waitY: 0 };
+    e.movementState = { timer: 0, phase: 'approach', dashAngle: 0, anchorX: 0, anchorY: 0, orbitAngle: 0, waitX: 0, waitY: 0, flankSide: Math.random() < 0.5 ? 1 : -1, targetX: 0, targetY: 0 };
     e.attackTimer = isBoss ? 3 + Math.random() * 2 : 0;
     e.attackPattern = type.attackPattern || null;
+    e.shieldAngle = 0;
   }
 );
 
@@ -896,18 +898,20 @@ function chainHit(enemy, damage, bouncesLeft, range, hitSet) {
 // ============================================================
 const MOVEMENT_HANDLERS = {};
 
-// Default beeline toward player
+// Default beeline toward player (aggressive, with slight acceleration when close)
 MOVEMENT_HANDLERS.chase = function(e, dt, player) {
   const dx = player.x - e.x;
   const dy = player.y - e.y;
   const d = Math.hypot(dx, dy);
   if(d > 5) {
-    e.x += (dx/d) * e.speed * dt;
-    e.y += (dy/d) * e.speed * dt;
+    // Speed boost when close to player (within 150px) for more pressure
+    const closeMult = d < 150 ? 1.2 : 1.0;
+    e.x += (dx/d) * e.speed * closeMult * dt;
+    e.y += (dy/d) * e.speed * closeMult * dt;
   }
 };
 
-// Circle player at ~200px, dash in periodically
+// Circle player at ~150px, dash in frequently
 MOVEMENT_HANDLERS.strafe = function(e, dt, player) {
   const dx = player.x - e.x;
   const dy = player.y - e.y;
@@ -916,31 +920,31 @@ MOVEMENT_HANDLERS.strafe = function(e, dt, player) {
   ms.timer -= dt;
 
   if(ms.phase === 'approach') {
-    // Move toward strafe range
-    if(d > 220) {
-      e.x += (dx/d) * e.speed * dt;
-      e.y += (dy/d) * e.speed * dt;
+    // Move toward strafe range (tighter than before)
+    if(d > 170) {
+      e.x += (dx/d) * e.speed * 1.1 * dt;
+      e.y += (dy/d) * e.speed * 1.1 * dt;
     } else {
       ms.phase = 'circle';
       ms.orbitAngle = Math.atan2(e.y - player.y, e.x - player.x);
-      ms.timer = 2 + Math.random() * 2;
+      ms.timer = 1.2 + Math.random() * 1.2;
     }
   } else if(ms.phase === 'circle') {
-    // Orbit around player at ~200px
-    ms.orbitAngle += e.speed / 200 * dt;
-    const targetX = player.x + Math.cos(ms.orbitAngle) * 200;
-    const targetY = player.y + Math.sin(ms.orbitAngle) * 200;
-    e.x += (targetX - e.x) * 3 * dt;
-    e.y += (targetY - e.y) * 3 * dt;
+    // Orbit around player at ~150px (tighter, faster)
+    ms.orbitAngle += e.speed / 150 * dt;
+    const targetX = player.x + Math.cos(ms.orbitAngle) * 150;
+    const targetY = player.y + Math.sin(ms.orbitAngle) * 150;
+    e.x += (targetX - e.x) * 4 * dt;
+    e.y += (targetY - e.y) * 4 * dt;
     if(ms.timer <= 0) {
       ms.phase = 'dash';
-      ms.timer = 0.4;
+      ms.timer = 0.5;
     }
   } else if(ms.phase === 'dash') {
     // Dash toward player
     if(d > 5) {
-      e.x += (dx/d) * e.speed * 2.5 * dt;
-      e.y += (dy/d) * e.speed * 2.5 * dt;
+      e.x += (dx/d) * e.speed * 2.8 * dt;
+      e.y += (dy/d) * e.speed * 2.8 * dt;
     }
     if(ms.timer <= 0) {
       ms.phase = 'approach';
@@ -984,7 +988,7 @@ MOVEMENT_HANDLERS.charge = function(e, dt, player) {
   }
 };
 
-// Spiral inward getting closer
+// Spiral inward getting closer (aggressive spiral)
 MOVEMENT_HANDLERS.orbit = function(e, dt, player) {
   const dx = player.x - e.x;
   const dy = player.y - e.y;
@@ -995,8 +999,8 @@ MOVEMENT_HANDLERS.orbit = function(e, dt, player) {
     ms.orbitAngle = Math.atan2(e.y - player.y, e.x - player.x);
   }
 
-  // Slowly spiral inward
-  const orbitRadius = Math.max(30, d - 15 * dt);
+  // Spiral inward at a faster rate
+  const orbitRadius = Math.max(25, d - 25 * dt);
   ms.orbitAngle += (e.speed / Math.max(orbitRadius, 80)) * dt;
   const targetX = player.x + Math.cos(ms.orbitAngle) * orbitRadius;
   const targetY = player.y + Math.sin(ms.orbitAngle) * orbitRadius;
@@ -1039,6 +1043,130 @@ MOVEMENT_HANDLERS.ambush = function(e, dt, player) {
       ms.phase = 'approach';
       ms.timer = 0;
     }
+  }
+};
+
+// Move to player's flank/behind, then rush in from the side
+MOVEMENT_HANDLERS.flanker = function(e, dt, player) {
+  const dx = player.x - e.x;
+  const dy = player.y - e.y;
+  const d = Math.hypot(dx, dy);
+  const ms = e.movementState;
+  ms.timer -= dt;
+
+  if(ms.phase === 'approach') {
+    // Calculate a flanking position perpendicular to the player's facing direction
+    const perpX = -player.lastDirY * ms.flankSide;
+    const perpY = player.lastDirX * ms.flankSide;
+    ms.targetX = player.x + perpX * 180 - player.lastDirX * 80;
+    ms.targetY = player.y + perpY * 180 - player.lastDirY * 80;
+    const tdx = ms.targetX - e.x;
+    const tdy = ms.targetY - e.y;
+    const td = Math.hypot(tdx, tdy);
+    if(td > 40) {
+      e.x += (tdx/td) * e.speed * 1.3 * dt;
+      e.y += (tdy/td) * e.speed * 1.3 * dt;
+    } else {
+      ms.phase = 'circle';
+      ms.timer = 0.5 + Math.random() * 0.5;
+    }
+    // If too far from player, just close distance
+    if(d > 400) {
+      e.x += (dx/d) * e.speed * 1.1 * dt;
+      e.y += (dy/d) * e.speed * 1.1 * dt;
+    }
+  } else if(ms.phase === 'circle') {
+    // Brief strafe around the flank position
+    const perpX = -dy/d * ms.flankSide;
+    const perpY = dx/d * ms.flankSide;
+    e.x += perpX * e.speed * 0.8 * dt;
+    e.y += perpY * e.speed * 0.8 * dt;
+    if(ms.timer <= 0) {
+      ms.phase = 'rush';
+      ms.timer = 0.6;
+      ms.dashAngle = Math.atan2(player.y - e.y, player.x - e.x);
+    }
+  } else if(ms.phase === 'rush') {
+    // Burst toward player at high speed
+    e.x += Math.cos(ms.dashAngle) * e.speed * 2.8 * dt;
+    e.y += Math.sin(ms.dashAngle) * e.speed * 2.8 * dt;
+    if(ms.timer <= 0) {
+      ms.phase = 'approach';
+      ms.timer = 0;
+      ms.flankSide *= -1; // alternate sides
+    }
+  }
+};
+
+// Telegraph an AoE zone on the ground, pause, then crash down dealing area damage
+MOVEMENT_HANDLERS.divebomber = function(e, dt, player) {
+  const dx = player.x - e.x;
+  const dy = player.y - e.y;
+  const d = Math.hypot(dx, dy);
+  const ms = e.movementState;
+  ms.timer -= dt;
+
+  if(ms.phase === 'approach') {
+    // Fly toward player
+    if(d > 200) {
+      e.x += (dx/d) * e.speed * 1.2 * dt;
+      e.y += (dy/d) * e.speed * 1.2 * dt;
+    } else {
+      ms.phase = 'telegraph';
+      ms.timer = 1.2;
+      // Lock target position (where player is now)
+      ms.targetX = player.x;
+      ms.targetY = player.y;
+    }
+  } else if(ms.phase === 'telegraph') {
+    // Hover above target, slowing down (enemy rises visually via render)
+    e.x += (ms.targetX - e.x) * 0.5 * dt;
+    e.y += (ms.targetY - e.y) * 0.5 * dt;
+    if(ms.timer <= 0) {
+      ms.phase = 'dive';
+      ms.timer = 0.2;
+    }
+  } else if(ms.phase === 'dive') {
+    // Snap to target position
+    e.x += (ms.targetX - e.x) * 15 * dt;
+    e.y += (ms.targetY - e.y) * 15 * dt;
+    if(ms.timer <= 0) {
+      // Impact: spawn AoE damage effect
+      const impactRadius = 60 + (e.isElite ? 20 : 0);
+      const impactDmg = (8 + gameTime * 0.04) * (e.isElite ? 1.5 : 1);
+      activeEffects.push({
+        type: 'divebomberImpact', x: e.x, y: e.y,
+        radius: 0, maxRadius: impactRadius,
+        damage: impactDmg, life: 0.4, maxLife: 0.4,
+        hit: new Set()
+      });
+      spawnParticles(e.x, e.y, 10, e.type.color, 4);
+      Audio.noise(0.15, 0.1);
+      ms.phase = 'recover';
+      ms.timer = 1.0;
+    }
+  } else if(ms.phase === 'recover') {
+    // Sit still briefly after impact
+    if(ms.timer <= 0) {
+      ms.phase = 'approach';
+      ms.timer = 0;
+    }
+  }
+};
+
+// Slow approach with a frontal shield that blocks projectiles from one direction
+MOVEMENT_HANDLERS.shieldbearer = function(e, dt, player) {
+  const dx = player.x - e.x;
+  const dy = player.y - e.y;
+  const d = Math.hypot(dx, dy);
+
+  // Always face the player (shield direction)
+  e.shieldAngle = Math.atan2(dy, dx);
+
+  // Slow, relentless advance toward player
+  if(d > 25) {
+    e.x += (dx/d) * e.speed * dt;
+    e.y += (dy/d) * e.speed * dt;
   }
 };
 
@@ -1205,7 +1333,20 @@ function spawnEnemy() {
   const dist = Math.max(W, H) * 0.6 + Math.random() * 100;
   const x = player.x + Math.cos(angle) * dist;
   const y = player.y + Math.sin(angle) * dist;
-  enemies.get(x, y, type, false);
+  const e = enemies.get(x, y, type, false);
+  // Elite variant: after 3 minutes, increasing chance to spawn as elite
+  // Elites have +60% HP, +25% speed, +30% size, and a glow effect
+  if(gameTime >= 180) {
+    const eliteChance = Math.min(0.35, 0.05 + (gameTime - 180) / 600);
+    if(Math.random() < eliteChance) {
+      e.isElite = true;
+      e.hp *= 1.6;
+      e.maxHp *= 1.6;
+      e.speed *= 1.25;
+      e.size = Math.round(e.size * 1.3);
+      e.xpValue = Math.round(e.xpValue * 2);
+    }
+  }
 }
 
 function spawnBoss() {
@@ -1542,6 +1683,19 @@ function gameLoop(timestamp) {
     for(const e of hits) {
       const d = Math.hypot(p.x-e.x, p.y-e.y);
       if(d < e.size + 5) {
+        // Shield-bearer: block projectiles hitting the front (shield side)
+        if(e.movementType === 'shieldbearer' && !e.isBoss) {
+          const projAngle = Math.atan2(p.y - e.y, p.x - e.x);
+          const angleDiff = Math.abs(((projAngle - e.shieldAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+          if(angleDiff > Math.PI * 0.55) {
+            // Projectile hit the shield — deflect it
+            spawnParticles(p.x, p.y, 3, '#ffffff', 2);
+            Audio.note(800, 0.05, 'square', 0.04);
+            p.pierce--;
+            if(p.pierce <= 0) { projectiles.release(p); return; }
+            continue;
+          }
+        }
         damageEnemy(e, p.damage);
         p.pierce--;
         if(p.pierce <= 0) { projectiles.release(p); return; }
@@ -1590,6 +1744,20 @@ function gameLoop(timestamp) {
         ef.tickTimer = 0.5;
         const hits = enemyHash.query(ef.x, ef.y, ef.radius);
         for(const e of hits) damageEnemy(e, ef.damage);
+      }
+    } else if(ef.type === 'divebomberImpact') {
+      ef.radius = ef.maxRadius * (1 - ef.life/ef.maxLife);
+      // Damage player if caught in AoE
+      const pd = Math.hypot(player.x - ef.x, player.y - ef.y);
+      if(pd <= ef.radius && player.invulnTime <= 0 && !ef.hit.has('player')) {
+        ef.hit.add('player');
+        const dmg = ef.damage * player.defense;
+        player.hp -= dmg;
+        player.invulnTime = 0.5;
+        damageFlash = 0.15;
+        screenShake = 0.1;
+        Audio.damageTaken();
+        if(player.hp <= 0) gameOver();
       }
     } else if(ef.type === 'bossShockwave') {
       ef.radius = ef.maxRadius * (1 - ef.life/ef.maxLife);
@@ -1879,6 +2047,20 @@ EFFECT_RENDERERS.chainLine = function(ctx, ef, theme) {
   ctx.beginPath(); ctx.moveTo(ef.x1, ef.y1); ctx.lineTo(ef.x2, ef.y2); ctx.stroke();
 };
 
+EFFECT_RENDERERS.divebomberImpact = function(ctx, ef) {
+  const alpha = ef.life / ef.maxLife;
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,120,30,${alpha * 0.8})`;
+  ctx.lineWidth = 3 + (1 - alpha) * 4;
+  ctx.shadowColor = '#ff6600';
+  ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = `rgba(255,80,20,${alpha * 0.25})`;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+};
+
 EFFECT_RENDERERS.bossShockwave = function(ctx, ef) {
   const alpha = ef.life / ef.maxLife;
   ctx.save();
@@ -1973,6 +2155,23 @@ function updateTelegraphs(dt) {
         });
       }
     }
+    // Dive-bomber: AoE target zone telegraph
+    if(e.movementType === 'divebomber' && e.movementState.phase === 'telegraph') {
+      if(!telegraphs.find(t => t.source === e && t.type === 'diveZone')) {
+        telegraphs.push({
+          type: 'diveZone', source: e,
+          x: e.movementState.targetX, y: e.movementState.targetY,
+          radius: 60 + (e.isElite ? 20 : 0),
+          life: 1.2, maxLife: 1.2
+        });
+      }
+      if(!telegraphs.find(t => t.source === e && t.type === 'exclamation')) {
+        telegraphs.push({
+          type: 'exclamation', source: e,
+          life: 1.2, maxLife: 1.2
+        });
+      }
+    }
   });
 
   // Update positions to track source
@@ -2013,6 +2212,31 @@ TELEGRAPH_RENDERERS.exclamation = function(ctx, t) {
   ctx.font = 'bold 20px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('!', t.source.x, t.source.y - t.source.size - 12 - bounce);
+  ctx.restore();
+};
+
+// Pulsing orange/red circle on the ground for divebomber AoE warning
+TELEGRAPH_RENDERERS.diveZone = function(ctx, t) {
+  const pulse = 0.5 + 0.5 * Math.sin(gameTime * 10);
+  const progress = 1 - t.life / t.maxLife;
+  const alpha = Math.min(1, progress * 2) * pulse;
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,120,30,${alpha})`;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.arc(t.x, t.y, t.radius * (0.5 + progress * 0.5), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = `rgba(255,80,20,${alpha * 0.2})`;
+  ctx.fill();
+  // Inner crosshair
+  ctx.setLineDash([]);
+  ctx.strokeStyle = `rgba(255,60,20,${alpha * 0.6})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(t.x - 10, t.y); ctx.lineTo(t.x + 10, t.y);
+  ctx.moveTo(t.x, t.y - 10); ctx.lineTo(t.x, t.y + 10);
+  ctx.stroke();
   ctx.restore();
 };
 
@@ -2154,10 +2378,47 @@ function render(dt) {
     if(e.hitFlash > 0) {
       ctx.globalAlpha = 0.5 + 0.5*Math.sin(e.hitFlash*30);
     }
+    // Elite glow effect: pulsing colored halo behind the enemy
+    if(e.isElite) {
+      const glowPulse = 0.5 + 0.5 * Math.sin(gameTime * 4 + e.spawnTime);
+      ctx.save();
+      ctx.shadowColor = e.type.color || '#ffaa00';
+      ctx.shadowBlur = 15 + glowPulse * 10;
+      ctx.fillStyle = `rgba(255,200,50,${0.12 + glowPulse * 0.08})`;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.size * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
     if(e.isBoss) {
       THEME.drawBoss(ctx, e, gameTime);
     } else {
       THEME.drawEnemy(ctx, e, gameTime);
+    }
+    // Shield-bearer: draw frontal shield arc
+    if(e.movementType === 'shieldbearer' && !e.isBoss) {
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(e.shieldAngle);
+      ctx.strokeStyle = 'rgba(100,180,255,0.7)';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#4488ff';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(0, 0, e.size + 4, -Math.PI * 0.45, Math.PI * 0.45);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+    // Elite crown indicator
+    if(e.isElite) {
+      ctx.save();
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('\u2605', e.x, e.y - e.size - 6);
+      ctx.restore();
     }
     ctx.restore();
   });
@@ -2696,21 +2957,372 @@ function gameOver() {
   document.getElementById('game-over-screen').style.display = 'flex';
 }
 
+// ============================================================
+// PAUSE MENU — TABBED (Resume / Inventory / Skills)
+// ============================================================
+const SKILL_TREE_DEF = {
+  offense: {
+    label: 'Offense', color: '#e74c3c', icon: '\u2694',
+    nodes: [
+      { id: 'offense_1', name: 'Critical Eye',     desc: '+8% critical hit chance' },
+      { id: 'offense_2', name: 'Lethal Strikes',   desc: '+50% critical damage multiplier' },
+      { id: 'offense_3', name: 'Multi-Projectile', desc: '+2 extra projectiles per volley' },
+      { id: 'offense_4', name: 'Piercing Shots',   desc: 'Projectiles pierce +3 enemies' }
+    ]
+  },
+  defense: {
+    label: 'Defense', color: '#3498db', icon: '\u26E8',
+    nodes: [
+      { id: 'defense_1', name: 'Regeneration',     desc: 'Recover 1 HP every 5 seconds' },
+      { id: 'defense_2', name: 'Dash Shield',      desc: 'Extended invulnerability after dashing' },
+      { id: 'defense_3', name: 'Damage Reduction', desc: '15% less damage taken' },
+      { id: 'defense_4', name: 'Second Life',      desc: 'Revive once per run at 30% HP' }
+    ]
+  },
+  utility: {
+    label: 'Utility', color: '#2ecc71', icon: '\u2728',
+    nodes: [
+      { id: 'utility_1', name: 'Long Dash',       desc: '+40% dash distance' },
+      { id: 'utility_2', name: 'Quick Recovery',   desc: '-30% dash cooldown' },
+      { id: 'utility_3', name: 'Magnet Range',     desc: '+40 pickup radius' },
+      { id: 'utility_4', name: 'XP Multiplier',    desc: '+25% XP from all sources' }
+    ]
+  }
+};
+
+let pauseTab = 'resume';
+
 function togglePause() {
   if(state === 'playing') {
     state = 'paused';
+    pauseTab = 'resume';
+    renderPauseMenu();
     document.getElementById('pause-screen').style.display = 'flex';
   } else if(state === 'paused') {
+    reapplyEquippedItems();
     state = 'playing';
     document.getElementById('pause-screen').style.display = 'none';
     lastTime = performance.now();
   }
 }
 
+function switchPauseTab(tab) {
+  pauseTab = tab;
+  renderPauseMenu();
+}
+
+function renderPauseMenu() {
+  const saveData = SaveManager.load();
+  const mins = Math.floor(gameTime / 60);
+  const secs = Math.floor(gameTime % 60);
+  const spentSkillPts = Object.keys(saveData.skillTree || {}).filter(k => saveData.skillTree[k]).length;
+  const availablePts = (saveData.skillPoints || 0) - spentSkillPts;
+
+  const screen = document.getElementById('pause-screen');
+  let html = '';
+
+  html += '<div class="pause-header">';
+  html += '<div class="pause-stat"><span class="pause-stat-icon" style="color:#ffd700">G</span> ' + (saveData.gold + runGold) + ' gold</div>';
+  html += '<div class="pause-stat"><span class="pause-stat-icon" style="color:#44ddff">\u2605</span> ' + availablePts + ' skill pts</div>';
+  html += '<div class="pause-stat"><span class="pause-stat-icon" style="color:#aaa">\u23F1</span> ' + mins + ':' + secs.toString().padStart(2, '0') + '</div>';
+  html += '</div>';
+
+  html += '<div class="pause-tabs">';
+  html += '<button class="pause-tab' + (pauseTab === 'resume' ? ' active' : '') + '" onclick="switchPauseTab(\'resume\')">Resume</button>';
+  html += '<button class="pause-tab' + (pauseTab === 'inventory' ? ' active' : '') + '" onclick="switchPauseTab(\'inventory\')">\ud83c\udf92 Inventory</button>';
+  html += '<button class="pause-tab' + (pauseTab === 'skills' ? ' active' : '') + '" onclick="switchPauseTab(\'skills\')">\u2b50 Skills' + (availablePts > 0 ? ' <span class="tab-badge">' + availablePts + '</span>' : '') + '</button>';
+  html += '</div>';
+
+  html += '<div class="pause-content">';
+  if(pauseTab === 'resume') {
+    html += renderPauseResume();
+  } else if(pauseTab === 'inventory') {
+    html += renderPauseInventory(saveData);
+  } else if(pauseTab === 'skills') {
+    html += renderPauseSkills(saveData);
+  }
+  html += '</div>';
+
+  screen.innerHTML = html;
+}
+
+function renderPauseResume() {
+  let h = '<div class="pause-resume-panel">';
+  h += '<div class="screen-title" style="font-size:clamp(1.5rem,5vw,2.5rem)">Paused</div>';
+  h += '<button class="btn" onclick="togglePause()">Resume</button>';
+  h += '<div style="margin-top:16px;opacity:0.5;font-size:0.85rem">Press ESC to resume</div>';
+  h += '</div>';
+  return h;
+}
+
+function renderPauseInventory(saveData) {
+  const equipped = saveData.equipped || [];
+  const inventory = saveData.inventory || [];
+  let h = '';
+
+  h += '<div class="inv-section-label">Equipped (3 slots)</div>';
+  h += '<div class="inv-equipped-row">';
+  for(let i = 0; i < 3; i++) {
+    const itemId = equipped[i] || null;
+    const loot = itemId ? getLootById(itemId) : null;
+    if(loot) {
+      const rc = RARITY_CONFIG[loot.rarity];
+      h += '<div class="inv-slot equipped filled" style="border-color:' + rc.color + '" onclick="pauseUnequip(' + i + ')" title="Click to unequip">';
+      h += '<div class="inv-slot-icon">' + loot.icon + '</div>';
+      h += '<div class="inv-slot-name" style="color:' + rc.color + '">' + loot.name + '</div>';
+      h += '<div class="inv-slot-desc">' + loot.desc + '</div>';
+      h += '</div>';
+    } else {
+      h += '<div class="inv-slot equipped empty"><div class="inv-slot-icon" style="opacity:0.3">--</div><div class="inv-slot-name" style="opacity:0.3">Empty</div></div>';
+    }
+  }
+  h += '</div>';
+
+  const maxSlots = saveData.inventorySlots || 6;
+  const stacks = {};
+  inventory.forEach(id => { stacks[id] = (stacks[id] || 0) + 1; });
+  const uniqueItems = Object.keys(stacks);
+
+  h += '<div class="inv-section-label">Inventory (' + uniqueItems.length + '/' + maxSlots + ' slots)</div>';
+  h += '<div class="inv-grid">';
+  for(let i = 0; i < maxSlots; i++) {
+    const itemId = uniqueItems[i] || null;
+    const loot = itemId ? getLootById(itemId) : null;
+    if(loot) {
+      const rc = RARITY_CONFIG[loot.rarity];
+      const count = stacks[itemId];
+      const isEquipped = equipped.includes(itemId);
+      h += '<div class="inv-slot grid-slot filled" style="border-color:' + rc.color + '">';
+      h += '<div class="inv-slot-icon">' + loot.icon + (count > 1 ? '<span class="inv-count">x' + count + '</span>' : '') + '</div>';
+      h += '<div class="inv-slot-name" style="color:' + rc.color + '">' + loot.name + '</div>';
+      h += '<div class="inv-slot-desc">' + loot.desc + '</div>';
+      h += '<div class="inv-slot-actions">';
+      if(!isEquipped && equipped.length < 3) {
+        h += '<button class="inv-btn equip" onclick="pauseEquip(\'' + itemId + '\')">Equip</button>';
+      } else if(isEquipped) {
+        h += '<span class="inv-equipped-badge">Equipped</span>';
+      }
+      const salvageVal = SALVAGE_VALUES[loot.rarity] || 5;
+      h += '<button class="inv-btn salvage" onclick="pauseSalvage(\'' + itemId + '\')" title="Salvage for ' + salvageVal + 'g">Salvage ' + salvageVal + 'g</button>';
+      h += '</div>';
+      h += '</div>';
+    } else {
+      h += '<div class="inv-slot grid-slot empty"><div class="inv-slot-icon" style="opacity:0.2">-</div></div>';
+    }
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderPauseSkills(saveData) {
+  const st = saveData.skillTree || {};
+  const spentPts = Object.keys(st).filter(k => st[k]).length;
+  const availablePts = (saveData.skillPoints || 0) - spentPts;
+
+  let h = '';
+  h += '<div class="skills-header">Skill Points: <span style="color:#ffd700;font-weight:bold">' + availablePts + '</span></div>';
+
+  for(const branchKey of Object.keys(SKILL_TREE_DEF)) {
+    const branch = SKILL_TREE_DEF[branchKey];
+    h += '<div class="skill-branch">';
+    h += '<div class="skill-branch-label" style="color:' + branch.color + '">' + branch.icon + ' ' + branch.label + '</div>';
+    h += '<div class="skill-branch-nodes">';
+    for(let i = 0; i < branch.nodes.length; i++) {
+      const node = branch.nodes[i];
+      const unlocked = !!st[node.id];
+      const prevUnlocked = i === 0 || !!st[branch.nodes[i - 1].id];
+      const canUnlock = !unlocked && prevUnlocked && availablePts > 0;
+      let cls = 'skill-node';
+      if(unlocked) cls += ' unlocked';
+      else if(canUnlock) cls += ' available';
+      else cls += ' locked';
+      h += '<div class="' + cls + '" style="--branch-color:' + branch.color + '"' + (canUnlock ? ' onclick="pauseUnlockSkill(\'' + node.id + '\')"' : '') + '>';
+      h += '<div class="skill-node-name">' + node.name + '</div>';
+      h += '<div class="skill-node-desc">' + node.desc + '</div>';
+      if(unlocked) h += '<div class="skill-node-badge">\u2713</div>';
+      h += '</div>';
+      if(i < branch.nodes.length - 1) {
+        h += '<div class="skill-connector" style="background:' + (unlocked ? branch.color : '#333') + '"></div>';
+      }
+    }
+    h += '</div>';
+    h += '</div>';
+  }
+  return h;
+}
+
+function pauseEquip(itemId) {
+  const saveData = SaveManager.load();
+  if(!saveData.equipped) saveData.equipped = [];
+  if(saveData.equipped.length >= 3) return;
+  if(saveData.equipped.includes(itemId)) return;
+  saveData.equipped.push(itemId);
+  SaveManager.save(saveData);
+  renderPauseMenu();
+}
+
+function pauseUnequip(slotIdx) {
+  const saveData = SaveManager.load();
+  if(!saveData.equipped || slotIdx >= saveData.equipped.length) return;
+  saveData.equipped.splice(slotIdx, 1);
+  SaveManager.save(saveData);
+  renderPauseMenu();
+}
+
+function pauseSalvage(itemId) {
+  const saveData = SaveManager.load();
+  const loot = getLootById(itemId);
+  if(!loot) return;
+  const idx = saveData.inventory.indexOf(itemId);
+  if(idx === -1) return;
+  saveData.inventory.splice(idx, 1);
+  const eqIdx = saveData.equipped.indexOf(itemId);
+  if(eqIdx !== -1) saveData.equipped.splice(eqIdx, 1);
+  const salvageGold = SALVAGE_VALUES[loot.rarity] || 5;
+  saveData.gold += salvageGold;
+  runGold += salvageGold;
+  SaveManager.save(saveData);
+  renderPauseMenu();
+}
+
+function pauseUnlockSkill(skillId) {
+  const saveData = SaveManager.load();
+  if(!saveData.skillTree) saveData.skillTree = {};
+  const spentPts = Object.keys(saveData.skillTree).filter(k => saveData.skillTree[k]).length;
+  const availablePts = (saveData.skillPoints || 0) - spentPts;
+  if(availablePts <= 0) return;
+  if(saveData.skillTree[skillId]) return;
+  for(const branchKey of Object.keys(SKILL_TREE_DEF)) {
+    const nodes = SKILL_TREE_DEF[branchKey].nodes;
+    for(let i = 0; i < nodes.length; i++) {
+      if(nodes[i].id === skillId) {
+        if(i > 0 && !saveData.skillTree[nodes[i - 1].id]) return;
+        break;
+      }
+    }
+  }
+  saveData.skillTree[skillId] = true;
+  SaveManager.save(saveData);
+  applySkillToPlayer(skillId);
+  renderPauseMenu();
+}
+
+function applySkillToPlayer(skillId) {
+  if(skillId === 'offense_1') player.permCritChance = (player.permCritChance || 0) + 0.08;
+  if(skillId === 'offense_2') player.permCritDamage = (player.permCritDamage || 0) + 0.50;
+  if(skillId === 'offense_3') player.permMultiProjectile = true;
+  if(skillId === 'offense_4') player.permPiercing = true;
+  if(skillId === 'defense_1') { player.permRegen = true; player.permRegenTimer = 0; }
+  if(skillId === 'defense_2') player.permShieldOnDash = true;
+  if(skillId === 'defense_3') player.defense *= 0.85;
+  if(skillId === 'defense_4') player.permSecondLife = true;
+  if(skillId === 'utility_1') player.dashDistance = (player.dashDistance || 1) * 1.40;
+  if(skillId === 'utility_2') player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.30;
+  if(skillId === 'utility_3') player.pickupRadius += 40;
+  if(skillId === 'utility_4') player.permXpMult = (player.permXpMult || 1) * 1.25;
+}
+
+function reapplyEquippedItems() {
+  const saveData = SaveManager.load();
+  const equippedItems = saveData.equipped || [];
+  const permUpgrades = saveData.upgrades || {};
+  const skillTree = saveData.skillTree || {};
+
+  let baseMaxHp = 100, baseSpeed = 150, baseDamage = 1, baseAttackSpeed = 1;
+  let baseDefense = 1, basePickup = 60, baseDashDist = 1, baseDashCdReduction = 0;
+  let baseCritChance = 0, baseCritDamage = 0, baseLifesteal = 0, baseXpMult = 0;
+
+  for(const [uid, upg] of Object.entries(permUpgrades)) {
+    if(upg.stat === 'maxHp' && typeof upg.bonus === 'number') baseMaxHp += upg.bonus;
+    if(upg.stat === 'speed' && typeof upg.mult === 'number') baseSpeed *= upg.mult;
+    if(upg.stat === 'damage' && typeof upg.mult === 'number') baseDamage *= upg.mult;
+    if(upg.stat === 'attackSpeed' && typeof upg.mult === 'number') baseAttackSpeed *= upg.mult;
+    if(upg.stat === 'defense' && typeof upg.mult === 'number') baseDefense *= upg.mult;
+    if(upg.stat === 'pickupRadius' && typeof upg.bonus === 'number') basePickup += upg.bonus;
+  }
+  if(permUpgrades.p_regen) { player.permRegen = true; }
+  if(permUpgrades.p_critchance) baseCritChance += 0.05;
+  if(permUpgrades.p_lifesteal) baseLifesteal += 0.01;
+  if(permUpgrades.p_xpboost) baseXpMult = 1.10;
+
+  player.permMultiProjectile = false;
+  player.permPiercing = false;
+  player.permShieldOnDash = false;
+  player.permSecondLife = false;
+  if(skillTree.offense_1) baseCritChance += 0.08;
+  if(skillTree.offense_2) baseCritDamage += 0.50;
+  if(skillTree.offense_3) player.permMultiProjectile = true;
+  if(skillTree.offense_4) player.permPiercing = true;
+  if(skillTree.defense_1) { player.permRegen = true; }
+  if(skillTree.defense_2) player.permShieldOnDash = true;
+  if(skillTree.defense_3) baseDefense *= 0.85;
+  if(skillTree.defense_4) player.permSecondLife = true;
+  if(skillTree.utility_1) baseDashDist *= 1.40;
+  if(skillTree.utility_2) baseDashCdReduction += 0.30;
+  if(skillTree.utility_3) basePickup += 40;
+  if(skillTree.utility_4) baseXpMult = (baseXpMult || 1) * 1.25;
+
+  player.permBerserker = null;
+  player.permThorns = 0;
+  player.permPhoenixRevive = false;
+  for(const itemId of equippedItems) {
+    const loot = getLootById(itemId);
+    if(!loot) continue;
+    const ef = loot.effect;
+    if(!ef) continue;
+    if(ef.stat === 'maxHp' && typeof ef.bonus === 'number') {
+      baseMaxHp += ef.bonus;
+      if(ef.regen) { player.permRegen = true; }
+    }
+    if(ef.stat === 'speed' && typeof ef.mult === 'number') baseSpeed *= ef.mult;
+    if(ef.stat === 'damage' && typeof ef.mult === 'number') baseDamage *= ef.mult;
+    if(ef.stat === 'attackSpeed' && typeof ef.mult === 'number') baseAttackSpeed *= ef.mult;
+    if(ef.stat === 'defense' && typeof ef.mult === 'number') baseDefense *= ef.mult;
+    if(ef.stat === 'pickupRadius' && typeof ef.bonus === 'number') basePickup += ef.bonus;
+    if(ef.stat === 'lifesteal') baseLifesteal += ef.value;
+    if(ef.stat === 'critChance') baseCritChance += ef.value;
+    if(ef.stat === 'xpMult') baseXpMult = (baseXpMult || 1) * ef.value;
+    if(ef.stat === 'dashCooldown') baseDashCdReduction += ef.value;
+    if(ef.stat === 'berserker') player.permBerserker = { threshold: ef.threshold, mult: ef.mult };
+    if(ef.stat === 'phoenixRevive') player.permPhoenixRevive = true;
+    if(ef.stat === 'thornsDamage') player.permThorns = (player.permThorns || 0) + ef.value;
+    if(ef.stat === 'voidPower') {
+      baseDamage *= ef.damageMult;
+      baseMaxHp = Math.floor(baseMaxHp * ef.hpMult);
+    }
+  }
+
+  for(const pName of player.passives) {
+    const passive = THEME.passives.find(p => p.name === pName);
+    if(!passive) continue;
+    if(passive.stat === 'maxHp' && passive.mult) baseMaxHp *= passive.mult;
+    if(passive.stat === 'speed' && passive.mult) baseSpeed *= passive.mult;
+    if(passive.stat === 'damage' && passive.mult) baseDamage *= passive.mult;
+    if(passive.stat === 'attackSpeed' && passive.mult) baseAttackSpeed *= passive.mult;
+    if(passive.stat === 'defense' && passive.mult) baseDefense *= passive.mult;
+    if(passive.stat === 'pickupRadius' && passive.mult) basePickup *= passive.mult;
+  }
+
+  const hpRatio = player.maxHp > 0 ? player.hp / player.maxHp : 1;
+  player.maxHp = baseMaxHp;
+  player.hp = Math.min(Math.round(hpRatio * baseMaxHp), baseMaxHp);
+  player.speed = baseSpeed;
+  player.damage = baseDamage;
+  player.attackSpeed = baseAttackSpeed;
+  player.defense = baseDefense;
+  player.pickupRadius = basePickup;
+  player.dashDistance = baseDashDist;
+  player.dashCooldownReduction = baseDashCdReduction;
+  player.permCritChance = baseCritChance;
+  player.permCritDamage = baseCritDamage;
+  player.permLifesteal = baseLifesteal;
+  player.permXpMult = baseXpMult;
+}
+
 // Button handlers
 document.getElementById('btn-start').addEventListener('click', startGame);
 document.getElementById('btn-restart').addEventListener('click', startGame);
-document.getElementById('btn-resume').addEventListener('click', togglePause);
+// btn-resume click is now handled inside the dynamically rendered pause menu
 
 // Start loop
 requestAnimationFrame(gameLoop);
