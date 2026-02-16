@@ -72,6 +72,80 @@ For a 3-4 minute song:
 
 Reuse patterns via the sequence array — compose 8-20 unique patterns, arrange them into a full song via sequencing.
 
+## Phase 1b — Relay Mode (for epic-length compositions)
+
+For songs longer than 4 minutes, or when the user requests multiple parallel/sequential compositions, use the **Haiku Relay Pattern** instead of composing in a single agent. This was proven with a 130-pattern, 5.2-minute power metal epic.
+
+### How It Works
+
+1. **Opus plans the architecture**: Define instruments, section descriptions (10-30 sections), key/mode/energy per section, and the number of patterns each agent should compose (~13 patterns ≈ 30 seconds at most tempos).
+
+2. **Write the master plan** to `games/audio-tracker/songs/_chunks-{song-name}/instruments.json` with the instrument array and section descriptions.
+
+3. **Launch sequential Haiku agents**, each composing one section. Each agent receives:
+   - The instrument definitions (constant)
+   - Its section description (from the plan)
+   - **The handoff payload** from the previous agent — the sustaining notes at the end of the last pattern
+
+4. **Extract handoff notes** between agents using `games/audio-tracker/songs/_ttfaf-chunks/extract_handoff.py`:
+   ```bash
+   python3 extract_handoff.py chunk-NN.json
+   ```
+   This outputs the last sounding note per channel (note, instrument, volume, whether it sustains past the pattern boundary).
+
+5. **Each agent's prompt must include**:
+   - "These notes are ALREADY RINGING when your section begins: Ch0: X, Ch1: Y, Ch2: Z, Ch3: W"
+   - "Let them ring 2-4 rows before your new notes take over"
+   - The specific handoff notes to leave sustaining at the END of their last pattern (so the next agent can continue seamlessly)
+   - "This is 100% original composition" (avoids copyright refusal for cover-inspired work)
+
+6. **Merge all chunks** at the end:
+   ```bash
+   python3 merge.py  # in the chunks directory
+   ```
+   This remaps pattern IDs and stitches sequences into one song.
+
+### Relay Prompt Template
+
+```
+You are composing Section N of M of an ORIGINAL [genre] chiptune epic called "[Title]." 100% original composition.
+
+## INCOMING HANDOFF — Already ringing:
+- Ch0: [note] (MIDI [num]), inst [idx] — sustaining
+- Ch1: [note] (MIDI [num]), inst [idx] — sustaining
+- Ch2: [note] (MIDI [num]), inst [idx] — sustaining
+- Ch3: [description]
+
+Let ring 2-4 rows before new notes.
+
+## YOUR SECTION: "[Section Name]" — Section N of M
+[Description of what this section should sound like]
+
+**Key**: [key/mode]
+**Energy**: [X/10]
+**Patterns**: 13 (IDs 0-12), 32 rows, [BPM] BPM, rpb=4
+
+## INSTRUMENTS
+[List with indices]
+
+## COMPOSE
+[Detailed per-pattern guidance]
+
+### HANDOFF (Pattern 12):
+- Ch0: row 28, n:[note], inst [idx], d:8
+- Ch1: row 28, n:[note], inst [idx], d:8
+- Ch2: row 24, n:[note], inst [idx], d:12
+- Ch3: [drum fill or crash description]
+
+## OUTPUT: Write to `games/audio-tracker/songs/_chunks-{name}/chunk-NN.json`
+```
+
+### When to Use Relay Mode
+- User requests a song longer than 4 minutes
+- User asks for "epic", "through-composed", or "suite" style compositions
+- User wants to compose in a specific genre that benefits from many distinct sections (power metal, progressive rock, symphony)
+- User explicitly asks for parallel or sequential agent composition
+
 ## Phase 2 — Output
 
 1. Write the complete JSON to `games/audio-tracker/songs/{kebab-case-title}.json`.
