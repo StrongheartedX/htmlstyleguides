@@ -63,6 +63,11 @@ var SheetMusic = (function () {
   var playing = false;
   var bpm = 120;
   var rowsPerBeat = 4;
+  var seqRowOffsets = [];        // seq row -> absolute row offset
+  var maxNoteDurationRows = 1;
+  var trackerPollMs = 40;
+  var lastTrackerPollTime = 0;
+  var lastTrackerAbsRow = null;
 
   // Computed layout
   var staffTop = 0;             // y of top treble staff line
@@ -118,12 +123,15 @@ var SheetMusic = (function () {
 
   function buildTimeline(song) {
     timeline = [];
+    seqRowOffsets = [];
+    maxNoteDurationRows = 1;
     if (!song || !song.patterns || !song.sequence) return;
 
     totalRows = 0;
     var rowOffset = 0;
 
     for (var si = 0; si < song.sequence.length; si++) {
+      seqRowOffsets[si] = rowOffset;
       var seq = song.sequence[si];
       // Determine pattern length from first channel
       var firstPatId = seq[0];
@@ -189,16 +197,78 @@ var SheetMusic = (function () {
   }
 
   function pushNote(row, midi, channel, duration) {
+    var clampedDuration = Math.max(duration, 1);
     var sp = midiToStaffPos(midi);
+    if (clampedDuration > maxNoteDurationRows) {
+      maxNoteDurationRows = clampedDuration;
+    }
     timeline.push({
       row: row,
       midi: midi,
       channel: channel,
-      duration: Math.max(duration, 1),
+      duration: clampedDuration,
       staffPos: sp.pos,
       sharp: sp.sharp,
       y: 0  // computed at render time after layout
     });
+  }
+
+  function absoluteRow(row, seqRow) {
+    if (!songData || !songData.sequence) return row || 0;
+    if (typeof seqRow !== 'number' || seqRow < 0) seqRow = 0;
+    if (seqRow >= seqRowOffsets.length) seqRow = seqRowOffsets.length - 1;
+    var base = seqRow >= 0 ? seqRowOffsets[seqRow] : 0;
+    return base + (row || 0);
+  }
+
+  function setTargetRow(absRow, nowMs) {
+    targetRow = absRow;
+    targetRowTime = nowMs || performance.now();
+    playing = true;
+    lastTrackerAbsRow = absRow;
+  }
+
+  function findFirstTimelineIndex(rowThreshold) {
+    var lo = 0;
+    var hi = timeline.length;
+    while (lo < hi) {
+      var mid = (lo + hi) >> 1;
+      if (timeline[mid].row < rowThreshold) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return lo;
+  }
+
+  function pollTracker(nowMs) {
+    if (!songData || !window.Tracker) {
+      return;
+    }
+    var tracker = window.Tracker;
+    if (!tracker.isPlaying) return;
+    if (!tracker.isPlaying()) {
+      playing = false;
+      return;
+    }
+    if (nowMs - lastTrackerPollTime < trackerPollMs) {
+      return;
+    }
+    lastTrackerPollTime = nowMs;
+
+    if (!tracker.getCurrentRow || !tracker.getCurrentSequenceRow) {
+      return;
+    }
+    var row = tracker.getCurrentRow();
+    var seqRow = tracker.getCurrentSequenceRow();
+    if (typeof row !== 'number' || typeof seqRow !== 'number') {
+      return;
+    }
+    var absRow = absoluteRow(row, seqRow);
+    if (absRow !== lastTrackerAbsRow) {
+      setTargetRow(absRow, nowMs);
+    }
   }
 
   // ── Layout computation ──
@@ -378,8 +448,10 @@ var SheetMusic = (function () {
     // Visible range in rows
     var leftRow = currentRowFrac - (cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
     var rightRow = currentRowFrac + (canvasW - cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
+    var startRow = leftRow - maxNoteDurationRows;
+    var startIdx = findFirstTimelineIndex(startRow);
 
-    for (var i = 0; i < timeline.length; i++) {
+    for (var i = startIdx; i < timeline.length; i++) {
       var note = timeline[i];
       // Quick bounds check
       var noteEnd = note.row + note.duration;
@@ -403,7 +475,8 @@ var SheetMusic = (function () {
       // Duration beam
       ctx.fillStyle = noteColor;
       var beamH = 4;
-      ctx.fillRect(x + NOTE_HEAD_RX, y - beamH / 2, noteW - NOTE_HEAD_RX, beamH);
+      var beamW = Math.max(1, noteW - NOTE_HEAD_RX);
+      ctx.fillRect(x + NOTE_HEAD_RX, y - beamH / 2, beamW, beamH);
 
       // Draw ledger lines if needed
       drawLedgerLines(x, y, note.staffPos);
@@ -499,11 +572,14 @@ var SheetMusic = (function () {
   function tick() {
     if (!visible) return;
 
+    var now = performance.now();
+    pollTracker(now);
+
     if (playing) {
       // Extrapolate position forward from last known row at playback speed
-      var now = performance.now();
       var rowsPerSec = (bpm / 60) * rowsPerBeat;
       var elapsed = (now - targetRowTime) / 1000;
+      if (elapsed < 0) elapsed = 0;
       currentRowFrac = targetRow + elapsed * rowsPerSec;
     }
 
@@ -545,36 +621,25 @@ var SheetMusic = (function () {
     buildTimeline(song);
     currentRowFrac = -2; // start slightly before beginning
     targetRow = -2;
+    targetRowTime = performance.now();
+    lastTrackerAbsRow = null;
+    lastTrackerPollTime = 0;
     playing = false;
     if (visible) render();
   }
 
   function onRow(row, seqRow) {
     if (!songData) return;
-    // Compute absolute row from sequence position
-    var absRow = 0;
-    for (var si = 0; si < seqRow; si++) {
-      var seq = songData.sequence[si];
-      if (!seq) break;
-      // Find pattern length for this sequence row
-      var patId = seq[0];
-      for (var p = 0; p < songData.patterns.length; p++) {
-        if (songData.patterns[p].id === patId) {
-          absRow += songData.patterns[p].length;
-          break;
-        }
-      }
-    }
-    absRow += row;
-    targetRow = absRow;
-    targetRowTime = performance.now();
-    playing = true;
+    setTargetRow(absoluteRow(row, seqRow), performance.now());
   }
 
   function stop() {
     playing = false;
     currentRowFrac = -2;
     targetRow = -2;
+    targetRowTime = performance.now();
+    lastTrackerAbsRow = null;
+    lastTrackerPollTime = 0;
     if (visible) render();
   }
 
