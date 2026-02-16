@@ -360,6 +360,126 @@
             justify-content: flex-end;
         }
 
+        /* Skill Tree */
+        .skill-tree-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-points-display {
+            font-family: var(--font-title);
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .skill-tree-svg-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 16px;
+            margin-top: 12px;
+            overflow-x: auto;
+        }
+
+        .skill-tree-svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        .skill-tree-svg .branch-label {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 13px;
+            font-weight: 700;
+            fill: var(--text);
+        }
+
+        .skill-tree-svg .node-circle {
+            stroke-width: 2.5;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+
+        .skill-tree-svg .node-circle:hover {
+            filter: brightness(1.3);
+        }
+
+        .skill-tree-svg .node-circle.locked {
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+
+        .skill-tree-svg .node-circle.locked:hover {
+            filter: none;
+        }
+
+        .skill-tree-svg .node-circle.unlocked {
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        .skill-tree-svg .node-label {
+            font-family: 'Crimson Text', Georgia, serif;
+            font-size: 11px;
+            fill: var(--text);
+            pointer-events: none;
+        }
+
+        .skill-tree-svg .node-label.dimmed {
+            opacity: 0.4;
+        }
+
+        .skill-tree-svg .connector {
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .skill-tree-svg .connector.active {
+            opacity: 1;
+        }
+
+        .skill-tree-svg .connector.inactive {
+            opacity: 0.2;
+            stroke-dasharray: 4 3;
+        }
+
+        .skill-tree-tooltip {
+            position: fixed;
+            background: #1a1a2e;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text);
+            max-width: 220px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            line-height: 1.4;
+        }
+
+        .skill-tree-tooltip.visible {
+            opacity: 1;
+        }
+
+        .skill-tree-tooltip .tt-name {
+            font-family: var(--font-title);
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .skill-tree-tooltip .tt-status {
+            font-size: 0.8rem;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .shop-title {
@@ -393,6 +513,15 @@
                 width: 100%;
                 max-width: 320px;
             }
+
+            .skill-tree-svg-wrap {
+                padding: 16px 8px;
+            }
+
+            .skill-tree-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -412,6 +541,7 @@
                 <span>Runs: <strong id="stat-runs">0</strong></span>
                 <span>Total Kills: <strong id="stat-kills">0</strong></span>
                 <span>World: <strong id="stat-world">1</strong></span>
+                <span>Skill Pts: <strong id="stat-sp">0</strong></span>
             </div>
         </div>
 
@@ -429,6 +559,22 @@
             <h2 class="category-title"><span class="cat-icon">&#x2728;</span>Passives</h2>
             <div class="item-grid" id="grid-passives"></div>
         </section>
+
+        <section class="category" id="cat-skilltree">
+            <div class="skill-tree-header">
+                <h2 class="category-title" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
+                    <span class="cat-icon">&#x1F333;</span>Skill Tree
+                </h2>
+                <div class="skill-points-display">
+                    Skill Points: <span id="skill-points-count">0</span>
+                </div>
+            </div>
+            <div class="skill-tree-svg-wrap">
+                <svg id="skill-tree-svg" class="skill-tree-svg" viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+        </section>
+
+        <div class="skill-tree-tooltip" id="skill-tooltip"></div>
 
         <footer class="shop-footer">
             <div class="footer-buttons">
@@ -530,6 +676,7 @@
         return {
             version: SAVE_VERSION,
             gold: 0,
+            skillPoints: 0,
             currentWorld: 0,
             inventory: [],
             skillTree: {},
@@ -556,6 +703,7 @@
         return {
             version: SAVE_VERSION,
             gold: typeof data.gold === 'number' ? data.gold : base.gold,
+            skillPoints: typeof data.skillPoints === 'number' ? data.skillPoints : base.skillPoints,
             currentWorld: typeof data.currentWorld === 'number' ? data.currentWorld : base.currentWorld,
             inventory: Array.isArray(data.inventory) ? data.inventory : base.inventory,
             skillTree: data.skillTree && typeof data.skillTree === 'object' ? data.skillTree : base.skillTree,
@@ -616,6 +764,8 @@
         document.getElementById('stat-runs').textContent = saveData.stats.runsCompleted;
         document.getElementById('stat-kills').textContent = saveData.stats.totalKills;
         document.getElementById('stat-world').textContent = (saveData.currentWorld || 0) + 1;
+        var spEl = document.getElementById('stat-sp');
+        if (spEl) spEl.textContent = saveData.skillPoints || 0;
     }
 
     function createCard(item, category) {
@@ -664,6 +814,7 @@
         renderGrid('grid-stats', SHOP_CONFIG.statUpgrades, 'stat');
         renderGrid('grid-weapons', SHOP_CONFIG.startingWeapons, 'weapon');
         renderGrid('grid-passives', SHOP_CONFIG.passives, 'passive');
+        if (typeof renderSkillTree === 'function') renderSkillTree();
     }
 
     // =========================================================================
@@ -784,9 +935,239 @@
     });
 
     // =========================================================================
+    // SKILL TREE
+    // =========================================================================
+    const SKILL_TREE_DEF = {
+        offense: {
+            label: 'Offense',
+            color: '#e74c3c',
+            icon: '\u2694',
+            nodes: [
+                { id: 'offense_1', name: 'Critical Eye',       desc: '+8% critical hit chance' },
+                { id: 'offense_2', name: 'Lethal Strikes',     desc: '+50% critical damage multiplier' },
+                { id: 'offense_3', name: 'Multi-Projectile',   desc: '+2 extra projectiles per volley' },
+                { id: 'offense_4', name: 'Piercing Shots',     desc: 'Projectiles pierce +3 enemies' }
+            ]
+        },
+        defense: {
+            label: 'Defense',
+            color: '#3498db',
+            icon: '\u26E8',
+            nodes: [
+                { id: 'defense_1', name: 'Regeneration',       desc: 'Recover 1 HP every 5 seconds' },
+                { id: 'defense_2', name: 'Dash Shield',        desc: 'Extended invulnerability after dashing' },
+                { id: 'defense_3', name: 'Damage Reduction',   desc: '15% less damage taken' },
+                { id: 'defense_4', name: 'Second Life',        desc: 'Revive once per run at 30% HP' }
+            ]
+        },
+        utility: {
+            label: 'Utility',
+            color: '#2ecc71',
+            icon: '\u2728',
+            nodes: [
+                { id: 'utility_1', name: 'Long Dash',          desc: '+40% dash distance' },
+                { id: 'utility_2', name: 'Quick Recovery',     desc: '-30% dash cooldown' },
+                { id: 'utility_3', name: 'Magnet Range',       desc: '+40 pickup radius' },
+                { id: 'utility_4', name: 'XP Multiplier',      desc: '+25% XP from all sources' }
+            ]
+        }
+    };
+
+    function getSpentPoints() {
+        const st = saveData.skillTree || {};
+        return Object.keys(st).filter(function(k) { return st[k]; }).length;
+    }
+
+    function getAvailablePoints() {
+        return (saveData.skillPoints || 0) - getSpentPoints();
+    }
+
+    function isSkillUnlocked(skillId) {
+        return !!(saveData.skillTree && saveData.skillTree[skillId]);
+    }
+
+    function canUnlockSkill(skillId) {
+        if (isSkillUnlocked(skillId)) return false;
+        if (getAvailablePoints() <= 0) return false;
+        // Find which branch and index
+        for (var bk in SKILL_TREE_DEF) {
+            var nodes = SKILL_TREE_DEF[bk].nodes;
+            for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i].id === skillId) {
+                    // Must unlock in order: previous node must be unlocked (or be first)
+                    if (i === 0) return true;
+                    return isSkillUnlocked(nodes[i - 1].id);
+                }
+            }
+        }
+        return false;
+    }
+
+    function unlockSkill(skillId) {
+        if (!canUnlockSkill(skillId)) return;
+        if (!saveData.skillTree) saveData.skillTree = {};
+        saveData.skillTree[skillId] = true;
+        writeSave(saveData);
+        renderSkillTree();
+        showToast('Skill unlocked!');
+    }
+
+    function renderSkillTree() {
+        var svg = document.getElementById('skill-tree-svg');
+        svg.innerHTML = '';
+
+        document.getElementById('skill-points-count').textContent = getAvailablePoints();
+
+        var branches = Object.keys(SKILL_TREE_DEF);
+        var rowHeight = 90;
+        var startY = 50;
+        var nodeStartX = 180;
+        var nodeSpacingX = 150;
+        var nodeRadius = 22;
+
+        // Draw a subtle center line from the left
+        for (var bi = 0; bi < branches.length; bi++) {
+            var branch = SKILL_TREE_DEF[branches[bi]];
+            var cy = startY + bi * rowHeight;
+
+            // Branch label + icon
+            var labelEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelEl.setAttribute('x', 16);
+            labelEl.setAttribute('y', cy + 5);
+            labelEl.setAttribute('class', 'branch-label');
+            labelEl.setAttribute('fill', branch.color);
+            labelEl.textContent = branch.icon + ' ' + branch.label;
+            svg.appendChild(labelEl);
+
+            // Connector lines
+            for (var ni = 0; ni < branch.nodes.length; ni++) {
+                var nx = nodeStartX + ni * nodeSpacingX;
+                var prevUnlocked = ni === 0 ? true : isSkillUnlocked(branch.nodes[ni - 1].id);
+                var thisUnlocked = isSkillUnlocked(branch.nodes[ni].id);
+
+                // Line from previous node (or label) to this node
+                if (ni === 0) {
+                    var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', 110);
+                    line.setAttribute('y1', cy);
+                    line.setAttribute('x2', nx - nodeRadius);
+                    line.setAttribute('y2', cy);
+                    line.setAttribute('stroke', branch.color);
+                    line.setAttribute('class', 'connector ' + (thisUnlocked ? 'active' : 'inactive'));
+                    svg.appendChild(line);
+                } else {
+                    var prevX = nodeStartX + (ni - 1) * nodeSpacingX;
+                    var lineConn = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    lineConn.setAttribute('x1', prevX + nodeRadius);
+                    lineConn.setAttribute('y1', cy);
+                    lineConn.setAttribute('x2', nx - nodeRadius);
+                    lineConn.setAttribute('y2', cy);
+                    lineConn.setAttribute('stroke', branch.color);
+                    lineConn.setAttribute('class', 'connector ' + (thisUnlocked ? 'active' : 'inactive'));
+                    svg.appendChild(lineConn);
+                }
+
+                // Node circle
+                var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', nx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', nodeRadius);
+                circle.setAttribute('stroke', branch.color);
+
+                var canUnlock = canUnlockSkill(branch.nodes[ni].id);
+                if (thisUnlocked) {
+                    circle.setAttribute('fill', branch.color);
+                    circle.setAttribute('class', 'node-circle unlocked');
+                } else if (canUnlock) {
+                    circle.setAttribute('fill', 'rgba(' + hexToRgb(branch.color) + ', 0.15)');
+                    circle.setAttribute('class', 'node-circle');
+                    circle.setAttribute('stroke-dasharray', '4 3');
+                } else {
+                    circle.setAttribute('fill', 'rgba(40,40,60,0.6)');
+                    circle.setAttribute('class', 'node-circle locked');
+                }
+
+                // Store skill id for click handling
+                (function(node, branchDef, canU) {
+                    circle.addEventListener('click', function() {
+                        if (canU) unlockSkill(node.id);
+                        else if (isSkillUnlocked(node.id)) showToast('Already unlocked');
+                        else if (getAvailablePoints() <= 0) showToast('No skill points available');
+                        else showToast('Unlock previous skills first');
+                    });
+                    circle.addEventListener('mouseenter', function(ev) {
+                        showSkillTooltip(ev, node, branchDef, canU);
+                    });
+                    circle.addEventListener('mousemove', function(ev) {
+                        moveSkillTooltip(ev);
+                    });
+                    circle.addEventListener('mouseleave', function() {
+                        hideSkillTooltip();
+                    });
+                })(branch.nodes[ni], branch, canUnlock);
+
+                svg.appendChild(circle);
+
+                // Node icon inside circle
+                var iconText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                iconText.setAttribute('x', nx);
+                iconText.setAttribute('y', cy + 1);
+                iconText.setAttribute('text-anchor', 'middle');
+                iconText.setAttribute('dominant-baseline', 'middle');
+                iconText.setAttribute('font-size', '14');
+                iconText.setAttribute('fill', thisUnlocked ? '#fff' : (canUnlock ? branch.color : '#555'));
+                iconText.setAttribute('pointer-events', 'none');
+                iconText.textContent = (ni + 1);
+                svg.appendChild(iconText);
+
+                // Node name label below
+                var nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameLabel.setAttribute('x', nx);
+                nameLabel.setAttribute('y', cy + nodeRadius + 16);
+                nameLabel.setAttribute('text-anchor', 'middle');
+                nameLabel.setAttribute('class', 'node-label' + (!thisUnlocked && !canUnlock ? ' dimmed' : ''));
+                nameLabel.textContent = branch.nodes[ni].name;
+                svg.appendChild(nameLabel);
+            }
+        }
+    }
+
+    function hexToRgb(hex) {
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return r + ',' + g + ',' + b;
+    }
+
+    var tooltipEl = document.getElementById('skill-tooltip');
+
+    function showSkillTooltip(ev, node, branch, canUnlock) {
+        var unlocked = isSkillUnlocked(node.id);
+        var statusText = unlocked ? 'Unlocked' :
+            (canUnlock ? 'Click to unlock (1 point)' :
+            (getAvailablePoints() <= 0 ? 'No skill points' : 'Unlock previous first'));
+        tooltipEl.innerHTML =
+            '<div class="tt-name" style="color:' + branch.color + '">' + node.name + '</div>' +
+            '<div>' + node.desc + '</div>' +
+            '<div class="tt-status">' + statusText + '</div>';
+        tooltipEl.classList.add('visible');
+        moveSkillTooltip(ev);
+    }
+
+    function moveSkillTooltip(ev) {
+        tooltipEl.style.left = (ev.clientX + 14) + 'px';
+        tooltipEl.style.top = (ev.clientY + 14) + 'px';
+    }
+
+    function hideSkillTooltip() {
+        tooltipEl.classList.remove('visible');
+    }
+
+    // =========================================================================
     // INIT
     // =========================================================================
     renderAll();
+    renderSkillTree();
     </script>
 </body>
 </html>

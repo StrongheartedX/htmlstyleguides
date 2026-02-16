@@ -180,6 +180,7 @@ const SaveManager = (() => {
     return {
       version: CURRENT_VERSION,
       gold: 0,
+      skillPoints: 0,
       currentWorld: 0,
       inventory: [],
       skillTree: {},
@@ -225,6 +226,7 @@ const SaveManager = (() => {
     return {
       version: CURRENT_VERSION,
       gold: typeof data.gold === 'number' ? data.gold : base.gold,
+      skillPoints: typeof data.skillPoints === 'number' ? data.skillPoints : base.skillPoints,
       currentWorld: typeof data.currentWorld === 'number' ? data.currentWorld : base.currentWorld,
       inventory: Array.isArray(data.inventory) ? data.inventory : base.inventory,
       skillTree: data.skillTree && typeof data.skillTree === 'object' ? data.skillTree : base.skillTree,
@@ -675,18 +677,20 @@ WEAPON_HANDLERS.projectile = function(w, stats) {
     const d = Math.hypot(e.x-player.x, e.y-player.y);
     if(d < minDist) { minDist = d; target = e; }
   }
-  for(let i = 0; i < stats.count; i++) {
+  const totalCount = stats.count + (player.permMultiProjectile ? 2 : 0);
+  for(let i = 0; i < totalCount; i++) {
     let angle;
     if(target) {
-      angle = Math.atan2(target.y-player.y, target.x-player.x) + (i-stats.count/2+0.5)*0.2;
+      angle = Math.atan2(target.y-player.y, target.x-player.x) + (i-totalCount/2+0.5)*0.2;
     } else {
-      angle = Math.PI*2*i/stats.count;
+      angle = Math.PI*2*i/totalCount;
     }
-    projectiles.get(
+    const p = projectiles.get(
       player.x, player.y,
       Math.cos(angle)*stats.speed, Math.sin(angle)*stats.speed,
       stats.damage, stats.life, 'projectile', w.level
     );
+    if(player.permPiercing) p.pierce += 3;
   }
 };
 
@@ -1040,9 +1044,9 @@ function updateBossAttacks(dt) {
 // ENEMY / DAMAGE
 // ============================================================
 function damageEnemy(e, dmg) {
-  // Permanent crit chance: double damage on crit
+  // Permanent crit chance: crit damage on crit (base 2x, boosted by skill tree)
   if(player.permCritChance && Math.random() < player.permCritChance) {
-    dmg *= 2;
+    dmg *= 2 + (player.permCritDamage || 0);
     spawnParticles(e.x, e.y, 4, '#ffff00', 3); // yellow crit flash
   }
   e.hp -= dmg;
@@ -1290,9 +1294,10 @@ function gameLoop(timestamp) {
   Audio.updateAmbient(progress);
 
   // Movement + Dash
-  const DASH_SPEED_MULT = 4;
+  const DASH_SPEED_MULT = 4 * (player.dashDistance || 1);
   const DASH_DURATION = 0.15;
-  const DASH_COOLDOWN = 1.2;
+  const baseDashCooldown = 1.2;
+  const DASH_COOLDOWN = baseDashCooldown * (1 - (player.dashCooldownReduction || 0));
   const DASH_INVULN = 0.15;
 
   let mx = 0, my = 0;
@@ -1318,8 +1323,9 @@ function gameLoop(timestamp) {
     player.dashDirY = dirY;
     player.dashTimer = DASH_DURATION;
     player.dashCooldown = DASH_COOLDOWN;
-    player.invulnTime = Math.max(player.invulnTime, DASH_INVULN);
+    player.invulnTime = Math.max(player.invulnTime, player.permShieldOnDash ? 0.6 : DASH_INVULN);
     spawnParticles(player.x, player.y, 8, `rgb(${THEME.effectColors.invuln.rgb})`, 3);
+    if(player.permShieldOnDash) spawnParticles(player.x, player.y, 12, '#44aaff', 4);
     Audio.dashSound();
   }
   dashRequested = false;
@@ -2092,6 +2098,8 @@ function triggerVictory() {
   // Record run stats and update world progression
   SaveManager.recordRun(kills, gameTime, runGold);
   const saveData = SaveManager.load();
+  // Award 1 skill point per world completed
+  saveData.skillPoints = (saveData.skillPoints || 0) + 1;
   // Advance currentWorld if this world is the current one
   if(THEME.worldOrder && typeof THEME.worldOrder.current === 'number') {
     if(saveData.currentWorld <= THEME.worldOrder.current) {
@@ -2161,8 +2169,16 @@ function startGame() {
   player.permRegen = false;
   player.permRegenTimer = 0;
   player.permCritChance = 0;
+  player.permCritDamage = 0;
   player.permLifesteal = 0;
   player.permXpMult = 0;
+  player.permMultiProjectile = false;
+  player.permPiercing = false;
+  player.permShieldOnDash = false;
+  player.permSecondLife = false;
+  player.secondLifeUsed = false;
+  player.dashDistance = 1;
+  player.dashCooldownReduction = 0;
 
   // --- Apply permanent upgrades from save state ---
   const permSave = SaveManager.load();
@@ -2204,6 +2220,25 @@ function startGame() {
   }
   // --- End permanent upgrades ---
 
+  // --- Apply skill tree bonuses from save state ---
+  const skillTree = permSave.skillTree || {};
+  // Offense branch
+  if (skillTree.offense_1) player.permCritChance = (player.permCritChance || 0) + 0.08;
+  if (skillTree.offense_2) player.permCritDamage = (player.permCritDamage || 0) + 0.50;
+  if (skillTree.offense_3) player.permMultiProjectile = true;
+  if (skillTree.offense_4) player.permPiercing = true;
+  // Defense branch
+  if (skillTree.defense_1) { player.permRegen = true; player.permRegenTimer = 0; }
+  if (skillTree.defense_2) player.permShieldOnDash = true;
+  if (skillTree.defense_3) player.defense *= 0.85;
+  if (skillTree.defense_4) player.permSecondLife = true;
+  // Utility branch
+  if (skillTree.utility_1) player.dashDistance = (player.dashDistance || 1) * 1.40;
+  if (skillTree.utility_2) player.dashCooldownReduction = (player.dashCooldownReduction || 0) + 0.30;
+  if (skillTree.utility_3) player.pickupRadius += 40;
+  if (skillTree.utility_4) player.permXpMult = (player.permXpMult || 1) * 1.25;
+  // --- End skill tree bonuses ---
+
   enemies.releaseAll();
   projectiles.releaseAll();
   gems.releaseAll();
@@ -2226,7 +2261,20 @@ function startGame() {
   lastTime = performance.now();
 }
 
+function checkSecondLife() {
+  if(player.permSecondLife && !player.secondLifeUsed) {
+    player.secondLifeUsed = true;
+    player.hp = Math.floor(player.maxHp * 0.3);
+    player.invulnTime = 2.0;
+    spawnParticles(player.x, player.y, 20, '#ffcc00', 5);
+    Audio.levelUpSound();
+    return true; // survived
+  }
+  return false; // actually dead
+}
+
 function gameOver() {
+  if(player.hp <= 0 && checkSecondLife()) return;
   state = 'gameover';
   // Auto-save run stats + gold to persistent save
   SaveManager.recordRun(kills, gameTime, runGold);
