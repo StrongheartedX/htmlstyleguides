@@ -1275,8 +1275,17 @@ var UI = (function () {
     renderInstrumentEditor();
   }
 
+  function resetAndRender() {
+    currentPattern = 0;
+    currentInstrument = 0;
+    cursorRow = 0;
+    scrollOffset = 0;
+    render();
+  }
+
   return {
     init: init,
-    render: render
+    render: render,
+    resetAndRender: resetAndRender
   };
 })();

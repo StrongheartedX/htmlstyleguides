@@ -620,7 +620,7 @@
         padding: 4px 6px;
       }
 
-      .toolbar-right button:not(#btn-demo):not(#btn-play-song):not(#btn-stop) {
+      .toolbar-right button:not(#btn-demo):not(#btn-songs):not(#btn-play-song):not(#btn-stop) {
         display: none;
       }
     }
@@ -694,6 +694,105 @@
 
     #help-modal li { margin-bottom: 3px; }
 
+    /* ── Songs Modal ── */
+    #songs-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #songs-modal.visible { display: flex; }
+
+    #songs-modal .songs-content {
+      background: var(--bg-panel);
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px 28px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    #songs-modal h2 {
+      color: var(--accent);
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    #songs-modal .songs-close {
+      float: right;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 16px;
+      padding: 2px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    #songs-modal .songs-close:hover { background: var(--accent); color: #fff; }
+
+    .song-card {
+      background: var(--bg-body);
+      border: 1px solid var(--btn-border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .song-card:hover {
+      border-color: var(--accent);
+      background: #16162e;
+    }
+
+    .song-card .song-title {
+      color: var(--green);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .song-card .song-meta {
+      color: var(--text-dim);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .song-card .song-desc {
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .song-category {
+      display: inline-block;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--amber);
+      margin-right: 8px;
+    }
+
+    #songs-list .songs-loading {
+      color: var(--text-dim);
+      text-align: center;
+      padding: 20px;
+    }
+
     #btn-help {
       font-weight: bold;
       font-size: 14px;
@@ -722,6 +821,7 @@
     <div class="toolbar-right">
       <button id="btn-new">New</button>
       <button id="btn-demo">Demo</button>
+      <button id="btn-songs">Songs</button>
       <button id="btn-save">Save</button>
       <button id="btn-load">Load</button>
       <button id="btn-export">Export</button>
@@ -854,6 +954,15 @@
     </div>
   </div>
 
+  <!-- Songs Modal -->
+  <div id="songs-modal">
+    <div class="songs-content">
+      <button class="songs-close" id="songs-close-btn">&times;</button>
+      <h2>Song Library</h2>
+      <div id="songs-list"></div>
+    </div>
+  </div>
+
   <script src="synth.js"></script>
   <script src="tracker.js"></script>
   <script src="presets.js"></script>
@@ -878,6 +987,65 @@
       });
       // Show on first visit
       if (!localStorage.getItem('chiptracker-seen-help')) openHelp();
+
+      // Songs modal
+      var songsModal = document.getElementById('songs-modal');
+      var songsList = document.getElementById('songs-list');
+      var songsLoaded = false;
+
+      function openSongs() {
+        songsModal.classList.add('visible');
+        if (!songsLoaded) {
+          songsList.innerHTML = '<div class="songs-loading">Loading songs...</div>';
+          fetch('songs/index.json')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              songsLoaded = true;
+              songsList.innerHTML = '';
+              data.songs.forEach(function (s) {
+                var card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML =
+                  '<div class="song-title">' + s.title + '</div>' +
+                  '<div class="song-meta"><span class="song-category">' + s.category + '</span>' + s.bpm + ' BPM</div>' +
+                  '<div class="song-desc">' + s.description + '</div>';
+                card.addEventListener('click', function () {
+                  loadSongFile(s.file, s.title);
+                });
+                songsList.appendChild(card);
+              });
+            })
+            .catch(function () {
+              songsList.innerHTML = '<div class="songs-loading">Failed to load songs.</div>';
+            });
+        }
+      }
+
+      function closeSongs() {
+        songsModal.classList.remove('visible');
+      }
+
+      function loadSongFile(file, title) {
+        songsList.innerHTML = '<div class="songs-loading">Loading ' + title + '...</div>';
+        fetch('songs/' + file)
+          .then(function (r) { return r.text(); })
+          .then(function (json) {
+            Tracker.importFull(json);
+            UI.resetAndRender();
+            closeSongs();
+            songsLoaded = false;
+          })
+          .catch(function () {
+            songsList.innerHTML = '<div class="songs-loading">Failed to load song.</div>';
+            songsLoaded = false;
+          });
+      }
+
+      document.getElementById('btn-songs').addEventListener('click', openSongs);
+      document.getElementById('songs-close-btn').addEventListener('click', closeSongs);
+      songsModal.addEventListener('click', function (e) {
+        if (e.target === songsModal) closeSongs();
+      });
     });
   </script>
 </body>
