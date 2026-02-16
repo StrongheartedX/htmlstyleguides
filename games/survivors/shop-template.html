@@ -480,6 +480,190 @@
             opacity: 0.7;
         }
 
+        /* Inventory system */
+        .inv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .equip-slots {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0 16px;
+            flex-wrap: wrap;
+        }
+
+        .equip-slot {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-card);
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            position: relative;
+            cursor: default;
+            transition: border-color 0.2s;
+        }
+
+        .equip-slot.filled {
+            border-style: solid;
+            cursor: pointer;
+        }
+
+        .equip-slot.filled:hover {
+            border-color: var(--danger);
+        }
+
+        .equip-slot .slot-label {
+            font-family: var(--font-title);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .equip-slot .slot-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+
+        .equip-slot .slot-name {
+            font-size: 0.65rem;
+            color: var(--text);
+            text-align: center;
+            line-height: 1.1;
+            max-width: 72px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .equip-slot.slot-empty .slot-icon {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            opacity: 0.3;
+        }
+
+        .inv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .inv-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            text-align: center;
+            position: relative;
+        }
+
+        .inv-item:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .inv-item.inv-equipped {
+            border-color: var(--accent);
+        }
+
+        .inv-item .inv-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+
+        .inv-item .inv-name {
+            font-family: var(--font-title);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .inv-item .inv-desc {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .inv-item .inv-rarity {
+            font-family: var(--font-title);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+
+        .rarity-common    { color: #cccccc; border: 1px solid #666; }
+        .rarity-rare       { color: #4488ff; border: 1px solid #4488ff; }
+        .rarity-epic       { color: #aa44ff; border: 1px solid #aa44ff; }
+        .rarity-legendary  { color: #ffcc00; border: 1px solid #ffcc00; }
+
+        .inv-item .inv-equipped-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 0.65rem;
+            font-family: var(--font-title);
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .inv-empty-msg {
+            color: var(--text-dim);
+            font-style: italic;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .inv-tooltip {
+            position: fixed;
+            background: #1a1a2e;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text);
+            max-width: 240px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            line-height: 1.4;
+        }
+
+        .inv-tooltip.visible {
+            opacity: 1;
+        }
+
+        .inv-tooltip .tt-name {
+            font-family: var(--font-title);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .inv-tooltip .tt-action {
+            font-size: 0.8rem;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .shop-title {
@@ -521,6 +705,25 @@
             .skill-tree-header {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            .inv-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .equip-slots {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .equip-slot {
+                width: 70px;
+                height: 70px;
+            }
+
+            .inv-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
         }
     </style>
@@ -575,6 +778,21 @@
         </section>
 
         <div class="skill-tree-tooltip" id="skill-tooltip"></div>
+
+        <section class="category" id="cat-inventory">
+            <div class="inv-header">
+                <h2 class="category-title" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
+                    <span class="cat-icon">&#x1F392;</span>Inventory
+                </h2>
+                <div style="font-size:0.9rem;color:var(--text-dim)">
+                    Equipped: <strong id="inv-equip-count">0</strong>/3
+                </div>
+            </div>
+            <div class="equip-slots" id="equip-slots"></div>
+            <div class="inv-grid" id="inv-grid"></div>
+        </section>
+
+        <div class="inv-tooltip" id="inv-tooltip"></div>
 
         <footer class="shop-footer">
             <div class="footer-buttons">
@@ -679,6 +897,7 @@
             skillPoints: 0,
             currentWorld: 0,
             inventory: [],
+            equipped: [],
             skillTree: {},
             upgrades: {},
             stats: { totalKills: 0, bestTime: 0, runsCompleted: 0 }
@@ -706,6 +925,7 @@
             skillPoints: typeof data.skillPoints === 'number' ? data.skillPoints : base.skillPoints,
             currentWorld: typeof data.currentWorld === 'number' ? data.currentWorld : base.currentWorld,
             inventory: Array.isArray(data.inventory) ? data.inventory : base.inventory,
+            equipped: Array.isArray(data.equipped) ? data.equipped.slice(0, 3) : base.equipped,
             skillTree: data.skillTree && typeof data.skillTree === 'object' ? data.skillTree : base.skillTree,
             upgrades: data.upgrades && typeof data.upgrades === 'object' ? data.upgrades : base.upgrades,
             stats: {
@@ -815,6 +1035,7 @@
         renderGrid('grid-weapons', SHOP_CONFIG.startingWeapons, 'weapon');
         renderGrid('grid-passives', SHOP_CONFIG.passives, 'passive');
         if (typeof renderSkillTree === 'function') renderSkillTree();
+        renderInventory();
     }
 
     // =========================================================================
@@ -1161,6 +1382,185 @@
 
     function hideSkillTooltip() {
         tooltipEl.classList.remove('visible');
+    }
+
+    // =========================================================================
+    // LOOT TABLE (must match engine.js LOOT_TABLE)
+    // =========================================================================
+    const LOOT_TABLE = [
+        { id: 'loot_rusty_shield',    name: 'Rusty Shield',      rarity: 'common',    icon: '\u26E8', desc: '+5 Max HP' },
+        { id: 'loot_old_boots',       name: 'Old Boots',         rarity: 'common',    icon: '\u{1F462}', desc: '+5% Speed' },
+        { id: 'loot_cracked_lens',    name: 'Cracked Lens',      rarity: 'common',    icon: '\u{1F50D}', desc: '+10 Pickup Radius' },
+        { id: 'loot_torn_gloves',     name: 'Torn Gloves',       rarity: 'common',    icon: '\u{1F9E4}', desc: '+5% Damage' },
+        { id: 'loot_dull_whetstone',  name: 'Dull Whetstone',    rarity: 'common',    icon: '\u25C8', desc: '+5% Attack Speed' },
+        { id: 'loot_vampiric_ring',   name: 'Vampiric Ring',     rarity: 'rare',      icon: '\u{1F48D}', desc: '2% Lifesteal' },
+        { id: 'loot_scope',           name: 'Marksman Scope',    rarity: 'rare',      icon: '\u{1F3AF}', desc: '+10% Crit Chance' },
+        { id: 'loot_iron_plate',      name: 'Iron Plate',        rarity: 'rare',      icon: '\u2694', desc: '+10% Defense' },
+        { id: 'loot_swift_cloak',     name: 'Swift Cloak',       rarity: 'rare',      icon: '\u{1F9E3}', desc: '+15% Speed' },
+        { id: 'loot_emerald_charm',   name: 'Emerald Charm',     rarity: 'rare',      icon: '\u{1F48E}', desc: '+20% XP Gain' },
+        { id: 'loot_berserker_gauntlet', name: 'Berserker Gauntlet', rarity: 'epic',  icon: '\u{1F94A}', desc: '+30% Damage below 50% HP' },
+        { id: 'loot_magnet_core',     name: 'Magnet Core',       rarity: 'epic',      icon: '\u{1F9F2}', desc: '+50 Pickup Radius' },
+        { id: 'loot_crimson_heart',   name: 'Crimson Heart',     rarity: 'epic',      icon: '\u2764', desc: '+40 Max HP, +Regen' },
+        { id: 'loot_quicksilver',     name: 'Quicksilver Vial',  rarity: 'epic',      icon: '\u{1F4A7}', desc: '-25% Dash Cooldown' },
+        { id: 'loot_war_drum',        name: 'War Drum',          rarity: 'epic',      icon: '\u{1F941}', desc: '+25% Attack Speed' },
+        { id: 'loot_phoenix_feather', name: 'Phoenix Feather',   rarity: 'legendary', icon: '\u{1F525}', desc: 'Auto-revive once per run' },
+        { id: 'loot_crown_of_thorns', name: 'Crown of Thorns',   rarity: 'legendary', icon: '\u{1F451}', desc: 'Reflect 20% damage taken' },
+        { id: 'loot_void_orb',        name: 'Void Orb',          rarity: 'legendary', icon: '\u{1F311}', desc: '+50% Damage, -20% Max HP' }
+    ];
+
+    const RARITY_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
+
+    function getLootById(id) {
+        return LOOT_TABLE.find(function(item) { return item.id === id; }) || null;
+    }
+
+    function isEquipped(itemId) {
+        return saveData.equipped && saveData.equipped.indexOf(itemId) !== -1;
+    }
+
+    function equipItem(itemId) {
+        if (!saveData.equipped) saveData.equipped = [];
+        if (saveData.equipped.length >= 3) {
+            showToast('Unequip an item first (max 3)');
+            return;
+        }
+        if (saveData.equipped.indexOf(itemId) !== -1) return;
+        saveData.equipped.push(itemId);
+        writeSave(saveData);
+        renderInventory();
+        showToast('Equipped!');
+    }
+
+    function unequipItem(itemId) {
+        if (!saveData.equipped) return;
+        var idx = saveData.equipped.indexOf(itemId);
+        if (idx === -1) return;
+        saveData.equipped.splice(idx, 1);
+        writeSave(saveData);
+        renderInventory();
+        showToast('Unequipped');
+    }
+
+    function renderInventory() {
+        var equipped = saveData.equipped || [];
+        var inventory = saveData.inventory || [];
+
+        // Update equip count
+        document.getElementById('inv-equip-count').textContent = equipped.length;
+
+        // Render equip slots (always 3)
+        var slotsContainer = document.getElementById('equip-slots');
+        slotsContainer.innerHTML = '';
+        for (var s = 0; s < 3; s++) {
+            var slotDiv = document.createElement('div');
+            if (s < equipped.length) {
+                var loot = getLootById(equipped[s]);
+                if (loot) {
+                    slotDiv.className = 'equip-slot filled rarity-' + loot.rarity;
+                    slotDiv.style.borderColor = getRarityColor(loot.rarity);
+                    slotDiv.innerHTML =
+                        '<div class="slot-icon">' + loot.icon + '</div>' +
+                        '<div class="slot-name">' + loot.name + '</div>';
+                    (function(id) {
+                        slotDiv.addEventListener('click', function() { unequipItem(id); });
+                        slotDiv.addEventListener('mouseenter', function(ev) {
+                            showInvTooltip(ev, getLootById(id), true);
+                        });
+                        slotDiv.addEventListener('mousemove', function(ev) { moveInvTooltip(ev); });
+                        slotDiv.addEventListener('mouseleave', function() { hideInvTooltip(); });
+                    })(equipped[s]);
+                }
+            } else {
+                slotDiv.className = 'equip-slot slot-empty';
+                slotDiv.innerHTML =
+                    '<div class="slot-icon">+</div>' +
+                    '<div class="slot-label">Empty</div>';
+            }
+            slotsContainer.appendChild(slotDiv);
+        }
+
+        // Render stash grid
+        var grid = document.getElementById('inv-grid');
+        grid.innerHTML = '';
+
+        if (inventory.length === 0) {
+            grid.innerHTML = '<div class="inv-empty-msg">No items yet. Defeat enemies to find loot!</div>';
+            return;
+        }
+
+        // Count duplicates and sort by rarity
+        var itemCounts = {};
+        inventory.forEach(function(id) {
+            itemCounts[id] = (itemCounts[id] || 0) + 1;
+        });
+
+        var uniqueIds = Object.keys(itemCounts);
+        uniqueIds.sort(function(a, b) {
+            var la = getLootById(a);
+            var lb = getLootById(b);
+            if (!la || !lb) return 0;
+            return (RARITY_ORDER[la.rarity] || 99) - (RARITY_ORDER[lb.rarity] || 99);
+        });
+
+        uniqueIds.forEach(function(itemId) {
+            var loot = getLootById(itemId);
+            if (!loot) return;
+            var count = itemCounts[itemId];
+            var eq = isEquipped(itemId);
+
+            var card = document.createElement('div');
+            card.className = 'inv-item' + (eq ? ' inv-equipped' : '');
+
+            var countLabel = count > 1 ? ' x' + count : '';
+            card.innerHTML =
+                (eq ? '<div class="inv-equipped-badge">Equipped</div>' : '') +
+                '<div class="inv-icon">' + loot.icon + '</div>' +
+                '<div class="inv-name" style="color:' + getRarityColor(loot.rarity) + '">' + loot.name + countLabel + '</div>' +
+                '<div class="inv-desc">' + loot.desc + '</div>' +
+                '<div class="inv-rarity rarity-' + loot.rarity + '">' + loot.rarity + '</div>';
+
+            (function(id, isEq) {
+                card.addEventListener('click', function() {
+                    if (isEq) unequipItem(id);
+                    else equipItem(id);
+                });
+                card.addEventListener('mouseenter', function(ev) {
+                    showInvTooltip(ev, getLootById(id), isEq);
+                });
+                card.addEventListener('mousemove', function(ev) { moveInvTooltip(ev); });
+                card.addEventListener('mouseleave', function() { hideInvTooltip(); });
+            })(itemId, eq);
+
+            grid.appendChild(card);
+        });
+    }
+
+    function getRarityColor(rarity) {
+        var colors = { common: '#cccccc', rare: '#4488ff', epic: '#aa44ff', legendary: '#ffcc00' };
+        return colors[rarity] || '#cccccc';
+    }
+
+    // Inventory tooltips
+    var invTooltipEl = document.getElementById('inv-tooltip');
+
+    function showInvTooltip(ev, loot, isEquipped) {
+        if (!loot) return;
+        var action = isEquipped ? 'Click to unequip' : 'Click to equip';
+        invTooltipEl.innerHTML =
+            '<div class="tt-name" style="color:' + getRarityColor(loot.rarity) + '">' + loot.icon + ' ' + loot.name + '</div>' +
+            '<div>' + loot.desc + '</div>' +
+            '<div class="tt-action">' + action + '</div>';
+        invTooltipEl.classList.add('visible');
+        moveInvTooltip(ev);
+    }
+
+    function moveInvTooltip(ev) {
+        invTooltipEl.style.left = (ev.clientX + 14) + 'px';
+        invTooltipEl.style.top = (ev.clientY + 14) + 'px';
+    }
+
+    function hideInvTooltip() {
+        invTooltipEl.classList.remove('visible');
     }
 
     // =========================================================================

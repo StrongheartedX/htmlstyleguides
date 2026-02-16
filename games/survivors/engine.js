@@ -166,7 +166,23 @@ const Audio = (() => {
     }, 800);
   }
 
-  return { init, note, noise, weaponSound, hitSound, deathSound, gemSound, levelUpSound, bossWarning, heartbeat, damageTaken, dashSound, updateAmbient, toggleMute, victoryFanfare };
+  function lootSound(rarity) {
+    if(rarity === 'legendary') {
+      [784, 988, 1175, 1568].forEach((f, i) => {
+        setTimeout(() => note(f, 0.4, 'sine', 0.12), i * 70);
+      });
+    } else if(rarity === 'epic') {
+      note(660, 0.25, 'sine', 0.1);
+      setTimeout(() => note(880, 0.3, 'sine', 0.1), 80);
+    } else if(rarity === 'rare') {
+      note(550, 0.2, 'sine', 0.08);
+      setTimeout(() => note(700, 0.15, 'sine', 0.06), 60);
+    } else {
+      note(440, 0.15, 'sine', 0.06);
+    }
+  }
+
+  return { init, note, noise, weaponSound, hitSound, deathSound, gemSound, levelUpSound, bossWarning, heartbeat, damageTaken, dashSound, updateAmbient, toggleMute, victoryFanfare, lootSound };
 })();
 
 // ============================================================
@@ -183,6 +199,7 @@ const SaveManager = (() => {
       skillPoints: 0,
       currentWorld: 0,
       inventory: [],
+      equipped: [],
       skillTree: {},
       upgrades: {},
       stats: {
@@ -229,6 +246,7 @@ const SaveManager = (() => {
       skillPoints: typeof data.skillPoints === 'number' ? data.skillPoints : base.skillPoints,
       currentWorld: typeof data.currentWorld === 'number' ? data.currentWorld : base.currentWorld,
       inventory: Array.isArray(data.inventory) ? data.inventory : base.inventory,
+      equipped: Array.isArray(data.equipped) ? data.equipped.slice(0, 3) : base.equipped,
       skillTree: data.skillTree && typeof data.skillTree === 'object' ? data.skillTree : base.skillTree,
       upgrades: data.upgrades && typeof data.upgrades === 'object' ? data.upgrades : base.upgrades,
       stats: {
@@ -496,6 +514,7 @@ let runGold = 0;
 let goldTimerAccum = 0;
 let victoryAchieved = false;
 let killedBossNames = [];
+const lootPickupTexts = [];
 
 const player = {
   x: 0, y: 0,
@@ -572,6 +591,67 @@ const particles = new Pool(
     p.x = x; p.y = y; p.vx = vx; p.vy = vy;
     p.life = life; p.maxLife = life;
     p.color = color; p.size = size || 3;
+  }
+);
+
+// ============================================================
+// LOOT TABLE & DROP SYSTEM
+// ============================================================
+const LOOT_TABLE = [
+  // Common (60%) - minor stat items
+  { id: 'loot_rusty_shield',    name: 'Rusty Shield',      rarity: 'common',    icon: '\u26E8', desc: '+5 Max HP',             effect: { stat: 'maxHp', bonus: 5 } },
+  { id: 'loot_old_boots',       name: 'Old Boots',         rarity: 'common',    icon: '\u{1F462}', desc: '+5% Speed',          effect: { stat: 'speed', mult: 1.05 } },
+  { id: 'loot_cracked_lens',    name: 'Cracked Lens',      rarity: 'common',    icon: '\u{1F50D}', desc: '+10 Pickup Radius',  effect: { stat: 'pickupRadius', bonus: 10 } },
+  { id: 'loot_torn_gloves',     name: 'Torn Gloves',       rarity: 'common',    icon: '\u{1F9E4}', desc: '+5% Damage',         effect: { stat: 'damage', mult: 1.05 } },
+  { id: 'loot_dull_whetstone',  name: 'Dull Whetstone',    rarity: 'common',    icon: '\u25C8', desc: '+5% Attack Speed',       effect: { stat: 'attackSpeed', mult: 1.05 } },
+  // Rare (25%) - notable items
+  { id: 'loot_vampiric_ring',   name: 'Vampiric Ring',     rarity: 'rare',      icon: '\u{1F48D}', desc: '2% Lifesteal',       effect: { stat: 'lifesteal', value: 0.02 } },
+  { id: 'loot_scope',           name: 'Marksman Scope',    rarity: 'rare',      icon: '\u{1F3AF}', desc: '+10% Crit Chance',   effect: { stat: 'critChance', value: 0.10 } },
+  { id: 'loot_iron_plate',      name: 'Iron Plate',        rarity: 'rare',      icon: '\u2694', desc: '+10% Defense',            effect: { stat: 'defense', mult: 0.90 } },
+  { id: 'loot_swift_cloak',     name: 'Swift Cloak',       rarity: 'rare',      icon: '\u{1F9E3}', desc: '+15% Speed',         effect: { stat: 'speed', mult: 1.15 } },
+  { id: 'loot_emerald_charm',   name: 'Emerald Charm',     rarity: 'rare',      icon: '\u{1F48E}', desc: '+20% XP Gain',       effect: { stat: 'xpMult', value: 1.20 } },
+  // Epic (12%) - powerful items
+  { id: 'loot_berserker_gauntlet', name: 'Berserker Gauntlet', rarity: 'epic',  icon: '\u{1F94A}', desc: '+30% Damage below 50% HP', effect: { stat: 'berserker', threshold: 0.5, mult: 1.30 } },
+  { id: 'loot_magnet_core',     name: 'Magnet Core',       rarity: 'epic',      icon: '\u{1F9F2}', desc: '+50 Pickup Radius',  effect: { stat: 'pickupRadius', bonus: 50 } },
+  { id: 'loot_crimson_heart',   name: 'Crimson Heart',     rarity: 'epic',      icon: '\u2764', desc: '+40 Max HP, +Regen',      effect: { stat: 'maxHp', bonus: 40, regen: true } },
+  { id: 'loot_quicksilver',     name: 'Quicksilver Vial',  rarity: 'epic',      icon: '\u{1F4A7}', desc: '-25% Dash Cooldown', effect: { stat: 'dashCooldown', value: 0.25 } },
+  { id: 'loot_war_drum',        name: 'War Drum',          rarity: 'epic',      icon: '\u{1F941}', desc: '+25% Attack Speed',  effect: { stat: 'attackSpeed', mult: 1.25 } },
+  // Legendary (3%) - game-changing items
+  { id: 'loot_phoenix_feather', name: 'Phoenix Feather',   rarity: 'legendary', icon: '\u{1F525}', desc: 'Auto-revive once per run', effect: { stat: 'phoenixRevive' } },
+  { id: 'loot_crown_of_thorns', name: 'Crown of Thorns',   rarity: 'legendary', icon: '\u{1F451}', desc: 'Reflect 20% damage taken', effect: { stat: 'thornsDamage', value: 0.20 } },
+  { id: 'loot_void_orb',        name: 'Void Orb',          rarity: 'legendary', icon: '\u{1F311}', desc: '+50% Damage, -20% Max HP', effect: { stat: 'voidPower', damageMult: 1.50, hpMult: 0.80 } }
+];
+
+const RARITY_CONFIG = {
+  common:    { weight: 60, color: '#cccccc', glow: 'rgba(200,200,200,0.4)' },
+  rare:      { weight: 25, color: '#4488ff', glow: 'rgba(68,136,255,0.5)' },
+  epic:      { weight: 12, color: '#aa44ff', glow: 'rgba(170,68,255,0.5)' },
+  legendary: { weight: 3,  color: '#ffcc00', glow: 'rgba(255,204,0,0.6)' }
+};
+
+function rollLootItem() {
+  const roll = Math.random() * 100;
+  let rarity;
+  if (roll < 3) rarity = 'legendary';
+  else if (roll < 15) rarity = 'epic';
+  else if (roll < 40) rarity = 'rare';
+  else rarity = 'common';
+  const pool = LOOT_TABLE.filter(item => item.rarity === rarity);
+  return pool[Math.random() * pool.length | 0];
+}
+
+function getLootById(id) {
+  return LOOT_TABLE.find(item => item.id === id) || null;
+}
+
+const lootDrops = new Pool(
+  () => ({ x: 0, y: 0, item: null, life: 0, vx: 0, vy: 0, bobPhase: 0 }),
+  (d, x, y, item) => {
+    d.x = x; d.y = y; d.item = item;
+    d.life = 20;
+    d.vx = (Math.random() - 0.5) * 80;
+    d.vy = (Math.random() - 0.5) * 80;
+    d.bobPhase = Math.random() * Math.PI * 2;
   }
 );
 
@@ -1044,6 +1124,10 @@ function updateBossAttacks(dt) {
 // ENEMY / DAMAGE
 // ============================================================
 function damageEnemy(e, dmg) {
+  // Berserker bonus: extra damage when below HP threshold
+  if(player.permBerserker && player.hp < player.maxHp * player.permBerserker.threshold) {
+    dmg *= player.permBerserker.mult;
+  }
   // Permanent crit chance: crit damage on crit (base 2x, boosted by skill tree)
   if(player.permCritChance && Math.random() < player.permCritChance) {
     dmg *= 2 + (player.permCritDamage || 0);
@@ -1076,6 +1160,14 @@ function killEnemy(e) {
     runGold += 50;
   } else {
     runGold += Math.max(1, Math.floor(e.xpValue));
+  }
+  // Loot drop: 100% from bosses, 2% from normal enemies
+  const dropChance = e.isBoss ? 1.0 : 0.02;
+  if(Math.random() < dropChance) {
+    const lootItem = rollLootItem();
+    if(lootItem) {
+      lootDrops.get(e.x, e.y, lootItem);
+    }
   }
   enemies.release(e);
 }
@@ -1582,6 +1674,13 @@ function gameLoop(timestamp) {
       damageFlash = 0.15;
       screenShake = 0.1;
       Audio.damageTaken();
+      // Thorns: reflect damage back to enemy
+      if(player.permThorns > 0) {
+        const thornsDmg = dmg * player.permThorns;
+        e.hp -= thornsDmg;
+        spawnParticles(e.x, e.y, 3, '#ff8800', 2);
+        if(e.hp <= 0) killEnemy(e);
+      }
       if(player.hp <= 0) {
         gameOver();
         return;
@@ -1629,6 +1728,51 @@ function gameLoop(timestamp) {
       gems.release(g);
     }
   });
+
+  // Update loot drops
+  lootDrops.forEach(d => {
+    d.life -= dt;
+    if(d.life <= 0) { lootDrops.release(d); return; }
+    // Slow down initial velocity
+    d.vx *= 0.94;
+    d.vy *= 0.94;
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.bobPhase += dt * 3;
+    // Magnetic pickup (uses same radius as gems)
+    const dx = player.x - d.x;
+    const dy = player.y - d.y;
+    const dist = Math.hypot(dx, dy);
+    if(dist < player.pickupRadius * 0.6) {
+      const pull = Math.max(200, 400 * (1 - dist / (player.pickupRadius * 0.6)));
+      d.x += (dx / dist) * pull * dt;
+      d.y += (dy / dist) * pull * dt;
+    }
+    if(dist < 20) {
+      // Pick up loot: add to persistent inventory
+      const saveData = SaveManager.load();
+      saveData.inventory.push(d.item.id);
+      // Auto-equip if fewer than 3 equipped
+      if(!saveData.equipped) saveData.equipped = [];
+      if(saveData.equipped.length < 3) {
+        saveData.equipped.push(d.item.id);
+      }
+      SaveManager.save(saveData);
+      Audio.lootSound(d.item.rarity);
+      const rc = RARITY_CONFIG[d.item.rarity];
+      spawnParticles(d.x, d.y, 10, rc.color, 4);
+      // Show loot pickup text
+      lootPickupTexts.push({ text: d.item.name, rarity: d.item.rarity, x: d.x, y: d.y, life: 1.5, maxLife: 1.5 });
+      lootDrops.release(d);
+    }
+  });
+
+  // Update loot pickup floating texts
+  for(let i = lootPickupTexts.length - 1; i >= 0; i--) {
+    lootPickupTexts[i].life -= dt;
+    lootPickupTexts[i].y -= 30 * dt;
+    if(lootPickupTexts[i].life <= 0) lootPickupTexts.splice(i, 1);
+  }
 
   // Update particles
   particles.forEach(p => {
@@ -1912,6 +2056,52 @@ function render(dt) {
   // Gems
   gems.forEach(g => THEME.drawGem(ctx, g, gameTime));
 
+  // Loot drops
+  lootDrops.forEach(d => {
+    const rc = RARITY_CONFIG[d.item.rarity];
+    const bob = Math.sin(d.bobPhase) * 4;
+    const pulse = 0.7 + 0.3 * Math.sin(d.bobPhase * 1.5);
+    ctx.save();
+    // Glow
+    ctx.shadowColor = rc.glow;
+    ctx.shadowBlur = 12 + pulse * 6;
+    // Outer ring
+    ctx.strokeStyle = rc.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y + bob, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    // Inner fill
+    ctx.fillStyle = rc.color;
+    ctx.globalAlpha = 0.3 + pulse * 0.3;
+    ctx.fill();
+    // Icon
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(d.item.icon, d.x, d.y + bob);
+    // Sparkle particles around rare+ items
+    if(d.item.rarity !== 'common') {
+      const sparkleCount = d.item.rarity === 'legendary' ? 3 : d.item.rarity === 'epic' ? 2 : 1;
+      for(let i = 0; i < sparkleCount; i++) {
+        const sa = d.bobPhase * 2 + i * (Math.PI * 2 / sparkleCount);
+        const sr = 14 + Math.sin(sa * 0.7) * 4;
+        const sx = d.x + Math.cos(sa) * sr;
+        const sy = d.y + bob + Math.sin(sa) * sr;
+        ctx.fillStyle = rc.color;
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(sa * 3);
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  });
+
   // Enemies
   enemies.forEach(e => {
     ctx.save();
@@ -1983,6 +2173,24 @@ function render(dt) {
   for(const t of telegraphs) {
     const renderer = TELEGRAPH_RENDERERS[t.type];
     if(renderer) renderer(ctx, t);
+  }
+
+  // Loot pickup floating text (world space)
+  for(const lt of lootPickupTexts) {
+    const alpha = Math.min(1, lt.life / lt.maxLife * 2);
+    const rc = RARITY_CONFIG[lt.rarity];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rc.color;
+    ctx.shadowColor = rc.glow;
+    ctx.shadowBlur = 8;
+    ctx.fillText(lt.text, lt.x, lt.y);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   ctx.restore();
@@ -2239,10 +2447,48 @@ function startGame() {
   if (skillTree.utility_4) player.permXpMult = (player.permXpMult || 1) * 1.25;
   // --- End skill tree bonuses ---
 
+  // --- Apply equipped loot item effects ---
+  const equippedItems = permSave.equipped || [];
+  player.permBerserker = null;
+  player.permThorns = 0;
+  player.permPhoenixRevive = false;
+  player.phoenixUsed = false;
+  for (const itemId of equippedItems) {
+    const loot = getLootById(itemId);
+    if (!loot) continue;
+    const ef = loot.effect;
+    if (!ef) continue;
+    if (ef.stat === 'maxHp' && typeof ef.bonus === 'number') {
+      player.maxHp += ef.bonus;
+      player.hp = player.maxHp;
+      if (ef.regen) { player.permRegen = true; player.permRegenTimer = 0; }
+    }
+    if (ef.stat === 'speed' && typeof ef.mult === 'number') player.speed *= ef.mult;
+    if (ef.stat === 'damage' && typeof ef.mult === 'number') player.damage *= ef.mult;
+    if (ef.stat === 'attackSpeed' && typeof ef.mult === 'number') player.attackSpeed *= ef.mult;
+    if (ef.stat === 'defense' && typeof ef.mult === 'number') player.defense *= ef.mult;
+    if (ef.stat === 'pickupRadius' && typeof ef.bonus === 'number') player.pickupRadius += ef.bonus;
+    if (ef.stat === 'lifesteal') player.permLifesteal = (player.permLifesteal || 0) + ef.value;
+    if (ef.stat === 'critChance') player.permCritChance = (player.permCritChance || 0) + ef.value;
+    if (ef.stat === 'xpMult') player.permXpMult = (player.permXpMult || 1) * ef.value;
+    if (ef.stat === 'dashCooldown') player.dashCooldownReduction = (player.dashCooldownReduction || 0) + ef.value;
+    if (ef.stat === 'berserker') player.permBerserker = { threshold: ef.threshold, mult: ef.mult };
+    if (ef.stat === 'phoenixRevive') player.permPhoenixRevive = true;
+    if (ef.stat === 'thornsDamage') player.permThorns = (player.permThorns || 0) + ef.value;
+    if (ef.stat === 'voidPower') {
+      player.damage *= ef.damageMult;
+      player.maxHp = Math.floor(player.maxHp * ef.hpMult);
+      player.hp = player.maxHp;
+    }
+  }
+  // --- End equipped loot effects ---
+
   enemies.releaseAll();
   projectiles.releaseAll();
   gems.releaseAll();
   particles.releaseAll();
+  lootDrops.releaseAll();
+  lootPickupTexts.length = 0;
   activeEffects.length = 0;
   telegraphs.length = 0;
   Object.keys(weaponTimers).forEach(k => weaponTimers[k] = 0);
@@ -2269,6 +2515,17 @@ function checkSecondLife() {
     spawnParticles(player.x, player.y, 20, '#ffcc00', 5);
     Audio.levelUpSound();
     return true; // survived
+  }
+  // Phoenix Feather from equipped loot: auto-revive once
+  if(player.permPhoenixRevive && !player.phoenixUsed) {
+    player.phoenixUsed = true;
+    player.hp = Math.floor(player.maxHp * 0.5);
+    player.invulnTime = 2.5;
+    spawnParticles(player.x, player.y, 25, '#ff6600', 6);
+    spawnParticles(player.x, player.y, 15, '#ffcc00', 4);
+    Audio.levelUpSound();
+    lootPickupTexts.push({ text: 'Phoenix Feather!', rarity: 'legendary', x: player.x, y: player.y - 30, life: 2.0, maxLife: 2.0 });
+    return true;
   }
   return false; // actually dead
 }
