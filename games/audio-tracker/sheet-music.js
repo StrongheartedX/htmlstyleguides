@@ -496,13 +496,14 @@ var SheetMusic = (function () {
 
   // ── Animation loop ──
 
-  function tick(timestamp) {
+  function tick() {
     if (!visible) return;
 
     if (playing) {
       // Extrapolate position forward from last known row at playback speed
+      var now = performance.now();
       var rowsPerSec = (bpm / 60) * rowsPerBeat;
-      var elapsed = (timestamp - targetRowTime) / 1000;
+      var elapsed = (now - targetRowTime) / 1000;
       currentRowFrac = targetRow + elapsed * rowsPerSec;
     }
 
@@ -512,7 +513,6 @@ var SheetMusic = (function () {
 
   function startAnimation() {
     if (animId) return;
-    lastFrameTime = 0;
     animId = requestAnimationFrame(tick);
   }
 
