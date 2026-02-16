@@ -546,6 +546,7 @@ const enemies = new Pool(
     e.x = x; e.y = y;
     e.type = type;
     e.isBoss = isBoss || false;
+    e._dead = false;
     const hpMult = 1 + gameTime / 120;
     e.hp = e.maxHp = isBoss ? type.hp * (1 + gameTime / 80) * 1.5 : type.hp * hpMult;
     e.size = type.size;
@@ -1124,6 +1125,7 @@ function updateBossAttacks(dt) {
 // ENEMY / DAMAGE
 // ============================================================
 function damageEnemy(e, dmg) {
+  if(e._dead) return;
   // Berserker bonus: extra damage when below HP threshold
   if(player.permBerserker && player.hp < player.maxHp * player.permBerserker.threshold) {
     dmg *= player.permBerserker.mult;
@@ -1147,6 +1149,9 @@ function damageEnemy(e, dmg) {
 }
 
 function killEnemy(e) {
+  // Guard against double-kill from stale spatial hash references
+  if(e._dead) return;
+  e._dead = true;
   Audio.deathSound();
   spawnParticles(e.x, e.y, 8, e.type.color, 3);
   gems.get(e.x, e.y, e.xpValue);
@@ -1362,6 +1367,13 @@ function gameLoop(timestamp) {
   if(state === 'title' || state === 'gameover' || state === 'victory') return;
   if(state === 'paused' || state === 'levelup') return;
 
+  // Victory vacuum: suck all pickups into player, then show victory screen
+  if(state === 'victory_vacuum') {
+    updateVictoryVacuum(dt);
+    render(dt);
+    return;
+  }
+
   gameTime += dt;
 
   // Gold from time survived: 1g per 10 seconds
@@ -1545,14 +1557,20 @@ function gameLoop(timestamp) {
       ef.tickTimer -= dt;
       if(ef.tickTimer <= 0) {
         ef.tickTimer = 0.1;
-        // Damage along beam
+        // Damage along beam (dedup so each enemy is hit once per tick)
         const cos = Math.cos(ef.angle);
         const sin = Math.sin(ef.angle);
+        const beamHit = new Set();
         for(let d = 0; d < ef.range; d += 20) {
           const bx = ef.x + cos*d;
           const by = ef.y + sin*d;
           const hits = enemyHash.query(bx, by, ef.width+10);
-          for(const e of hits) damageEnemy(e, ef.damage);
+          for(const e of hits) {
+            if(!beamHit.has(e)) {
+              beamHit.add(e);
+              damageEnemy(e, ef.damage);
+            }
+          }
         }
       }
     } else if(ef.type === 'field') {
@@ -2299,9 +2317,95 @@ function checkVictoryCondition() {
 function triggerVictory() {
   if(victoryAchieved) return;
   victoryAchieved = true;
-  state = 'victory';
 
   Audio.victoryFanfare();
+
+  // Kill all enemies — shower the field with rewards
+  enemies.forEach(e => {
+    if(!e._dead) killEnemy(e);
+  });
+
+  // Enter vacuum state: suck all pickups into player before showing overlay
+  state = 'victory_vacuum';
+  vacuumTimer = 0;
+}
+
+let vacuumTimer = 0;
+const VACUUM_DURATION = 1.5;
+const VACUUM_PULL = 1200;
+
+function updateVictoryVacuum(dt) {
+  vacuumTimer += dt;
+
+  // Pull all gems toward player at high speed
+  gems.forEach(g => {
+    const dx = player.x - g.x;
+    const dy = player.y - g.y;
+    const d = Math.hypot(dx, dy);
+    if(d > 5) {
+      const pull = VACUUM_PULL * Math.min(1, vacuumTimer * 2);
+      g.x += (dx/d) * pull * dt;
+      g.y += (dy/d) * pull * dt;
+    }
+    if(d < 25) {
+      addXp(g.value);
+      runGold += 2;
+      Audio.gemSound();
+      gems.release(g);
+    }
+  });
+
+  // Pull all loot drops toward player
+  lootDrops.forEach(d => {
+    const dx = player.x - d.x;
+    const dy = player.y - d.y;
+    const dist = Math.hypot(dx, dy);
+    if(dist > 5) {
+      const pull = VACUUM_PULL * Math.min(1, vacuumTimer * 2);
+      d.x += (dx/dist) * pull * dt;
+      d.y += (dy/dist) * pull * dt;
+    }
+    d.bobPhase += dt * 3;
+    if(dist < 25) {
+      const saveData = SaveManager.load();
+      saveData.inventory.push(d.item.id);
+      if(!saveData.equipped) saveData.equipped = [];
+      if(saveData.equipped.length < 3) saveData.equipped.push(d.item.id);
+      SaveManager.save(saveData);
+      Audio.lootSound(d.item.rarity);
+      const rc = RARITY_CONFIG[d.item.rarity];
+      spawnParticles(d.x, d.y, 10, rc.color, 4);
+      lootPickupTexts.push({ text: d.item.name, rarity: d.item.rarity, x: d.x, y: d.y, life: 1.5, maxLife: 1.5 });
+      lootDrops.release(d);
+    }
+  });
+
+  // Update particles so death/pickup effects still animate
+  particles.forEach(p => {
+    p.life -= dt;
+    if(p.life <= 0) { particles.release(p); return; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= 0.95;
+    p.vy *= 0.95;
+  });
+
+  // Update loot pickup floating texts
+  for(let i = lootPickupTexts.length - 1; i >= 0; i--) {
+    lootPickupTexts[i].life -= dt;
+    lootPickupTexts[i].y -= 30 * dt;
+    if(lootPickupTexts[i].life <= 0) lootPickupTexts.splice(i, 1);
+  }
+
+  // Once vacuum is done (or all pickups collected), show victory
+  const allCollected = gems.count === 0 && lootDrops.count === 0;
+  if(vacuumTimer >= VACUUM_DURATION || allCollected) {
+    finalizeVictory();
+  }
+}
+
+function finalizeVictory() {
+  state = 'victory';
 
   // Record run stats and update world progression
   SaveManager.recordRun(kills, gameTime, runGold);
