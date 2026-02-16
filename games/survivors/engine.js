@@ -143,13 +143,19 @@ const Audio = (() => {
     note(120, 0.1, 'square', 0.08);
   }
 
+  function dashSound() {
+    noise(0.04, 0.08);
+    note(400, 0.08, 'sine', 0.06);
+    setTimeout(() => note(600, 0.06, 'sine', 0.04), 30);
+  }
+
   function toggleMute() {
     muted = !muted;
     if(masterGain) masterGain.gain.value = muted ? 0 : 0.4;
     return muted;
   }
 
-  return { init, note, noise, weaponSound, hitSound, deathSound, gemSound, levelUpSound, bossWarning, heartbeat, damageTaken, updateAmbient, toggleMute };
+  return { init, note, noise, weaponSound, hitSound, deathSound, gemSound, levelUpSound, bossWarning, heartbeat, damageTaken, dashSound, updateAmbient, toggleMute };
 })();
 
 // ============================================================
@@ -254,10 +260,15 @@ function confirmLevelUpSelection() {
   levelUpCards[levelUpSelection].click();
 }
 
+let dashRequested = false;
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
   if(e.key === 'Escape') togglePause();
   if(e.key.toLowerCase() === 'm') Audio.toggleMute();
+  if(e.key === ' ' && state === 'playing') {
+    e.preventDefault();
+    dashRequested = true;
+  }
   if(state === 'levelup') {
     if(e.key === '1') { selectLevelUpCard(0); confirmLevelUpSelection(); }
     else if(e.key === '2') { selectLevelUpCard(1); confirmLevelUpSelection(); }
@@ -275,9 +286,15 @@ let touchActive = false;
 let touchStart = { x: 0, y: 0 };
 const touchZone = document.getElementById('touch-zone');
 
+let lastTouchTime = 0;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   Audio.init();
+  const now = performance.now();
+  if(now - lastTouchTime < 300 && state === 'playing') {
+    dashRequested = true;
+  }
+  lastTouchTime = now;
   const t = e.touches[0];
   touchStart.x = t.clientX;
   touchStart.y = t.clientY;
@@ -329,6 +346,10 @@ const player = {
   pickupRadius: 60,
   defense: 1, // multiplier for damage taken
   invulnTime: 0,
+  dashTimer: 0,
+  dashCooldown: 0,
+  dashDirX: 0, dashDirY: 0,
+  lastDirX: 0, lastDirY: 1,
   weapons: [],
   passives: []
 };
@@ -1081,7 +1102,12 @@ function gameLoop(timestamp) {
   waveNum = Math.floor(gameTime / 40) + 1;
   Audio.updateAmbient(progress);
 
-  // Movement
+  // Movement + Dash
+  const DASH_SPEED_MULT = 4;
+  const DASH_DURATION = 0.15;
+  const DASH_COOLDOWN = 1.2;
+  const DASH_INVULN = 0.15;
+
   let mx = 0, my = 0;
   if(keys['w'] || keys['arrowup']) my -= 1;
   if(keys['s'] || keys['arrowdown']) my += 1;
@@ -1091,6 +1117,30 @@ function gameLoop(timestamp) {
   const mlen = Math.sqrt(mx*mx+my*my);
   if(mlen > 0) {
     mx /= mlen; my /= mlen;
+    player.lastDirX = mx;
+    player.lastDirY = my;
+  }
+
+  if(player.dashCooldown > 0) player.dashCooldown -= dt;
+  if(player.dashTimer > 0) player.dashTimer -= dt;
+
+  if(dashRequested && player.dashCooldown <= 0 && player.dashTimer <= 0) {
+    const dirX = mlen > 0 ? mx : player.lastDirX;
+    const dirY = mlen > 0 ? my : player.lastDirY;
+    player.dashDirX = dirX;
+    player.dashDirY = dirY;
+    player.dashTimer = DASH_DURATION;
+    player.dashCooldown = DASH_COOLDOWN;
+    player.invulnTime = Math.max(player.invulnTime, DASH_INVULN);
+    spawnParticles(player.x, player.y, 8, `rgb(${THEME.effectColors.invuln.rgb})`, 3);
+    Audio.dashSound();
+  }
+  dashRequested = false;
+
+  if(player.dashTimer > 0) {
+    player.x += player.dashDirX * player.speed * DASH_SPEED_MULT * dt;
+    player.y += player.dashDirY * player.speed * DASH_SPEED_MULT * dt;
+  } else if(mlen > 0) {
     player.x += mx * player.speed * dt;
     player.y += my * player.speed * dt;
   }
@@ -1667,6 +1717,18 @@ function render(dt) {
     ctx.restore();
   });
 
+  // Dash afterimage trail
+  if(player.dashTimer > 0) {
+    const pr = 16;
+    for(let i = 3; i >= 1; i--) {
+      ctx.save();
+      ctx.globalAlpha = 0.15 * i;
+      const offset = i * 12;
+      THEME.drawPlayer(ctx, player.x - player.dashDirX * offset, player.y - player.dashDirY * offset, pr, gameTime);
+      ctx.restore();
+    }
+  }
+
   // Player
   const pr = 16;
   THEME.drawPlayer(ctx, player.x, player.y, pr, gameTime);
@@ -1735,6 +1797,19 @@ function render(dt) {
     ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
   }
+
+  // Dash cooldown arc
+  if(player.dashCooldown > 0) {
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    const cdProgress = 1 - player.dashCooldown / 1.2;
+    ctx.strokeStyle = `rgba(${THEME.effectColors.invuln.rgb},${0.4 * cdProgress})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, -Math.PI/2, -Math.PI/2 + cdProgress * Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 // ============================================================
@@ -1759,6 +1834,10 @@ function startGame() {
   player.pickupRadius = 60;
   player.defense = 1;
   player.invulnTime = 0;
+  player.dashTimer = 0;
+  player.dashCooldown = 0;
+  player.dashDirX = 0; player.dashDirY = 0;
+  player.lastDirX = 0; player.lastDirY = 1;
   player.weapons = [{ type: 'projectile', level: 1 }];
   player.passives = [];
   enemies.releaseAll();
