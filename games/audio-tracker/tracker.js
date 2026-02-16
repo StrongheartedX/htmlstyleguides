@@ -41,6 +41,42 @@ var Tracker = (function () {
     return { note: null, inst: 0, vol: null, fx: null };
   }
 
+  function pad2(n) {
+    return n < 10 ? '0' + n : '' + n;
+  }
+
+  function toInt(value, fallback) {
+    var n = parseInt(value, 10);
+    return isNaN(n) ? fallback : n;
+  }
+
+  function defaultChannels() {
+    return [
+      { name: 'Pulse 1' },
+      { name: 'Pulse 2' },
+      { name: 'Triangle' },
+      { name: 'Noise' }
+    ];
+  }
+
+  function normalizeChannels(rawChannels) {
+    var defaults = defaultChannels();
+    if (!Array.isArray(rawChannels)) return defaults;
+
+    var out = [];
+    for (var i = 0; i < 4; i++) {
+      var src = rawChannels[i];
+      if (typeof src === 'string') {
+        out.push({ name: src });
+      } else if (src && typeof src === 'object') {
+        out.push({ name: src.name || defaults[i].name });
+      } else {
+        out.push({ name: defaults[i].name });
+      }
+    }
+    return out;
+  }
+
   function cloneCell(c) {
     if (!c) return emptyCell();
     return {
@@ -60,7 +96,7 @@ var Tracker = (function () {
       }
       channels.push(rows);
     }
-    var padded = id < 10 ? '0' + id : '' + id;
+    var padded = pad2(id);
     return { id: id, name: 'Pattern ' + padded, length: length, channels: channels };
   }
 
@@ -97,6 +133,282 @@ var Tracker = (function () {
     return 60 / song.bpm / (song.rowsPerBeat || 4);
   }
 
+  function normalizeCell(rawCell) {
+    var out = emptyCell();
+    if (rawCell === null || rawCell === undefined) return out;
+
+    if (Array.isArray(rawCell)) {
+      if (rawCell.length > 0) out.note = rawCell[0];
+      if (rawCell.length > 1) out.inst = rawCell[1];
+      if (rawCell.length > 2) out.vol = rawCell[2];
+      return normalizeCell(out);
+    }
+
+    if (typeof rawCell === 'number') {
+      out.note = rawCell;
+      return normalizeCell(out);
+    }
+
+    if (typeof rawCell === 'object') {
+      var note = (rawCell.note !== undefined) ? rawCell.note : rawCell.n;
+      var inst = (rawCell.inst !== undefined) ? rawCell.inst : rawCell.i;
+      var vol = (rawCell.vol !== undefined) ? rawCell.vol : rawCell.v;
+      var fx = (rawCell.fx !== undefined) ? rawCell.fx : rawCell.f;
+
+      if (rawCell.off === true) note = -1;
+
+      out.note = (note === undefined) ? null : note;
+      out.inst = (inst === undefined || inst === null) ? 0 : inst;
+      out.vol = (vol === undefined) ? null : vol;
+      out.fx = fx || null;
+    }
+
+    if (out.note !== null) out.note = toInt(out.note, null);
+    out.inst = toInt(out.inst, 0);
+    if (out.vol !== null) out.vol = toInt(out.vol, null);
+    return out;
+  }
+
+  function looksLikeEvent(item) {
+    return !!item
+      && !Array.isArray(item)
+      && typeof item === 'object'
+      && (item.r !== undefined || item.row !== undefined);
+  }
+
+  function channelIsEventList(rawChannel) {
+    if (!Array.isArray(rawChannel)) return false;
+    for (var i = 0; i < rawChannel.length; i++) {
+      if (looksLikeEvent(rawChannel[i])) return true;
+    }
+    return false;
+  }
+
+  function inferPatternLength(rawPattern) {
+    var length = toInt(rawPattern.length, NaN);
+    if (isNaN(length)) length = toInt(rawPattern.len, NaN);
+
+    var inferred = 0;
+    var rawChannels = rawPattern.channels || rawPattern.ch || [];
+    if (!Array.isArray(rawChannels)) rawChannels = [];
+
+    for (var ch = 0; ch < rawChannels.length; ch++) {
+      var rc = rawChannels[ch];
+      if (!Array.isArray(rc)) continue;
+
+      if (channelIsEventList(rc)) {
+        for (var ei = 0; ei < rc.length; ei++) {
+          var ev = rc[ei];
+          if (!looksLikeEvent(ev)) continue;
+          var row = toInt((ev.r !== undefined) ? ev.r : ev.row, NaN);
+          if (isNaN(row) || row < 0) continue;
+          var end = row + 1;
+          var dur = toInt((ev.d !== undefined) ? ev.d : ev.dur, 0);
+          if (dur > 0) end = row + dur + 1;
+          if (end > inferred) inferred = end;
+        }
+      } else if (rc.length > inferred) {
+        inferred = rc.length;
+      }
+    }
+
+    if (isNaN(length) || length < 1) length = inferred || 16;
+    if (inferred > length) length = inferred;
+    if (length < 1) length = 1;
+    return length;
+  }
+
+  function normalizePattern(rawPattern, fallbackId) {
+    if (!rawPattern || typeof rawPattern !== 'object') rawPattern = {};
+
+    var id = toInt(rawPattern.id, fallbackId);
+    var len = inferPatternLength(rawPattern);
+    var name = rawPattern.name || ('Pattern ' + pad2(id));
+    var rawChannels = rawPattern.channels || rawPattern.ch || [];
+    if (!Array.isArray(rawChannels)) rawChannels = [];
+    var channels = [];
+
+    for (var ch = 0; ch < 4; ch++) {
+      var rows = [];
+      for (var r = 0; r < len; r++) rows.push(emptyCell());
+
+      var rawChannel = Array.isArray(rawChannels[ch]) ? rawChannels[ch] : [];
+      if (channelIsEventList(rawChannel)) {
+        for (var ei = 0; ei < rawChannel.length; ei++) {
+          var ev = rawChannel[ei];
+          if (!looksLikeEvent(ev)) continue;
+          var row = toInt((ev.r !== undefined) ? ev.r : ev.row, NaN);
+          if (isNaN(row) || row < 0 || row >= len) continue;
+
+          var evNote = (ev.note !== undefined) ? ev.note : ev.n;
+          if (ev.off === true) evNote = -1;
+          var evVol = (ev.vol !== undefined) ? ev.vol : ev.v;
+          var evFx = (ev.fx !== undefined) ? ev.fx : ev.f;
+          var hasNote = (evNote !== undefined);
+          if (!hasNote && evVol === undefined && evFx === undefined) continue;
+
+          var cell = normalizeCell({
+            note: hasNote ? evNote : null,
+            inst: (ev.inst !== undefined) ? ev.inst : ev.i,
+            vol: evVol,
+            fx: evFx
+          });
+          rows[row] = cell;
+
+          // Optional duration sugar for event format:
+          // if d/dur is provided for note-on, auto-place note-off.
+          if (cell.note !== null && cell.note >= 0) {
+            var dur = toInt((ev.d !== undefined) ? ev.d : ev.dur, 0);
+            if (dur > 0) {
+              var offRow = row + dur;
+              if (offRow >= 0 && offRow < len && rows[offRow].note === null) {
+                rows[offRow] = { note: -1, inst: cell.inst, vol: null, fx: null };
+              }
+            }
+          }
+        }
+      } else {
+        for (var r2 = 0; r2 < len && r2 < rawChannel.length; r2++) {
+          rows[r2] = normalizeCell(rawChannel[r2]);
+        }
+      }
+
+      channels.push(rows);
+    }
+
+    return { id: id, name: name, length: len, channels: channels };
+  }
+
+  function normalizeInstrument(rawInst, idx) {
+    if (!rawInst || typeof rawInst !== 'object') rawInst = {};
+    return {
+      name: rawInst.name || ('Instrument ' + pad2(idx)),
+      wave: rawInst.wave || 'square',
+      detune: rawInst.detune || 0,
+      detuneOsc: !!rawInst.detuneOsc,
+      detuneAmount: rawInst.detuneAmount || 0,
+      attack: (rawInst.attack !== undefined) ? rawInst.attack : (rawInst.a !== undefined ? rawInst.a : 0.01),
+      decay: (rawInst.decay !== undefined) ? rawInst.decay : (rawInst.d !== undefined ? rawInst.d : 0.1),
+      sustain: (rawInst.sustain !== undefined) ? rawInst.sustain : (rawInst.s !== undefined ? rawInst.s : 0.6),
+      release: (rawInst.release !== undefined) ? rawInst.release : (rawInst.r !== undefined ? rawInst.r : 0.15),
+      filterType: rawInst.filterType || 'none',
+      filterFreq: (rawInst.filterFreq !== undefined) ? rawInst.filterFreq : 2000,
+      filterQ: (rawInst.filterQ !== undefined) ? rawInst.filterQ : 1,
+      volume: (rawInst.volume !== undefined) ? rawInst.volume : (rawInst.vol !== undefined ? rawInst.vol : 0.8)
+    };
+  }
+
+  function normalizeSong(rawSong) {
+    if (!rawSong || typeof rawSong !== 'object') rawSong = {};
+
+    var out = {
+      title: rawSong.title || 'Untitled',
+      bpm: toInt(rawSong.bpm, 140),
+      rowsPerBeat: toInt((rawSong.rowsPerBeat !== undefined) ? rawSong.rowsPerBeat : rawSong.rpb, 4),
+      channels: normalizeChannels(rawSong.channels),
+      instruments: [],
+      patterns: [],
+      sequence: [],
+      loopStartSeq: 0,
+      loopEndSeq: 0
+    };
+
+    var rawInstruments = Array.isArray(rawSong.instruments) ? rawSong.instruments : [];
+    if (rawInstruments.length === 0) {
+      out.instruments = defaultInstruments();
+    } else {
+      for (var i = 0; i < rawInstruments.length; i++) {
+        out.instruments.push(normalizeInstrument(rawInstruments[i], i));
+      }
+    }
+
+    var rawPatterns = Array.isArray(rawSong.patterns) ? rawSong.patterns : [];
+    if (rawPatterns.length === 0) {
+      out.patterns = [createEmptyPattern(0, 16)];
+    } else {
+      for (var p = 0; p < rawPatterns.length; p++) {
+        out.patterns.push(normalizePattern(rawPatterns[p], p));
+      }
+    }
+
+    var validPatternIds = {};
+    for (var vp = 0; vp < out.patterns.length; vp++) {
+      validPatternIds[out.patterns[vp].id] = true;
+    }
+    var fallbackPatternId = out.patterns[0].id;
+
+    var rawSequence = rawSong.sequence || rawSong.seq || [];
+    if (!Array.isArray(rawSequence) || rawSequence.length === 0) rawSequence = [[fallbackPatternId, fallbackPatternId, fallbackPatternId, fallbackPatternId]];
+
+    for (var s = 0; s < rawSequence.length; s++) {
+      var row = rawSequence[s];
+      var seqRow = [fallbackPatternId, fallbackPatternId, fallbackPatternId, fallbackPatternId];
+
+      if (typeof row === 'number') {
+        seqRow = [row, row, row, row];
+      } else if (Array.isArray(row)) {
+        var fill = (row.length > 0) ? row[0] : fallbackPatternId;
+        seqRow = [
+          row[0] !== undefined ? row[0] : fill,
+          row[1] !== undefined ? row[1] : fill,
+          row[2] !== undefined ? row[2] : fill,
+          row[3] !== undefined ? row[3] : fill
+        ];
+      } else if (row && typeof row === 'object' && Array.isArray(row.ch)) {
+        var ch = row.ch;
+        var fillObj = (ch.length > 0) ? ch[0] : fallbackPatternId;
+        seqRow = [
+          ch[0] !== undefined ? ch[0] : fillObj,
+          ch[1] !== undefined ? ch[1] : fillObj,
+          ch[2] !== undefined ? ch[2] : fillObj,
+          ch[3] !== undefined ? ch[3] : fillObj
+        ];
+      }
+
+      for (var c = 0; c < 4; c++) {
+        seqRow[c] = toInt(seqRow[c], fallbackPatternId);
+        if (!validPatternIds[seqRow[c]]) seqRow[c] = fallbackPatternId;
+      }
+      out.sequence.push(seqRow);
+    }
+
+    var maxSeq = out.sequence.length - 1;
+    var loopStart = toInt(
+      (rawSong.loopStartSeq !== undefined) ? rawSong.loopStartSeq : rawSong.loopStart,
+      0
+    );
+    var loopEnd = toInt(
+      (rawSong.loopEndSeq !== undefined) ? rawSong.loopEndSeq : rawSong.loopEnd,
+      maxSeq
+    );
+
+    if (loopStart < 0 || loopStart > maxSeq) loopStart = 0;
+    if (loopEnd < 0 || loopEnd > maxSeq) loopEnd = maxSeq;
+    if (loopEnd < loopStart) loopEnd = maxSeq;
+    out.loopStartSeq = loopStart;
+    out.loopEndSeq = loopEnd;
+
+    return out;
+  }
+
+  function getLoopStartSeq() {
+    if (!song || !song.sequence || song.sequence.length === 0) return 0;
+    var max = song.sequence.length - 1;
+    var s = toInt(song.loopStartSeq, 0);
+    if (s < 0 || s > max) s = 0;
+    return s;
+  }
+
+  function getLoopEndSeq() {
+    if (!song || !song.sequence || song.sequence.length === 0) return 0;
+    var max = song.sequence.length - 1;
+    var e = toInt(song.loopEndSeq, max);
+    if (e < 0 || e > max) e = max;
+    var s = getLoopStartSeq();
+    if (e < s) e = max;
+    return e;
+  }
+
   // ---------------------------------------------------------------------------
   // Data-model API
   // ---------------------------------------------------------------------------
@@ -106,15 +418,12 @@ var Tracker = (function () {
       title: 'Untitled',
       bpm: 140,
       rowsPerBeat: 4,
-      channels: [
-        { name: 'Pulse 1' },
-        { name: 'Pulse 2' },
-        { name: 'Triangle' },
-        { name: 'Noise' }
-      ],
+      channels: defaultChannels(),
       instruments: defaultInstruments(),
       patterns: [createEmptyPattern(0, 16)],
-      sequence: [[0, 0, 0, 0]]
+      sequence: [[0, 0, 0, 0]],
+      loopStartSeq: 0,
+      loopEndSeq: 0
     };
     undoStack = [];
     redoStack = [];
@@ -126,7 +435,7 @@ var Tracker = (function () {
   }
 
   function setSong(s) {
-    song = s;
+    song = normalizeSong(s);
     undoStack = [];
     redoStack = [];
   }
@@ -323,9 +632,9 @@ var Tracker = (function () {
 
       if (playMode === 'song') {
         currentSeqRow++;
-        if (currentSeqRow >= song.sequence.length) {
-          // Loop back to start
-          currentSeqRow = 0;
+        if (currentSeqRow > getLoopEndSeq() || currentSeqRow >= song.sequence.length) {
+          // Loop within configured sequence loop window.
+          currentSeqRow = getLoopStartSeq();
           if (onPlaybackEnd) onPlaybackEnd();
         }
       } else {
@@ -423,6 +732,8 @@ var Tracker = (function () {
       title: song.title,
       bpm: song.bpm,
       rpb: song.rowsPerBeat,
+      loopStartSeq: getLoopStartSeq(),
+      loopEndSeq: getLoopEndSeq(),
       instruments: [],
       patterns: [],
       seq: song.sequence
