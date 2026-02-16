@@ -1040,10 +1040,19 @@ function updateBossAttacks(dt) {
 // ENEMY / DAMAGE
 // ============================================================
 function damageEnemy(e, dmg) {
+  // Permanent crit chance: double damage on crit
+  if(player.permCritChance && Math.random() < player.permCritChance) {
+    dmg *= 2;
+    spawnParticles(e.x, e.y, 4, '#ffff00', 3); // yellow crit flash
+  }
   e.hp -= dmg;
   e.hitFlash = 0.1;
   Audio.hitSound();
   spawnParticles(e.x, e.y, 2, '#ff4444', 2);
+  // Permanent lifesteal: heal % of damage dealt
+  if(player.permLifesteal) {
+    player.hp = Math.min(player.hp + dmg * player.permLifesteal, player.maxHp);
+  }
   if(e.hp <= 0) {
     killEnemy(e);
   }
@@ -1107,6 +1116,7 @@ function spawnBoss() {
 // LEVEL UP
 // ============================================================
 function addXp(amount) {
+  if(player.permXpMult) amount = Math.round(amount * player.permXpMult);
   xp += amount;
   while(xp >= xpToNext) {
     xp -= xpToNext;
@@ -1325,6 +1335,15 @@ function gameLoop(timestamp) {
   // Camera
   cam.x = player.x - W/2;
   cam.y = player.y - H/2;
+
+  // Permanent regen: 1 HP every 5 seconds
+  if(player.permRegen) {
+    player.permRegenTimer = (player.permRegenTimer || 0) + dt;
+    if(player.permRegenTimer >= 5) {
+      player.permRegenTimer -= 5;
+      player.hp = Math.min(player.hp + 1, player.maxHp);
+    }
+  }
 
   // Spawn enemies
   spawnTimer -= dt;
@@ -2137,6 +2156,54 @@ function startGame() {
   player.lastDirX = 0; player.lastDirY = 1;
   player.weapons = [{ type: 'projectile', level: 1 }];
   player.passives = [];
+
+  // Clear permanent passive flags (reset before re-applying from save)
+  player.permRegen = false;
+  player.permRegenTimer = 0;
+  player.permCritChance = 0;
+  player.permLifesteal = 0;
+  player.permXpMult = 0;
+
+  // --- Apply permanent upgrades from save state ---
+  const permSave = SaveManager.load();
+  const permUpgrades = permSave.upgrades || {};
+  for (const [uid, upg] of Object.entries(permUpgrades)) {
+    // Stat upgrades: flat bonus or multiplicative
+    if (upg.stat) {
+      if (typeof upg.bonus === 'number') {
+        if (upg.stat === 'maxHp') { player.maxHp += upg.bonus; player.hp = player.maxHp; }
+        else if (upg.stat === 'pickupRadius') player.pickupRadius += upg.bonus;
+      }
+      if (typeof upg.mult === 'number') {
+        if (upg.stat === 'speed') player.speed *= upg.mult;
+        else if (upg.stat === 'damage') player.damage *= upg.mult;
+        else if (upg.stat === 'attackSpeed') player.attackSpeed *= upg.mult;
+        else if (upg.stat === 'defense') player.defense *= upg.mult;
+      }
+    }
+    // Starting weapons: add if not already the default weapon
+    if (upg.weaponType && upg.weaponType !== 'projectile') {
+      if (!player.weapons.find(w => w.type === upg.weaponType)) {
+        player.weapons.push({ type: upg.weaponType, level: 1 });
+      }
+    }
+  }
+  // Passive abilities from permanent upgrades
+  if (permUpgrades.p_regen) {
+    player.permRegen = true;      // 1 HP per 5 seconds
+    player.permRegenTimer = 0;
+  }
+  if (permUpgrades.p_critchance) {
+    player.permCritChance = 0.05; // +5% crit chance
+  }
+  if (permUpgrades.p_lifesteal) {
+    player.permLifesteal = 0.01;  // 1% of damage dealt
+  }
+  if (permUpgrades.p_xpboost) {
+    player.permXpMult = 1.10;     // +10% XP
+  }
+  // --- End permanent upgrades ---
+
   enemies.releaseAll();
   projectiles.releaseAll();
   gems.releaseAll();
