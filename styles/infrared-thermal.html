@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrared / Thermal Camera &mdash; HTML Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           INFRARED / THERMAL CAMERA DESIGN SYSTEM
+           Scientific thermal imaging aesthetic -- FLIR camera displays,
+           heat maps, temperature visualization, HUD overlays, and
+           crosshair targeting reticles on deep purple-black backgrounds.
+        ================================================================ */
+
+        /* --- DESIGN TOKENS / CSS VARIABLES --- */
+        :root {
+            /* Thermal Spectrum (cold to hot) */
+            --temp-freezing: #1a0030;
+            --temp-cold: #2d1b69;
+            --temp-cool: #1e3a8a;
+            --temp-mild: #0d9488;
+            --temp-warm: #22c55e;
+            --temp-tepid: #84cc16;
+            --temp-hot: #eab308;
+            --temp-hotter: #f97316;
+            --temp-searing: #ef4444;
+            --temp-critical: #dc2626;
+            --temp-whiteout: #fef3c7;
+
+            /* Core Palette */
+            --void: #0a0010;
+            --void-light: #0f0018;
+            --panel: #120822;
+            --panel-light: #1a0f30;
+            --panel-lighter: #22143d;
+            --scanline: rgba(100, 60, 180, 0.06);
+
+            /* Text Colors */
+            --text-primary: #c4b5fd;
+            --text-bright: #e9e0ff;
+            --text-muted: #7c6faa;
+            --text-dim: #4a3d73;
+            --text-readout: #22c55e;
+
+            /* Accent Colors */
+            --accent-cold: #6366f1;
+            --accent-cool: #3b82f6;
+            --accent-neutral: #14b8a6;
+            --accent-warm: #f59e0b;
+            --accent-hot: #ef4444;
+            --accent-critical: #fbbf24;
+            --reticle: rgba(34, 197, 94, 0.7);
+
+            /* Semantic */
+            --bg: var(--void);
+            --bg-alt: var(--panel);
+            --bg-card: var(--panel-light);
+            --text: var(--text-primary);
+            --text-light: var(--text-bright);
+            --accent: var(--accent-neutral);
+
+            /* Typography */
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Rajdhani', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 32px;
+            --space-xl: 64px;
+            --space-2xl: 96px;
+
+            /* Borders & Radius */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-lg: 8px;
+            --border-subtle: 1px solid rgba(99, 102, 241, 0.15);
+            --border-scan: 1px solid rgba(34, 197, 94, 0.2);
+            --border-hot: 1px solid rgba(239, 68, 68, 0.3);
+
+            /* Shadows & Glows */
+            --glow-cold: 0 0 12px rgba(99, 102, 241, 0.2);
+            --glow-neutral: 0 0 15px rgba(20, 184, 166, 0.25);
+            --glow-warm: 0 0 20px rgba(245, 158, 11, 0.3);
+            --glow-hot: 0 0 25px rgba(239, 68, 68, 0.35);
+            --glow-readout: 0 0 10px rgba(34, 197, 94, 0.3);
+            --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.6);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-medium: 0.3s ease;
+        }
+
+        /* --- RESET & BASE --- */
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Scan-line overlay across entire page */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                var(--scanline) 2px,
+                var(--scanline) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Vignette overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(
+                ellipse 70% 60% at 50% 50%,
+                transparent 50%,
+                rgba(10, 0, 16, 0.6) 100%
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* --- LAYOUT --- */
+
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- TEMPERATURE SCALE BAR (persistent side element) --- */
+
+        .temp-scale {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            z-index: 998;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .temp-scale-bar {
+            width: 12px;
+            height: 300px;
+            border-radius: 6px;
+            background: linear-gradient(
+                to bottom,
+                #fef3c7,
+                #ef4444,
+                #f97316,
+                #eab308,
+                #84cc16,
+                #22c55e,
+                #0d9488,
+                #1e3a8a,
+                #2d1b69,
+                #1a0030
+            );
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .temp-scale-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            color: var(--text-readout);
+            text-shadow: var(--glow-readout);
+            writing-mode: horizontal-tb;
+            white-space: nowrap;
+        }
+
+        .temp-scale-max { color: var(--accent-hot); }
+        .temp-scale-min { color: var(--accent-cold); }
+
+        /* --- TYPOGRAPHY --- */
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--text-light);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 4.5vw, 3.5rem);
+            font-weight: 900;
+            letter-spacing: 0.08em;
+        }
+
+        h2 {
+            font-size: clamp(1.4rem, 2.5vw, 2rem);
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        h4 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        h5 {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        h6 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+        }
+
+        p {
+            margin-bottom: var(--space-md);
+            max-width: 65ch;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            color: var(--text-readout);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+        }
+
+        /* --- HUD READOUT ELEMENT --- */
+
+        .hud-readout {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-readout);
+            text-shadow: var(--glow-readout);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .hud-value {
+            font-family: var(--font-mono);
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: var(--text-readout);
+            text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+            letter-spacing: 0.05em;
+        }
+
+        .hud-unit {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        /* --- HEADER --- */
+
+        header {
+            padding: var(--space-2xl) 0 var(--space-xl);
+            text-align: center;
+            position: relative;
+            border-bottom: var(--border-subtle);
+        }
+
+        /* Crosshair overlay on header */
+        header::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--temp-cold),
+                var(--temp-cool),
+                var(--temp-mild),
+                var(--temp-warm),
+                var(--temp-hot),
+                var(--temp-searing),
+                var(--temp-hot),
+                var(--temp-warm),
+                var(--temp-mild),
+                var(--temp-cool),
+                var(--temp-cold),
+                transparent
+            );
+            opacity: 0.8;
+        }
+
+        header h1 {
+            background: linear-gradient(90deg,
+                var(--accent-cold),
+                var(--accent-cool),
+                var(--accent-neutral),
+                var(--accent-warm),
+                var(--accent-hot)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-md);
+            filter: drop-shadow(0 0 30px rgba(20, 184, 166, 0.3));
+        }
+
+        .tagline {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+            max-width: 560px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* Reticle dot */
+        .reticle-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--text-readout);
+            border-radius: 50%;
+            margin: var(--space-lg) auto var(--space-md);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.2);
+            animation: reticle-pulse 2.5s ease-in-out infinite;
+            position: relative;
+        }
+
+        .reticle-dot::before,
+        .reticle-dot::after {
+            content: '';
+            position: absolute;
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .reticle-dot::before {
+            width: 30px;
+            height: 1px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .reticle-dot::after {
+            width: 1px;
+            height: 30px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes reticle-pulse {
+            0%, 100% {
+                opacity: 0.6;
+                box-shadow: 0 0 6px rgba(34, 197, 94, 0.3);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 12px rgba(34, 197, 94, 0.6), 0 0 30px rgba(34, 197, 94, 0.2);
+            }
+        }
+
+        /* HUD corner brackets on header */
+        .hud-frame {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+        }
+
+        .hud-frame--tl {
+            top: var(--space-lg);
+            left: var(--space-lg);
+            border-top: 2px solid var(--reticle);
+            border-left: 2px solid var(--reticle);
+        }
+
+        .hud-frame--tr {
+            top: var(--space-lg);
+            right: var(--space-lg);
+            border-top: 2px solid var(--reticle);
+            border-right: 2px solid var(--reticle);
+        }
+
+        .hud-frame--bl {
+            bottom: var(--space-lg);
+            left: var(--space-lg);
+            border-bottom: 2px solid var(--reticle);
+            border-left: 2px solid var(--reticle);
+        }
+
+        .hud-frame--br {
+            bottom: var(--space-lg);
+            right: var(--space-lg);
+            border-bottom: 2px solid var(--reticle);
+            border-right: 2px solid var(--reticle);
+        }
+
+        .header-readout {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            margin-top: var(--space-lg);
+            flex-wrap: wrap;
+        }
+
+        .header-readout-item {
+            text-align: center;
+        }
+
+        .header-readout-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .header-readout-value {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--text-readout);
+            text-shadow: var(--glow-readout);
+        }
+
+        /* --- SECTION STRUCTURE --- */
+
+        section {
+            padding: var(--space-2xl) 0;
+            border-bottom: var(--border-subtle);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-xl);
+        }
+
+        .section-number {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-readout);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-sm);
+            text-shadow: var(--glow-readout);
+        }
+
+        .section-number::before {
+            content: '[ ';
+            color: var(--text-dim);
+        }
+
+        .section-number::after {
+            content: ' ]';
+            color: var(--text-dim);
+        }
+
+        .section-header h2 {
+            margin-bottom: var(--space-sm);
+        }
+
+        .section-header h2::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 2px;
+            margin-top: var(--space-md);
+            background: linear-gradient(90deg,
+                var(--accent-cold),
+                var(--accent-neutral),
+                transparent
+            );
+            border-radius: 1px;
+        }
+
+        .section-description {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-top: var(--space-md);
+            max-width: 55ch;
+        }
+
+        /* --- 01. COLOR PALETTE --- */
+
+        .color-group {
+            margin-bottom: var(--space-xl);
+        }
+
+        .color-group-title {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .color-swatch {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--panel);
+            border: var(--border-subtle);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            position: relative;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--glow-cold);
+        }
+
+        .color-swatch-block {
+            height: 90px;
+            position: relative;
+        }
+
+        /* Temperature readout on each swatch */
+        .color-swatch-block::before {
+            content: attr(data-temp);
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 0.05em;
+        }
+
+        /* Crosshair on swatch */
+        .color-swatch-block::after {
+            content: '+';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.25);
+            line-height: 1;
+        }
+
+        .color-swatch-info {
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .color-swatch-name {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 2px;
+        }
+
+        .color-swatch-hex {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .color-swatch-desc {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: var(--space-xs);
+            line-height: 1.4;
+        }
+
+        /* Thermal gradient bar */
+        .thermal-gradient-bar {
+            width: 100%;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(90deg,
+                #1a0030,
+                #2d1b69,
+                #1e3a8a,
+                #0d9488,
+                #22c55e,
+                #84cc16,
+                #eab308,
+                #f97316,
+                #ef4444,
+                #dc2626,
+                #fef3c7
+            );
+            border: var(--border-subtle);
+            margin-bottom: var(--space-md);
+            position: relative;
+        }
+
+        .thermal-gradient-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 9.09%,
+                rgba(255, 255, 255, 0.1) 9.09%,
+                rgba(255, 255, 255, 0.1) 9.15%
+            );
+            border-radius: var(--radius-md);
+        }
+
+        .thermal-gradient-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            padding: 0 2px;
+        }
+
+        /* --- 02. TYPOGRAPHY --- */
+
+        .type-specimen {
+            background: var(--panel);
+            border: var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            position: relative;
+        }
+
+        /* HUD corner on type specimen */
+        .type-specimen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border-top: 1px solid var(--reticle);
+            border-left: 1px solid var(--reticle);
+            pointer-events: none;
+        }
+
+        .type-specimen::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            border-bottom: 1px solid var(--reticle);
+            border-right: 1px solid var(--reticle);
+            pointer-events: none;
+        }
+
+        .type-specimen-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-readout);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            text-shadow: var(--glow-readout);
+        }
+
+        .type-specimen-sample {
+            margin-bottom: var(--space-sm);
+        }
+
+        .type-specimen-meta {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: var(--space-md);
+        }
+
+        .heading-scale {
+            margin-top: var(--space-xl);
+        }
+
+        .heading-scale-item {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-lg);
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+        }
+
+        .heading-scale-item:last-child {
+            border-bottom: none;
+        }
+
+        .heading-scale-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            min-width: 36px;
+            flex-shrink: 0;
+        }
+
+        .body-text-demo {
+            background: var(--panel);
+            border: var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+
+        .body-text-demo p {
+            color: var(--text);
+        }
+
+        .body-text-demo .text-italic {
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .body-text-demo .text-bold {
+            font-weight: 700;
+            color: var(--text-light);
+        }
+
+        blockquote {
+            border-left: 3px solid var(--accent-neutral);
+            padding: var(--space-md) var(--space-lg);
+            margin: var(--space-lg) 0;
+            background: rgba(20, 184, 166, 0.05);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            font-style: italic;
+            color: var(--text-primary);
+        }
+
+        blockquote cite {
+            display: block;
+            font-style: normal;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: var(--space-sm);
+        }
+
+        blockquote cite::before {
+            content: '\2014\00a0';
+        }
+
+        /* --- 03. SPACING --- */
+
+        .spacing-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+
+        .spacing-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+
+        .spacing-label span {
+            color: var(--text-readout);
+            text-shadow: var(--glow-readout);
+        }
+
+        .spacing-bar {
+            height: 28px;
+            border-radius: var(--radius-sm);
+            position: relative;
+            transition: box-shadow var(--transition-fast);
+        }
+
+        .spacing-bar:hover {
+            box-shadow: var(--glow-neutral);
+        }
+
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.12), transparent);
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            min-width: 44px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* --- 04. BUTTONS --- */
+
+        .button-group {
+            margin-bottom: var(--space-xl);
+        }
+
+        .button-group-title {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-readout);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-lg);
+            text-shadow: var(--glow-readout);
+        }
+
+        .button-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-md);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-body);
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition:
+                background var(--transition-fast),
+                box-shadow var(--transition-medium),
+                transform var(--transition-fast),
+                color var(--transition-fast),
+                border-color var(--transition-fast);
+            text-decoration: none;
+            line-height: 1;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent-neutral);
+            outline-offset: 2px;
+            box-shadow: var(--glow-neutral);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Sizes */
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .btn-md {
+            font-size: 0.85rem;
+            padding: 12px 24px;
+        }
+
+        .btn-lg {
+            font-size: 0.95rem;
+            padding: var(--space-md) var(--space-lg);
+        }
+
+        /* Primary: Hot thermal */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-hot), var(--accent-warm));
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #f87171, #fbbf24);
+            box-shadow: var(--glow-hot);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 1px 6px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Secondary: Cool thermal */
+        .btn-secondary {
+            background: transparent;
+            color: var(--accent-cool);
+            border: 2px solid var(--accent-cool);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #60a5fa;
+            box-shadow: var(--glow-cold);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary:active {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        /* Scan button: neutral teal */
+        .btn-scan {
+            background: transparent;
+            color: var(--text-readout);
+            border: 1px solid var(--reticle);
+            box-shadow: none;
+            position: relative;
+        }
+
+        .btn-scan::before {
+            content: '>';
+            margin-right: 6px;
+            font-family: var(--font-mono);
+            animation: blink-cursor 1s step-end infinite;
+        }
+
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .btn-scan:hover {
+            background: rgba(34, 197, 94, 0.08);
+            border-color: var(--text-readout);
+            box-shadow: var(--glow-readout);
+            transform: translateY(-1px);
+        }
+
+        /* Ghost button */
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-readout);
+            background: rgba(34, 197, 94, 0.06);
+            box-shadow: var(--glow-readout);
+        }
+
+        /* Disabled */
+        .btn:disabled,
+        .btn.btn-disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* --- 05. FORMS --- */
+
+        .form-demo {
+            background: var(--panel);
+            border: var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            position: relative;
+        }
+
+        /* HUD corners on form */
+        .form-demo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border-top: 1px solid var(--reticle);
+            border-left: 1px solid var(--reticle);
+            pointer-events: none;
+        }
+
+        .form-demo::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 24px;
+            height: 24px;
+            border-bottom: 1px solid var(--reticle);
+            border-right: 1px solid var(--reticle);
+            pointer-events: none;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .form-group-full {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-readout);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-shadow: var(--glow-readout);
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-light);
+            background: var(--void);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: var(--radius-sm);
+            padding: 10px var(--space-md);
+            outline: none;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-medium),
+                background var(--transition-fast);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            border-color: var(--accent-neutral);
+            box-shadow: var(--glow-neutral);
+            background: rgba(10, 0, 16, 0.9);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+            line-height: 1.6;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2322c55e' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .form-select option {
+            background: var(--panel);
+            color: var(--text-light);
+        }
+
+        /* Custom Checkbox */
+        .form-check-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .form-check-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: color var(--transition-fast);
+        }
+
+        .form-check-label:hover {
+            color: var(--text-light);
+        }
+
+        .form-check-input {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: var(--radius-sm);
+            background: var(--void);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition:
+                background var(--transition-fast),
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .form-check-input:checked {
+            background: var(--accent-neutral);
+            border-color: var(--accent-neutral);
+            box-shadow: 0 0 8px rgba(20, 184, 166, 0.4);
+        }
+
+        .form-check-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 4px;
+            height: 8px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .form-check-input:focus {
+            box-shadow: var(--glow-neutral);
+            border-color: var(--accent-neutral);
+        }
+
+        /* Custom Radio */
+        .form-radio-input {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: 50%;
+            background: var(--void);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition:
+                background var(--transition-fast),
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .form-radio-input:checked {
+            border-color: var(--accent-neutral);
+            box-shadow: 0 0 8px rgba(20, 184, 166, 0.4);
+        }
+
+        .form-radio-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-neutral);
+            box-shadow: 0 0 6px rgba(20, 184, 166, 0.5);
+        }
+
+        .form-radio-input:focus {
+            box-shadow: var(--glow-neutral);
+            border-color: var(--accent-neutral);
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-sm);
+        }
+
+        /* --- 06. CARDS & PANELS --- */
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            position: relative;
+            transition:
+                transform var(--transition-fast),
+                box-shadow var(--transition-medium);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            border-top: 1px solid var(--reticle);
+            border-right: 1px solid var(--reticle);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--glow-cold);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: var(--space-sm);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: var(--space-md);
+        }
+
+        .card-link {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-readout);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            transition: color var(--transition-fast), text-shadow var(--transition-fast);
+        }
+
+        .card-link:hover {
+            color: #4ade80;
+            text-shadow: var(--glow-readout);
+        }
+
+        .card-link:focus-visible {
+            outline: 2px solid var(--accent-neutral);
+            outline-offset: 2px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Thermal card with heat indicator */
+        .card-thermal {
+            border-left: 3px solid;
+            border-image: linear-gradient(to bottom, var(--accent-hot), var(--accent-warm), var(--accent-neutral)) 1;
+        }
+
+        .card-thermal .card-temp-readout {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            color: var(--accent-hot);
+            text-shadow: var(--glow-hot);
+            display: block;
+            margin-bottom: var(--space-sm);
+        }
+
+        .card-thermal .card-temp-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        /* Featured card */
+        .card-featured {
+            border-top: 2px solid transparent;
+            border-image: linear-gradient(90deg,
+                var(--accent-cold),
+                var(--accent-cool),
+                var(--accent-neutral),
+                var(--accent-warm),
+                var(--accent-hot)
+            ) 1;
+        }
+
+        .card-featured .card-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--accent-critical);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 3px 10px;
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md);
+        }
+
+        /* Stat card */
+        .card-stat {
+            text-align: center;
+            padding: var(--space-lg) var(--space-md);
+        }
+
+        .card-stat-value {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            color: var(--text-readout);
+            line-height: 1;
+            margin-bottom: var(--space-sm);
+            text-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+        }
+
+        .card-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        /* Image card with thermal gradient header */
+        .card-image {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .card-image-header {
+            height: 140px;
+            position: relative;
+        }
+
+        .card-image-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+        }
+
+        .card-image-body {
+            padding: var(--space-md) var(--space-lg) var(--space-lg);
+        }
+
+        /* --- 07. ALERTS / NOTIFICATIONS (Thermal Severity) --- */
+
+        .alert {
+            display: flex;
+            gap: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-md);
+            border-left: 4px solid;
+            position: relative;
+        }
+
+        .alert-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            line-height: 1.4;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .alert-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 0;
+            max-width: none;
+        }
+
+        .alert-temp {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        /* Sub-zero: Deep blue */
+        .alert-subzero {
+            background: rgba(30, 58, 138, 0.08);
+            border-color: var(--temp-cool);
+        }
+        .alert-subzero .alert-icon { color: var(--temp-cool); }
+        .alert-subzero .alert-title { color: #60a5fa; }
+        .alert-subzero .alert-text { color: var(--text-muted); }
+        .alert-subzero .alert-temp { color: var(--temp-cool); }
+
+        /* Nominal: Teal-green */
+        .alert-nominal {
+            background: rgba(20, 184, 166, 0.06);
+            border-color: var(--accent-neutral);
+        }
+        .alert-nominal .alert-icon { color: var(--accent-neutral); }
+        .alert-nominal .alert-title { color: #2dd4bf; }
+        .alert-nominal .alert-text { color: var(--text-muted); }
+        .alert-nominal .alert-temp { color: var(--accent-neutral); }
+
+        /* Elevated: Amber-yellow */
+        .alert-elevated {
+            background: rgba(234, 179, 8, 0.06);
+            border-color: var(--accent-warm);
+        }
+        .alert-elevated .alert-icon { color: var(--accent-warm); }
+        .alert-elevated .alert-title { color: #fbbf24; }
+        .alert-elevated .alert-text { color: var(--text-primary); }
+        .alert-elevated .alert-temp { color: var(--accent-warm); }
+
+        /* Critical: Red-hot */
+        .alert-critical {
+            background: rgba(239, 68, 68, 0.06);
+            border-color: var(--accent-hot);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.08);
+        }
+        .alert-critical .alert-icon {
+            color: var(--accent-hot);
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        .alert-critical .alert-title { color: #f87171; }
+        .alert-critical .alert-text { color: var(--text-primary); }
+        .alert-critical .alert-temp { color: var(--accent-hot); text-shadow: var(--glow-hot); }
+
+        /* Whiteout: Maximum temperature */
+        .alert-whiteout {
+            background: rgba(254, 243, 199, 0.06);
+            border-color: var(--temp-whiteout);
+            box-shadow: 0 0 25px rgba(254, 243, 199, 0.1);
+        }
+        .alert-whiteout .alert-icon {
+            color: var(--temp-whiteout);
+            text-shadow: 0 0 15px rgba(254, 243, 199, 0.7);
+        }
+        .alert-whiteout .alert-title { color: var(--temp-whiteout); }
+        .alert-whiteout .alert-text { color: var(--text-light); }
+        .alert-whiteout .alert-temp { color: var(--temp-whiteout); text-shadow: 0 0 10px rgba(254, 243, 199, 0.5); }
+
+        /* --- 08. NAVIGATION --- */
+
+        .nav-demo {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: var(--border-subtle);
+        }
+
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--panel);
+            padding: 0 var(--space-lg);
+            position: relative;
+        }
+
+        .nav-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--temp-cold),
+                var(--temp-cool),
+                var(--temp-mild),
+                var(--temp-warm),
+                var(--temp-hot),
+                var(--temp-searing),
+                var(--temp-hot),
+                var(--temp-warm),
+                var(--temp-mild),
+                var(--temp-cool),
+                var(--temp-cold),
+                transparent
+            );
+            opacity: 0.5;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--text-readout);
+            padding: var(--space-md) 0;
+            text-decoration: none;
+            letter-spacing: 0.15em;
+            text-shadow: var(--glow-readout);
+            transition: color var(--transition-fast);
+        }
+
+        .nav-logo:focus-visible {
+            outline: 2px solid var(--accent-neutral);
+            outline-offset: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            list-style: none;
+        }
+
+        .nav-link {
+            display: block;
+            padding: var(--space-md);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            transition:
+                color var(--transition-fast),
+                background var(--transition-fast);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            right: 50%;
+            height: 2px;
+            background: var(--accent-neutral);
+            transition: all var(--transition-medium);
+            opacity: 0;
+        }
+
+        .nav-link:hover {
+            color: var(--text-readout);
+            background: rgba(34, 197, 94, 0.04);
+        }
+
+        .nav-link:hover::after {
+            left: var(--space-md);
+            right: var(--space-md);
+            opacity: 1;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .nav-link:focus-visible {
+            outline: 2px solid var(--accent-neutral);
+            outline-offset: -2px;
+        }
+
+        .nav-link.active {
+            color: var(--text-readout);
+        }
+
+        .nav-link.active::after {
+            left: var(--space-md);
+            right: var(--space-md);
+            opacity: 1;
+            background: linear-gradient(90deg, var(--accent-neutral), var(--accent-warm));
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+        }
+
+        /* --- 09. HUD PANELS --- */
+
+        .hud-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .hud-panel {
+            background: var(--panel);
+            border: var(--border-scan);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            position: relative;
+        }
+
+        .hud-panel::before {
+            content: attr(data-panel-id);
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-family: var(--font-mono);
+            font-size: 0.5rem;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .hud-panel-title {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-readout);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            text-shadow: var(--glow-readout);
+        }
+
+        .hud-panel-value {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            color: var(--text-readout);
+            text-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+            margin-bottom: var(--space-sm);
+        }
+
+        .hud-panel-unit {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .hud-panel-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--void);
+            margin-top: var(--space-md);
+            overflow: hidden;
+        }
+
+        .hud-panel-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* --- 10. THERMAL HEAT MAP --- */
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 3px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            position: relative;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+            cursor: crosshair;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.3);
+            z-index: 10;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .heatmap-legend-bar {
+            flex: 1;
+            height: 16px;
+            border-radius: 4px;
+            background: linear-gradient(90deg,
+                #1a0030, #2d1b69, #1e3a8a, #0d9488, #22c55e, #84cc16, #eab308, #f97316, #ef4444, #fef3c7
+            );
+        }
+
+        .heatmap-legend-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--space-xs);
+        }
+
+        .heatmap-legend-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            color: var(--text-dim);
+        }
+
+        /* --- FOOTER --- */
+
+        footer {
+            padding: var(--space-xl) 0 var(--space-2xl);
+            text-align: center;
+        }
+
+        .footer-rule {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--temp-cold),
+                var(--temp-cool),
+                var(--temp-mild),
+                var(--temp-warm),
+                var(--temp-tepid),
+                var(--temp-hot),
+                var(--temp-hotter),
+                var(--temp-searing),
+                var(--temp-hotter),
+                var(--temp-hot),
+                var(--temp-tepid),
+                var(--temp-warm),
+                var(--temp-mild),
+                var(--temp-cool),
+                var(--temp-cold),
+                transparent
+            );
+            margin-bottom: var(--space-xl);
+            opacity: 0.6;
+        }
+
+        .footer-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--accent-cold), var(--accent-neutral), var(--accent-warm));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-sm);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin: 0;
+            letter-spacing: 0.08em;
+        }
+
+        .footer-coords {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin-top: var(--space-md);
+            letter-spacing: 0.1em;
+        }
+
+        /* --- RESPONSIVE --- */
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            header {
+                padding: var(--space-xl) 0 var(--space-lg);
+            }
+
+            section {
+                padding: var(--space-xl) 0;
+            }
+
+            .section-header {
+                margin-bottom: var(--space-lg);
+            }
+
+            .temp-scale {
+                display: none;
+            }
+
+            .hud-frame {
+                display: none;
+            }
+
+            .header-readout {
+                gap: var(--space-lg);
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: var(--space-sm);
+            }
+
+            .color-swatch-block {
+                height: 70px;
+            }
+
+            .heading-scale-item {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .spacing-row {
+                gap: var(--space-md);
+            }
+
+            .spacing-label {
+                min-width: 70px;
+                font-size: 0.7rem;
+            }
+
+            .button-row {
+                gap: var(--space-sm);
+            }
+
+            .type-specimen {
+                padding: var(--space-md);
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hud-panel-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-bar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0;
+            }
+
+            .nav-logo {
+                padding: var(--space-md);
+                text-align: center;
+                border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            }
+
+            .nav-links {
+                flex-direction: column;
+            }
+
+            .nav-link {
+                padding: var(--space-sm) var(--space-md);
+                text-align: center;
+            }
+
+            .nav-link::after {
+                bottom: auto;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+            }
+
+            .nav-link:hover::after,
+            .nav-link.active::after {
+                left: 0;
+                right: 0;
+            }
+
+            .heatmap-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+
+            .card-stat-value {
+                font-size: 2rem;
+            }
+
+            .hud-panel-value {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- TEMPERATURE SCALE BAR (fixed right side) -->
+        <div class="temp-scale" aria-hidden="true">
+            <span class="temp-scale-label temp-scale-max">500C</span>
+            <div class="temp-scale-bar"></div>
+            <span class="temp-scale-label temp-scale-min">-40C</span>
+        </div>
+
+        <!-- HEADER -->
+        <header>
+            <div class="hud-frame hud-frame--tl" aria-hidden="true"></div>
+            <div class="hud-frame hud-frame--tr" aria-hidden="true"></div>
+            <div class="hud-frame hud-frame--bl" aria-hidden="true"></div>
+            <div class="hud-frame hud-frame--br" aria-hidden="true"></div>
+
+            <h1>Infrared / Thermal</h1>
+            <div class="reticle-dot" aria-hidden="true"></div>
+            <p class="tagline">A design system forged from FLIR thermal imaging cameras, heat maps, and scientific temperature visualization. Every element maps to the infrared spectrum -- from deep-void purple through searing white-hot.</p>
+
+            <div class="header-readout" aria-hidden="true">
+                <div class="header-readout-item">
+                    <span class="header-readout-label">Emissivity</span>
+                    <span class="header-readout-value">0.95</span>
+                </div>
+                <div class="header-readout-item">
+                    <span class="header-readout-label">Range</span>
+                    <span class="header-readout-value">-40 ~ 500C</span>
+                </div>
+                <div class="header-readout-item">
+                    <span class="header-readout-label">Mode</span>
+                    <span class="header-readout-value">IRON</span>
+                </div>
+                <div class="header-readout-item">
+                    <span class="header-readout-label">FPS</span>
+                    <span class="header-readout-value">60</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 01. COLOR PALETTE -->
+        <section id="color-palette">
+            <div class="section-header">
+                <span class="section-number">01 &mdash; Color Palette</span>
+                <h2>Thermal Spectrum</h2>
+                <p class="section-description">Colors organized by temperature. The thermal imaging spectrum maps physical heat to visible color, from the deep purple void of absolute cold to the white-hot saturation of maximum temperature.</p>
+            </div>
+
+            <!-- Full Thermal Gradient -->
+            <div style="margin-bottom: var(--space-xl);">
+                <div class="thermal-gradient-bar"></div>
+                <div class="thermal-gradient-labels">
+                    <span>-40C</span>
+                    <span>0C</span>
+                    <span>50C</span>
+                    <span>100C</span>
+                    <span>150C</span>
+                    <span>250C</span>
+                    <span>350C</span>
+                    <span>500C</span>
+                </div>
+            </div>
+
+            <!-- Cold Zone -->
+            <div class="color-group">
+                <h3 class="color-group-title">Cold Zone (-40C to 10C)</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="-40C" style="background: var(--temp-freezing);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Freezing</div>
+                            <div class="color-swatch-hex">#1a0030</div>
+                            <div class="color-swatch-desc">Deep void, page background</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="-20C" style="background: var(--temp-cold);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Cold</div>
+                            <div class="color-swatch-hex">#2d1b69</div>
+                            <div class="color-swatch-desc">Panel backgrounds, depth</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="0C" style="background: var(--temp-cool);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Cool</div>
+                            <div class="color-swatch-hex">#1e3a8a</div>
+                            <div class="color-swatch-desc">Secondary accent, info states</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ambient Zone -->
+            <div class="color-group">
+                <h3 class="color-group-title">Ambient Zone (10C to 50C)</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="15C" style="background: var(--temp-mild);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Mild</div>
+                            <div class="color-swatch-hex">#0d9488</div>
+                            <div class="color-swatch-desc">Primary accent, nominal</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="25C" style="background: var(--temp-warm);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Warm</div>
+                            <div class="color-swatch-hex">#22c55e</div>
+                            <div class="color-swatch-desc">Readout displays, success</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="40C" style="background: var(--temp-tepid);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Tepid</div>
+                            <div class="color-swatch-hex">#84cc16</div>
+                            <div class="color-swatch-desc">Transitional, gradients</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hot Zone -->
+            <div class="color-group">
+                <h3 class="color-group-title">Hot Zone (50C to 200C)</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="80C" style="background: var(--temp-hot);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Hot</div>
+                            <div class="color-swatch-hex">#eab308</div>
+                            <div class="color-swatch-desc">Warning states, elevated</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="150C" style="background: var(--temp-hotter);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Hotter</div>
+                            <div class="color-swatch-hex">#f97316</div>
+                            <div class="color-swatch-desc">Alert accents, rising heat</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Critical Zone -->
+            <div class="color-group">
+                <h3 class="color-group-title">Critical Zone (200C+)</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="250C" style="background: var(--temp-searing);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Searing</div>
+                            <div class="color-swatch-hex">#ef4444</div>
+                            <div class="color-swatch-desc">Danger, critical alerts</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="400C" style="background: var(--temp-critical);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Critical</div>
+                            <div class="color-swatch-hex">#dc2626</div>
+                            <div class="color-swatch-desc">System failure, maximum</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" data-temp="500C" style="background: var(--temp-whiteout);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Whiteout</div>
+                            <div class="color-swatch-hex">#fef3c7</div>
+                            <div class="color-swatch-desc">Saturation, peak highlight</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interface Colors -->
+            <div class="color-group">
+                <h3 class="color-group-title">Interface Colors</h3>
+                <div class="color-grid">
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--void);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Void</div>
+                            <div class="color-swatch-hex">#0a0010</div>
+                            <div class="color-swatch-desc">Primary background</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--panel);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Panel</div>
+                            <div class="color-swatch-hex">#120822</div>
+                            <div class="color-swatch-desc">Elevated surfaces</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--panel-light);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Panel Light</div>
+                            <div class="color-swatch-hex">#1a0f30</div>
+                            <div class="color-swatch-desc">Card backgrounds</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--panel-lighter);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Panel Lighter</div>
+                            <div class="color-swatch-hex">#22143d</div>
+                            <div class="color-swatch-desc">Hover states, borders</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--text-primary);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Text Primary</div>
+                            <div class="color-swatch-hex">#c4b5fd</div>
+                            <div class="color-swatch-desc">Body text</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-swatch-block" style="background: var(--text-readout);"></div>
+                        <div class="color-swatch-info">
+                            <div class="color-swatch-name">Readout</div>
+                            <div class="color-swatch-hex">#22c55e</div>
+                            <div class="color-swatch-desc">HUD displays, labels</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 02. TYPOGRAPHY -->
+        <section id="typography">
+            <div class="section-header">
+                <span class="section-number">02 &mdash; Typography</span>
+                <h2>Type System</h2>
+                <p class="section-description">Three typefaces calibrated for distinct readout purposes: Orbitron for display and HUD headers, Rajdhani for instrumentation body text, and Share Tech Mono for digital temperature readouts.</p>
+            </div>
+
+            <!-- Display Font -->
+            <div class="type-specimen">
+                <div class="type-specimen-label">Display &mdash; Orbitron</div>
+                <div class="type-specimen-sample">
+                    <h1 style="margin-bottom: var(--space-sm);">Thermal Scan Active</h1>
+                </div>
+                <div class="type-specimen-meta">
+                    Orbitron 900 / clamp(2rem, 4.5vw, 3.5rem) / letter-spacing: 0.08em / text-transform: uppercase
+                </div>
+            </div>
+
+            <!-- Body Font -->
+            <div class="type-specimen">
+                <div class="type-specimen-label">Body &mdash; Rajdhani</div>
+                <div class="type-specimen-sample">
+                    <p style="font-size: 1.15rem; margin: 0; max-width: none; color: var(--text-light);">The quick brown fox jumps over the lazy dog. Infrared radiation lies between visible light and microwave radiation on the electromagnetic spectrum. Every surface above absolute zero emits thermal radiation that these cameras can detect and visualize.</p>
+                </div>
+                <div class="type-specimen-meta">
+                    Rajdhani 500 / 1.15rem / line-height: 1.6
+                </div>
+            </div>
+
+            <!-- Mono Font -->
+            <div class="type-specimen">
+                <div class="type-specimen-label">Monospace &mdash; Share Tech Mono</div>
+                <div class="type-specimen-sample">
+                    <p style="font-family: var(--font-mono); font-size: 0.95rem; margin: 0; max-width: none; color: var(--text-readout); text-shadow: var(--glow-readout);">TEMP: 37.2C | EMISSIVITY: 0.95 | RANGE: -40~500C | MODE: IRON</p>
+                </div>
+                <div class="type-specimen-meta">
+                    Share Tech Mono 400 / 0.95rem / Used in readouts, labels, metadata, code
+                </div>
+            </div>
+
+            <!-- Heading Scale -->
+            <div class="heading-scale">
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H1</span>
+                    <h1 style="margin: 0;">Thermal Scan</h1>
+                </div>
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H2</span>
+                    <h2 style="margin: 0;">Thermal Scan</h2>
+                </div>
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H3</span>
+                    <h3 style="margin: 0;">Thermal Scan</h3>
+                </div>
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H4</span>
+                    <h4 style="margin: 0;">Thermal Scan</h4>
+                </div>
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H5</span>
+                    <h5 style="margin: 0;">Thermal Scan</h5>
+                </div>
+                <div class="heading-scale-item">
+                    <span class="heading-scale-label">H6</span>
+                    <h6 style="margin: 0;">Thermal Scan</h6>
+                </div>
+            </div>
+
+            <!-- Body Text Demo -->
+            <div class="body-text-demo">
+                <p>Thermal imaging works by detecting infrared radiation emitted by all objects above absolute zero. FLIR cameras convert this invisible radiation into a visible image, mapping temperature variations to a color palette that the human eye can interpret.</p>
+                <p class="text-italic">Italic text functions like a low-temperature reading -- present but secondary, carrying supplementary data without drawing the eye from primary readouts.</p>
+                <p><span class="text-bold">Bold text is a thermal hotspot</span> -- an area of concentrated energy that demands immediate attention and analysis.</p>
+                <p>Inline <code>code elements</code> represent raw sensor data, standing apart from interpreted readings with a digital readout aesthetic.</p>
+                <blockquote>
+                    Every object with a temperature above absolute zero emits infrared energy. The warmer the object, the more radiation it emits. A thermal camera simply makes the invisible visible.
+                    <cite>FLIR Systems Technical Reference Manual</cite>
+                </blockquote>
+            </div>
+        </section>
+
+        <!-- 03. SPACING -->
+        <section id="spacing">
+            <div class="section-header">
+                <span class="section-number">03 &mdash; Spacing</span>
+                <h2>Spatial Scale</h2>
+                <p class="section-description">A geometric spacing system built on a 4px base unit. Each level maps to the thermal spectrum -- colder values are tighter, hotter values expand outward like radiating heat.</p>
+            </div>
+
+            <div class="spacing-scale">
+                <div class="spacing-row">
+                    <div class="spacing-label">xs <span>(4px)</span></div>
+                    <div class="spacing-bar" style="width: 4px; background: linear-gradient(90deg, var(--temp-cold), var(--temp-cool));"></div>
+                    <span class="spacing-value">4px</span>
+                </div>
+                <div class="spacing-row">
+                    <div class="spacing-label">sm <span>(8px)</span></div>
+                    <div class="spacing-bar" style="width: 8px; background: linear-gradient(90deg, var(--temp-cool), var(--temp-mild));"></div>
+                    <span class="spacing-value">8px</span>
+                </div>
+                <div class="spacing-row">
+                    <div class="spacing-label">md <span>(16px)</span></div>
+                    <div class="spacing-bar" style="width: 16px; background: linear-gradient(90deg, var(--temp-mild), var(--temp-warm));"></div>
+                    <span class="spacing-value">16px</span>
+                </div>
+                <div class="spacing-row">
+                    <div class="spacing-label">lg <span>(32px)</span></div>
+                    <div class="spacing-bar" style="width: 32px; background: linear-gradient(90deg, var(--temp-warm), var(--temp-hot));"></div>
+                    <span class="spacing-value">32px</span>
+                </div>
+                <div class="spacing-row">
+                    <div class="spacing-label">xl <span>(64px)</span></div>
+                    <div class="spacing-bar" style="width: 64px; background: linear-gradient(90deg, var(--temp-hot), var(--temp-searing));"></div>
+                    <span class="spacing-value">64px</span>
+                </div>
+                <div class="spacing-row">
+                    <div class="spacing-label">2xl <span>(96px)</span></div>
+                    <div class="spacing-bar" style="width: 96px; background: linear-gradient(90deg, var(--temp-searing), var(--temp-whiteout));"></div>
+                    <span class="spacing-value">96px</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 04. BUTTONS -->
+        <section id="buttons">
+            <div class="section-header">
+                <span class="section-number">04 &mdash; Buttons</span>
+                <h2>Controls</h2>
+                <p class="section-description">Four interaction tiers mapped to thermal intensity. Primary buttons radiate maximum heat, secondary cool to blue, scan buttons pulse with readout green, and ghost buttons remain invisible until activated.</p>
+            </div>
+
+            <!-- Primary Buttons -->
+            <div class="button-group">
+                <div class="button-group-title">Primary (Hot)</div>
+                <div class="button-row">
+                    <button class="btn btn-primary btn-sm">Small</button>
+                    <button class="btn btn-primary btn-md">Medium</button>
+                    <button class="btn btn-primary btn-lg">Large</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-primary btn-md btn-disabled" disabled>Disabled</button>
+                </div>
+            </div>
+
+            <!-- Secondary Buttons -->
+            <div class="button-group">
+                <div class="button-group-title">Secondary (Cool)</div>
+                <div class="button-row">
+                    <button class="btn btn-secondary btn-sm">Small</button>
+                    <button class="btn btn-secondary btn-md">Medium</button>
+                    <button class="btn btn-secondary btn-lg">Large</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-secondary btn-md btn-disabled" disabled>Disabled</button>
+                </div>
+            </div>
+
+            <!-- Scan Buttons -->
+            <div class="button-group">
+                <div class="button-group-title">Scan (Readout)</div>
+                <div class="button-row">
+                    <button class="btn btn-scan btn-sm">Scan</button>
+                    <button class="btn btn-scan btn-md">Init Scan</button>
+                    <button class="btn btn-scan btn-lg">Begin Thermal Scan</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-scan btn-md btn-disabled" disabled>Disabled</button>
+                </div>
+            </div>
+
+            <!-- Ghost Buttons -->
+            <div class="button-group">
+                <div class="button-group-title">Ghost</div>
+                <div class="button-row">
+                    <button class="btn btn-ghost btn-sm">Small</button>
+                    <button class="btn btn-ghost btn-md">Medium</button>
+                    <button class="btn btn-ghost btn-lg">Large</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-ghost btn-md btn-disabled" disabled>Disabled</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 05. FORMS -->
+        <section id="forms">
+            <div class="section-header">
+                <span class="section-number">05 &mdash; Forms</span>
+                <h2>Input Controls</h2>
+                <p class="section-description">Form elements styled as thermal camera control inputs. Labels glow with readout green, fields emerge from the void, and focus states illuminate like heat signatures detected by the sensor.</p>
+            </div>
+
+            <div class="form-demo">
+                <form class="form-grid" onsubmit="return false;">
+
+                    <!-- Text Input -->
+                    <div class="form-group">
+                        <label class="form-label" for="form-target">Target ID</label>
+                        <input class="form-input" type="text" id="form-target" placeholder="Enter target designation">
+                    </div>
+
+                    <!-- Email Input -->
+                    <div class="form-group">
+                        <label class="form-label" for="form-operator">Operator Email</label>
+                        <input class="form-input" type="email" id="form-operator" placeholder="operator@thermal.sys">
+                    </div>
+
+                    <!-- Select Dropdown -->
+                    <div class="form-group">
+                        <label class="form-label" for="form-palette">Color Palette</label>
+                        <select class="form-select" id="form-palette">
+                            <option value="" disabled selected>Select palette</option>
+                            <option value="iron">Iron (Classic)</option>
+                            <option value="rainbow">Rainbow (High Contrast)</option>
+                            <option value="arctic">Arctic (Cold Focus)</option>
+                            <option value="lava">Lava (Hot Focus)</option>
+                        </select>
+                    </div>
+
+                    <!-- Number Input -->
+                    <div class="form-group">
+                        <label class="form-label" for="form-emissivity">Emissivity (0.01-1.00)</label>
+                        <input class="form-input" type="number" id="form-emissivity" placeholder="0.95" min="0.01" max="1.0" step="0.01">
+                    </div>
+
+                    <!-- Textarea -->
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="form-notes">Scan Notes</label>
+                        <textarea class="form-textarea" id="form-notes" placeholder="Record thermal anomalies and observations..."></textarea>
+                    </div>
+
+                    <!-- Checkbox Group -->
+                    <div class="form-group">
+                        <span class="form-label">Detection Modes</span>
+                        <div class="form-check-group">
+                            <label class="form-check-label">
+                                <input class="form-check-input" type="checkbox" name="mode" value="auto">
+                                Auto-Range
+                            </label>
+                            <label class="form-check-label">
+                                <input class="form-check-input" type="checkbox" name="mode" value="spot">
+                                Spot Metering
+                            </label>
+                            <label class="form-check-label">
+                                <input class="form-check-input" type="checkbox" name="mode" value="area">
+                                Area Analysis
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Radio Group -->
+                    <div class="form-group">
+                        <span class="form-label">Resolution</span>
+                        <div class="form-check-group">
+                            <label class="form-check-label">
+                                <input class="form-radio-input" type="radio" name="res" value="160">
+                                160 x 120 (Standard)
+                            </label>
+                            <label class="form-check-label">
+                                <input class="form-radio-input" type="radio" name="res" value="320">
+                                320 x 240 (Enhanced)
+                            </label>
+                            <label class="form-check-label">
+                                <input class="form-radio-input" type="radio" name="res" value="640">
+                                640 x 480 (High-Res)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button class="btn btn-primary btn-md" type="submit">Initialize Scan</button>
+                        <button class="btn btn-scan btn-md">Calibrate</button>
+                        <button class="btn btn-ghost btn-md" type="reset">Reset</button>
+                    </div>
+
+                </form>
+            </div>
+        </section>
+
+        <!-- 06. CARDS & PANELS -->
+        <section id="cards">
+            <div class="section-header">
+                <span class="section-number">06 &mdash; Cards</span>
+                <h2>Data Panels</h2>
+                <p class="section-description">Content containers styled as thermal camera data readout panels. Each card carries HUD corner markers and responds to interaction with subtle heat-signature glows.</p>
+            </div>
+
+            <div class="card-grid">
+
+                <!-- Basic Card -->
+                <div class="card">
+                    <h3 class="card-title">Infrared Sensor</h3>
+                    <p class="card-text">A microbolometer array detects thermal radiation in the 7.5 to 14 micrometer band. Each pixel measures temperature independently, creating a thermal map of the scene.</p>
+                    <a href="#" class="card-link">View specifications &rarr;</a>
+                </div>
+
+                <!-- Featured Card -->
+                <div class="card card-featured">
+                    <span class="card-badge">Classified</span>
+                    <h3 class="card-title">FLIR Imaging Core</h3>
+                    <p class="card-text">Forward-Looking Infrared systems combine germanium optics with uncooled focal plane arrays to produce real-time thermal imagery at frame rates exceeding 60 Hz.</p>
+                    <a href="#" class="card-link">Access datasheet &rarr;</a>
+                </div>
+
+                <!-- Thermal Reading Card -->
+                <div class="card card-thermal">
+                    <span class="card-temp-readout">342.7C</span>
+                    <span class="card-temp-label">Peak Temperature Reading</span>
+                    <p class="card-text" style="margin-top: var(--space-md);">Critical thermal anomaly detected in sector 4-B. Temperature exceeds safe operating threshold by 127 degrees. Recommend immediate inspection.</p>
+                </div>
+
+                <!-- Stat Card -->
+                <div class="card card-stat">
+                    <div class="card-stat-value">0.95</div>
+                    <div class="card-stat-label">Emissivity Factor</div>
+                    <p class="card-text" style="margin-top: var(--space-md); margin-bottom: 0;">The ratio of thermal radiation emitted by a surface to that emitted by a perfect black body at the same temperature.</p>
+                </div>
+
+                <!-- Image Card with thermal gradient -->
+                <div class="card card-image">
+                    <div class="card-image-header" style="background: linear-gradient(135deg, #1a0030, #2d1b69, #1e3a8a, #0d9488, #22c55e, #eab308, #ef4444, #fef3c7);"></div>
+                    <div class="card-image-body">
+                        <h3 class="card-title">Thermal Mosaic</h3>
+                        <p class="card-text" style="margin-bottom: 0;">Composite thermal image stitched from multiple sensor passes. The gradient header simulates a wide-field thermal survey across varying temperature zones.</p>
+                    </div>
+                </div>
+
+                <!-- Stat Card -->
+                <div class="card card-stat">
+                    <div class="card-stat-value">-40</div>
+                    <div class="card-stat-label">Min Range (Celsius)</div>
+                    <p class="card-text" style="margin-top: var(--space-md); margin-bottom: 0;">Lower detection limit of the thermal sensor array. Objects below this threshold appear as uniform deep purple in the void spectrum.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 07. ALERTS / NOTIFICATIONS -->
+        <section id="alerts">
+            <div class="section-header">
+                <span class="section-number">07 &mdash; Alerts</span>
+                <h2>Thermal Severity</h2>
+                <p class="section-description">Alert levels mapped directly to the thermal spectrum. Sub-zero conditions register in deep blue, nominal operations in teal-green, elevated readings in amber, critical in red, and whiteout for sensor saturation.</p>
+            </div>
+
+            <!-- Sub-Zero -->
+            <div class="alert alert-subzero">
+                <span class="alert-icon">&#x2744;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Sub-Zero Conditions Detected</div>
+                    <p class="alert-text">Ambient temperature has dropped below operating threshold. Sensor calibration may drift at extreme cold. Activate internal heater to maintain detector sensitivity.</p>
+                </div>
+                <span class="alert-temp">-28.4C</span>
+            </div>
+
+            <!-- Nominal -->
+            <div class="alert alert-nominal">
+                <span class="alert-icon">&#x2713;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Systems Nominal</div>
+                    <p class="alert-text">All thermal sensors operating within expected parameters. Detector temperature stable. Auto-calibration cycle completed successfully. Ready for field deployment.</p>
+                </div>
+                <span class="alert-temp">22.1C</span>
+            </div>
+
+            <!-- Elevated -->
+            <div class="alert alert-elevated">
+                <span class="alert-icon">&#x26A0;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Elevated Temperature Zone</div>
+                    <p class="alert-text">Thermal anomaly detected in grid reference E-7. Surface temperature 12 degrees above expected baseline. Possible equipment malfunction or insulation failure. Schedule inspection.</p>
+                </div>
+                <span class="alert-temp">78.3C</span>
+            </div>
+
+            <!-- Critical -->
+            <div class="alert alert-critical">
+                <span class="alert-icon">&#x25C6;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Critical Heat Signature</div>
+                    <p class="alert-text">Dangerous temperature levels detected. Surface reading exceeds 200C safe-contact threshold. Evacuate area and engage remote monitoring protocols immediately.</p>
+                </div>
+                <span class="alert-temp">287.9C</span>
+            </div>
+
+            <!-- Whiteout -->
+            <div class="alert alert-whiteout">
+                <span class="alert-icon">&#x26A1;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Sensor Saturation &mdash; Whiteout</div>
+                    <p class="alert-text">Thermal reading exceeds maximum sensor range. Image data in affected region is clipped to white. Reduce sensitivity or switch to extended-range mode to resolve true temperature.</p>
+                </div>
+                <span class="alert-temp">>500C</span>
+            </div>
+        </section>
+
+        <!-- 08. NAVIGATION -->
+        <section id="navigation">
+            <div class="section-header">
+                <span class="section-number">08 &mdash; Navigation</span>
+                <h2>Nav Bar</h2>
+                <p class="section-description">A navigation control panel styled as a thermal camera interface toolbar. Active states glow with sensor readout colors, and the thermal spectrum bar runs along the base.</p>
+            </div>
+
+            <div class="nav-demo">
+                <nav class="nav-bar">
+                    <a href="#" class="nav-logo">FLIR-SYS</a>
+                    <ul class="nav-links">
+                        <li><a href="#" class="nav-link active">Live Feed</a></li>
+                        <li><a href="#" class="nav-link">Analysis</a></li>
+                        <li><a href="#" class="nav-link">Archive</a></li>
+                        <li><a href="#" class="nav-link">Calibrate</a></li>
+                        <li><a href="#" class="nav-link">Settings</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <!-- 09. HUD PANELS -->
+        <section id="hud-panels">
+            <div class="section-header">
+                <span class="section-number">09 &mdash; HUD Panels</span>
+                <h2>Readout Displays</h2>
+                <p class="section-description">Heads-up display panels showing live instrument data. Inspired by the data overlays on thermal camera viewfinders -- temperature readings, sensor status, and diagnostic metrics.</p>
+            </div>
+
+            <div class="hud-panel-grid">
+
+                <div class="hud-panel" data-panel-id="SEN-01">
+                    <div class="hud-panel-title">Core Temperature</div>
+                    <div class="hud-panel-value">37.2C</div>
+                    <div class="hud-panel-unit">Target Surface Temp</div>
+                    <div class="hud-panel-bar">
+                        <div class="hud-panel-bar-fill" style="width: 42%; background: linear-gradient(90deg, var(--accent-neutral), var(--temp-warm));"></div>
+                    </div>
+                </div>
+
+                <div class="hud-panel" data-panel-id="SEN-02">
+                    <div class="hud-panel-title">Ambient Temp</div>
+                    <div class="hud-panel-value">21.8C</div>
+                    <div class="hud-panel-unit">Environmental Baseline</div>
+                    <div class="hud-panel-bar">
+                        <div class="hud-panel-bar-fill" style="width: 35%; background: linear-gradient(90deg, var(--temp-cool), var(--accent-neutral));"></div>
+                    </div>
+                </div>
+
+                <div class="hud-panel" data-panel-id="SEN-03">
+                    <div class="hud-panel-title">Peak Detection</div>
+                    <div class="hud-panel-value" style="color: var(--accent-hot); text-shadow: var(--glow-hot);">412.6C</div>
+                    <div class="hud-panel-unit">Hottest Point in FOV</div>
+                    <div class="hud-panel-bar">
+                        <div class="hud-panel-bar-fill" style="width: 82%; background: linear-gradient(90deg, var(--accent-warm), var(--accent-hot));"></div>
+                    </div>
+                </div>
+
+                <div class="hud-panel" data-panel-id="DET-01">
+                    <div class="hud-panel-title">Detector Health</div>
+                    <div class="hud-panel-value">98.7%</div>
+                    <div class="hud-panel-unit">Focal Plane Array Status</div>
+                    <div class="hud-panel-bar">
+                        <div class="hud-panel-bar-fill" style="width: 98%; background: linear-gradient(90deg, var(--accent-neutral), var(--temp-warm));"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 10. THERMAL HEAT MAP -->
+        <section id="heatmap">
+            <div class="section-header">
+                <span class="section-number">10 &mdash; Heat Map</span>
+                <h2>Thermal Grid</h2>
+                <p class="section-description">A visual heat map grid demonstrating the full thermal spectrum as a data visualization element. Each cell represents a discrete temperature measurement rendered in the standard FLIR iron palette.</p>
+            </div>
+
+            <div class="heatmap-grid" id="heatmap-grid" aria-label="Thermal heat map visualization"></div>
+
+            <div style="margin-top: var(--space-lg);">
+                <div class="heatmap-legend-bar"></div>
+                <div class="heatmap-legend-labels">
+                    <span class="heatmap-legend-label">-40C</span>
+                    <span class="heatmap-legend-label">0C</span>
+                    <span class="heatmap-legend-label">100C</span>
+                    <span class="heatmap-legend-label">200C</span>
+                    <span class="heatmap-legend-label">300C</span>
+                    <span class="heatmap-legend-label">400C</span>
+                    <span class="heatmap-legend-label">500C</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <hr class="footer-rule">
+            <h2 class="footer-title">Infrared / Thermal</h2>
+            <p class="footer-tagline">Making the invisible visible since 1929.</p>
+            <p class="footer-coords">LAT 37.7749 | LON -122.4194 | ALT 16m | UTC-8</p>
+        </footer>
+
+    </div><!-- .container -->
+
+    <script>
+        /* Generate thermal heat map grid */
+        (function() {
+            var grid = document.getElementById('heatmap-grid');
+            if (!grid) return;
+
+            var thermalColors = [
+                '#1a0030', '#1f0040', '#250855', '#2d1b69', '#251f7a',
+                '#1e3a8a', '#1d4ed8', '#0d7490', '#0d9488', '#059669',
+                '#22c55e', '#4ade80', '#84cc16', '#a3e635', '#d4d726',
+                '#eab308', '#f59e0b', '#f97316', '#ef4444', '#dc2626',
+                '#b91c1c', '#fca5a5', '#fde68a', '#fef3c7'
+            ];
+
+            /* Simulate a thermal image with a hot center radiating outward */
+            var cols = 12;
+            var rows = 8;
+            var cx = 7;
+            var cy = 3;
+            var maxDist = Math.sqrt(cx * cx + cy * cy);
+
+            for (var r = 0; r < rows; r++) {
+                for (var c = 0; c < cols; c++) {
+                    var dx = c - cx;
+                    var dy = r - cy;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    var normalized = 1 - (dist / maxDist);
+                    normalized = Math.max(0, Math.min(1, normalized));
+                    /* Add some noise */
+                    normalized += (Math.random() - 0.5) * 0.15;
+                    normalized = Math.max(0, Math.min(1, normalized));
+                    var colorIndex = Math.floor(normalized * (thermalColors.length - 1));
+                    var color = thermalColors[colorIndex];
+
+                    var cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+                    cell.style.backgroundColor = color;
+                    cell.style.color = color;
+                    cell.title = Math.round(-40 + normalized * 540) + 'C';
+                    grid.appendChild(cell);
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crime Scene / Evidence Board — HTML Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Roboto+Mono:wght@400;500;700&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===========================================
+           CSS VARIABLES
+        =========================================== */
+        :root {
+            /* Cork Board Palette */
+            --cork: #b8956a;
+            --cork-light: #d4b896;
+            --cork-dark: #8c6d45;
+            --cork-shadow: #6b5234;
+
+            /* Evidence Colors */
+            --red-string: #cc2936;
+            --red-string-bright: #e63946;
+            --caution-yellow: #ffd23f;
+            --caution-black: #1a1a1a;
+            --marker-yellow: #ffe066;
+            --marker-orange: #ff9f1c;
+
+            /* Paper & File Colors */
+            --manila: #f5e6c8;
+            --manila-dark: #d4c4a0;
+            --paper-white: #f8f7f2;
+            --paper-aged: #f0e8d8;
+            --paper-lined: #d6e4f0;
+            --polaroid-border: #f5f4ef;
+
+            /* Forensic / Lab Colors */
+            --lab-white: #f0f2f5;
+            --fluorescent: #e8ecf0;
+            --uv-blue: #4361ee;
+            --uv-glow: #7b2ff7;
+            --luminol-blue: #48cae4;
+            --evidence-green: #2d6a4f;
+            --blood-sample: #9d0208;
+
+            /* Ink & Stamp Colors */
+            --ink-blue: #264653;
+            --ink-red: #c1121f;
+            --ink-black: #1d1d1d;
+            --stamp-red: #d62828;
+            --stamp-blue: #023e8a;
+            --stamp-faded: rgba(214, 40, 40, 0.6);
+
+            /* Text Colors */
+            --text-dark: #1a1a1a;
+            --text-medium: #4a4a4a;
+            --text-light: #6b6b6b;
+            --text-on-cork: #2c1810;
+            --text-on-dark: #e8ecf0;
+
+            /* Utility Colors */
+            --pin-red: #cc2936;
+            --pin-yellow: #f9c74f;
+            --pin-blue: #4361ee;
+            --pin-green: #2d6a4f;
+            --tape-bg: repeating-linear-gradient(
+                -45deg,
+                var(--caution-yellow),
+                var(--caution-yellow) 10px,
+                var(--caution-black) 10px,
+                var(--caution-black) 20px
+            );
+
+            /* Spacing Scale */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --space-3xl: 64px;
+            --space-4xl: 96px;
+
+            /* Typography */
+            --font-typewriter: 'Special Elite', 'Courier New', monospace;
+            --font-mono: 'Roboto Mono', 'Courier New', monospace;
+            --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+            --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+
+            /* Shadows */
+            --shadow-pin: 2px 3px 6px rgba(0, 0, 0, 0.4);
+            --shadow-card: 3px 4px 12px rgba(0, 0, 0, 0.25);
+            --shadow-polaroid: 4px 6px 16px rgba(0, 0, 0, 0.3);
+            --shadow-paper: 2px 2px 8px rgba(0, 0, 0, 0.15);
+            --shadow-evidence: 1px 2px 4px rgba(0, 0, 0, 0.2);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.25s ease;
+            --transition-slow: 0.4s ease;
+        }
+
+        /* ===========================================
+           RESET & BASE
+        =========================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-on-cork);
+            background-color: var(--cork);
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(180, 140, 90, 0.4) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(160, 120, 70, 0.3) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(140, 100, 60, 0.3) 0%, transparent 45%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.12'/%3E%3C/svg%3E");
+            background-attachment: fixed;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Harsh fluorescent overhead lighting feel */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Subtle fingerprint texture overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 C20 5 12 13 12 23 C12 33 20 41 30 41' fill='none' stroke='rgba(80,50,30,0.03)' stroke-width='0.5'/%3E%3Cpath d='M30 9 C23 9 16 15 16 23 C16 31 23 37 30 37' fill='none' stroke='rgba(80,50,30,0.025)' stroke-width='0.5'/%3E%3Cpath d='M30 13 C25 13 20 18 20 23 C20 28 25 33 30 33' fill='none' stroke='rgba(80,50,30,0.02)' stroke-width='0.5'/%3E%3C/svg%3E");
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        ::selection {
+            background: var(--red-string);
+            color: white;
+        }
+
+        /* ===========================================
+           CONTAINER
+        =========================================== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===========================================
+           GRID SYSTEM
+        =========================================== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-lg);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        /* ===========================================
+           CRIME SCENE TAPE DIVIDER
+        =========================================== */
+        .crime-tape {
+            position: relative;
+            height: 44px;
+            margin: var(--space-2xl) 0;
+            overflow: hidden;
+        }
+
+        .crime-tape-inner {
+            position: absolute;
+            left: -20px;
+            right: -20px;
+            height: 36px;
+            background: var(--tape-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(-0.8deg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .crime-tape-text {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--caution-black);
+            background: var(--caution-yellow);
+            padding: 2px 20px;
+            white-space: nowrap;
+        }
+
+        /* Alternate tape style */
+        .crime-tape-red .crime-tape-inner {
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--stamp-red),
+                var(--stamp-red) 10px,
+                #a01020 10px,
+                #a01020 20px
+            );
+            transform: rotate(0.5deg);
+        }
+
+        .crime-tape-red .crime-tape-text {
+            color: white;
+            background: var(--stamp-red);
+        }
+
+        /* ===========================================
+           THUMBTACK / PIN EFFECT
+        =========================================== */
+        .pin {
+            position: relative;
+        }
+
+        .pin::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 40% 35%, #ff6b6b 0%, var(--pin-red) 50%, #8b1a1a 100%);
+            border-radius: 50%;
+            box-shadow: var(--shadow-pin);
+            z-index: 10;
+        }
+
+        .pin-left::before {
+            left: 20px;
+            transform: none;
+        }
+
+        .pin-right::before {
+            left: auto;
+            right: 20px;
+            transform: none;
+        }
+
+        .pin-yellow::before {
+            background: radial-gradient(circle at 40% 35%, #fff3a0 0%, var(--pin-yellow) 50%, #b8860b 100%);
+        }
+
+        .pin-blue::before {
+            background: radial-gradient(circle at 40% 35%, #8ba7ff 0%, var(--pin-blue) 50%, #1a237e 100%);
+        }
+
+        .pin-green::before {
+            background: radial-gradient(circle at 40% 35%, #6fcf97 0%, var(--pin-green) 50%, #1b4332 100%);
+        }
+
+        /* Pin shadow (the nail hole effect) */
+        .pin::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            z-index: 9;
+        }
+
+        .pin-left::after {
+            left: 27px;
+            transform: none;
+        }
+
+        .pin-right::after {
+            left: auto;
+            right: 27px;
+            transform: none;
+        }
+
+        /* ===========================================
+           RED STRING CONNECTIONS
+        =========================================== */
+        .string-horizontal {
+            position: relative;
+        }
+
+        .string-horizontal::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -30px;
+            right: -30px;
+            height: 2px;
+            background: var(--red-string);
+            opacity: 0.7;
+            z-index: 5;
+            transform: rotate(-0.5deg);
+        }
+
+        .string-vertical::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            bottom: -30px;
+            left: 50%;
+            width: 2px;
+            background: var(--red-string);
+            opacity: 0.7;
+            z-index: 5;
+        }
+
+        .string-connector {
+            display: block;
+            height: 2px;
+            background: var(--red-string);
+            opacity: 0.6;
+            margin: var(--space-md) 0;
+            transform: rotate(-1deg);
+        }
+
+        /* ===========================================
+           RUBBER STAMP EFFECTS
+        =========================================== */
+        .stamp {
+            display: inline-block;
+            font-family: var(--font-display);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: var(--space-sm) var(--space-lg);
+            border: 4px solid currentColor;
+            border-radius: 4px;
+            position: relative;
+            color: var(--stamp-red);
+        }
+
+        .stamp::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .stamp-classified {
+            color: var(--stamp-red);
+            transform: rotate(-5deg);
+            opacity: 0.85;
+            font-size: 1.5rem;
+        }
+
+        .stamp-exhibit {
+            color: var(--stamp-blue);
+            transform: rotate(2deg);
+            font-size: 1.1rem;
+            border-width: 3px;
+        }
+
+        .stamp-confidential {
+            color: var(--stamp-red);
+            transform: rotate(-3deg);
+            opacity: 0.7;
+            font-size: 1rem;
+            border-style: double;
+            border-width: 5px;
+        }
+
+        .stamp-approved {
+            color: var(--evidence-green);
+            transform: rotate(4deg);
+            font-size: 1rem;
+        }
+
+        .stamp-date {
+            color: var(--ink-blue);
+            transform: rotate(-1deg);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-width: 2px;
+            opacity: 0.9;
+        }
+
+        /* ===========================================
+           EVIDENCE MARKER BADGES
+        =========================================== */
+        .evidence-marker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--marker-yellow) 0%, var(--marker-orange) 100%);
+            color: var(--caution-black);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .evidence-marker-sm {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+        }
+
+        .evidence-marker-lg {
+            width: 64px;
+            height: 64px;
+            font-size: 1.75rem;
+        }
+
+        /* Tent-style evidence marker (the triangular ones) */
+        .tent-marker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            background: var(--caution-yellow);
+            color: var(--caution-black);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.5rem;
+            border-radius: 4px;
+            box-shadow: var(--shadow-evidence),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .tent-marker::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 6px solid #d4a800;
+        }
+
+        /* ===========================================
+           HEADER
+        =========================================== */
+        .header {
+            padding: var(--space-4xl) 0 var(--space-3xl);
+            position: relative;
+            text-align: center;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 5;
+        }
+
+        .header-case-label {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--text-medium);
+            background: var(--manila);
+            padding: var(--space-xs) var(--space-lg);
+            border: 1px solid var(--manila-dark);
+            margin-bottom: var(--space-lg);
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 7vw, 5rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            line-height: 1;
+            color: var(--text-dark);
+            margin-bottom: var(--space-md);
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-typewriter);
+            font-size: 1.1rem;
+            color: var(--text-medium);
+            max-width: 550px;
+            margin: 0 auto var(--space-xl);
+        }
+
+        .header-stamps {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            flex-wrap: wrap;
+        }
+
+        /* ===========================================
+           SECTIONS
+        =========================================== */
+        .section {
+            padding: var(--space-3xl) 0;
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-2xl);
+        }
+
+        .section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-bottom: var(--space-sm);
+        }
+
+        .section-label .tent-marker {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+
+        .section-label .tent-marker::after {
+            border-left-width: 5px;
+            border-right-width: 5px;
+            border-top-width: 4px;
+            bottom: -4px;
+        }
+
+        .section h2 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-dark);
+            margin-bottom: var(--space-md);
+        }
+
+        .section-desc {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-medium);
+            max-width: 60ch;
+            line-height: 1.7;
+        }
+
+        /* ===========================================
+           01. COLOR PALETTE
+        =========================================== */
+        .color-card {
+            background: var(--paper-white);
+            padding: var(--space-sm);
+            box-shadow: var(--shadow-paper);
+            transition: transform var(--transition-base);
+        }
+
+        .color-card:hover {
+            transform: translateY(-3px) rotate(0deg);
+            box-shadow: var(--shadow-polaroid);
+        }
+
+        .color-swatch {
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+            padding: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .color-info {
+            padding: var(--space-xs) var(--space-xs);
+        }
+
+        .color-name {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .color-hex {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .color-card:nth-child(odd) {
+            transform: rotate(-1deg);
+        }
+
+        .color-card:nth-child(even) {
+            transform: rotate(1deg);
+        }
+
+        .color-group-title {
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            color: var(--text-dark);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--cork-dark);
+        }
+
+        /* ===========================================
+           02. TYPOGRAPHY
+        =========================================== */
+        .type-specimen {
+            background: var(--paper-white);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-lg);
+            box-shadow: var(--shadow-paper);
+            position: relative;
+        }
+
+        .type-specimen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--red-string);
+        }
+
+        .type-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-bottom: var(--space-sm);
+        }
+
+        .type-specs-detail {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--stamp-blue);
+            margin-top: var(--space-sm);
+        }
+
+        .case-file-paper {
+            background: var(--paper-aged);
+            padding: var(--space-xl) var(--space-xl) var(--space-xl) var(--space-2xl);
+            position: relative;
+            box-shadow: var(--shadow-paper);
+            font-family: var(--font-typewriter);
+            line-height: 2;
+            color: var(--text-dark);
+        }
+
+        .case-file-paper::before {
+            content: '';
+            position: absolute;
+            left: var(--space-xl);
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #c94040;
+            opacity: 0.4;
+        }
+
+        .case-file-paper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 31px,
+                rgba(100, 140, 180, 0.12) 31px,
+                rgba(100, 140, 180, 0.12) 32px
+            );
+            pointer-events: none;
+        }
+
+        /* ===========================================
+           03. SPACING
+        =========================================== */
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-md);
+        }
+
+        .spacing-label {
+            width: 80px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-medium);
+            flex-shrink: 0;
+        }
+
+        .spacing-bar {
+            height: 24px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--caution-yellow),
+                var(--caution-yellow) 4px,
+                var(--caution-black) 4px,
+                var(--caution-black) 8px
+            );
+            border-radius: 2px;
+            box-shadow: var(--shadow-evidence);
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-light);
+            width: 50px;
+            flex-shrink: 0;
+        }
+
+        .spacing-container {
+            background: var(--paper-white);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-paper);
+        }
+
+        /* ===========================================
+           04. BUTTONS
+        =========================================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .btn-evidence {
+            background: var(--caution-yellow);
+            color: var(--caution-black);
+            border-color: var(--caution-black);
+        }
+
+        .btn-evidence:hover {
+            background: var(--caution-black);
+            color: var(--caution-yellow);
+            box-shadow: var(--shadow-card);
+        }
+
+        .btn-danger {
+            background: var(--stamp-red);
+            color: white;
+            border-color: var(--stamp-red);
+        }
+
+        .btn-danger:hover {
+            background: #a00d1a;
+            border-color: #a00d1a;
+            box-shadow: 0 0 12px rgba(214, 40, 40, 0.4);
+        }
+
+        .btn-forensic {
+            background: var(--ink-blue);
+            color: white;
+            border-color: var(--ink-blue);
+        }
+
+        .btn-forensic:hover {
+            background: #1a3a4a;
+            box-shadow: 0 0 12px rgba(38, 70, 83, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-dark);
+            border-color: var(--text-dark);
+        }
+
+        .btn-outline:hover {
+            background: var(--text-dark);
+            color: var(--paper-white);
+        }
+
+        .btn-manila {
+            background: var(--manila);
+            color: var(--text-dark);
+            border-color: var(--manila-dark);
+        }
+
+        .btn-manila:hover {
+            background: var(--manila-dark);
+            box-shadow: var(--shadow-card);
+        }
+
+        .btn-disabled {
+            background: #ccc;
+            color: #888;
+            border-color: #bbb;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-sm {
+            padding: var(--space-xs) var(--space-md);
+            font-size: 0.75rem;
+        }
+
+        .btn-lg {
+            padding: var(--space-md) var(--space-2xl);
+            font-size: 1rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+        }
+
+        /* ===========================================
+           05. FORMS
+        =========================================== */
+        .form-container {
+            background: var(--manila);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-paper);
+            position: relative;
+            border: 1px solid var(--manila-dark);
+        }
+
+        .form-container::before {
+            content: 'CASE FILE REPORT';
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--stamp-faded);
+            border: 2px solid var(--stamp-faded);
+            padding: 2px 8px;
+            transform: rotate(3deg);
+        }
+
+        .input-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-medium);
+            margin-bottom: var(--space-xs);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-typewriter);
+            font-size: 0.95rem;
+            border: 1px solid var(--manila-dark);
+            background: var(--paper-white);
+            color: var(--text-dark);
+            transition: all var(--transition-fast);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ink-blue);
+            box-shadow: 0 0 0 2px rgba(38, 70, 83, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 100px;
+            line-height: 1.8;
+        }
+
+        .select-field {
+            appearance: none;
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-typewriter);
+            font-size: 0.95rem;
+            border: 1px solid var(--manila-dark);
+            background: var(--paper-white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a4a4a' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: var(--ink-blue);
+            box-shadow: 0 0 0 2px rgba(38, 70, 83, 0.2);
+        }
+
+        /* Checkbox styled as evidence checkmark */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-typewriter);
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--ink-blue);
+            background: var(--paper-white);
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            background: var(--ink-blue);
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 5px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Radio styled as bullet point */
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-typewriter);
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .radio-group input[type="radio"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--stamp-red);
+            border-radius: 50%;
+            background: var(--paper-white);
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .radio-group input[type="radio"]:checked {
+            border-color: var(--stamp-red);
+        }
+
+        .radio-group input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: var(--stamp-red);
+            border-radius: 50%;
+        }
+
+        /* ===========================================
+           06. CARDS — POLAROID STYLE
+        =========================================== */
+        .polaroid-card {
+            background: var(--polaroid-border);
+            padding: var(--space-md) var(--space-md) var(--space-2xl);
+            box-shadow: var(--shadow-polaroid);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+            position: relative;
+        }
+
+        .polaroid-card:hover {
+            box-shadow: 6px 8px 24px rgba(0, 0, 0, 0.35);
+            z-index: 2;
+        }
+
+        .polaroid-card:nth-child(1) { transform: rotate(-3deg); }
+        .polaroid-card:nth-child(2) { transform: rotate(2deg); }
+        .polaroid-card:nth-child(3) { transform: rotate(-1.5deg); }
+        .polaroid-card:nth-child(4) { transform: rotate(3.5deg); }
+
+        .polaroid-card:nth-child(1):hover { transform: rotate(-3deg) scale(1.05); }
+        .polaroid-card:nth-child(2):hover { transform: rotate(2deg) scale(1.05); }
+        .polaroid-card:nth-child(3):hover { transform: rotate(-1.5deg) scale(1.05); }
+        .polaroid-card:nth-child(4):hover { transform: rotate(3.5deg) scale(1.05); }
+
+        .polaroid-image {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: var(--lab-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-light);
+            border: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .polaroid-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(0,0,0,0.05) 100%);
+            pointer-events: none;
+        }
+
+        .polaroid-caption {
+            font-family: var(--font-typewriter);
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            text-align: center;
+            margin-top: var(--space-md);
+        }
+
+        .polaroid-date {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-light);
+            text-align: center;
+            margin-top: var(--space-xs);
+        }
+
+        /* Manila folder card */
+        .manila-card {
+            background: var(--manila);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-card);
+            position: relative;
+            border: 1px solid var(--manila-dark);
+        }
+
+        .manila-card::before {
+            content: '';
+            position: absolute;
+            top: -14px;
+            left: var(--space-lg);
+            width: 100px;
+            height: 14px;
+            background: var(--manila-dark);
+            border-radius: 4px 4px 0 0;
+        }
+
+        .manila-card-title {
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: var(--space-sm);
+        }
+
+        .manila-card-meta {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-bottom: var(--space-md);
+            letter-spacing: 0.05em;
+        }
+
+        .manila-card-body {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-medium);
+            line-height: 1.6;
+        }
+
+        /* Evidence note card (index card style) */
+        .index-card {
+            background: var(--paper-white);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-paper);
+            position: relative;
+            border-top: 3px solid var(--red-string);
+        }
+
+        .index-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 23px,
+                rgba(100, 150, 200, 0.1) 23px,
+                rgba(100, 150, 200, 0.1) 24px
+            );
+            pointer-events: none;
+        }
+
+        .index-card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===========================================
+           07. ALERTS
+        =========================================== */
+        .alert {
+            padding: var(--space-md) var(--space-lg);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-md);
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+        }
+
+        .alert-marker {
+            flex-shrink: 0;
+        }
+
+        .alert-danger {
+            background: #fff0f0;
+            border-left: 4px solid var(--stamp-red);
+            color: #6b1015;
+        }
+
+        .alert-warning {
+            background: #fff9e6;
+            border-left: 4px solid var(--caution-yellow);
+            color: #6b5a00;
+        }
+
+        .alert-info {
+            background: #e8f4fd;
+            border-left: 4px solid var(--uv-blue);
+            color: #1a3a5c;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            border-left: 4px solid var(--evidence-green);
+            color: #1b4332;
+        }
+
+        .alert-classified {
+            background: var(--manila);
+            border: 2px dashed var(--stamp-red);
+            color: var(--text-dark);
+            padding: var(--space-lg);
+        }
+
+        .alert-classified::before {
+            content: 'CLASSIFIED';
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            color: var(--stamp-red);
+            display: block;
+            margin-bottom: var(--space-sm);
+        }
+
+        /* ===========================================
+           08. EVIDENCE TAGS
+        =========================================== */
+        .evidence-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-xs) var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: var(--paper-white);
+            border: 1px solid #ddd;
+            box-shadow: var(--shadow-evidence);
+            position: relative;
+        }
+
+        .evidence-tag::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .evidence-tag-physical::before { background: var(--stamp-red); }
+        .evidence-tag-digital::before { background: var(--uv-blue); }
+        .evidence-tag-testimony::before { background: var(--evidence-green); }
+        .evidence-tag-forensic::before { background: var(--uv-glow); }
+        .evidence-tag-document::before { background: var(--marker-orange); }
+
+        .tag-row {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        /* ===========================================
+           09. CASE FILE HEADERS
+        =========================================== */
+        .case-header {
+            background: var(--manila);
+            padding: var(--space-xl);
+            border: 1px solid var(--manila-dark);
+            position: relative;
+            box-shadow: var(--shadow-card);
+        }
+
+        .case-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-md);
+            border-bottom: 2px solid var(--manila-dark);
+        }
+
+        .case-header-id {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .case-header-status {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: var(--space-xs) var(--space-md);
+            border: 2px solid currentColor;
+        }
+
+        .status-open {
+            color: var(--stamp-red);
+        }
+
+        .status-closed {
+            color: var(--evidence-green);
+        }
+
+        .status-cold {
+            color: var(--uv-blue);
+        }
+
+        .case-header-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-dark);
+            margin-bottom: var(--space-md);
+        }
+
+        .case-header-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .case-detail-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .case-detail-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-light);
+            margin-bottom: 2px;
+        }
+
+        .case-detail-value {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* ===========================================
+           10. RED STRING BOARD
+        =========================================== */
+        .string-board {
+            position: relative;
+            padding: var(--space-xl);
+        }
+
+        .string-board-line {
+            position: absolute;
+            height: 2px;
+            background: var(--red-string);
+            opacity: 0.5;
+            transform-origin: left center;
+            z-index: 0;
+        }
+
+        .string-board-item {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===========================================
+           11. REDACTED TEXT
+        =========================================== */
+        .redacted {
+            background: var(--ink-black);
+            color: var(--ink-black);
+            padding: 0 var(--space-xs);
+            user-select: none;
+            border-radius: 1px;
+        }
+
+        .redacted-partial {
+            background: repeating-linear-gradient(
+                90deg,
+                var(--ink-black) 0px,
+                var(--ink-black) 8px,
+                transparent 8px,
+                transparent 10px
+            );
+            color: transparent;
+            padding: 0 var(--space-xs);
+        }
+
+        /* ===========================================
+           NAVIGATION
+        =========================================== */
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            padding: var(--space-md) 0;
+            border-bottom: 3px solid var(--cork-dark);
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-dark);
+            text-decoration: none;
+            background: var(--caution-yellow);
+            padding: var(--space-xs) var(--space-md);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--space-lg);
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-medium);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+            position: relative;
+            padding-bottom: 2px;
+        }
+
+        .nav-link:hover {
+            color: var(--stamp-red);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--red-string);
+            transition: width var(--transition-base);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* ===========================================
+           TABLE — CASE LOG
+        =========================================== */
+        .table-wrapper {
+            background: var(--paper-white);
+            border: 1px solid #ddd;
+            box-shadow: var(--shadow-paper);
+            overflow-x: auto;
+        }
+
+        .evidence-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .evidence-table th,
+        .evidence-table td {
+            text-align: left;
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: 1px solid #e0e0e0;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .evidence-table th {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-light);
+            background: var(--lab-white);
+            border-bottom: 2px solid #ccc;
+        }
+
+        .evidence-table tr:hover td {
+            background: rgba(255, 210, 63, 0.08);
+        }
+
+        .evidence-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===========================================
+           FOOTER
+        =========================================== */
+        .footer {
+            padding: var(--space-3xl) 0 var(--space-2xl);
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-brand {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-dark);
+            margin-bottom: var(--space-md);
+        }
+
+        .footer p {
+            font-family: var(--font-typewriter);
+            font-size: 0.85rem;
+            color: var(--text-medium);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .footer-end {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-top: var(--space-xl);
+        }
+
+        /* ===========================================
+           UTILITIES
+        =========================================== */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-red { color: var(--stamp-red); }
+        .text-blue { color: var(--ink-blue); }
+        .text-faded { color: var(--text-light); }
+        .mb-0 { margin-bottom: 0; }
+        .mb-md { margin-bottom: var(--space-md); }
+        .mb-lg { margin-bottom: var(--space-lg); }
+        .mb-xl { margin-bottom: var(--space-xl); }
+        .mb-2xl { margin-bottom: var(--space-2xl); }
+        .mt-md { margin-top: var(--space-md); }
+        .mt-lg { margin-top: var(--space-lg); }
+        .mt-xl { margin-top: var(--space-xl); }
+
+        /* ===========================================
+           SCROLLBAR
+        =========================================== */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--cork-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--manila-dark);
+            border: 2px solid var(--cork-dark);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--manila);
+        }
+
+        /* ===========================================
+           RESPONSIVE
+        =========================================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            .col-8, .col-6, .col-4, .col-3 {
+                grid-column: span 12;
+            }
+
+            .grid {
+                gap: var(--space-md);
+            }
+
+            .header {
+                padding: var(--space-3xl) 0 var(--space-2xl);
+            }
+
+            .header h1 {
+                font-size: clamp(2rem, 10vw, 3.5rem);
+            }
+
+            .header-stamps {
+                gap: var(--space-md);
+            }
+
+            .section {
+                padding: var(--space-2xl) 0;
+            }
+
+            .section h2 {
+                font-size: 1.75rem;
+            }
+
+            .nav {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-sm);
+            }
+
+            .nav-links {
+                gap: var(--space-md);
+            }
+
+            .polaroid-card:nth-child(n) {
+                transform: rotate(0deg);
+            }
+
+            .polaroid-card:nth-child(n):hover {
+                transform: scale(1.02);
+            }
+
+            .case-header-top {
+                flex-direction: column;
+                gap: var(--space-sm);
+            }
+
+            .case-header-details {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .crime-tape-inner {
+                left: -10px;
+                right: -10px;
+            }
+
+            .stamp-classified {
+                font-size: 1.1rem;
+            }
+
+            .stamp-exhibit {
+                font-size: 0.9rem;
+            }
+
+            .spacing-row {
+                gap: var(--space-md);
+            }
+
+            .type-specimen {
+                padding: var(--space-md);
+            }
+
+            .form-container {
+                padding: var(--space-md);
+            }
+
+            .form-container::before {
+                position: static;
+                display: block;
+                transform: none;
+                margin-bottom: var(--space-md);
+                text-align: center;
+            }
+
+            .string-board {
+                padding: var(--space-md);
+            }
+
+            .evidence-table th,
+            .evidence-table td {
+                padding: var(--space-xs) var(--space-sm);
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-stamps {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .button-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tag-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .case-header-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav">
+            <a href="#" class="nav-brand">Evidence Board</a>
+            <ul class="nav-links">
+                <li><a href="#colors" class="nav-link">Colors</a></li>
+                <li><a href="#typography" class="nav-link">Type</a></li>
+                <li><a href="#spacing" class="nav-link">Spacing</a></li>
+                <li><a href="#buttons" class="nav-link">Buttons</a></li>
+                <li><a href="#forms" class="nav-link">Forms</a></li>
+                <li><a href="#cards" class="nav-link">Cards</a></li>
+                <li><a href="#alerts" class="nav-link">Alerts</a></li>
+                <li><a href="#evidence" class="nav-link">Evidence</a></li>
+            </ul>
+        </nav>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-case-label">Case No. 2026-0217 / Design System</div>
+                <h1>Crime Scene</h1>
+                <p class="header-subtitle">A CSS design system pinned to the evidence board. Every component a clue. Every color a lead. Follow the red string.</p>
+                <div class="header-stamps">
+                    <span class="stamp stamp-classified">Classified</span>
+                    <span class="stamp stamp-exhibit">Exhibit A</span>
+                    <span class="stamp stamp-date">02 / 17 / 2026</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Crime Scene Tape Divider -->
+        <div class="crime-tape">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Do Not Cross - Do Not Cross - Do Not Cross</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             01. COLOR PALETTE
+        =========================================== -->
+        <section class="section" id="colors">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">1</span>
+                    Evidence Item 001 / Palette
+                </div>
+                <h2>Color System</h2>
+                <p class="section-desc">Cork board browns, caution yellows, forensic whites, and red string accents. The palette of a detective's war room under fluorescent lights.</p>
+            </div>
+
+            <p class="color-group-title">Cork Board &amp; Paper</p>
+            <div class="grid mb-xl">
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--cork);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Cork</div>
+                            <div class="color-hex">#B8956A</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--manila);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Manila</div>
+                            <div class="color-hex">#F5E6C8</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--paper-white);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Paper White</div>
+                            <div class="color-hex">#F8F7F2</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--paper-aged);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Aged Paper</div>
+                            <div class="color-hex">#F0E8D8</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="color-group-title">Evidence &amp; Danger</p>
+            <div class="grid mb-xl">
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--red-string); color: white;">
+                        </div>
+                        <div class="color-info">
+                            <div class="color-name">Red String</div>
+                            <div class="color-hex">#CC2936</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--caution-yellow);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Caution Yellow</div>
+                            <div class="color-hex">#FFD23F</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--stamp-red); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Stamp Red</div>
+                            <div class="color-hex">#D62828</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--blood-sample); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Blood Sample</div>
+                            <div class="color-hex">#9D0208</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="color-group-title">Forensic &amp; Lab</p>
+            <div class="grid">
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--ink-blue); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Ink Blue</div>
+                            <div class="color-hex">#264653</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--uv-blue); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">UV Blue</div>
+                            <div class="color-hex">#4361EE</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--evidence-green); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Evidence Green</div>
+                            <div class="color-hex">#2D6A4F</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: var(--uv-glow); color: white;"></div>
+                        <div class="color-info">
+                            <div class="color-name">UV Glow</div>
+                            <div class="color-hex">#7B2FF7</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="crime-tape">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Crime Scene - Crime Scene - Crime Scene</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             02. TYPOGRAPHY
+        =========================================== -->
+        <section class="section" id="typography">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">2</span>
+                    Evidence Item 002 / Typography
+                </div>
+                <h2>Type System</h2>
+                <p class="section-desc">Special Elite for typewriter notes, Oswald for bold case headers, Roboto Mono for data and labels, Inter for clean body text. Four voices of the investigation.</p>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">Display / Case Title</div>
+                <div style="font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dark);">HOMICIDE DIVISION</div>
+                <div class="type-specs-detail">Oswald 700 / 56px / Uppercase / 0.04em tracking</div>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">Section Header</div>
+                <div style="font-family: var(--font-display); font-size: 2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-dark);">Evidence Processing Lab</div>
+                <div class="type-specs-detail">Oswald 600 / 32px / Uppercase</div>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">Typewriter / Case Notes</div>
+                <div style="font-family: var(--font-typewriter); font-size: 1.1rem; color: var(--text-dark); line-height: 1.8;">The suspect was last seen at 11:42 PM exiting through the rear door. Surveillance footage is grainy but confirms the timeline. Need to cross-reference with witness statements from the bartender.</div>
+                <div class="type-specs-detail">Special Elite 400 / 18px / 1.8 line-height</div>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-label">Data / Labels</div>
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 500; color: var(--text-medium); letter-spacing: 0.05em;">CASE #2026-0217 | DET. MARTINEZ | PRIORITY: HIGH | STATUS: ACTIVE</div>
+                <div class="type-specs-detail">Roboto Mono 500 / 14px / 0.05em tracking</div>
+            </div>
+
+            <div class="type-specimen" style="margin-bottom: var(--space-xl);">
+                <div class="type-label">Body Text</div>
+                <div style="font-family: var(--font-body); font-size: 1rem; color: var(--text-medium); line-height: 1.7;">The forensic analysis revealed trace amounts of a commercially available adhesive on the window frame, consistent with the application and subsequent removal of duct tape. Latent fingerprints were recovered from three surfaces within the room. DNA analysis is pending from the state laboratory, with an estimated turnaround of 72 hours.</div>
+                <div class="type-specs-detail">Inter 400 / 16px / 1.7 line-height</div>
+            </div>
+
+            <h3 style="font-family: var(--font-display); font-weight: 600; text-transform: uppercase; color: var(--text-dark); margin-bottom: var(--space-md);">Case File Paper</h3>
+            <div class="case-file-paper">
+                <p style="margin-bottom: 0; position: relative; z-index: 1;">
+                    CASE NOTES - February 17, 2026<br><br>
+                    Arrived at scene 0847hrs. Perimeter secured by first responders. Evidence markers placed at locations 1 through 14. Photographed all entry/exit points. Collected samples from <span class="redacted">REDACTED</span> near the northeast wall. Shell casings recovered: 3x 9mm.<br><br>
+                    Witness states the <span class="redacted-partial">suspect vehicle</span> was a dark sedan, possibly late model. Partial plate: <span class="redacted">XXXXXX</span>.<br><br>
+                    - Det. R. Martinez, Badge #4471
+                </p>
+            </div>
+        </section>
+
+        <div class="crime-tape crime-tape-red">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Restricted Area - Authorized Personnel Only</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             03. SPACING
+        =========================================== -->
+        <section class="section" id="spacing">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">3</span>
+                    Evidence Item 003 / Spacing
+                </div>
+                <h2>Spacing Scale</h2>
+                <p class="section-desc">A 4px base unit creates the measurement grid. Like measuring distances at a crime scene -- precision matters.</p>
+            </div>
+
+            <div class="spacing-container">
+                <div class="spacing-row">
+                    <span class="spacing-label">4px</span>
+                    <div class="spacing-bar" style="width: 16px;"></div>
+                    <span class="spacing-value">xs</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">8px</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                    <span class="spacing-value">sm</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">16px</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                    <span class="spacing-value">md</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">24px</span>
+                    <div class="spacing-bar" style="width: 96px;"></div>
+                    <span class="spacing-value">lg</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">32px</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                    <span class="spacing-value">xl</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">48px</span>
+                    <div class="spacing-bar" style="width: 192px;"></div>
+                    <span class="spacing-value">2xl</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">64px</span>
+                    <div class="spacing-bar" style="width: 256px;"></div>
+                    <span class="spacing-value">3xl</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">96px</span>
+                    <div class="spacing-bar" style="width: 320px; max-width: 100%;"></div>
+                    <span class="spacing-value">4xl</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             04. BUTTONS
+        =========================================== -->
+        <section class="section" id="buttons">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">4</span>
+                    Evidence Item 004 / Buttons
+                </div>
+                <h2>Controls</h2>
+                <p class="section-desc">Action buttons styled like evidence labels, caution tape, and case file tabs. Each variant signals a different level of urgency.</p>
+            </div>
+
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-md);">Button Variants</h3>
+            <div class="button-row">
+                <button class="btn btn-evidence">Log Evidence</button>
+                <button class="btn btn-danger">Seal Crime Scene</button>
+                <button class="btn btn-forensic">Run Analysis</button>
+                <button class="btn btn-outline">View Report</button>
+                <button class="btn btn-manila">File Case</button>
+            </div>
+
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-md);">Button Sizes</h3>
+            <div class="button-row">
+                <button class="btn btn-evidence btn-sm">Small</button>
+                <button class="btn btn-evidence">Medium</button>
+                <button class="btn btn-evidence btn-lg">Large</button>
+            </div>
+
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-md);">Disabled State</h3>
+            <div class="button-row">
+                <button class="btn btn-disabled" disabled>Insufficient Evidence</button>
+                <button class="btn btn-disabled" disabled>Access Denied</button>
+            </div>
+        </section>
+
+        <div class="crime-tape">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Police Line - Do Not Cross - Police Line</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             05. FORMS
+        =========================================== -->
+        <section class="section" id="forms">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">5</span>
+                    Evidence Item 005 / Forms
+                </div>
+                <h2>Input Fields</h2>
+                <p class="section-desc">Form elements styled as case file intake forms. Manila paper background, typewriter-font inputs, and official-feeling labels.</p>
+            </div>
+
+            <div class="form-container">
+                <div class="grid">
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Suspect Name</label>
+                            <input type="text" class="input-field" placeholder="Last, First Middle">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Case Number</label>
+                            <input type="text" class="input-field" placeholder="e.g., 2026-0217">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Crime Classification</label>
+                            <select class="select-field">
+                                <option>Select classification...</option>
+                                <option>Homicide - 1st Degree</option>
+                                <option>Homicide - 2nd Degree</option>
+                                <option>Aggravated Assault</option>
+                                <option>Breaking &amp; Entering</option>
+                                <option>Arson</option>
+                                <option>Fraud</option>
+                                <option>Missing Person</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Date of Incident</label>
+                            <input type="text" class="input-field" placeholder="MM / DD / YYYY">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <label class="input-label">Incident Description</label>
+                            <textarea class="input-field" placeholder="Describe the incident in detail. Include time, location, witnesses, and physical evidence observed..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Evidence Collected</label>
+                            <div style="margin-top: var(--space-xs);">
+                                <label class="checkbox-group"><input type="checkbox" checked> Fingerprints</label>
+                                <label class="checkbox-group"><input type="checkbox" checked> Photographs</label>
+                                <label class="checkbox-group"><input type="checkbox"> DNA Samples</label>
+                                <label class="checkbox-group"><input type="checkbox"> Shell Casings</label>
+                                <label class="checkbox-group"><input type="checkbox"> Surveillance Footage</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <label class="input-label">Priority Level</label>
+                            <div style="margin-top: var(--space-xs);">
+                                <label class="radio-group"><input type="radio" name="priority"> Critical - Immediate Response</label>
+                                <label class="radio-group"><input type="radio" name="priority" checked> High - Active Investigation</label>
+                                <label class="radio-group"><input type="radio" name="priority"> Medium - Standard Processing</label>
+                                <label class="radio-group"><input type="radio" name="priority"> Low - Cold Case Review</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: var(--space-md);">
+                    <button class="btn btn-forensic">Submit Report</button>
+                    <button class="btn btn-outline" style="margin-left: var(--space-sm);">Save Draft</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             06. CARDS
+        =========================================== -->
+        <section class="section" id="cards">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">6</span>
+                    Evidence Item 006 / Cards
+                </div>
+                <h2>Content Cards</h2>
+                <p class="section-desc">Polaroid photos pinned at angles, manila folder tabs, and index cards. Each card is a piece of the puzzle on the evidence board.</p>
+            </div>
+
+            <!-- Polaroid Cards -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-lg);">Polaroid Evidence Photos</h3>
+            <div class="grid mb-2xl">
+                <div class="col-3">
+                    <div class="polaroid-card pin">
+                        <div class="polaroid-image">[ CRIME SCENE - OVERVIEW ]</div>
+                        <p class="polaroid-caption">Northeast corner, main room</p>
+                        <p class="polaroid-date">02.17.2026 - 08:47 AM</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid-card pin pin-yellow">
+                        <div class="polaroid-image">[ EVIDENCE - WEAPON ]</div>
+                        <p class="polaroid-caption">9mm recovered under desk</p>
+                        <p class="polaroid-date">02.17.2026 - 09:12 AM</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid-card pin pin-blue">
+                        <div class="polaroid-image">[ SUSPECT - SURVEILLANCE ]</div>
+                        <p class="polaroid-caption">Rear exit camera, 23:42</p>
+                        <p class="polaroid-date">02.16.2026 - 11:42 PM</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="polaroid-card pin pin-green">
+                        <div class="polaroid-image">[ FORENSIC - LATENT PRINT ]</div>
+                        <p class="polaroid-caption">Partial print, window latch</p>
+                        <p class="polaroid-date">02.17.2026 - 10:05 AM</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Red string connector -->
+            <div class="string-connector"></div>
+
+            <!-- Manila Folder Cards -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-xl);">Manila Folder Files</h3>
+            <div class="grid mb-2xl">
+                <div class="col-6">
+                    <div class="manila-card">
+                        <p class="manila-card-meta">CASE #2026-0217 / PRIORITY: HIGH</p>
+                        <p class="manila-card-title">Martinez Homicide Investigation</p>
+                        <p class="manila-card-body">Victim found at 0834hrs in ground floor office. Single GSW to the chest. No signs of forced entry. Three persons of interest identified. Forensic sweep in progress.</p>
+                        <div style="margin-top: var(--space-md);">
+                            <span class="evidence-tag evidence-tag-physical">Physical Evidence</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="manila-card">
+                        <p class="manila-card-meta">CASE #2026-0198 / PRIORITY: MEDIUM</p>
+                        <p class="manila-card-title">Waterfront Warehouse B&amp;E</p>
+                        <p class="manila-card-body">Commercial burglary reported 02.15.2026. Estimated $45,000 in electronics equipment missing. Alarm system bypassed. Possible insider involvement suspected.</p>
+                        <div style="margin-top: var(--space-md);">
+                            <span class="evidence-tag evidence-tag-digital">Digital Evidence</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Index Cards -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-lg);">Index Note Cards</h3>
+            <div class="grid">
+                <div class="col-4">
+                    <div class="index-card pin">
+                        <div class="index-card-content">
+                            <p style="font-family: var(--font-typewriter); font-size: 0.9rem; color: var(--text-dark); margin-bottom: var(--space-sm);"><strong>LEAD #1:</strong></p>
+                            <p style="font-family: var(--font-typewriter); font-size: 0.85rem; color: var(--text-medium); margin-bottom: 0;">Bartender at Rosie's confirms suspect was there until 11:30 PM. Check security cam footage to verify departure time.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="index-card pin pin-yellow">
+                        <div class="index-card-content">
+                            <p style="font-family: var(--font-typewriter); font-size: 0.9rem; color: var(--text-dark); margin-bottom: var(--space-sm);"><strong>LEAD #2:</strong></p>
+                            <p style="font-family: var(--font-typewriter); font-size: 0.85rem; color: var(--text-medium); margin-bottom: 0;">Bank records show $12,000 cash withdrawal 48 hours prior. No record of deposit in any known account. Follow the money.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="index-card pin pin-blue">
+                        <div class="index-card-content">
+                            <p style="font-family: var(--font-typewriter); font-size: 0.9rem; color: var(--text-dark); margin-bottom: var(--space-sm);"><strong>LEAD #3:</strong></p>
+                            <p style="font-family: var(--font-typewriter); font-size: 0.85rem; color: var(--text-medium); margin-bottom: 0;">Neighbor reports hearing argument at 10:15 PM. Two male voices. Could not make out words. Dog was barking.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="crime-tape crime-tape-red">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Evidence - Do Not Tamper - Evidence</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             07. ALERTS
+        =========================================== -->
+        <section class="section" id="alerts">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">7</span>
+                    Evidence Item 007 / Alerts
+                </div>
+                <h2>Alert Messages</h2>
+                <p class="section-desc">Status notifications styled as dispatch bulletins, lab results, and case updates. Color-coded by urgency level.</p>
+            </div>
+
+            <div class="alert alert-danger">
+                <span class="alert-marker"><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.7rem;">!</span></span>
+                <div><strong>CRITICAL:</strong> Suspect considered armed and dangerous. All units exercise extreme caution when approaching. Last seen heading northbound on Route 9.</div>
+            </div>
+
+            <div class="alert alert-warning">
+                <span class="alert-marker"><span class="evidence-marker evidence-marker-sm">!</span></span>
+                <div><strong>WARNING:</strong> Evidence chain of custody documentation incomplete for items 7 through 12. Contact the evidence room supervisor before proceeding with analysis.</div>
+            </div>
+
+            <div class="alert alert-info">
+                <span class="alert-marker"><span class="evidence-marker evidence-marker-sm" style="background: linear-gradient(135deg, #6ea8fe 0%, #4361ee 100%);">i</span></span>
+                <div><strong>LAB UPDATE:</strong> DNA analysis results for Case #2026-0217 expected within 48 hours. Fingerprint matches returned 2 hits in the AFIS database. Full report to follow.</div>
+            </div>
+
+            <div class="alert alert-success">
+                <span class="alert-marker"><span class="evidence-marker evidence-marker-sm" style="background: linear-gradient(135deg, #52b788 0%, #2d6a4f 100%);">&#10003;</span></span>
+                <div><strong>CASE CLOSED:</strong> Warrant executed at 0530hrs. Suspect in custody. All evidence secured and catalogued. Case file transferred to the District Attorney's office.</div>
+            </div>
+
+            <div class="alert alert-classified" style="margin-top: var(--space-lg);">
+                <div>This document contains sensitive information pertaining to an ongoing federal investigation. Unauthorized disclosure of its contents is a violation of 18 U.S.C. Section 1905. Distribution limited to personnel with appropriate security clearance.</div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             08. EVIDENCE TAGS & MARKERS
+        =========================================== -->
+        <section class="section" id="evidence">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">8</span>
+                    Evidence Item 008 / Tags &amp; Markers
+                </div>
+                <h2>Evidence System</h2>
+                <p class="section-desc">Numbered markers, typed tags, and rubber stamps -- the labeling system of an active investigation.</p>
+            </div>
+
+            <!-- Evidence Markers -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-lg);">Numbered Markers</h3>
+            <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; align-items: flex-end; margin-bottom: var(--space-2xl);">
+                <div style="text-align: center;">
+                    <div class="tent-marker" style="width: 64px; height: 64px; font-size: 1.75rem;">1</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Tent Marker</p>
+                </div>
+                <div style="text-align: center;">
+                    <div class="tent-marker" style="width: 64px; height: 64px; font-size: 1.75rem;">2</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Tent Marker</p>
+                </div>
+                <div style="text-align: center;">
+                    <div class="tent-marker" style="width: 64px; height: 64px; font-size: 1.75rem;">3</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Tent Marker</p>
+                </div>
+                <div style="text-align: center;">
+                    <div class="evidence-marker evidence-marker-lg">4</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Hex Marker</p>
+                </div>
+                <div style="text-align: center;">
+                    <div class="evidence-marker evidence-marker-lg">5</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Hex Marker</p>
+                </div>
+                <div style="text-align: center;">
+                    <div class="evidence-marker evidence-marker-lg">6</div>
+                    <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light); margin-top: var(--space-sm);">Hex Marker</p>
+                </div>
+            </div>
+
+            <!-- Evidence Tags -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-md);">Evidence Classification Tags</h3>
+            <div class="tag-row mb-2xl">
+                <span class="evidence-tag evidence-tag-physical">Physical Evidence</span>
+                <span class="evidence-tag evidence-tag-digital">Digital Evidence</span>
+                <span class="evidence-tag evidence-tag-testimony">Testimony</span>
+                <span class="evidence-tag evidence-tag-forensic">Forensic Analysis</span>
+                <span class="evidence-tag evidence-tag-document">Document</span>
+            </div>
+
+            <!-- Rubber Stamps -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-lg);">Rubber Stamps</h3>
+            <div style="display: flex; gap: var(--space-xl); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-2xl);">
+                <span class="stamp stamp-classified">Classified</span>
+                <span class="stamp stamp-confidential">Confidential</span>
+                <span class="stamp stamp-exhibit">Exhibit B</span>
+                <span class="stamp stamp-approved">Approved</span>
+                <span class="stamp stamp-date">02 / 17 / 2026</span>
+            </div>
+
+            <!-- Thumbtack Pins -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-lg);">Thumbtack Pin Variants</h3>
+            <div class="grid mb-xl">
+                <div class="col-3">
+                    <div class="pin" style="background: var(--paper-white); padding: var(--space-xl) var(--space-md) var(--space-md); text-align: center; box-shadow: var(--shadow-paper);">
+                        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-medium);">Red Pin</p>
+                        <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light);">Primary / Urgent</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="pin pin-yellow" style="background: var(--paper-white); padding: var(--space-xl) var(--space-md) var(--space-md); text-align: center; box-shadow: var(--shadow-paper);">
+                        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-medium);">Yellow Pin</p>
+                        <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light);">Evidence / Caution</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="pin pin-blue" style="background: var(--paper-white); padding: var(--space-xl) var(--space-md) var(--space-md); text-align: center; box-shadow: var(--shadow-paper);">
+                        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-medium);">Blue Pin</p>
+                        <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light);">Persons / Intel</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="pin pin-green" style="background: var(--paper-white); padding: var(--space-xl) var(--space-md) var(--space-md); text-align: center; box-shadow: var(--shadow-paper);">
+                        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-medium);">Green Pin</p>
+                        <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-light);">Verified / Cleared</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crime Scene Tape Variants -->
+            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-md);">Crime Scene Tape Variants</h3>
+            <div class="crime-tape" style="margin: var(--space-md) 0;">
+                <div class="crime-tape-inner">
+                    <span class="crime-tape-text">Caution - Caution - Caution</span>
+                </div>
+            </div>
+            <div class="crime-tape crime-tape-red" style="margin: var(--space-md) 0;">
+                <div class="crime-tape-inner">
+                    <span class="crime-tape-text">Danger - Keep Out - Danger</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             09. CASE FILE HEADERS
+        =========================================== -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">9</span>
+                    Evidence Item 009 / Case Headers
+                </div>
+                <h2>Case File Headers</h2>
+                <p class="section-desc">Structured case file header components for organizing investigation data at a glance.</p>
+            </div>
+
+            <div class="case-header mb-xl">
+                <div class="case-header-top">
+                    <div>
+                        <div class="case-header-id">CASE #2026-0217</div>
+                    </div>
+                    <span class="case-header-status status-open">Open - Active</span>
+                </div>
+                <div class="case-header-title">Martinez Homicide Investigation</div>
+                <div class="case-header-details">
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Lead Detective</div>
+                        <div class="case-detail-value">Det. R. Martinez</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Badge Number</div>
+                        <div class="case-detail-value">#4471</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Date Opened</div>
+                        <div class="case-detail-value">02.17.2026</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Jurisdiction</div>
+                        <div class="case-detail-value">Metro PD - District 7</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Classification</div>
+                        <div class="case-detail-value">Homicide - 1st Degree</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Evidence Items</div>
+                        <div class="case-detail-value">14 catalogued</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="case-header">
+                <div class="case-header-top">
+                    <div>
+                        <div class="case-header-id">CASE #2025-1184</div>
+                    </div>
+                    <span class="case-header-status status-cold">Cold Case</span>
+                </div>
+                <div class="case-header-title">Riverside Industrial Arson</div>
+                <div class="case-header-details">
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Lead Detective</div>
+                        <div class="case-detail-value">Det. S. Park</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Badge Number</div>
+                        <div class="case-detail-value">#3892</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Date Opened</div>
+                        <div class="case-detail-value">11.03.2025</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Jurisdiction</div>
+                        <div class="case-detail-value">County Fire Marshal</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Classification</div>
+                        <div class="case-detail-value">Arson - Suspected Insurance</div>
+                    </div>
+                    <div class="case-detail-item">
+                        <div class="case-detail-label">Evidence Items</div>
+                        <div class="case-detail-value">8 catalogued</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="crime-tape">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">Do Not Cross - Do Not Cross - Do Not Cross</span>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             10. EVIDENCE LOG TABLE
+        =========================================== -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">10</span>
+                    Evidence Item 010 / Data Table
+                </div>
+                <h2>Evidence Log</h2>
+                <p class="section-desc">Structured evidence registry in table format. Each row represents a catalogued item with chain of custody information.</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="evidence-table">
+                    <thead>
+                        <tr>
+                            <th>Item #</th>
+                            <th>Description</th>
+                            <th>Location Found</th>
+                            <th>Collected By</th>
+                            <th>Type</th>
+                            <th class="text-right">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.75rem;">1</span></td>
+                            <td>9mm shell casing</td>
+                            <td>Floor, NE corner</td>
+                            <td>Tech. Wilson</td>
+                            <td><span class="evidence-tag evidence-tag-physical" style="font-size: 0.6rem; padding: 2px 6px;">Physical</span></td>
+                            <td class="text-right">08:52</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.75rem;">2</span></td>
+                            <td>Latent fingerprint (partial)</td>
+                            <td>Window latch, N wall</td>
+                            <td>Tech. Reyes</td>
+                            <td><span class="evidence-tag evidence-tag-forensic" style="font-size: 0.6rem; padding: 2px 6px;">Forensic</span></td>
+                            <td class="text-right">09:15</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.75rem;">3</span></td>
+                            <td>Blood sample (victim)</td>
+                            <td>Desk surface</td>
+                            <td>Tech. Wilson</td>
+                            <td><span class="evidence-tag evidence-tag-forensic" style="font-size: 0.6rem; padding: 2px 6px;">Forensic</span></td>
+                            <td class="text-right">09:23</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.75rem;">4</span></td>
+                            <td>Surveillance hard drive</td>
+                            <td>Security office, 2F</td>
+                            <td>Det. Chen</td>
+                            <td><span class="evidence-tag evidence-tag-digital" style="font-size: 0.6rem; padding: 2px 6px;">Digital</span></td>
+                            <td class="text-right">09:41</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tent-marker" style="width: 28px; height: 28px; font-size: 0.75rem;">5</span></td>
+                            <td>Handwritten note (torn)</td>
+                            <td>Wastebasket, office</td>
+                            <td>Tech. Reyes</td>
+                            <td><span class="evidence-tag evidence-tag-document" style="font-size: 0.6rem; padding: 2px 6px;">Document</span></td>
+                            <td class="text-right">10:02</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             11. DESIGN PRINCIPLES
+        =========================================== -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-label">
+                    <span class="tent-marker">11</span>
+                    Evidence Item 011 / Principles
+                </div>
+                <h2>Design Philosophy</h2>
+            </div>
+
+            <div class="grid">
+                <div class="col-6">
+                    <div class="index-card pin" style="margin-bottom: var(--space-lg);">
+                        <div class="index-card-content">
+                            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1.1rem; color: var(--stamp-red); margin-bottom: var(--space-sm);">Procedural Clarity</h3>
+                            <p style="font-family: var(--font-body); font-size: 0.9rem; color: var(--text-medium); margin-bottom: 0; line-height: 1.6;">Unlike cinematic noir, crime scene investigation is about bright lights, precise documentation, and methodical processes. Every element should feel like it could be entered as evidence in a court of law.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="index-card pin pin-yellow" style="margin-bottom: var(--space-lg);">
+                        <div class="index-card-content">
+                            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1.1rem; color: var(--stamp-red); margin-bottom: var(--space-sm);">Organized Chaos</h3>
+                            <p style="font-family: var(--font-body); font-size: 0.9rem; color: var(--text-medium); margin-bottom: 0; line-height: 1.6;">An evidence board looks chaotic to the untrained eye, but every pin, string, and photo is placed with deliberate intent. Embrace the visual complexity while maintaining an underlying logic to the layout.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="index-card pin pin-blue">
+                        <div class="index-card-content">
+                            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1.1rem; color: var(--stamp-red); margin-bottom: var(--space-sm);">Texture &amp; Tactility</h3>
+                            <p style="font-family: var(--font-body); font-size: 0.9rem; color: var(--text-medium); margin-bottom: 0; line-height: 1.6;">Cork, manila paper, polaroid borders, lined index cards. The design relies on real-world materials and their textures. Users should almost feel the grain of the cork and the weight of the paper.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="index-card pin pin-green">
+                        <div class="index-card-content">
+                            <h3 style="font-family: var(--font-display); text-transform: uppercase; font-size: 1.1rem; color: var(--stamp-red); margin-bottom: var(--space-sm);">Color As Signal</h3>
+                            <p style="font-family: var(--font-body); font-size: 0.9rem; color: var(--text-medium); margin-bottom: 0; line-height: 1.6;">Red means danger, urgency, connection. Yellow means caution, evidence, stop and look. Blue means information, digital, analytical. Green means cleared, approved, verified. Color is a functional tool, not decoration.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <div class="crime-tape">
+            <div class="crime-tape-inner">
+                <span class="crime-tape-text">End of Evidence - End of Evidence - End of Evidence</span>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p class="footer-brand">Crime Scene / Evidence Board</p>
+            <p>"Every contact leaves a trace." -- Edmond Locard</p>
+            <p class="footer-end">Case Closed</p>
+        </footer>
+    </div>
+</body>
+</html>

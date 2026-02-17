@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zine Punk — HTML Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Creepster&family=Permanent+Marker&family=Special+Elite&family=UnifrakturMaguntia&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Zine Punk Core Palette */
+            --xerox-black: #111111;
+            --xerox-white: #f0ece3;
+            --xerox-grey: #b8b3a8;
+            --paper-cream: #e8e2d4;
+            --paper-dirty: #d4cfc2;
+
+            /* Neon Accent Colors — highlighter, spray paint, marker */
+            --safety-pink: #FF2D87;
+            --marker-yellow: #FFE11A;
+            --spray-red: #E01A1A;
+            --tape-blue: #3D85C6;
+            --sharpie-green: #00C853;
+            --bruise-purple: #8B2FC9;
+
+            /* Semantic */
+            --text-primary: var(--xerox-black);
+            --text-inverse: var(--xerox-white);
+            --bg-primary: var(--paper-cream);
+            --bg-dark: var(--xerox-black);
+
+            /* Typography — deliberately mismatched */
+            --font-ransom: 'Creepster', cursive;
+            --font-typewriter: 'Special Elite', cursive;
+            --font-marker: 'Permanent Marker', cursive;
+            --font-mono: 'Courier Prime', monospace;
+            --font-gothic: 'UnifrakturMaguntia', cursive;
+            --font-terminal: 'VT323', monospace;
+
+            /* Spacing Scale (4px base) */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 32px;
+            --space-xl: 64px;
+            --space-2xl: 96px;
+            --space-3xl: 128px;
+
+            /* Borders */
+            --border-rough: 3px solid var(--xerox-black);
+            --border-thick: 5px solid var(--xerox-black);
+            --border-dashed: 3px dashed var(--xerox-black);
+
+            /* Transitions */
+            --transition-snap: 0.15s ease;
+            --transition-jitter: 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            -webkit-font-smoothing: auto;
+            overflow-x: hidden;
+        }
+
+        /* Photocopy noise texture on body */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,0.015) 2px,
+                    rgba(0,0,0,0.015) 3px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(0,0,0,0.01) 3px,
+                    rgba(0,0,0,0.01) 4px
+                );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== TAPE STRIP DECORATIONS ==================== */
+        .tape-strip {
+            position: absolute;
+            height: 28px;
+            background: rgba(255, 225, 26, 0.55);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .tape-strip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 4px,
+                rgba(255,255,255,0.15) 4px,
+                rgba(255,255,255,0.15) 5px
+            );
+        }
+
+        .tape-strip--pink {
+            background: rgba(255, 45, 135, 0.35);
+        }
+
+        .tape-strip--blue {
+            background: rgba(61, 133, 198, 0.35);
+        }
+
+        /* ==================== STAPLE MARKS ==================== */
+        .staple {
+            width: 12px;
+            height: 5px;
+            background: #999;
+            border-radius: 0 0 3px 3px;
+            position: absolute;
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .staple::before,
+        .staple::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            width: 2px;
+            height: 5px;
+            background: #888;
+            border-radius: 0 0 1px 1px;
+        }
+
+        .staple::before { left: 2px; }
+        .staple::after { right: 2px; }
+
+        /* ==================== TORN PAPER EDGES ==================== */
+        .torn-edge-bottom {
+            position: relative;
+        }
+
+        .torn-edge-bottom::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            background: var(--bg-primary);
+            clip-path: polygon(
+                0% 50%, 2% 20%, 5% 60%, 7% 30%, 10% 55%, 13% 15%,
+                16% 50%, 18% 25%, 21% 60%, 24% 20%, 27% 55%, 30% 35%,
+                33% 60%, 36% 15%, 39% 50%, 42% 30%, 45% 55%, 48% 20%,
+                51% 60%, 54% 25%, 57% 50%, 60% 35%, 63% 55%, 66% 15%,
+                69% 60%, 72% 30%, 75% 50%, 78% 20%, 81% 55%, 84% 35%,
+                87% 60%, 90% 15%, 93% 50%, 96% 30%, 100% 50%,
+                100% 100%, 0% 100%
+            );
+            z-index: 5;
+        }
+
+        /* ==================== SCRAWLED UNDERLINES ==================== */
+        .scrawl-underline {
+            position: relative;
+            display: inline-block;
+        }
+
+        .scrawl-underline::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            right: -4px;
+            bottom: -2px;
+            height: 4px;
+            background: var(--safety-pink);
+            transform: rotate(-0.5deg) skewX(-8deg);
+        }
+
+        .scrawl-underline--yellow::after {
+            background: var(--marker-yellow);
+            height: 6px;
+            bottom: 0;
+            opacity: 0.7;
+        }
+
+        /* ==================== CIRCLE / ARROW ANNOTATIONS ==================== */
+        .circled {
+            position: relative;
+            display: inline-block;
+        }
+
+        .circled::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -12px;
+            right: -12px;
+            bottom: -8px;
+            border: 3px solid var(--spray-red);
+            border-radius: 50%;
+            transform: rotate(-3deg);
+            pointer-events: none;
+        }
+
+        /* ==================== HEADER ==================== */
+        .header {
+            padding: var(--space-3xl) 0 var(--space-2xl);
+            position: relative;
+            overflow: hidden;
+            background: var(--xerox-black);
+            border-bottom: 8px solid var(--xerox-black);
+        }
+
+        /* Xerox texture on header */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 1px,
+                    rgba(255,255,255,0.02) 1px,
+                    rgba(255,255,255,0.02) 2px
+                );
+            pointer-events: none;
+        }
+
+        .header-inner {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header h1 {
+            font-family: var(--font-ransom);
+            font-size: clamp(4rem, 14vw, 9rem);
+            color: var(--xerox-white);
+            letter-spacing: 0.04em;
+            line-height: 0.9;
+            transform: rotate(-2deg);
+            margin-bottom: var(--space-lg);
+            text-shadow: 4px 4px 0 var(--safety-pink);
+        }
+
+        .header h1 span {
+            display: inline-block;
+        }
+
+        .header h1 .word-zine {
+            color: var(--marker-yellow);
+            transform: rotate(3deg);
+            position: relative;
+            top: -5px;
+        }
+
+        .header h1 .word-punk {
+            font-family: var(--font-marker);
+            color: var(--safety-pink);
+            transform: rotate(-4deg);
+            margin-left: 0.2em;
+        }
+
+        .header-tagline {
+            font-family: var(--font-typewriter);
+            font-size: 1.1rem;
+            color: var(--xerox-white);
+            background: var(--spray-red);
+            display: inline-block;
+            padding: var(--space-sm) var(--space-md);
+            transform: rotate(1deg);
+            letter-spacing: 0.05em;
+        }
+
+        .header-sub {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--xerox-grey);
+            margin-top: var(--space-md);
+            letter-spacing: 0.02em;
+        }
+
+        /* Diagonal tape strips on header */
+        .header .tape-strip--header-1 {
+            top: 30px;
+            right: -20px;
+            width: 200px;
+            transform: rotate(-35deg);
+        }
+
+        .header .tape-strip--header-2 {
+            bottom: 40px;
+            left: -10px;
+            width: 160px;
+            transform: rotate(22deg);
+        }
+
+        /* X marks on header background */
+        .header-x {
+            position: absolute;
+            font-family: var(--font-marker);
+            font-size: 12rem;
+            color: rgba(255, 45, 135, 0.08);
+            z-index: 1;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .header-x--1 { top: -30px; right: 60px; transform: rotate(15deg); }
+        .header-x--2 { bottom: -20px; left: 40px; transform: rotate(-20deg); color: rgba(255, 225, 26, 0.06); }
+
+        @media (max-width: 768px) {
+            .header { padding: var(--space-xl) 0; }
+            .header h1 { font-size: clamp(3rem, 16vw, 5rem); }
+            .header-x { display: none; }
+        }
+
+        /* ==================== SECTIONS ==================== */
+        .section {
+            padding: var(--space-2xl) 0;
+            border-bottom: 5px solid var(--xerox-black);
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-xl);
+            position: relative;
+        }
+
+        .section-number {
+            font-family: var(--font-terminal);
+            font-size: 5rem;
+            color: var(--paper-dirty);
+            position: absolute;
+            top: -30px;
+            left: -10px;
+            z-index: 0;
+            line-height: 1;
+            transform: rotate(-5deg);
+        }
+
+        .section-header h2 {
+            position: relative;
+            z-index: 1;
+            font-family: var(--font-ransom);
+            font-size: 2.8rem;
+            letter-spacing: 0.03em;
+            line-height: 1.1;
+            margin-bottom: var(--space-md);
+            display: inline-block;
+        }
+
+        /* Alternating heading styles for that ransom-note look */
+        .section:nth-child(odd) .section-header h2 {
+            transform: rotate(-1deg);
+            background: var(--marker-yellow);
+            padding: var(--space-xs) var(--space-md);
+        }
+
+        .section:nth-child(even) .section-header h2 {
+            transform: rotate(0.5deg);
+            border-bottom: 5px solid var(--safety-pink);
+            padding-bottom: var(--space-xs);
+        }
+
+        .section-header .lead {
+            font-family: var(--font-typewriter);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #555;
+            max-width: 60ch;
+        }
+
+        h3 {
+            font-family: var(--font-marker);
+            font-size: 1.5rem;
+            letter-spacing: 0.02em;
+            margin-bottom: var(--space-md);
+            line-height: 1.2;
+        }
+
+        h4 {
+            font-family: var(--font-typewriter);
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-md);
+        }
+
+        p {
+            margin-bottom: var(--space-md);
+            max-width: 65ch;
+        }
+
+        /* ==================== 01. COLOR PALETTE ==================== */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .color-swatch {
+            position: relative;
+            padding: var(--space-lg) var(--space-md) var(--space-md);
+            border: var(--border-rough);
+            transition: transform var(--transition-jitter);
+        }
+
+        .color-swatch:nth-child(odd) {
+            transform: rotate(-1.5deg);
+        }
+
+        .color-swatch:nth-child(even) {
+            transform: rotate(1deg);
+        }
+
+        .color-swatch:hover {
+            transform: rotate(0deg) scale(1.05);
+            z-index: 10;
+        }
+
+        .color-swatch-block {
+            width: 100%;
+            height: 80px;
+            border: 2px solid var(--xerox-black);
+            margin-bottom: var(--space-sm);
+        }
+
+        .color-swatch-name {
+            font-family: var(--font-marker);
+            font-size: 0.95rem;
+            display: block;
+        }
+
+        .color-swatch-hex {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: #777;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .color-swatch-usage {
+            font-family: var(--font-typewriter);
+            font-size: 0.7rem;
+            color: #999;
+            margin-top: var(--space-xs);
+            display: block;
+            font-style: italic;
+        }
+
+        /* Tape on certain swatches */
+        .color-swatch--taped {
+            overflow: visible;
+        }
+
+        .color-swatch--taped::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-3deg);
+            width: 60px;
+            height: 22px;
+            background: rgba(255, 225, 26, 0.55);
+            z-index: 5;
+        }
+
+        /* ==================== 02. TYPOGRAPHY ==================== */
+        .type-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .type-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            align-items: baseline;
+            gap: var(--space-lg);
+            padding: var(--space-lg) 0;
+            border-bottom: 2px dashed var(--xerox-grey);
+        }
+
+        .type-row:last-child {
+            border-bottom: none;
+        }
+
+        .type-meta {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+
+        .type-label {
+            font-family: var(--font-marker);
+            font-size: 0.85rem;
+            color: var(--safety-pink);
+        }
+
+        .type-specs {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: #999;
+        }
+
+        .type-sample {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .type-row {
+                grid-template-columns: 1fr;
+                gap: var(--space-sm);
+            }
+        }
+
+        /* Ransom-note mixed typography demo */
+        .ransom-demo {
+            background: var(--xerox-white);
+            border: var(--border-thick);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+            position: relative;
+            transform: rotate(-0.5deg);
+            box-shadow: 5px 5px 0 var(--xerox-black);
+        }
+
+        .ransom-demo .ransom-word {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            line-height: 1.6;
+        }
+
+        .ransom-demo .rw-1 { font-family: var(--font-ransom); font-size: 1.8rem; background: var(--xerox-black); color: var(--xerox-white); transform: rotate(-2deg); }
+        .ransom-demo .rw-2 { font-family: var(--font-typewriter); font-size: 1.2rem; border: 2px solid var(--xerox-black); transform: rotate(1deg); }
+        .ransom-demo .rw-3 { font-family: var(--font-marker); font-size: 1.5rem; color: var(--spray-red); transform: rotate(-3deg); }
+        .ransom-demo .rw-4 { font-family: var(--font-gothic); font-size: 1.6rem; transform: rotate(2deg); }
+        .ransom-demo .rw-5 { font-family: var(--font-terminal); font-size: 1.4rem; background: var(--marker-yellow); transform: rotate(-1deg); }
+        .ransom-demo .rw-6 { font-family: var(--font-mono); font-size: 1rem; text-decoration: underline; text-decoration-style: wavy; text-decoration-color: var(--safety-pink); transform: rotate(1.5deg); }
+
+        /* ==================== 03. SPACING ==================== */
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .spacing-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+
+        .spacing-label {
+            width: 100px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .spacing-bar {
+            height: 28px;
+            border: 2px solid var(--xerox-black);
+            position: relative;
+            transition: transform var(--transition-jitter);
+        }
+
+        .spacing-bar:hover {
+            transform: scaleY(1.4) rotate(-1deg);
+        }
+
+        /* Xerox grain on spacing bars */
+        .spacing-bar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.05) 2px,
+                rgba(0,0,0,0.05) 3px
+            );
+        }
+
+        .spacing-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #777;
+            width: 50px;
+        }
+
+        @media (max-width: 768px) {
+            .spacing-row { gap: var(--space-md); }
+            .spacing-label { width: 80px; font-size: 0.7rem; }
+        }
+
+        /* ==================== 04. BUTTONS ==================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-marker);
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-decoration: none;
+            border: var(--border-rough);
+            background: var(--xerox-white);
+            color: var(--xerox-black);
+            cursor: pointer;
+            transition: all var(--transition-snap);
+            position: relative;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px) rotate(-1deg);
+            box-shadow: 4px 4px 0 var(--xerox-black);
+        }
+
+        .btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0 var(--xerox-black);
+        }
+
+        .btn-primary {
+            background: var(--xerox-black);
+            color: var(--xerox-white);
+        }
+
+        .btn-primary:hover {
+            background: var(--safety-pink);
+            color: var(--xerox-white);
+        }
+
+        .btn-danger {
+            background: var(--spray-red);
+            color: var(--xerox-white);
+            border-color: var(--spray-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--xerox-black);
+            border-color: var(--xerox-black);
+        }
+
+        .btn-highlight {
+            background: var(--marker-yellow);
+            color: var(--xerox-black);
+            border-color: var(--xerox-black);
+        }
+
+        .btn-highlight:hover {
+            background: var(--safety-pink);
+            color: var(--xerox-white);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-style: dashed;
+        }
+
+        .btn-outline:hover {
+            background: var(--xerox-black);
+            color: var(--xerox-white);
+            border-style: solid;
+        }
+
+        .btn-tape {
+            background: rgba(255, 225, 26, 0.55);
+            border: none;
+            padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-typewriter);
+            transform: rotate(-2deg);
+        }
+
+        .btn-tape:hover {
+            background: rgba(255, 225, 26, 0.85);
+            transform: rotate(0deg);
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: var(--space-xs) var(--space-md);
+            font-size: 0.85rem;
+            border-width: 2px;
+        }
+
+        .btn-lg {
+            padding: var(--space-md) var(--space-xl);
+            font-size: 1.3rem;
+            border-width: 4px;
+        }
+
+        .btn-ransom {
+            font-family: var(--font-ransom);
+            font-size: 1.3rem;
+            background: var(--xerox-black);
+            color: var(--marker-yellow);
+            border: 4px solid var(--marker-yellow);
+            letter-spacing: 0.06em;
+            transform: rotate(1deg);
+        }
+
+        .btn-ransom:hover {
+            background: var(--marker-yellow);
+            color: var(--xerox-black);
+            border-color: var(--xerox-black);
+            transform: rotate(-2deg);
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+            align-items: center;
+        }
+
+        /* ==================== 05. FORMS ==================== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        .input-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .input-label {
+            display: block;
+            font-family: var(--font-marker);
+            font-size: 0.9rem;
+            letter-spacing: 0.04em;
+            margin-bottom: var(--space-sm);
+            color: var(--text-primary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-typewriter);
+            font-size: 1rem;
+            border: var(--border-rough);
+            background: var(--xerox-white);
+            transition: all var(--transition-snap);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--safety-pink);
+            box-shadow: 3px 3px 0 var(--safety-pink);
+            background: #fff;
+        }
+
+        .input-field::placeholder {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: var(--space-md);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 9px solid var(--xerox-black);
+            pointer-events: none;
+        }
+
+        select.input-field {
+            appearance: none;
+            padding-right: var(--space-xl);
+            cursor: pointer;
+        }
+
+        /* Custom checkboxes */
+        .checkbox-group,
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .check-label,
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-family: var(--font-typewriter);
+            font-size: 0.95rem;
+            transition: color var(--transition-snap);
+        }
+
+        .check-label:hover,
+        .radio-label:hover {
+            color: var(--safety-pink);
+        }
+
+        .check-box {
+            width: 22px;
+            height: 22px;
+            border: var(--border-rough);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--xerox-white);
+            flex-shrink: 0;
+            transition: all var(--transition-snap);
+        }
+
+        .check-box::after {
+            content: 'X';
+            font-family: var(--font-marker);
+            font-size: 1rem;
+            color: var(--spray-red);
+            opacity: 0;
+            transform: rotate(-15deg) scale(0);
+            transition: all var(--transition-jitter);
+        }
+
+        input[type="checkbox"]:checked + .check-box::after {
+            opacity: 1;
+            transform: rotate(-10deg) scale(1.2);
+        }
+
+        input[type="checkbox"]:checked + .check-box {
+            background: var(--marker-yellow);
+        }
+
+        .radio-dot {
+            width: 22px;
+            height: 22px;
+            border: var(--border-rough);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--xerox-white);
+            flex-shrink: 0;
+            transition: all var(--transition-snap);
+        }
+
+        .radio-dot::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: var(--xerox-black);
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform var(--transition-jitter);
+        }
+
+        input[type="radio"]:checked + .radio-dot::after {
+            transform: scale(1);
+        }
+
+        input[type="radio"]:checked + .radio-dot {
+            border-color: var(--safety-pink);
+            background: var(--safety-pink);
+        }
+
+        input[type="radio"]:checked + .radio-dot::after {
+            background: var(--xerox-white);
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ==================== 06. CARDS ==================== */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .card {
+            border: var(--border-rough);
+            padding: var(--space-lg);
+            background: var(--xerox-white);
+            position: relative;
+            transition: all var(--transition-jitter);
+        }
+
+        .card:nth-child(1) { transform: rotate(-1deg); }
+        .card:nth-child(2) { transform: rotate(0.5deg); }
+        .card:nth-child(3) { transform: rotate(-0.8deg); }
+
+        .card:hover {
+            transform: rotate(0deg) translate(-3px, -3px);
+            box-shadow: 6px 6px 0 var(--xerox-black);
+            z-index: 10;
+        }
+
+        .card h3 {
+            font-family: var(--font-ransom);
+            font-size: 1.5rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .card p {
+            font-family: var(--font-typewriter);
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: var(--space-md);
+        }
+
+        .card-tag {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 2px 8px;
+            border: 2px solid var(--xerox-black);
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--space-md);
+            border-top: 2px dashed var(--xerox-grey);
+            margin-top: var(--space-md);
+        }
+
+        /* Taped card variant */
+        .card--taped {
+            overflow: visible;
+        }
+
+        .card--taped::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 30px;
+            width: 70px;
+            height: 24px;
+            background: rgba(255, 225, 26, 0.55);
+            transform: rotate(-5deg);
+            z-index: 5;
+        }
+
+        /* Blackout card variant */
+        .card--blackout {
+            background: var(--xerox-black);
+            color: var(--xerox-white);
+        }
+
+        .card--blackout h3 {
+            color: var(--marker-yellow);
+        }
+
+        .card--blackout p {
+            color: var(--xerox-grey);
+        }
+
+        .card--blackout .card-tag {
+            border-color: var(--xerox-white);
+            color: var(--xerox-white);
+        }
+
+        .card--blackout .card-footer {
+            border-color: #444;
+        }
+
+        /* Collage card variant */
+        .card--collage {
+            border: 5px solid var(--xerox-black);
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(0,0,0,0.02) 10px,
+                    rgba(0,0,0,0.02) 11px
+                ),
+                var(--xerox-white);
+            box-shadow: 4px 4px 0 var(--xerox-black);
+        }
+
+        .card--collage h3 {
+            background: var(--safety-pink);
+            color: var(--xerox-white);
+            display: inline-block;
+            padding: 2px 10px;
+            transform: rotate(-1deg);
+        }
+
+        /* ==================== 07. ALERTS ==================== */
+        .alert {
+            padding: var(--space-lg);
+            border: var(--border-rough);
+            position: relative;
+            margin-bottom: var(--space-lg);
+            font-family: var(--font-typewriter);
+        }
+
+        .alert-label {
+            font-family: var(--font-marker);
+            font-size: 1.1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-sm);
+        }
+
+        .alert-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        .alert--info {
+            background: var(--xerox-white);
+            border-left: 8px solid var(--tape-blue);
+        }
+
+        .alert--info .alert-label {
+            color: var(--tape-blue);
+        }
+
+        .alert--success {
+            background: var(--xerox-white);
+            border-left: 8px solid var(--sharpie-green);
+        }
+
+        .alert--success .alert-label {
+            color: var(--sharpie-green);
+        }
+
+        .alert--warning {
+            background: rgba(255, 225, 26, 0.2);
+            border-left: 8px solid var(--marker-yellow);
+            border-color: var(--xerox-black);
+            border-left-color: var(--marker-yellow);
+        }
+
+        .alert--warning .alert-label {
+            color: #b59800;
+        }
+
+        .alert--danger {
+            background: rgba(224, 26, 26, 0.08);
+            border-left: 8px solid var(--spray-red);
+            border-color: var(--xerox-black);
+            border-left-color: var(--spray-red);
+        }
+
+        .alert--danger .alert-label {
+            color: var(--spray-red);
+        }
+
+        /* Scrawled alert variant — looks hand-written */
+        .alert--scrawled {
+            background: var(--xerox-white);
+            border: none;
+            border-bottom: 4px solid var(--xerox-black);
+            padding-left: var(--space-xl);
+            transform: rotate(-0.5deg);
+        }
+
+        .alert--scrawled::before {
+            content: '!!';
+            position: absolute;
+            left: var(--space-md);
+            top: var(--space-lg);
+            font-family: var(--font-marker);
+            font-size: 1.5rem;
+            color: var(--spray-red);
+        }
+
+        /* ==================== 08. ZINE CLIPPINGS (Bonus) ==================== */
+        .clippings-board {
+            background: var(--paper-dirty);
+            border: var(--border-thick);
+            padding: var(--space-xl);
+            position: relative;
+            min-height: 400px;
+        }
+
+        .clipping {
+            position: relative;
+            display: inline-block;
+            margin: var(--space-sm);
+            vertical-align: top;
+        }
+
+        .clipping-text {
+            background: var(--xerox-white);
+            padding: var(--space-md) var(--space-lg);
+            border: 2px solid var(--xerox-black);
+            font-family: var(--font-typewriter);
+            font-size: 0.85rem;
+            max-width: 220px;
+        }
+
+        .clipping:nth-child(1) { transform: rotate(-3deg); }
+        .clipping:nth-child(2) { transform: rotate(2deg); }
+        .clipping:nth-child(3) { transform: rotate(-1deg); }
+        .clipping:nth-child(4) { transform: rotate(4deg); }
+        .clipping:nth-child(5) { transform: rotate(-2deg); }
+
+        .clipping--highlight {
+            background: var(--marker-yellow);
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-marker);
+            font-size: 1.2rem;
+            display: inline-block;
+            transform: rotate(-2deg);
+        }
+
+        .clipping--blackout .clipping-text {
+            background: var(--xerox-black);
+            color: var(--xerox-white);
+            font-family: var(--font-mono);
+        }
+
+        .clipping--redacted .clipping-text {
+            position: relative;
+        }
+
+        .clipping--redacted .clipping-text .redacted {
+            background: var(--xerox-black);
+            color: transparent;
+            padding: 0 2px;
+            user-select: none;
+        }
+
+        /* Tape on clippings */
+        .clipping--taped::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 10px;
+            width: 50px;
+            height: 18px;
+            background: rgba(255, 225, 26, 0.55);
+            transform: rotate(8deg);
+            z-index: 5;
+        }
+
+        /* ==================== 09. STICKER BADGES (Bonus) ==================== */
+        .sticker-row {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .sticker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-xs) var(--space-md);
+            font-family: var(--font-marker);
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border: 2px solid var(--xerox-black);
+            transition: all var(--transition-jitter);
+            cursor: default;
+        }
+
+        .sticker:hover {
+            transform: rotate(-3deg) scale(1.1);
+        }
+
+        .sticker--black { background: var(--xerox-black); color: var(--xerox-white); }
+        .sticker--pink { background: var(--safety-pink); color: var(--xerox-white); border-color: var(--safety-pink); }
+        .sticker--yellow { background: var(--marker-yellow); color: var(--xerox-black); }
+        .sticker--red { background: var(--spray-red); color: var(--xerox-white); border-color: var(--spray-red); }
+        .sticker--blue { background: var(--tape-blue); color: var(--xerox-white); border-color: var(--tape-blue); }
+
+        .sticker--round {
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            padding: 0;
+            font-size: 0.7rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .sticker--torn {
+            border: none;
+            clip-path: polygon(
+                2% 8%, 8% 2%, 15% 6%, 22% 1%, 30% 5%, 38% 0%,
+                45% 4%, 52% 1%, 60% 6%, 68% 2%, 75% 7%, 82% 1%,
+                90% 5%, 96% 2%, 100% 10%, 97% 18%, 100% 28%,
+                96% 38%, 100% 48%, 97% 58%, 100% 68%, 96% 78%,
+                100% 88%, 96% 95%, 90% 100%, 82% 96%, 75% 100%,
+                68% 95%, 60% 100%, 52% 96%, 45% 100%, 38% 95%,
+                30% 100%, 22% 96%, 15% 100%, 8% 95%, 2% 100%,
+                0% 92%, 4% 82%, 0% 72%, 4% 62%, 0% 52%,
+                4% 42%, 0% 32%, 4% 22%, 0% 12%
+            );
+            padding: var(--space-sm) var(--space-lg);
+        }
+
+        /* ==================== 10. FLYER LAYOUT (Bonus) ==================== */
+        .flyer {
+            background: var(--xerox-white);
+            border: 6px solid var(--xerox-black);
+            padding: var(--space-xl) var(--space-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .flyer::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 3px dashed var(--xerox-black);
+            pointer-events: none;
+        }
+
+        /* Xerox degradation effect */
+        .flyer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(0,0,0,0.01) 3px,
+                    rgba(0,0,0,0.01) 4px
+                );
+            pointer-events: none;
+        }
+
+        .flyer-title {
+            font-family: var(--font-ransom);
+            font-size: clamp(2rem, 8vw, 4rem);
+            line-height: 0.95;
+            margin-bottom: var(--space-md);
+            position: relative;
+            z-index: 1;
+        }
+
+        .flyer-band {
+            font-family: var(--font-marker);
+            font-size: 1.6rem;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-sm);
+            position: relative;
+            z-index: 1;
+        }
+
+        .flyer-details {
+            font-family: var(--font-typewriter);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-md);
+            position: relative;
+            z-index: 1;
+        }
+
+        .flyer-price {
+            display: inline-block;
+            font-family: var(--font-ransom);
+            font-size: 2.5rem;
+            background: var(--xerox-black);
+            color: var(--marker-yellow);
+            padding: var(--space-xs) var(--space-md);
+            transform: rotate(-3deg);
+            position: relative;
+            z-index: 1;
+        }
+
+        .flyer-stars {
+            font-family: var(--font-marker);
+            font-size: 1.5rem;
+            letter-spacing: 0.3em;
+            margin-top: var(--space-md);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== DIVIDER ==================== */
+        .divider {
+            height: 3px;
+            margin: var(--space-xl) 0;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--xerox-black) 0px,
+                    var(--xerox-black) 12px,
+                    transparent 12px,
+                    transparent 16px,
+                    var(--safety-pink) 16px,
+                    var(--safety-pink) 28px,
+                    transparent 28px,
+                    transparent 32px
+                );
+        }
+
+        .divider--torn {
+            height: 12px;
+            margin: var(--space-xl) 0;
+            background: var(--xerox-black);
+            clip-path: polygon(
+                0% 0%, 3% 100%, 6% 20%, 9% 90%, 12% 10%, 15% 80%,
+                18% 30%, 21% 100%, 24% 0%, 27% 70%, 30% 20%, 33% 90%,
+                36% 10%, 39% 80%, 42% 30%, 45% 100%, 48% 0%, 51% 70%,
+                54% 20%, 57% 90%, 60% 10%, 63% 80%, 66% 30%, 69% 100%,
+                72% 0%, 75% 70%, 78% 20%, 81% 90%, 84% 10%, 87% 80%,
+                90% 30%, 93% 100%, 96% 0%, 100% 60%,
+                100% 100%, 0% 100%
+            );
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            padding: var(--space-xl) 0;
+            background: var(--xerox-black);
+            color: var(--xerox-white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255,255,255,0.015) 2px,
+                    rgba(255,255,255,0.015) 3px
+                );
+            pointer-events: none;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-logo {
+            font-family: var(--font-ransom);
+            font-size: 2.5rem;
+            color: var(--marker-yellow);
+            text-shadow: 3px 3px 0 var(--safety-pink);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-typewriter);
+            font-size: 0.85rem;
+            color: var(--xerox-grey);
+            margin-top: var(--space-sm);
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-right p {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--xerox-grey);
+            margin-bottom: var(--space-xs);
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                flex-direction: column;
+                gap: var(--space-lg);
+                text-align: center;
+            }
+            .footer-right { text-align: center; }
+        }
+
+        /* ==================== UTILITIES ==================== */
+        .text-center { text-align: center; }
+        .mb-0 { margin-bottom: 0; }
+        .mt-md { margin-top: var(--space-md); }
+        .mt-lg { margin-top: var(--space-lg); }
+        .mt-xl { margin-top: var(--space-xl); }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .container { padding: 0 var(--space-md); }
+            .section { padding: var(--space-xl) 0; }
+            .section-number { font-size: 3.5rem; }
+            .section-header h2 { font-size: 2rem; }
+            .color-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+            .card-grid { grid-template-columns: 1fr; }
+            .clippings-board { padding: var(--space-lg); }
+            .flyer { padding: var(--space-lg) var(--space-md); }
+            .ransom-demo { padding: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ==================== HEADER ==================== -->
+        <header class="header torn-edge-bottom">
+            <div class="tape-strip tape-strip--header-1" style="top: 30px; right: -20px; width: 200px; transform: rotate(-35deg);"></div>
+            <div class="tape-strip tape-strip--pink tape-strip--header-2" style="bottom: 40px; left: -10px; width: 160px; transform: rotate(22deg);"></div>
+            <span class="header-x header-x--1">X</span>
+            <span class="header-x header-x--2">X</span>
+            <div class="container">
+                <div class="header-inner">
+                    <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--xerox-grey); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: var(--space-sm);">// design system //</p>
+                    <h1><span class="word-zine">ZINE</span><span class="word-punk">PUNK</span></h1>
+                    <div class="header-tagline">CUT. PASTE. PHOTOCOPY. DESTROY.</div>
+                    <p class="header-sub">A design system for the DIY underground. No rules. No permission. Just a photocopier and a bad attitude.</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- ==================== 01. COLOR PALETTE ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2>Color Palette</h2>
+                <p class="lead">High-contrast xerox black and white as the foundation. Accents come from whatever was lying around the copy shop -- safety-pink highlighters, yellow markers, red spray paint, and strips of blue masking tape.</p>
+            </div>
+
+            <h4 class="mt-lg">Core Tones</h4>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--xerox-black);"></div>
+                    <span class="color-swatch-name">Xerox Black</span>
+                    <span class="color-swatch-hex">#111111</span>
+                    <span class="color-swatch-usage">Primary ink, borders, text</span>
+                </div>
+                <div class="color-swatch color-swatch--taped" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--xerox-white);"></div>
+                    <span class="color-swatch-name">Xerox White</span>
+                    <span class="color-swatch-hex">#F0ECE3</span>
+                    <span class="color-swatch-usage">Page background, clean areas</span>
+                </div>
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--paper-cream);"></div>
+                    <span class="color-swatch-name">Paper Cream</span>
+                    <span class="color-swatch-hex">#E8E2D4</span>
+                    <span class="color-swatch-usage">Aged paper, body background</span>
+                </div>
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--paper-dirty);"></div>
+                    <span class="color-swatch-name">Dirty Paper</span>
+                    <span class="color-swatch-hex">#D4CFC2</span>
+                    <span class="color-swatch-usage">Worn surfaces, gutters</span>
+                </div>
+                <div class="color-swatch color-swatch--taped" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--xerox-grey);"></div>
+                    <span class="color-swatch-name">Xerox Grey</span>
+                    <span class="color-swatch-hex">#B8B3A8</span>
+                    <span class="color-swatch-usage">Faded copies, muted text</span>
+                </div>
+            </div>
+
+            <h4 class="mt-xl">Neon Accents</h4>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--safety-pink);"></div>
+                    <span class="color-swatch-name">Safety Pink</span>
+                    <span class="color-swatch-hex">#FF2D87</span>
+                    <span class="color-swatch-usage">Primary accent, highlights</span>
+                </div>
+                <div class="color-swatch color-swatch--taped" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--marker-yellow);"></div>
+                    <span class="color-swatch-name">Marker Yellow</span>
+                    <span class="color-swatch-hex">#FFE11A</span>
+                    <span class="color-swatch-usage">Highlighter, tape strips</span>
+                </div>
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--spray-red);"></div>
+                    <span class="color-swatch-name">Spray Red</span>
+                    <span class="color-swatch-hex">#E01A1A</span>
+                    <span class="color-swatch-usage">Warnings, urgency, X marks</span>
+                </div>
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--tape-blue);"></div>
+                    <span class="color-swatch-name">Tape Blue</span>
+                    <span class="color-swatch-hex">#3D85C6</span>
+                    <span class="color-swatch-usage">Info, links, masking tape</span>
+                </div>
+                <div class="color-swatch color-swatch--taped" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--sharpie-green);"></div>
+                    <span class="color-swatch-name">Sharpie Green</span>
+                    <span class="color-swatch-hex">#00C853</span>
+                    <span class="color-swatch-usage">Success, confirmed, go</span>
+                </div>
+                <div class="color-swatch" style="background: var(--paper-cream);">
+                    <div class="color-swatch-block" style="background: var(--bruise-purple);"></div>
+                    <span class="color-swatch-name">Bruise Purple</span>
+                    <span class="color-swatch-hex">#8B2FC9</span>
+                    <span class="color-swatch-usage">Special callouts, rare accent</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 02. TYPOGRAPHY ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2>Typography</h2>
+                <p class="lead">Six wildly different typefaces crammed together like cut-out letters glued to a page. The deliberate mismatch IS the system. Creepster screams headlines, Special Elite hammers out body copy, Permanent Marker scrawls notes in the margins.</p>
+            </div>
+
+            <div class="type-showcase">
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Display / H1</span>
+                        <span class="type-specs">Creepster / clamp(4rem, 14vw, 9rem)</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-ransom); font-size: clamp(2.5rem, 8vw, 5rem); line-height: 0.95;">DESTROY</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Heading 2</span>
+                        <span class="type-specs">Creepster / 2.8rem</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-ransom); font-size: 2.8rem; line-height: 1;">No Future</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Heading 3</span>
+                        <span class="type-specs">Permanent Marker / 1.5rem</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-marker); font-size: 1.5rem; line-height: 1.2;">Scrawled in the Margins</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Heading 4</span>
+                        <span class="type-specs">Special Elite / 1.15rem / 700 / Uppercase</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-typewriter); font-size: 1.15rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">TYPEWRITER SECTION LABEL</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Gothic</span>
+                        <span class="type-specs">UnifrakturMaguntia / 1.6rem</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-gothic); font-size: 1.6rem; line-height: 1.3;">Blackletter Chaos</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Terminal</span>
+                        <span class="type-specs">VT323 / 1.2rem</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-terminal); font-size: 1.2rem;">C:\SYSTEM\> hack the planet_</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Body</span>
+                        <span class="type-specs">Special Elite / 1rem / 400</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-typewriter); font-size: 1rem;">We printed 200 copies at 3am at the Kinkos on Haight Street. The toner was running low and every page came out slightly different.</div>
+                </div>
+
+                <div class="type-row">
+                    <div class="type-meta">
+                        <span class="type-label">Mono / Code</span>
+                        <span class="type-specs">Courier Prime / 0.85rem</span>
+                    </div>
+                    <div class="type-sample" style="font-family: var(--font-mono); font-size: 0.85rem;">font-family: 'whatever-was-in-the-drawer';</div>
+                </div>
+            </div>
+
+            <div class="divider--torn"></div>
+
+            <h4>Ransom Note Demo</h4>
+            <p style="font-size: 0.85rem; color: #777; margin-bottom: var(--space-md);">The core zine aesthetic: every word cut from a different source and pasted together.</p>
+            <div class="ransom-demo">
+                <span class="ransom-word rw-1">WE</span>
+                <span class="ransom-word rw-4">don't</span>
+                <span class="ransom-word rw-3">NEED</span>
+                <span class="ransom-word rw-6">your</span>
+                <span class="ransom-word rw-5">PERMISSION</span>
+                <span class="ransom-word rw-2">to</span>
+                <span class="ransom-word rw-1">CREATE</span>
+                <span class="ransom-word rw-3">.</span>
+                <span class="ransom-word rw-6">just a</span>
+                <span class="ransom-word rw-4">photocopier</span>
+                <span class="ransom-word rw-2">and</span>
+                <span class="ransom-word rw-5">RAGE</span>
+            </div>
+        </section>
+
+        <!-- ==================== 03. SPACING ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2>Spacing</h2>
+                <p class="lead">Even chaos has a grid underneath. A 4px base unit keeps the entropy just structured enough to hold together, like staples barely holding a 40-page zine.</p>
+            </div>
+
+            <div class="spacing-demo">
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-xs</span>
+                    <div class="spacing-bar" style="width: 16px; background: var(--xerox-black);"></div>
+                    <span class="spacing-value">4px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-sm</span>
+                    <div class="spacing-bar" style="width: 32px; background: var(--safety-pink);"></div>
+                    <span class="spacing-value">8px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-md</span>
+                    <div class="spacing-bar" style="width: 64px; background: var(--marker-yellow);"></div>
+                    <span class="spacing-value">16px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-lg</span>
+                    <div class="spacing-bar" style="width: 128px; background: var(--xerox-black);"></div>
+                    <span class="spacing-value">32px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-xl</span>
+                    <div class="spacing-bar" style="width: 256px; background: var(--spray-red);"></div>
+                    <span class="spacing-value">64px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-2xl</span>
+                    <div class="spacing-bar" style="width: 340px; background: var(--tape-blue);"></div>
+                    <span class="spacing-value">96px</span>
+                </div>
+                <div class="spacing-row">
+                    <span class="spacing-label">--space-3xl</span>
+                    <div class="spacing-bar" style="width: 420px; background: var(--xerox-black);"></div>
+                    <span class="spacing-value">128px</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 04. BUTTONS ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2>Buttons</h2>
+                <p class="lead">Every button is a call to action scrawled on a flyer. Rough edges, hand-drawn energy, and a satisfying mechanical snap on hover. Click it like you are slamming a stamp down.</p>
+            </div>
+
+            <h4 class="mt-lg">Core Variants</h4>
+            <div class="button-row">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn">Default</button>
+                <button class="btn btn-danger">Danger</button>
+                <button class="btn btn-highlight">Highlight</button>
+                <button class="btn btn-outline">Outline</button>
+            </div>
+
+            <h4>Special Variants</h4>
+            <div class="button-row">
+                <button class="btn btn-tape">Taped On</button>
+                <button class="btn btn-ransom">Ransom</button>
+            </div>
+
+            <h4>Sizes</h4>
+            <div class="button-row">
+                <button class="btn btn-sm btn-primary">Small</button>
+                <button class="btn btn-primary">Medium</button>
+                <button class="btn btn-lg btn-primary">Large</button>
+            </div>
+
+            <h4>Button Group</h4>
+            <div class="button-row">
+                <button class="btn btn-primary" style="transform: rotate(-2deg);">Shows</button>
+                <button class="btn btn-danger" style="transform: rotate(1deg);">Zines</button>
+                <button class="btn btn-highlight" style="transform: rotate(-1deg);">Distro</button>
+                <button class="btn" style="transform: rotate(2deg);">Contact</button>
+            </div>
+        </section>
+
+        <!-- ==================== 05. FORMS ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2>Forms</h2>
+                <p class="lead">Data entry with typewriter grit. Every field feels like filling in a photocopied order form at a record swap. Heavy borders, sharp focus states, hand-written labels.</p>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <div class="input-group">
+                        <label class="input-label">Band Name</label>
+                        <input type="text" class="input-field" placeholder="Black Flag">
+                    </div>
+                </div>
+                <div>
+                    <div class="input-group">
+                        <label class="input-label">Contact (email or PO Box)</label>
+                        <input type="email" class="input-field" placeholder="sst@dischord.box">
+                    </div>
+                </div>
+                <div>
+                    <div class="input-group">
+                        <label class="input-label">Zine Format</label>
+                        <div class="select-wrapper">
+                            <select class="input-field">
+                                <option>Select format</option>
+                                <option>Quarter-page (A6)</option>
+                                <option>Half-page (A5)</option>
+                                <option>Full-page (A4)</option>
+                                <option>Digest (5.5x8.5)</option>
+                                <option>Mini (2.75x4.25)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="input-group">
+                        <label class="input-label">Print Run</label>
+                        <input type="number" class="input-field" placeholder="200">
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Manifesto</label>
+                <textarea class="input-field" placeholder="Write something worth photocopying 200 times at 3am..."></textarea>
+            </div>
+
+            <div class="form-grid mt-lg">
+                <div>
+                    <h4>Checkboxes</h4>
+                    <div class="checkbox-group">
+                        <label class="check-label">
+                            <input type="checkbox" checked>
+                            <span class="check-box"></span>
+                            Cut and paste layout
+                        </label>
+                        <label class="check-label">
+                            <input type="checkbox" checked>
+                            <span class="check-box"></span>
+                            Photocopied at Kinkos
+                        </label>
+                        <label class="check-label">
+                            <input type="checkbox">
+                            <span class="check-box"></span>
+                            Saddle-stitched binding
+                        </label>
+                        <label class="check-label">
+                            <input type="checkbox">
+                            <span class="check-box"></span>
+                            Hand-numbered edition
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <h4>Radio Buttons</h4>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="distro" checked>
+                            <span class="radio-dot"></span>
+                            Sell at shows ($2)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="distro">
+                            <span class="radio-dot"></span>
+                            Free / pay-what-you-want
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="distro">
+                            <span class="radio-dot"></span>
+                            Trade only (zine for zine)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="distro">
+                            <span class="radio-dot"></span>
+                            Mail order (SASE + $1)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 06. CARDS ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2>Cards</h2>
+                <p class="lead">Content containers that look like scraps of paper taped and stapled to a corkboard. Each one slightly askew, slightly different, like pages torn from different zines and pinned together.</p>
+            </div>
+
+            <h4 class="mt-lg" style="margin-bottom: var(--space-lg);">Standard Cards</h4>
+            <div class="card-grid">
+                <div class="card card--taped">
+                    <h3>DIY or Die</h3>
+                    <p>The whole point is that nobody gave you permission. You took the photocopier, you wrote the words, you stapled the pages together yourself.</p>
+                    <div class="card-footer">
+                        <span class="card-tag">Manifesto</span>
+                        <button class="btn btn-sm btn-primary">Read</button>
+                    </div>
+                </div>
+                <div class="card card--blackout">
+                    <h3>Blackout Issue</h3>
+                    <p>When the content is too raw for daylight. White text on black, like a negative exposure or a redacted government document.</p>
+                    <div class="card-footer">
+                        <span class="card-tag">Zine #07</span>
+                        <button class="btn btn-sm btn-highlight">Read</button>
+                    </div>
+                </div>
+                <div class="card card--collage">
+                    <h3>Collage Style</h3>
+                    <p>Layered backgrounds, angled text, fragments of other things peeking through. Nothing is clean. Everything is intentional.</p>
+                    <div class="card-footer">
+                        <span class="card-tag">Layout</span>
+                        <button class="btn btn-sm btn-danger">Read</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h4 style="margin-bottom: var(--space-lg);">Flyer Card</h4>
+            <p style="font-size: 0.85rem; color: #777; margin-bottom: var(--space-lg);">Cards can also serve as miniature concert flyers or event announcements, using the full zine aesthetic toolkit.</p>
+            <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+                <div class="card" style="text-align: center; transform: rotate(-2deg); border-width: 5px;">
+                    <p style="font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: var(--space-sm);">Friday Feb 21</p>
+                    <h3 style="font-family: var(--font-ransom); font-size: 2rem; margin-bottom: var(--space-xs);">DEAD KENNEDYS</h3>
+                    <p style="font-family: var(--font-marker); font-size: 1rem; color: var(--spray-red); margin-bottom: var(--space-sm);">w/ Minor Threat + Bad Brains</p>
+                    <p style="font-family: var(--font-typewriter); font-size: 0.8rem;">The Mab, 443 Broadway, SF<br>Doors 8pm / $5 / All Ages</p>
+                </div>
+                <div class="card card--blackout" style="text-align: center; transform: rotate(1deg); border-width: 5px;">
+                    <p style="font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: var(--space-sm); color: var(--xerox-grey);">Saturday Feb 22</p>
+                    <h3 style="font-family: var(--font-ransom); font-size: 2rem; margin-bottom: var(--space-xs);">BLACK FLAG</h3>
+                    <p style="font-family: var(--font-marker); font-size: 1rem; color: var(--safety-pink); margin-bottom: var(--space-sm);">w/ Circle Jerks + Descendents</p>
+                    <p style="font-family: var(--font-typewriter); font-size: 0.8rem; color: var(--xerox-grey);">Whisky a Go Go, LA<br>Doors 9pm / $3 / BYO</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 07. ALERTS ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2>Alerts</h2>
+                <p class="lead">Messages that refuse to be filed away politely. Thick left-border accents, typewriter text, and the unmistakable feeling of a note slipped under your door.</p>
+            </div>
+
+            <div class="alert alert--info">
+                <p class="alert-label">Info</p>
+                <p class="alert-text">Next issue deadline is Friday. Send submissions to PO Box 1977 or slide them under the door at Gilman Street.</p>
+            </div>
+
+            <div class="alert alert--success">
+                <p class="alert-label">Success</p>
+                <p class="alert-text">Your zine has been accepted into the distro. Print run of 200 confirmed. Pick them up Saturday after the show.</p>
+            </div>
+
+            <div class="alert alert--warning">
+                <p class="alert-label">Warning</p>
+                <p class="alert-text">The photocopier at the community center is almost out of toner. Bring your own or prepare for faded copies.</p>
+            </div>
+
+            <div class="alert alert--danger">
+                <p class="alert-label">Danger</p>
+                <p class="alert-text">Show cancelled. Venue shut down by fire marshal. Meet at the backup spot. You know where. Tell no one.</p>
+            </div>
+
+            <div class="alert alert--scrawled">
+                <p class="alert-label" style="font-family: var(--font-marker); color: var(--spray-red);">Scrawled Note</p>
+                <p class="alert-text">This variant looks like someone scribbled a warning in the margin of your zine with a red marker at 4am.</p>
+            </div>
+        </section>
+
+        <!-- ==================== 08. ZINE CLIPPINGS ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2>Zine Clippings</h2>
+                <p class="lead">Scraps, cut-outs, and fragments arranged on a surface like a collage board. Some taped, some just lying there. Hover to see them shift -- nothing is permanently fixed down.</p>
+            </div>
+
+            <div class="clippings-board">
+                <div class="clipping clipping--taped">
+                    <div class="clipping-text">The first zine was just 12 photocopied pages stapled together in a garage in 1976.</div>
+                </div>
+                <div class="clipping">
+                    <span class="clipping--highlight">QUESTION EVERYTHING</span>
+                </div>
+                <div class="clipping clipping--blackout">
+                    <div class="clipping-text">INFORMATION WANTS TO BE FREE. THE INTERNET IS JUST A FASTER PHOTOCOPIER.</div>
+                </div>
+                <div class="clipping clipping--redacted clipping--taped">
+                    <div class="clipping-text">The venue is at <span class="redacted">1234 SECRET</span> Street. Show starts at <span class="redacted">REDACTED</span>. Bring <span class="redacted">CLASSIFIED</span>.</div>
+                </div>
+                <div class="clipping">
+                    <div class="clipping-text" style="font-family: var(--font-marker); font-size: 1rem; border-style: dashed;">cut here - - - - - - - - -</div>
+                </div>
+                <div class="clipping">
+                    <span class="clipping--highlight" style="background: var(--safety-pink); color: var(--xerox-white);">NO GODS NO MASTERS</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 09. STICKER BADGES ==================== -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2>Stickers &amp; Badges</h2>
+                <p class="lead">Small labels, tags, and status indicators. Like the stickers slapped on a guitar case, a laptop lid, or the back of a bathroom stall. Hover to peel them off the page.</p>
+            </div>
+
+            <h4>Filled Stickers</h4>
+            <div class="sticker-row" style="margin-bottom: var(--space-lg);">
+                <span class="sticker sticker--black">Punk</span>
+                <span class="sticker sticker--pink">DIY</span>
+                <span class="sticker sticker--yellow">Zine</span>
+                <span class="sticker sticker--red">Sold Out</span>
+                <span class="sticker sticker--blue">Info</span>
+                <span class="sticker">Default</span>
+            </div>
+
+            <h4>Round Stickers</h4>
+            <div class="sticker-row" style="margin-bottom: var(--space-lg);">
+                <span class="sticker sticker--round sticker--black">A</span>
+                <span class="sticker sticker--round sticker--pink">NEW</span>
+                <span class="sticker sticker--round sticker--yellow">!!!</span>
+                <span class="sticker sticker--round sticker--red">X</span>
+            </div>
+
+            <h4>Torn Edge Stickers</h4>
+            <div class="sticker-row">
+                <span class="sticker sticker--torn sticker--black">Underground</span>
+                <span class="sticker sticker--torn sticker--pink">Limited Run</span>
+                <span class="sticker sticker--torn sticker--yellow">Free</span>
+                <span class="sticker sticker--torn sticker--red">Banned</span>
+            </div>
+        </section>
+
+        <!-- ==================== 10. FLYER LAYOUT ==================== -->
+        <section class="section" style="border-bottom: none;">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2>Flyer Layout</h2>
+                <p class="lead">The ultimate test of the zine-punk design system: a complete concert flyer built from all the components. Black border, dashed inner frame, stacked type in clashing fonts, a big price badge, and that unmistakable xeroxed energy.</p>
+            </div>
+
+            <div class="flyer">
+                <div class="flyer-stars">* * * * *</div>
+                <p style="font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: var(--space-sm); position: relative; z-index: 1;">Gilman Street Presents</p>
+                <div class="flyer-title">DEAD<br>PREZ</div>
+                <div class="flyer-band">w/ Crass + Flux of Pink Indians</div>
+                <div class="flyer-details">
+                    Saturday March 15, 2026<br>
+                    924 Gilman Street, Berkeley CA<br>
+                    Doors 7pm / All Ages / No Booze
+                </div>
+                <div class="flyer-price">$5</div>
+                <div class="flyer-stars">* * * * *</div>
+                <p style="font-family: var(--font-typewriter); font-size: 0.7rem; color: #999; margin-top: var(--space-md); position: relative; z-index: 1;">Flyer design: photocopied 200x at 3am. Quality may vary.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <p class="footer-logo">ZINE//PUNK</p>
+                    <p class="footer-tagline">A design system for the DIY underground.</p>
+                </div>
+                <div class="footer-right">
+                    <p>"The medium is the message. The photocopier is the medium."</p>
+                    <p style="color: #666; margin-top: var(--space-xs);">Cut. Paste. Copy. Distribute.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
