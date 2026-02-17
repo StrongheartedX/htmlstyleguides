@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Survivors</title>
+<link id="theme-fonts" rel="stylesheet" href="">
+<style>
+:root {
+  --bg: #000;
+  --body-font: monospace;
+  --body-color: #ccc;
+  --title-font: sans-serif;
+  --title-weight: 900;
+  --hud-shadow: rgba(0,0,0,0.6);
+  --gold: #ffd700;
+  --accent: #ff0080;
+  --xp-start: #ff0080;
+  --xp-end: #ffd700;
+  --hp-start: #ffd700;
+  --hp-end: #ff0080;
+  --gold-glow: rgba(255,215,0,0.5);
+  --accent-glow: rgba(255,0,128,0.6);
+  --accent-glow-far: rgba(255,0,128,0.3);
+  --title-bg-inner: #111;
+  --title-bg-outer: #000;
+  --overlay-rgb: 0,0,0;
+  --screen-title-shadow: none;
+  --subtitle-style: normal;
+  --btn-bg: rgba(0,0,0,0.3);
+  --btn-hover-bg: rgba(0,0,0,0.6);
+  --btn-hover-shadow: rgba(0,0,0,0.4);
+  --stats-color: #888;
+  --card-bg: rgba(0,0,0,0.9);
+  --hint-color: #777;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--body-font);color:var(--body-color)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#ui-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+#hud{position:absolute;top:0;left:0;width:100%;padding:8px 12px;display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--title-font)}
+#hud-left,#hud-right{display:flex;flex-direction:column;gap:4px}
+#hud-right{align-items:flex-end}
+.hud-text{font-size:14px;text-shadow:0 0 8px var(--hud-shadow),1px 1px 2px #000;color:var(--body-color)}
+.hud-big{font-size:18px;font-weight:700;color:var(--gold)}
+#xp-bar-container{position:absolute;top:0;left:0;width:100%;height:4px;background:rgba(0,0,0,0.7)}
+#xp-bar{height:100%;background:linear-gradient(90deg,var(--xp-start),var(--xp-end));width:0%;transition:width 0.3s}
+#hp-bar-container{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);width:200px;height:8px;background:rgba(0,0,0,0.7);border:1px solid #555;border-radius:4px;overflow:hidden}
+#hp-bar{height:100%;background:linear-gradient(90deg,var(--hp-start),var(--hp-end));width:100%;transition:width 0.3s}
+#weapon-bar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.weapon-slot{width:36px;height:36px;border:2px solid #555;background:rgba(0,0,0,0.6);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.weapon-slot.active{border-color:var(--gold);box-shadow:0 0 8px var(--gold-glow)}
+#title-screen,#game-over-screen,#level-up-screen,#pause-screen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;pointer-events:auto}
+#title-screen{background:radial-gradient(ellipse at center,var(--title-bg-inner) 0%,var(--title-bg-outer) 70%)}
+#game-over-screen{background:rgba(var(--overlay-rgb),0.92);display:none}
+#level-up-screen{background:rgba(var(--overlay-rgb),0.85);display:none}
+#pause-screen{background:rgba(0,0,0,0.88);display:none;overflow-y:auto}
+.screen-title{font-family:var(--title-font);font-size:clamp(2.5rem,8vw,5rem);font-weight:var(--title-weight);color:var(--accent);text-shadow:var(--screen-title-shadow);margin-bottom:8px;text-align:center;letter-spacing:0.05em}
+.screen-subtitle{font-family:var(--body-font);font-size:clamp(1rem,3vw,1.4rem);color:var(--gold);font-style:var(--subtitle-style);margin-bottom:32px;text-align:center}
+.btn{font-family:var(--title-font);font-size:1.1rem;font-weight:700;padding:14px 40px;border:2px solid var(--gold);background:var(--btn-bg);color:var(--body-color);cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:all 0.2s;pointer-events:auto}
+.btn:hover{background:var(--btn-hover-bg);box-shadow:0 0 20px var(--btn-hover-shadow);transform:scale(1.05)}
+.stats-line{font-size:1.1rem;color:var(--stats-color);margin:4px 0}
+.upgrade-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:700px;padding:0 16px}
+.upgrade-card{width:200px;padding:20px 16px;border:2px solid #333;background:var(--card-bg);cursor:pointer;text-align:center;transition:all 0.2s;pointer-events:auto;border-radius:4px}
+.upgrade-card:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);transform:translateY(-4px)}
+.upgrade-icon{font-size:2.5rem;margin-bottom:8px}
+.upgrade-name{font-family:var(--title-font);font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:6px}
+.upgrade-desc{font-size:0.85rem;color:var(--stats-color);line-height:1.4}
+.upgrade-hotkey{position:absolute;top:8px;right:10px;font-family:var(--title-font);font-size:0.75rem;color:#777;border:1px solid #555;border-radius:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.upgrade-card{position:relative}
+.upgrade-card.selected{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);transform:translateY(-4px)}
+#touch-zone{position:fixed;bottom:0;left:0;width:200px;height:200px;z-index:15;pointer-events:auto;display:none}
+@media(hover:none)and(pointer:coarse){#touch-zone{display:block}}
+@media(max-width:600px){.upgrade-cards{flex-direction:column;align-items:center}.upgrade-card{width:85%}.weapon-slot{width:28px;height:28px;font-size:14px}}
+.pause-header{display:flex;gap:24px;justify-content:center;align-items:center;padding:12px 20px;background:rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.1);width:100%;max-width:700px;border-radius:8px 8px 0 0;font-family:inherit;font-size:0.95rem;color:#ccc}
+.pause-stat{display:flex;align-items:center;gap:6px}
+.pause-stat-icon{font-weight:bold;font-size:1.1rem}
+.pause-tabs{display:flex;gap:0;width:100%;max-width:700px;border-bottom:2px solid rgba(255,255,255,0.1)}
+.pause-tab{flex:1;padding:12px 16px;border:none;background:rgba(255,255,255,0.03);color:#888;font-family:inherit;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.05em;pointer-events:auto}
+.pause-tab:hover{background:rgba(255,255,255,0.08);color:#ccc}
+.pause-tab.active{background:rgba(255,255,255,0.1);color:#ffd700;border-bottom:2px solid #ffd700}
+.tab-badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.75rem;margin-left:4px;vertical-align:middle}
+.pause-content{width:100%;max-width:700px;padding:20px;min-height:200px;pointer-events:auto}
+.pause-resume-panel{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 0}
+.inv-section-label{font-family:inherit;font-size:0.85rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 8px}
+.inv-equipped-row{display:flex;gap:10px;flex-wrap:wrap}
+.inv-slot{border:2px solid #333;background:rgba(10,10,25,0.8);border-radius:6px;padding:10px;text-align:center;transition:all 0.2s}
+.inv-slot.equipped{width:140px;min-height:80px;cursor:pointer}
+.inv-slot.equipped.filled:hover{border-color:#ff6666;box-shadow:0 0 12px rgba(255,100,100,0.3)}
+.inv-slot.empty{opacity:0.4}
+.inv-slot-icon{font-size:1.8rem;margin-bottom:4px}
+.inv-slot-name{font-family:inherit;font-size:0.8rem;font-weight:700;margin-bottom:2px}
+.inv-slot-desc{font-size:0.7rem;color:#888;line-height:1.3}
+.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.inv-slot.grid-slot{min-height:90px}
+.inv-slot.grid-slot.filled{border-color:#555}
+.inv-count{font-size:0.7rem;color:#aaa;margin-left:2px}
+.inv-slot-actions{display:flex;gap:4px;margin-top:6px;justify-content:center;flex-wrap:wrap}
+.inv-btn{font-family:inherit;font-size:0.7rem;padding:4px 10px;border:1px solid;border-radius:3px;cursor:pointer;transition:all 0.15s;pointer-events:auto}
+.inv-btn.equip{border-color:#2ecc71;background:rgba(46,204,113,0.15);color:#2ecc71}
+.inv-btn.equip:hover{background:rgba(46,204,113,0.3)}
+.inv-btn.salvage{border-color:#e67e22;background:rgba(230,126,34,0.1);color:#e67e22}
+.inv-btn.salvage:hover{background:rgba(230,126,34,0.25)}
+.inv-equipped-badge{font-size:0.65rem;color:#2ecc71;border:1px solid #2ecc71;border-radius:3px;padding:2px 6px}
+.skills-header{font-family:inherit;font-size:1rem;color:#ccc;margin-bottom:16px;text-align:center}
+.skill-branch{margin-bottom:16px}
+.skill-branch-label{font-family:inherit;font-size:0.9rem;font-weight:700;margin-bottom:8px;padding-left:4px}
+.skill-branch-nodes{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.skill-node{border:2px solid #333;background:rgba(10,10,25,0.8);border-radius:6px;padding:10px 14px;min-width:120px;text-align:center;position:relative;transition:all 0.2s}
+.skill-node.unlocked{border-color:var(--branch-color);background:rgba(255,255,255,0.05);box-shadow:0 0 10px rgba(255,255,255,0.05)}
+.skill-node.available{border-color:var(--branch-color);cursor:pointer;animation:skillPulse 1.5s ease-in-out infinite}
+.skill-node.available:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(255,215,0,0.3)}
+.skill-node.locked{opacity:0.35}
+.skill-node-name{font-family:inherit;font-size:0.8rem;font-weight:700;color:#ddd;margin-bottom:2px}
+.skill-node-desc{font-size:0.65rem;color:#888;line-height:1.3}
+.skill-node-badge{position:absolute;top:4px;right:6px;color:#2ecc71;font-weight:bold;font-size:0.9rem}
+.skill-connector{width:20px;height:3px;flex-shrink:0}
+@keyframes skillPulse{0%,100%{box-shadow:0 0 6px rgba(255,215,0,0.1)}50%{box-shadow:0 0 16px rgba(255,215,0,0.3)}}
+@media(max-width:600px){.inv-grid{grid-template-columns:repeat(2,1fr)}.inv-equipped-row{justify-content:center}.skill-branch-nodes{flex-direction:column;align-items:stretch}.skill-connector{width:3px;height:12px;align-self:center}.pause-header{flex-wrap:wrap;gap:12px}}
+</style>
+</head>
+<body style="display:none">
+<canvas id="game-canvas"></canvas>
+<div id="ui-overlay">
+  <div id="xp-bar-container"><div id="xp-bar"></div></div>
+  <div id="hud">
+    <div id="hud-left">
+      <div class="hud-text hud-big" id="hud-level">Level 1</div>
+      <div class="hud-text" id="hud-time">0:00</div>
+      <div class="hud-text" id="hud-kills">Kills: 0</div>
+    </div>
+    <div id="hud-right">
+      <div class="hud-text" id="hud-wave">Wave 1</div>
+    </div>
+  </div>
+  <div id="hp-bar-container"><div id="hp-bar"></div></div>
+  <div id="weapon-bar"></div>
+</div>
+<div id="touch-zone"></div>
+
+<div id="title-screen">
+  <div class="screen-title" id="ui-title"></div>
+  <div class="screen-subtitle" id="ui-subtitle"></div>
+  <button class="btn" id="btn-start">Begin</button>
+  <div style="margin-top:24px;font-size:0.85rem;color:var(--hint-color);text-align:center">WASD / Arrows to move &bull; Auto-attack &bull; Survive</div>
+</div>
+
+<div id="game-over-screen">
+  <div class="screen-title" id="ui-gameover-title"></div>
+  <div id="go-stats"></div>
+  <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <a href="index.html" class="btn" style="text-decoration:none">Choose Class</a>
+    <button class="btn" id="btn-restart" style="opacity:0.7">Retry</button>
+  </div>
+</div>
+
+<div id="level-up-screen">
+  <div class="screen-title" style="font-size:clamp(1.5rem,5vw,2.5rem)">Level Up</div>
+  <div class="screen-subtitle" id="ui-levelup-subtitle"></div>
+  <div class="upgrade-cards" id="upgrade-cards"></div>
+</div>
+
+<div id="pause-screen"></div>
+
+<div id="victory-screen" style="display:none">
+  <div class="screen-title" id="ui-victory-title">World Complete!</div>
+  <div class="screen-subtitle" id="ui-victory-subtitle"></div>
+  <div id="victory-stats"></div>
+  <div id="victory-next" style="margin-top:24px;font-size:1rem"></div>
+</div>
+
+<script>
+// ============================================================
+// ARENA BOOTSTRAP — loads theme + engine based on ?world= param
+// ============================================================
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const world = params.get('world') || 'cyberpunk';
+
+  // Load theme JS
+  const themeScript = document.createElement('script');
+  themeScript.src = 'themes/' + world + '.js';
+  themeScript.onload = function() {
+    const T = window.THEME;
+    if (!T) { document.body.style.display = ''; return; }
+
+    // Apply CSS custom properties
+    const root = document.documentElement;
+    const vars = T.cssVars;
+    for (const key in vars) {
+      root.style.setProperty(key, vars[key]);
+    }
+
+    // Apply Google Fonts
+    document.getElementById('theme-fonts').href = T.ui.googleFontsUrl;
+
+    // Apply UI text
+    document.title = T.ui.title;
+    document.getElementById('ui-title').textContent = T.ui.title;
+    document.getElementById('ui-subtitle').textContent = T.ui.subtitle;
+    document.getElementById('ui-gameover-title').textContent = T.ui.gameOverTitle;
+    document.getElementById('ui-levelup-subtitle').textContent = T.ui.levelUpSubtitle;
+    document.getElementById('ui-victory-title').style.color = T.ui.victoryTitleColor;
+    document.getElementById('ui-victory-subtitle').textContent = T.ui.victorySubtitle;
+    const victoryNext = document.getElementById('victory-next');
+    victoryNext.textContent = T.ui.victoryNextText;
+    victoryNext.style.color = T.ui.victoryNextColor;
+
+    // Show body
+    document.body.style.display = '';
+
+    // Load playback engine, then game engine
+    const playbackScript = document.createElement('script');
+    playbackScript.src = '../audio-tracker/playback-engine.js';
+    playbackScript.onload = function() {
+      const engineScript = document.createElement('script');
+      engineScript.src = 'engine.js';
+      document.body.appendChild(engineScript);
+    };
+    document.body.appendChild(playbackScript);
+  };
+  themeScript.onerror = function() {
+    document.title = 'Theme Not Found';
+    document.body.style.display = '';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-size:1.5rem;background:#111">Theme "' + world + '" not found. <a href="index.html" style="color:#ffd700;margin-left:8px">Back to menu</a></div>';
+  };
+  document.body.appendChild(themeScript);
+})();
+</script>
+</body>
+</html>
