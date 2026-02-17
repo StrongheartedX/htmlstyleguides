@@ -6,315 +6,384 @@
     <title>Survivors Arena</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --blood: #8b0000;
-            --gold: #d4af37;
+            --pixel-font: 'Press Start 2P', monospace;
+            --ui-font: 'Cinzel', serif;
             --bone: #e8dcc8;
+            --gold: #d4af37;
             --shadow: #0a0a0f;
             --mist: #b0a090;
-            --cyber-pink: #ff2d95;
-            --cyber-blue: #00f0ff;
-            --cosmic-purple: #9b30ff;
-            --cosmic-blue: #4169e1;
-            --forest-green: #2d8b46;
-            --forest-gold: #c8a84e;
-            --squad-orange: #e8721a;
-            --squad-bronze: #cd853f;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Crimson Text', Georgia, serif;
+            background: #000;
             color: var(--bone);
-            background: var(--shadow);
-            min-height: 100vh;
-            overflow-x: hidden;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            font-family: var(--pixel-font);
         }
 
-        /* Subtle vignette */
-        body::after {
-            content: '';
+        /* ========== CANVAS ========== */
+        #camp-canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            cursor: default;
+        }
+
+        /* ========== HUD BAR ========== */
+        .hud-bar {
             position: fixed;
-            inset: 0;
-            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
-            pointer-events: none;
-            z-index: 0;
+            top: 0; left: 0; right: 0;
+            height: 36px;
+            background: rgba(5,5,10,0.85);
+            border-bottom: 2px solid rgba(212,175,55,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 10;
+            font-size: 8px;
         }
 
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 0 24px;
-            position: relative;
-            z-index: 1;
-        }
+        .hud-left, .hud-right { display: flex; align-items: center; gap: 12px; }
 
-        /* ==================== BACK LINK ==================== */
-        .back-link {
-            display: inline-block;
-            font-family: 'Cinzel', serif;
-            font-size: 0.8rem;
-            font-weight: 700;
+        .hud-back {
             color: var(--gold);
             text-decoration: none;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            padding: 8px 16px;
-            border: 1px solid rgba(212,175,55,0.3);
-            background: rgba(139,0,0,0.15);
-            transition: all 0.2s;
-            margin-bottom: 24px;
+            letter-spacing: 0.08em;
+            transition: color 0.2s;
         }
+        .hud-back:hover { color: #fff; }
 
-        .back-link:hover {
-            background: rgba(139,0,0,0.4);
-            border-color: var(--gold);
-            box-shadow: 0 0 16px rgba(212,175,55,0.2);
-        }
-
-        .back-link::before {
-            content: '\2190  ';
-        }
-
-        /* ==================== HEADER ==================== */
-        .header {
-            padding: 48px 0 24px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-family: 'Cinzel', serif;
-            font-size: clamp(2.4rem, 7vw, 3.8rem);
-            font-weight: 900;
-            color: var(--blood);
-            text-shadow:
-                0 0 40px rgba(139,0,0,0.5),
-                0 0 80px rgba(139,0,0,0.2);
-            letter-spacing: 0.06em;
-            margin-bottom: 8px;
-        }
-
-        .header-tagline {
-            font-family: 'Cinzel', serif;
-            font-size: clamp(0.9rem, 2.2vw, 1.15rem);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--gold);
-            opacity: 0.7;
-        }
-
-        /* Decorative divider */
-        .ornament {
-            text-align: center;
-            padding: 16px 0;
-            color: var(--gold);
-            opacity: 0.3;
-            font-size: 1.2rem;
-            letter-spacing: 0.4em;
-        }
-
-        /* ==================== CAMPAIGN PANEL ==================== */
-        .campaign-panel {
-            border: 1px solid rgba(212,175,55,0.25);
-            background: rgba(15,10,10,0.9);
-            padding: 28px 32px;
-            margin-bottom: 12px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .campaign-panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--blood), var(--gold), var(--blood));
-            opacity: 0.6;
-        }
-
-        .campaign-label {
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--gold);
-            opacity: 0.6;
-            margin-bottom: 12px;
-        }
-
-        .campaign-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.6rem;
-            font-weight: 700;
+        .hud-title {
             color: var(--bone);
+            letter-spacing: 0.12em;
+            font-size: 9px;
+        }
+
+        .hud-gold {
+            color: var(--gold);
+            letter-spacing: 0.05em;
+        }
+
+        .hud-btn {
+            background: none;
+            border: 1px solid rgba(212,175,55,0.3);
+            color: var(--gold);
+            font-family: var(--pixel-font);
+            font-size: 8px;
+            padding: 3px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hud-btn:hover {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+        }
+
+        /* ========== INFO PANEL ========== */
+        .info-panel {
+            position: fixed;
+            top: 36px; right: 0;
+            width: 300px;
+            height: calc(100vh - 36px);
+            background: rgba(8,6,12,0.92);
+            border-left: 2px solid rgba(212,175,55,0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 9;
+            overflow-y: auto;
+            padding: 20px 16px;
+        }
+
+        .info-panel.open { transform: translateX(0); }
+
+        .info-close {
+            position: absolute;
+            top: 8px; right: 8px;
+            background: none;
+            border: none;
+            color: var(--mist);
+            font-family: var(--pixel-font);
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .info-close:hover { color: #fff; }
+
+        .info-icon { font-size: 32px; margin-bottom: 8px; }
+        .info-class-name {
+            font-family: var(--pixel-font);
+            font-size: 12px;
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
+        }
+        .info-class-desc {
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            color: rgba(232,220,200,0.55);
+            line-height: 1.6;
             margin-bottom: 16px;
         }
 
-        .campaign-title .world-name {
+        .info-section-label {
+            font-family: var(--pixel-font);
+            font-size: 6px;
             color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 8px;
+            opacity: 0.7;
         }
 
-        /* World pips */
-        .world-pips {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .world-pip {
+        /* Stat bars */
+        .info-stat-row {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            padding: 4px 12px;
-            border: 1px solid rgba(212,175,55,0.15);
-            background: rgba(10,10,15,0.6);
-            color: var(--mist);
-            opacity: 0.4;
-            transition: all 0.3s;
+            margin-bottom: 5px;
         }
-
-        .world-pip.completed {
-            opacity: 0.8;
-            border-color: rgba(212,175,55,0.3);
-            color: var(--gold);
-        }
-
-        .world-pip.completed::before {
-            content: '\2713';
-            color: var(--gold);
-        }
-
-        .world-pip.current {
-            opacity: 1;
-            border-color: var(--gold);
-            color: var(--bone);
-            background: rgba(139,0,0,0.25);
-            box-shadow: 0 0 12px rgba(139,0,0,0.3);
-            animation: pip-pulse 2s ease-in-out infinite;
-        }
-
-        .world-pip.current::before {
-            content: '\25B6';
-            font-size: 0.6rem;
-            color: var(--gold);
-        }
-
-        .world-pip.locked::before {
-            content: '\1F512';
-            font-size: 0.6rem;
-        }
-
-        @keyframes pip-pulse {
-            0%, 100% { box-shadow: 0 0 12px rgba(139,0,0,0.3); }
-            50% { box-shadow: 0 0 20px rgba(139,0,0,0.5), 0 0 4px rgba(212,175,55,0.3); }
-        }
-
-        /* Campaign stats */
-        .campaign-stats {
-            display: flex;
-            gap: 24px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .campaign-stat {
-            font-size: 0.85rem;
+        .info-stat-label {
+            font-family: var(--pixel-font);
+            font-size: 6px;
             color: rgba(232,220,200,0.5);
+            width: 42px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .info-stat-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+        }
+        .info-stat-fill {
+            height: 100%;
+            transition: width 0.4s;
+        }
+        .info-stat-val {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            color: rgba(232,220,200,0.4);
+            width: 28px;
         }
 
-        .campaign-stat strong {
-            color: var(--bone);
-            font-weight: 700;
-        }
-
-        /* Campaign buttons */
-        .campaign-btn {
-            display: inline-block;
-            font-family: 'Cinzel', serif;
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--bone);
-            text-decoration: none;
-            padding: 10px 28px;
-            border: 1px solid var(--gold);
-            background: rgba(139,0,0,0.3);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .campaign-btn:hover {
-            background: rgba(139,0,0,0.6);
-            box-shadow: 0 0 20px rgba(139,0,0,0.4), 0 0 4px rgba(212,175,55,0.2);
-            transform: translateY(-1px);
-        }
-
-        .campaign-complete-badge {
-            display: inline-block;
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--gold);
-            padding: 4px 14px;
-            border: 1px solid var(--gold);
-            background: rgba(212,175,55,0.1);
-            margin-bottom: 12px;
-        }
-
-        /* ==================== SAVE MANAGEMENT ==================== */
-        .save-actions {
+        /* Weapon tags */
+        .info-weapons {
             display: flex;
-            gap: 12px;
             flex-wrap: wrap;
-            margin-bottom: 8px;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        .info-weapon-tag {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            padding: 3px 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03);
+            color: rgba(232,220,200,0.6);
         }
 
-        .save-btn {
-            font-family: 'Cinzel', serif;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--mist);
-            background: none;
-            border: 1px solid rgba(176,160,144,0.2);
-            padding: 5px 12px;
+        /* Passive */
+        .info-passive-name {
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            margin-bottom: 2px;
+        }
+        .info-passive-desc {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            color: rgba(232,220,200,0.45);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        /* Play button */
+        .info-play-btn {
+            display: block;
+            width: 100%;
+            font-family: var(--pixel-font);
+            font-size: 9px;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid var(--gold);
+            background: rgba(139,0,0,0.3);
+            color: var(--bone);
             cursor: pointer;
+            text-decoration: none;
+            letter-spacing: 0.08em;
             transition: all 0.2s;
         }
+        .info-play-btn:hover {
+            background: rgba(139,0,0,0.6);
+            box-shadow: 0 0 16px rgba(212,175,55,0.3);
+        }
+        .info-play-btn.locked {
+            opacity: 0.35;
+            cursor: not-allowed;
+            border-color: rgba(176,160,144,0.2);
+            background: rgba(10,10,15,0.5);
+        }
 
-        .save-btn:hover {
+        .info-lock-msg {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            color: rgba(176,160,144,0.4);
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* ========== SETTINGS PANEL ========== */
+        .settings-panel {
+            position: fixed;
+            top: 36px; right: 0;
+            width: 280px;
+            background: rgba(8,6,12,0.95);
+            border-left: 2px solid rgba(212,175,55,0.3);
+            border-bottom: 2px solid rgba(212,175,55,0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 11;
+            padding: 16px;
+        }
+        .settings-panel.open { transform: translateX(0); }
+
+        .settings-title {
+            font-family: var(--pixel-font);
+            font-size: 9px;
+            color: var(--gold);
+            margin-bottom: 14px;
+            letter-spacing: 0.08em;
+        }
+
+        .settings-btn {
+            display: block;
+            width: 100%;
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(212,175,55,0.25);
+            background: rgba(15,10,10,0.8);
+            color: var(--mist);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .settings-btn:hover {
             border-color: var(--gold);
             color: var(--gold);
         }
-
-        .save-btn.danger:hover {
-            border-color: var(--blood);
+        .settings-btn.danger:hover {
+            border-color: #cc3333;
             color: #ff4444;
         }
 
-        /* Import modal */
+        .settings-divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin: 12px 0;
+        }
+
+        .settings-link {
+            display: block;
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            color: var(--mist);
+            text-decoration: none;
+            padding: 6px 0;
+            transition: color 0.2s;
+        }
+        .settings-link:hover { color: var(--gold); }
+
+        /* ========== HALL OF FAME PANEL ========== */
+        .hof-panel {
+            position: fixed;
+            top: 36px; left: 50%;
+            transform: translateX(-50%) translateY(-120%);
+            width: 520px;
+            max-width: 92vw;
+            background: rgba(8,6,12,0.95);
+            border: 2px solid rgba(212,175,55,0.3);
+            z-index: 11;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .hof-panel.open { transform: translateX(-50%) translateY(8px); }
+
+        .hof-title {
+            font-family: var(--pixel-font);
+            font-size: 10px;
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 16px;
+            letter-spacing: 0.1em;
+        }
+
+        .hof-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .hof-card {
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(10,10,15,0.6);
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .hof-card.played { border-color: rgba(212,175,55,0.2); }
+        .hof-card.unplayed { opacity: 0.35; }
+
+        .hof-card-name {
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            margin-bottom: 6px;
+        }
+        .hof-stars {
+            font-size: 10px;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+        }
+        .hof-star-on { color: var(--gold); }
+        .hof-star-off { color: rgba(176,160,144,0.15); }
+
+        .hof-stat {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            color: rgba(232,220,200,0.5);
+            line-height: 1.8;
+        }
+        .hof-stat strong { color: var(--bone); }
+
+        .hof-no-data {
+            font-family: var(--pixel-font);
+            font-size: 6px;
+            color: rgba(176,160,144,0.3);
+            font-style: italic;
+        }
+
+        .hof-close {
+            display: block;
+            margin: 14px auto 0;
+            font-family: var(--pixel-font);
+            font-size: 7px;
+            background: none;
+            border: 1px solid rgba(212,175,55,0.3);
+            color: var(--mist);
+            padding: 6px 16px;
+            cursor: pointer;
+        }
+        .hof-close:hover { color: var(--gold); border-color: var(--gold); }
+
+        /* ========== IMPORT MODAL ========== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -324,1259 +393,1209 @@
             align-items: center;
             justify-content: center;
         }
-
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
 
         .modal {
             background: #111;
-            border: 1px solid rgba(212,175,55,0.3);
-            padding: 28px;
-            max-width: 480px;
+            border: 2px solid rgba(212,175,55,0.3);
+            padding: 20px;
+            max-width: 420px;
             width: 90%;
         }
-
         .modal h3 {
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
+            font-family: var(--pixel-font);
+            font-size: 9px;
             color: var(--gold);
             margin-bottom: 12px;
         }
-
         .modal textarea {
             width: 100%;
-            height: 120px;
+            height: 100px;
             background: #0a0a0f;
             border: 1px solid rgba(212,175,55,0.2);
             color: var(--bone);
             font-family: monospace;
-            font-size: 0.8rem;
-            padding: 10px;
+            font-size: 10px;
+            padding: 8px;
             resize: vertical;
             margin-bottom: 12px;
         }
-
         .modal-btns {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: flex-end;
         }
 
-        /* Toast notification */
+        /* ========== TOAST ========== */
         .toast {
             position: fixed;
-            bottom: 24px;
+            bottom: 20px;
             left: 50%;
-            transform: translateX(-50%) translateY(60px);
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            transform: translateX(-50%) translateY(50px);
+            font-family: var(--pixel-font);
+            font-size: 7px;
             color: var(--bone);
-            background: rgba(20,15,15,0.95);
+            background: rgba(15,10,10,0.95);
             border: 1px solid rgba(212,175,55,0.3);
-            padding: 10px 24px;
+            padding: 8px 18px;
             z-index: 200;
             opacity: 0;
             transition: all 0.3s;
             pointer-events: none;
         }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* ==================== CLASS SELECT SECTION ==================== */
-        .section-label {
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--gold);
-            text-align: center;
-            margin-bottom: 24px;
-            opacity: 0.6;
-        }
-
-        .class-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        /* ==================== CLASS CARD ==================== */
-        .class-card {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 2px;
-            overflow: hidden;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .class-card:hover {
-            transform: translateY(-4px);
-        }
-
-        /* Theme-specific card backgrounds and borders */
-        .class-card.card-gunner {
-            background: linear-gradient(160deg, #0a0a2e 0%, #0d0828 60%, #12082a 100%);
-        }
-        .class-card.card-gunner:hover {
-            border-color: var(--cyber-blue);
-            box-shadow: 0 0 30px rgba(0,240,255,0.15), 0 0 60px rgba(255,45,149,0.08), inset 0 0 40px rgba(0,240,255,0.03);
-        }
-
-        .class-card.card-darkknight {
-            background: linear-gradient(160deg, #1a1a2e 0%, #18121e 60%, #1c0f1a 100%);
-        }
-        .class-card.card-darkknight:hover {
-            border-color: var(--gold);
-            box-shadow: 0 0 30px rgba(139,0,0,0.2), 0 0 60px rgba(212,175,55,0.08), inset 0 0 40px rgba(139,0,0,0.03);
-        }
-
-        .class-card.card-ranger {
-            background: linear-gradient(160deg, #0a1a0a 0%, #0c1a0e 60%, #0e1c0a 100%);
-        }
-        .class-card.card-ranger:hover {
-            border-color: var(--forest-green);
-            box-shadow: 0 0 30px rgba(45,139,70,0.15), 0 0 60px rgba(200,168,78,0.08), inset 0 0 40px rgba(45,139,70,0.03);
-        }
-
-        .class-card.card-warlock {
-            background: linear-gradient(160deg, #0a0a1e 0%, #0e0820 60%, #10082a 100%);
-        }
-        .class-card.card-warlock:hover {
-            border-color: var(--cosmic-purple);
-            box-shadow: 0 0 30px rgba(155,48,255,0.15), 0 0 60px rgba(65,105,225,0.08), inset 0 0 40px rgba(155,48,255,0.03);
-        }
-
-        /* Top accent bar per class */
-        .class-card-accent {
-            height: 3px;
-            width: 100%;
-        }
-        .card-gunner .class-card-accent {
-            background: linear-gradient(90deg, var(--cyber-pink), var(--cyber-blue));
-        }
-        .card-darkknight .class-card-accent {
-            background: linear-gradient(90deg, var(--blood), var(--gold));
-        }
-        .card-ranger .class-card-accent {
-            background: linear-gradient(90deg, var(--forest-green), var(--forest-gold));
-        }
-        .card-warlock .class-card-accent {
-            background: linear-gradient(90deg, var(--cosmic-purple), var(--cosmic-blue));
-        }
-
-        .class-card-inner {
-            padding: 24px 22px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            flex: 1;
-        }
-
-        /* Card header: icon + name + desc */
-        .class-card-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-
-        .class-icon {
-            font-size: 2.4rem;
-            line-height: 1;
-            flex-shrink: 0;
-            filter: drop-shadow(0 0 8px rgba(255,255,255,0.15));
-        }
-
-        .class-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .class-name {
-            font-family: 'Cinzel', serif;
-            font-size: 1.35rem;
-            font-weight: 900;
-            letter-spacing: 0.04em;
-            margin-bottom: 4px;
-        }
-
-        .card-gunner .class-name { color: var(--cyber-blue); }
-        .card-darkknight .class-name { color: var(--gold); }
-        .card-ranger .class-name { color: var(--forest-green); }
-        .card-warlock .class-name { color: var(--cosmic-purple); }
-
-        .class-desc {
-            font-size: 0.88rem;
-            color: rgba(232,220,200,0.55);
-            line-height: 1.45;
-        }
-
-        /* ==================== STAT BARS ==================== */
-        .stat-bars {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .stat-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stat-label {
-            font-family: 'Cinzel', serif;
-            font-size: 0.62rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: rgba(232,220,200,0.4);
-            width: 52px;
-            flex-shrink: 0;
-            text-align: right;
-        }
-
-        .stat-track {
-            flex: 1;
-            height: 6px;
-            background: rgba(255,255,255,0.06);
-            border-radius: 3px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .stat-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.6s ease;
-        }
-
-        .card-gunner .stat-fill { background: linear-gradient(90deg, var(--cyber-pink), var(--cyber-blue)); }
-        .card-darkknight .stat-fill { background: linear-gradient(90deg, var(--blood), var(--gold)); }
-        .card-ranger .stat-fill { background: linear-gradient(90deg, var(--forest-green), var(--forest-gold)); }
-        .card-warlock .stat-fill { background: linear-gradient(90deg, var(--cosmic-purple), var(--cosmic-blue)); }
-
-        .stat-value {
-            font-family: 'Cinzel', serif;
-            font-size: 0.6rem;
-            font-weight: 700;
-            color: rgba(232,220,200,0.35);
-            width: 28px;
-            flex-shrink: 0;
-        }
-
-        /* ==================== WEAPONS & PASSIVE ==================== */
-        .class-card-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-top: 4px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .meta-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .meta-label {
-            font-family: 'Cinzel', serif;
-            font-size: 0.58rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: rgba(232,220,200,0.3);
-            flex-shrink: 0;
-        }
-
-        .weapon-tags {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .weapon-tag {
-            font-size: 0.72rem;
-            padding: 2px 8px;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: rgba(232,220,200,0.5);
-        }
-
-        .passive-info {
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .passive-name {
-            font-family: 'Cinzel', serif;
-            font-size: 0.72rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .card-gunner .passive-name { color: var(--cyber-blue); }
-        .card-darkknight .passive-name { color: var(--gold); }
-        .card-ranger .passive-name { color: var(--forest-green); }
-        .card-warlock .passive-name { color: var(--cosmic-purple); }
-
-        .passive-desc {
-            font-size: 0.7rem;
-            color: rgba(232,220,200,0.35);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Play prompt */
-        .class-card-play {
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            text-align: center;
-            padding: 10px;
-            opacity: 0;
-            transition: opacity 0.25s;
-        }
-
-        .card-gunner .class-card-play { color: var(--cyber-blue); }
-        .card-darkknight .class-card-play { color: var(--gold); }
-        .card-ranger .class-card-play { color: var(--forest-green); }
-        .card-warlock .class-card-play { color: var(--cosmic-purple); }
-
-        .class-card:hover .class-card-play {
-            opacity: 1;
-        }
-
-        /* Card badge (campaign state) */
-        .card-badge {
-            font-family: 'Cinzel', serif;
-            font-size: 0.58rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            padding: 3px 10px;
-            position: absolute;
-            top: 14px;
-            right: 12px;
-            z-index: 2;
-        }
-
-        .badge-completed {
-            color: var(--gold);
-            border: 1px solid rgba(212,175,55,0.4);
-            background: rgba(212,175,55,0.1);
-        }
-
-        .badge-current {
-            color: var(--bone);
-            border: 1px solid var(--gold);
-            background: rgba(139,0,0,0.3);
-            animation: pip-pulse 2s ease-in-out infinite;
-        }
-
-        .badge-locked {
-            color: var(--mist);
-            border: 1px solid rgba(176,160,144,0.15);
-            background: rgba(10,10,15,0.5);
-            opacity: 0.5;
-        }
-
-        /* ==================== OTHER GAMES SECTION ==================== */
-        .section-divider {
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--mist);
-            opacity: 0.4;
-            padding: 8px 0 12px;
-            border-top: 1px solid rgba(176,160,144,0.1);
-            margin-top: 8px;
-        }
-
-        .other-game-card {
-            display: flex;
-            border: 1px solid rgba(212,175,55,0.15);
-            background: rgba(15,10,10,0.8);
-            transition: all 0.25s;
-            position: relative;
-            overflow: hidden;
-            text-decoration: none;
-            color: inherit;
-            margin-bottom: 20px;
-        }
-
-        .other-game-card:hover {
-            border-color: var(--squad-orange);
-            box-shadow: 0 0 30px rgba(232,114,26,0.2);
-            transform: translateY(-2px);
-        }
-
-        .other-game-stripe {
-            width: 6px;
-            flex-shrink: 0;
-            background: linear-gradient(180deg, var(--squad-orange), var(--squad-bronze));
-        }
-
-        .other-game-body {
-            flex: 1;
-            padding: 20px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .other-game-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 16px;
-        }
-
-        .other-game-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.3rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            color: var(--squad-orange);
-        }
-
-        .other-game-subtitle {
-            font-style: italic;
-            color: var(--mist);
-            font-size: 0.9rem;
-        }
-
-        .other-game-desc {
-            font-size: 0.9rem;
-            color: rgba(232,220,200,0.5);
-            line-height: 1.5;
-        }
-
-        .other-game-tags {
-            display: flex;
-            gap: 8px;
-            margin-top: 4px;
-        }
-
-        .tag {
-            font-family: 'Cinzel', serif;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            padding: 3px 10px;
-            border: 1px solid rgba(212,175,55,0.2);
-            color: var(--gold);
-            opacity: 0.7;
-        }
-
-        .play-arrow {
-            font-family: 'Cinzel', serif;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--gold);
-            opacity: 0.5;
-            flex-shrink: 0;
-            transition: opacity 0.2s;
-        }
-
-        .other-game-card:hover .play-arrow {
-            opacity: 1;
-        }
-
-        /* ==================== NAV LINKS (SHOP) ==================== */
-        .nav-links {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-
-        .nav-link {
-            font-family: 'Cinzel', serif;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--mist);
-            text-decoration: none;
-            padding: 5px 14px;
-            border: 1px solid rgba(176,160,144,0.15);
-            transition: all 0.2s;
-        }
-
-        .nav-link:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
-        /* ==================== FOOTER ==================== */
-        .footer {
-            padding: 32px 0;
-            border-top: 1px solid rgba(212,175,55,0.1);
-            text-align: center;
-        }
-
-        .footer-text {
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--mist);
-            opacity: 0.4;
-        }
-
-        /* ==================== RESPONSIVE ==================== */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 16px;
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 600px) {
+            .info-panel {
+                top: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 55vh;
+                transform: translateY(100%);
+                border-left: none;
+                border-top: 2px solid rgba(212,175,55,0.3);
             }
+            .info-panel.open { transform: translateY(0); }
 
-            .header {
-                padding: 36px 0 20px;
-            }
+            .hof-grid { grid-template-columns: repeat(2, 1fr); }
 
-            .class-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-
-            .class-card-inner {
-                padding: 20px 18px 16px;
-            }
-
-            .class-icon {
-                font-size: 2rem;
-            }
-
-            .class-name {
-                font-size: 1.15rem;
-            }
-
-            .campaign-panel {
-                padding: 20px;
-            }
-
-            .campaign-title {
-                font-size: 1.3rem;
-            }
-
-            .campaign-stats {
-                gap: 12px 20px;
-            }
-
-            .world-pips {
-                gap: 6px;
-            }
-
-            .other-game-body {
-                padding: 16px 18px;
-            }
-
-            .other-game-title {
-                font-size: 1.1rem;
-            }
-        }
-
-        /* ==================== HALL OF FAME ==================== */
-        .hall-of-fame {
-            border: 1px solid rgba(212,175,55,0.2);
-            background: rgba(15,10,10,0.9);
-            padding: 24px 28px;
-            margin-top: 8px;
-            margin-bottom: 8px;
-            position: relative;
-        }
-
-        .hall-of-fame::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--blood), var(--gold), var(--blood));
-            opacity: 0.4;
-        }
-
-        .hof-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--gold);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-
-        .hof-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
-
-        .hof-class {
-            border: 1px solid rgba(255,255,255,0.06);
-            background: rgba(10,10,15,0.5);
-            padding: 14px 12px;
-            text-align: center;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .hof-class.played {
-            border-color: rgba(212,175,55,0.15);
-        }
-
-        .hof-class.unplayed {
-            opacity: 0.35;
-        }
-
-        .hof-class-name {
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
-
-        .hof-class.card-gunner .hof-class-name { color: var(--cyber-pink); }
-        .hof-class.card-darkknight .hof-class-name { color: var(--blood); }
-        .hof-class.card-ranger .hof-class-name { color: var(--forest-green); }
-        .hof-class.card-warlock .hof-class-name { color: var(--cosmic-purple); }
-
-        .hof-stars {
-            font-size: 0.9rem;
-            margin-bottom: 6px;
-            letter-spacing: 2px;
-            min-height: 1.2em;
-        }
-
-        .hof-star-filled { color: var(--gold); }
-        .hof-star-empty { color: rgba(176,160,144,0.15); }
-
-        .hof-stat {
-            font-size: 0.78rem;
-            color: rgba(232,220,200,0.5);
-            line-height: 1.6;
-        }
-
-        .hof-stat strong {
-            color: var(--bone);
-            font-weight: 700;
-        }
-
-        .hof-no-data {
-            font-size: 0.72rem;
-            font-style: italic;
-            color: rgba(176,160,144,0.3);
-            margin-top: 4px;
-        }
-
-        @media (max-width: 768px) {
-            .hof-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .hall-of-fame {
-                padding: 18px 16px;
-            }
+            .hud-title { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <div class="container">
-            <a href="../index.html" class="back-link">Games Arcade</a>
-            <h1>Survivors Arena</h1>
-            <p class="header-tagline">Choose Your Class</p>
-        </div>
-    </header>
+<!-- HUD Bar -->
+<div class="hud-bar">
+    <div class="hud-left">
+        <a href="../index.html" class="hud-back">&larr; ARCADE</a>
+        <span class="hud-title">SURVIVORS ARENA</span>
+    </div>
+    <div class="hud-right">
+        <span class="hud-gold" id="hud-gold"></span>
+        <button class="hud-btn" id="btn-hof" title="Hall of Fame">FAME</button>
+        <button class="hud-btn" id="btn-settings" title="Settings">GEAR</button>
+    </div>
+</div>
 
-    <div class="ornament">&diams; &diams; &diams;</div>
+<!-- Game Canvas -->
+<canvas id="camp-canvas"></canvas>
 
-    <main>
-        <div class="container">
+<!-- Character Info Panel -->
+<div class="info-panel" id="info-panel">
+    <button class="info-close" id="info-close">&times;</button>
+    <div id="info-content"></div>
+</div>
 
-            <!-- Campaign Panel (populated by JS) -->
-            <div id="campaign-panel" class="campaign-panel"></div>
+<!-- Settings Panel -->
+<div class="settings-panel" id="settings-panel">
+    <div class="settings-title">SETTINGS</div>
+    <button class="settings-btn" id="btn-export">EXPORT SAVE</button>
+    <button class="settings-btn" id="btn-import">IMPORT SAVE</button>
+    <button class="settings-btn danger" id="btn-reset">RESET PROGRESS</button>
+    <hr class="settings-divider">
+    <a href="../squad-survivors.html" class="settings-link">&rarr; SQUAD SURVIVORS</a>
+    <a href="../index.html" class="settings-link">&rarr; GAMES ARCADE</a>
+</div>
 
-            <!-- Save Management -->
-            <div id="save-actions" class="save-actions" style="display:none">
-                <button class="save-btn" onclick="exportSave()">Export Save</button>
-                <button class="save-btn" onclick="showImportModal()">Import Save</button>
-                <button class="save-btn danger" onclick="resetProgress()">Reset Progress</button>
-            </div>
+<!-- Hall of Fame Panel -->
+<div class="hof-panel" id="hof-panel">
+    <div class="hof-title">HALL OF FAME</div>
+    <div id="hof-content"></div>
+    <button class="hof-close" id="hof-close">CLOSE</button>
+</div>
 
-            <div class="ornament">&diams; &diams; &diams;</div>
-
-            <p class="section-label">Select a Class to Enter the Arena</p>
-
-            <!-- Class Selection Grid -->
-            <div class="class-grid">
-
-                <!-- Gunner (Cyberpunk) -->
-                <a href="arena.html?world=cyberpunk" class="class-card card-gunner" id="card-cyberpunk" data-world="0">
-                    <div class="class-card-accent"></div>
-                    <div class="class-card-inner">
-                        <div class="class-card-header">
-                            <span class="class-icon">&#x1F52B;</span>
-                            <div class="class-info">
-                                <h2 class="class-name">Gunner</h2>
-                                <p class="class-desc">Ranged specialist. Excels with projectiles and precision damage.</p>
-                            </div>
-                        </div>
-                        <div class="stat-bars">
-                            <div class="stat-row">
-                                <span class="stat-label">HP</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:53%"></div></div>
-                                <span class="stat-value">80</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Speed</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:72%"></div></div>
-                                <span class="stat-value">160</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Damage</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:80%"></div></div>
-                                <span class="stat-value">1.2</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Defense</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:56%"></div></div>
-                                <span class="stat-value">0.9</span>
-                            </div>
-                        </div>
-                        <div class="class-card-meta">
-                            <div class="meta-row">
-                                <span class="meta-label">Weapons</span>
-                                <div class="weapon-tags">
-                                    <span class="weapon-tag">&#x1F52B; Projectile</span>
-                                    <span class="weapon-tag">&#x1F4A0; Beam</span>
-                                    <span class="weapon-tag">&#x26A1; Chain</span>
-                                </div>
-                            </div>
-                            <div class="meta-row">
-                                <span class="meta-label">Passive</span>
-                                <div class="passive-info">
-                                    <span class="passive-name">Targeting System</span>
-                                    <span class="passive-desc">+10% crit, +15% projectile speed</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="class-card-play">Enter Cyberpunk Arena &rarr;</div>
-                </a>
-
-                <!-- Dark Knight (Gothic) -->
-                <a href="arena.html?world=gothic" class="class-card card-darkknight" id="card-gothic" data-world="1">
-                    <div class="class-card-accent"></div>
-                    <div class="class-card-inner">
-                        <div class="class-card-header">
-                            <span class="class-icon">&#x2694;&#xFE0F;</span>
-                            <div class="class-info">
-                                <h2 class="class-name">Dark Knight</h2>
-                                <p class="class-desc">Melee bruiser. Thrives in close combat with lifesteal and AoE.</p>
-                            </div>
-                        </div>
-                        <div class="stat-bars">
-                            <div class="stat-row">
-                                <span class="stat-label">HP</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:87%"></div></div>
-                                <span class="stat-value">120</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Speed</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:56%"></div></div>
-                                <span class="stat-value">140</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Damage</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:60%"></div></div>
-                                <span class="stat-value">1.0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Defense</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:94%"></div></div>
-                                <span class="stat-value">1.2</span>
-                            </div>
-                        </div>
-                        <div class="class-card-meta">
-                            <div class="meta-row">
-                                <span class="meta-label">Weapons</span>
-                                <div class="weapon-tags">
-                                    <span class="weapon-tag">&#x1F4A5; Area</span>
-                                    <span class="weapon-tag">&#x26A1; Chain</span>
-                                    <span class="weapon-tag">&#x1F300; Field</span>
-                                </div>
-                            </div>
-                            <div class="meta-row">
-                                <span class="meta-label">Passive</span>
-                                <div class="passive-info">
-                                    <span class="passive-name">Blood Pact</span>
-                                    <span class="passive-desc">+8% lifesteal, +10% AoE size</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="class-card-play">Enter Gothic Arena &rarr;</div>
-                </a>
-
-                <!-- Ranger (Forest) -->
-                <a href="arena.html?world=forest" class="class-card card-ranger" id="card-forest" data-world="2">
-                    <div class="class-card-accent"></div>
-                    <div class="class-card-inner">
-                        <div class="class-card-header">
-                            <span class="class-icon">&#x1F3F9;</span>
-                            <div class="class-info">
-                                <h2 class="class-name">Ranger</h2>
-                                <p class="class-desc">Swift hunter. Masters boomerangs, traps, and damage over time.</p>
-                            </div>
-                        </div>
-                        <div class="stat-bars">
-                            <div class="stat-row">
-                                <span class="stat-label">HP</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:63%"></div></div>
-                                <span class="stat-value">90</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Speed</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:89%"></div></div>
-                                <span class="stat-value">180</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Damage</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:60%"></div></div>
-                                <span class="stat-value">1.0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Defense</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:69%"></div></div>
-                                <span class="stat-value">1.0</span>
-                            </div>
-                        </div>
-                        <div class="class-card-meta">
-                            <div class="meta-row">
-                                <span class="meta-label">Weapons</span>
-                                <div class="weapon-tags">
-                                    <span class="weapon-tag">&#x1F4AB; Boomerang</span>
-                                    <span class="weapon-tag">&#x1F327;&#xFE0F; Rain</span>
-                                    <span class="weapon-tag">&#x1F300; Field</span>
-                                </div>
-                            </div>
-                            <div class="meta-row">
-                                <span class="meta-label">Passive</span>
-                                <div class="passive-info">
-                                    <span class="passive-name">Wild Stride</span>
-                                    <span class="passive-desc">+15% move speed, +10% evasion</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="class-card-play">Enter Forest Arena &rarr;</div>
-                </a>
-
-                <!-- Warlock (Cosmic) -->
-                <a href="arena.html?world=cosmic" class="class-card card-warlock" id="card-cosmic" data-world="3">
-                    <div class="class-card-accent"></div>
-                    <div class="class-card-inner">
-                        <div class="class-card-header">
-                            <span class="class-icon">&#x1F52E;</span>
-                            <div class="class-info">
-                                <h2 class="class-name">Warlock</h2>
-                                <p class="class-desc">Arcane caster. Commands gravity, orbits, and devastating area spells.</p>
-                            </div>
-                        </div>
-                        <div class="stat-bars">
-                            <div class="stat-row">
-                                <span class="stat-label">HP</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:43%"></div></div>
-                                <span class="stat-value">70</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Speed</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:67%"></div></div>
-                                <span class="stat-value">150</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Damage</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:92%"></div></div>
-                                <span class="stat-value">1.3</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Defense</span>
-                                <div class="stat-track"><div class="stat-fill" style="width:38%"></div></div>
-                                <span class="stat-value">0.8</span>
-                            </div>
-                        </div>
-                        <div class="class-card-meta">
-                            <div class="meta-row">
-                                <span class="meta-label">Weapons</span>
-                                <div class="weapon-tags">
-                                    <span class="weapon-tag">&#x1F4AB; Orbit</span>
-                                    <span class="weapon-tag">&#x1F300; Field</span>
-                                    <span class="weapon-tag">&#x1F4A5; Area</span>
-                                </div>
-                            </div>
-                            <div class="meta-row">
-                                <span class="meta-label">Passive</span>
-                                <div class="passive-info">
-                                    <span class="passive-name">Arcane Attunement</span>
-                                    <span class="passive-desc">+15% ability power, -10% cooldowns</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="class-card-play">Enter Cosmic Arena &rarr;</div>
-                </a>
-
-            </div>
-
-            <!-- Shop navigation -->
-            <div class="nav-links">
-                <a href="shop.html?world=gothic" class="nav-link">Gothic Shop</a>
-                <a href="shop.html?world=forest" class="nav-link">Forest Shop</a>
-                <a href="shop.html?world=cosmic" class="nav-link">Cosmic Shop</a>
-            </div>
-
-            <!-- Hall of Fame -->
-            <div id="hall-of-fame" class="hall-of-fame" style="display:none"></div>
-
-            <!-- Other Games -->
-            <div class="section-divider">Other Games</div>
-
-            <a href="../squad-survivors.html" class="other-game-card">
-                <div class="other-game-stripe"></div>
-                <div class="other-game-body">
-                    <div class="other-game-top">
-                        <div>
-                            <h2 class="other-game-title">Squad Survivors</h2>
-                            <p class="other-game-subtitle">Command Your Growing Army</p>
-                        </div>
-                        <span class="play-arrow">Play &rarr;</span>
-                    </div>
-                    <p class="other-game-desc">Command a growing squad of knights, archers, mages and more. Draft new units on each level-up and survive escalating waves of fantasy monsters.</p>
-                    <div class="other-game-tags">
-                        <span class="tag">Medieval</span>
-                        <span class="tag">Squad Tactics</span>
-                    </div>
-                </div>
-            </a>
-
-        </div>
-    </main>
-
-    <!-- Import Modal -->
-    <div class="modal-overlay" id="import-modal">
-        <div class="modal">
-            <h3>Import Save</h3>
-            <textarea id="import-textarea" placeholder="Paste save JSON here..."></textarea>
-            <div class="modal-btns">
-                <button class="save-btn" onclick="closeImportModal()">Cancel</button>
-                <button class="campaign-btn" onclick="doImport()" style="font-size:0.7rem;padding:6px 16px">Import</button>
-            </div>
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal">
+    <div class="modal">
+        <h3>IMPORT SAVE</h3>
+        <textarea id="import-textarea" placeholder="Paste save JSON here..."></textarea>
+        <div class="modal-btns">
+            <button class="hud-btn" id="btn-import-cancel">CANCEL</button>
+            <button class="hud-btn" id="btn-import-confirm">IMPORT</button>
         </div>
     </div>
+</div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
-    <footer class="footer">
-        <div class="container">
-            <p class="footer-text">Survivors Arena &mdash; HTML Style Guide Games</p>
-        </div>
-    </footer>
+<script>
+// ============================================================
+// SURVIVORS CAMPFIRE HUB
+// ============================================================
 
-    <script>
-    const WORLDS = [
-        { key: 'cyberpunk', name: 'Cyberpunk', html: 'arena.html?world=cyberpunk', shop: 'shop.html?world=gothic', color: 'var(--cyber-pink)' },
-        { key: 'gothic',    name: 'Gothic',    html: 'arena.html?world=gothic',    shop: 'shop.html?world=forest', color: 'var(--blood)' },
-        { key: 'forest',    name: 'Forest',    html: 'arena.html?world=forest',    shop: 'shop.html?world=cosmic', color: 'var(--forest-green)' },
-        { key: 'cosmic',    name: 'Cosmic',    html: 'arena.html?world=cosmic',    shop: null,                     color: 'var(--cosmic-purple)' }
-    ];
-    const TOTAL_WORLDS = WORLDS.length;
-    const STORAGE_KEY = 'survivors-save';
+const STORAGE_KEY = 'survivors-save';
+const W = 480, H = 270;
 
-    function loadSave() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return null;
-            const data = JSON.parse(raw);
-            if (!data || typeof data !== 'object') return null;
-            return data;
-        } catch(e) { return null; }
+// ---- CLASS DATA ----
+const CLASSES = [
+    {
+        id: 'gunner', name: 'Gunner', icon: '\u{1F52B}',
+        desc: 'Ranged specialist. Excels with projectiles and precision damage.',
+        worldKey: 'cyberpunk', worldName: 'Cyberpunk', worldIndex: 0,
+        stats: { hp: 80, speed: 160, damage: 1.2, defense: 0.9 },
+        weapons: ['\u{1F52B} Projectile', '\u{1F4A0} Beam', '\u26A1 Chain'],
+        passive: { name: 'Targeting System', desc: '+10% crit, +15% projectile speed' },
+        accentColor: '#00ffff', accentColor2: '#ff0080',
+        gradient: ['#ff0080', '#00ffff']
+    },
+    {
+        id: 'darkknight', name: 'Dark Knight', icon: '\u2694\uFE0F',
+        desc: 'Melee bruiser. Thrives in close combat with lifesteal and AoE.',
+        worldKey: 'gothic', worldName: 'Gothic', worldIndex: 1,
+        stats: { hp: 120, speed: 140, damage: 1.0, defense: 1.2 },
+        weapons: ['\u{1F4A5} Area', '\u26A1 Chain', '\u{1F300} Field'],
+        passive: { name: 'Blood Pact', desc: '+8% lifesteal, +10% AoE size' },
+        accentColor: '#d4af37', accentColor2: '#8b0000',
+        gradient: ['#8b0000', '#d4af37']
+    },
+    {
+        id: 'ranger', name: 'Ranger', icon: '\u{1F3F9}',
+        desc: 'Swift hunter. Masters boomerangs, traps, and damage over time.',
+        worldKey: 'forest', worldName: 'Forest', worldIndex: 2,
+        stats: { hp: 90, speed: 180, damage: 1.0, defense: 1.0 },
+        weapons: ['\u{1F4AB} Boomerang', '\u{1F327}\uFE0F Rain', '\u{1F300} Field'],
+        passive: { name: 'Wild Stride', desc: '+15% move speed, +10% evasion' },
+        accentColor: '#33cc33', accentColor2: '#228b22',
+        gradient: ['#228b22', '#daa520']
+    },
+    {
+        id: 'warlock', name: 'Warlock', icon: '\u{1F52E}',
+        desc: 'Arcane caster. Commands gravity, orbits, and devastating area spells.',
+        worldKey: 'cosmic', worldName: 'Cosmic', worldIndex: 3,
+        stats: { hp: 70, speed: 150, damage: 1.3, defense: 0.8 },
+        weapons: ['\u{1F4AB} Orbit', '\u{1F300} Field', '\u{1F4A5} Area'],
+        passive: { name: 'Arcane Attunement', desc: '+15% ability power, -10% cooldowns' },
+        accentColor: '#9933ff', accentColor2: '#4169e1',
+        gradient: ['#9933ff', '#4169e1']
+    }
+];
+
+// Character positions in logical space (semicircle around fire)
+const FIRE_X = 240, FIRE_Y = 180;
+const CHAR_POSITIONS = [
+    { x: 150, y: 165 },  // Gunner (top-left)
+    { x: 330, y: 165 },  // Dark Knight (top-right)
+    { x: 170, y: 205 },  // Ranger (bottom-left)
+    { x: 310, y: 205 }   // Warlock (bottom-right)
+];
+const CHAR_RADIUS = 12;
+const HIT_RADIUS = 18;
+
+// ---- CAMP THEMES ----
+const CAMP_THEMES = [
+    { // Cyberpunk - Neon Outpost
+        skyTop: '#050515', skyBot: '#0a0a2a',
+        groundColor: '#0d0d2a', groundLine: '#1a1a3a',
+        fireColors: ['#00ffff', '#ff0080', '#bf00ff'],
+        fireGlow: 'rgba(0,255,255,0.15)',
+        ambientColor: 'rgba(0,255,255,0.3)',
+        bgElements: 'neon',
+        particleType: 'rain'
+    },
+    { // Gothic - Cathedral Grounds
+        skyTop: '#0a0a0f', skyBot: '#1a1020',
+        groundColor: '#1a1420', groundLine: '#251830',
+        fireColors: ['#ff8c00', '#d4af37', '#cc3333'],
+        fireGlow: 'rgba(255,140,0,0.15)',
+        ambientColor: 'rgba(212,175,55,0.2)',
+        bgElements: 'gothic',
+        particleType: 'dust'
+    },
+    { // Forest - The Grove
+        skyTop: '#050a05', skyBot: '#0a1a0a',
+        groundColor: '#0d1a0d', groundLine: '#1a2a1a',
+        fireColors: ['#ff8c00', '#ffaa33', '#ff6600'],
+        fireGlow: 'rgba(255,140,0,0.12)',
+        ambientColor: 'rgba(51,204,51,0.25)',
+        bgElements: 'forest',
+        particleType: 'fireflies'
+    },
+    { // Cosmic - Station Deck
+        skyTop: '#030308', skyBot: '#080818',
+        groundColor: '#080818', groundLine: '#151530',
+        fireColors: ['#9933ff', '#ff3366', '#4169e1'],
+        fireGlow: 'rgba(153,51,255,0.12)',
+        ambientColor: 'rgba(153,51,255,0.2)',
+        bgElements: 'cosmic',
+        particleType: 'sparks'
+    }
+];
+
+// ---- STATE ----
+let canvas, ctx;
+let scale = 1;
+let offsetX = 0, offsetY = 0;
+let hoveredChar = -1;
+let selectedChar = -1;
+let mouseX = 0, mouseY = 0;
+let fireParticles = [];
+let ambientParticles = [];
+let settingsOpen = false;
+let hofOpen = false;
+let lastTime = 0;
+
+// ---- SAVE ----
+function loadSave() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const d = JSON.parse(raw);
+        return (d && typeof d === 'object') ? d : null;
+    } catch(e) { return null; }
+}
+
+function getSaveState() {
+    const save = loadSave();
+    const currentWorld = save ? (typeof save.currentWorld === 'number' ? save.currentWorld : 0) : -1;
+    const completed = save ? currentWorld >= CLASSES.length : false;
+    const gold = save ? (save.gold || 0) : 0;
+    const kills = save ? ((save.stats && save.stats.totalKills) || 0) : 0;
+    const runs = save ? ((save.stats && save.stats.runsCompleted) || 0) : 0;
+    const bestTime = save ? ((save.stats && save.stats.bestTime) || 0) : 0;
+    return { save, currentWorld, completed, gold, kills, runs, bestTime };
+}
+
+function getCharState(classIdx) {
+    const { save, currentWorld, completed } = getSaveState();
+    if (!save) return classIdx === 0 ? 'current' : 'locked';
+    if (completed) return 'cleared';
+    const wi = CLASSES[classIdx].worldIndex;
+    if (wi < currentWorld) return 'cleared';
+    if (wi === currentWorld) return 'current';
+    return 'locked';
+}
+
+function getThemeIndex() {
+    const { save, currentWorld, completed } = getSaveState();
+    if (!save) return 0;
+    if (completed) return 3; // show cosmic after completion
+    return Math.min(currentWorld, 3);
+}
+
+// ---- CANVAS SETUP ----
+function initCanvas() {
+    canvas = document.getElementById('camp-canvas');
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+}
+
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    // Scale to fill viewport while maintaining aspect ratio
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const aspect = W / H;
+    const vAspect = vw / vh;
+
+    if (vAspect > aspect) {
+        // Wider than needed - fill height
+        scale = vh / H;
+        offsetX = (vw - W * scale) / 2;
+        offsetY = 0;
+    } else {
+        // Taller than needed - fill width
+        scale = vw / W;
+        offsetX = 0;
+        offsetY = (vh - H * scale) / 2;
     }
 
-    function formatTime(seconds) {
-        if (!seconds) return '0:00';
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return m + ':' + (s < 10 ? '0' : '') + s;
+    canvas.style.width = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
+    canvas.style.left = offsetX + 'px';
+    canvas.style.top = offsetY + 'px';
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function screenToLogical(sx, sy) {
+    return {
+        x: (sx - offsetX) / scale,
+        y: (sy - offsetY) / scale
+    };
+}
+
+// ---- FIRE PARTICLES ----
+function spawnFireParticle() {
+    const theme = CAMP_THEMES[getThemeIndex()];
+    const color = theme.fireColors[Math.floor(Math.random() * theme.fireColors.length)];
+    return {
+        x: FIRE_X + (Math.random() - 0.5) * 16,
+        y: FIRE_Y - 2,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -0.5 - Math.random() * 0.8,
+        life: 1,
+        decay: 0.01 + Math.random() * 0.015,
+        size: 1 + Math.random() * 2,
+        color: color
+    };
+}
+
+function initParticles() {
+    fireParticles = [];
+    for (let i = 0; i < 30; i++) {
+        const p = spawnFireParticle();
+        p.life = Math.random();
+        p.y = FIRE_Y - Math.random() * 20;
+        fireParticles.push(p);
     }
-
-    function renderCampaign() {
-        const panel = document.getElementById('campaign-panel');
-        const saveActions = document.getElementById('save-actions');
-        const save = loadSave();
-
-        // No save -- fresh state
-        if (!save) {
-            panel.innerHTML = `
-                <div class="campaign-label">Campaign</div>
-                <div class="campaign-title">The Arena Awaits</div>
-                <p style="color:rgba(232,220,200,0.5);margin-bottom:20px;font-size:0.95rem">
-                    Fight through four themed worlds, earn gold, unlock upgrades, and prove your worth.
-                </p>
-                <a href="arena.html?world=cyberpunk" class="campaign-btn">Begin Campaign</a>
-            `;
-            saveActions.style.display = 'none';
-            renderCardBadges(null);
-            return;
-        }
-
-        const currentWorld = typeof save.currentWorld === 'number' ? save.currentWorld : 0;
-        const runs = (save.stats && save.stats.runsCompleted) || 0;
-        const kills = (save.stats && save.stats.totalKills) || 0;
-        const bestTime = (save.stats && save.stats.bestTime) || 0;
-        const gold = save.gold || 0;
-        const completed = currentWorld >= TOTAL_WORLDS;
-
-        // World pips
-        let pipsHtml = '';
-        for (let i = 0; i < TOTAL_WORLDS; i++) {
-            const w = WORLDS[i];
-            let cls = 'locked';
-            if (i < currentWorld) cls = 'completed';
-            else if (i === currentWorld && !completed) cls = 'current';
-            pipsHtml += `<span class="world-pip ${cls}">${w.name}</span>`;
-        }
-
-        // Stats
-        const statsHtml = `
-            <div class="campaign-stats">
-                <span class="campaign-stat"><strong>${gold}</strong> gold</span>
-                <span class="campaign-stat"><strong>${kills.toLocaleString()}</strong> kills</span>
-                <span class="campaign-stat"><strong>${runs}</strong> runs</span>
-                <span class="campaign-stat"><strong>${formatTime(bestTime)}</strong> best</span>
-                <span class="campaign-stat"><strong>${Math.min(currentWorld, TOTAL_WORLDS)}</strong>/${TOTAL_WORLDS} worlds</span>
-            </div>
-        `;
-
-        if (completed) {
-            panel.innerHTML = `
-                <div class="campaign-label">Campaign</div>
-                <div class="campaign-complete-badge">\u2713 Campaign Complete</div>
-                <div class="campaign-title">All Worlds Conquered</div>
-                <div class="world-pips">${pipsHtml}</div>
-                ${statsHtml}
-                <a href="arena.html?world=cyberpunk" class="campaign-btn">Play Again</a>
-            `;
-        } else {
-            const world = WORLDS[currentWorld];
-            const continueUrl = world.html;
-            panel.innerHTML = `
-                <div class="campaign-label">Campaign</div>
-                <div class="campaign-title">World ${currentWorld + 1}: <span class="world-name">${world.name}</span></div>
-                <div class="world-pips">${pipsHtml}</div>
-                ${statsHtml}
-                <a href="${continueUrl}" class="campaign-btn">Continue</a>
-            `;
-        }
-
-        saveActions.style.display = 'flex';
-        renderCardBadges(save);
-    }
-
-    function renderCardBadges(save) {
-        const currentWorld = save ? (typeof save.currentWorld === 'number' ? save.currentWorld : 0) : -1;
-        const completed = save ? currentWorld >= TOTAL_WORLDS : false;
-
-        for (let i = 0; i < TOTAL_WORLDS; i++) {
-            const w = WORLDS[i];
-            const card = document.getElementById('card-' + w.key);
-            if (!card) continue;
-
-            // Remove existing badge
-            const existing = card.querySelector('.card-badge');
-            if (existing) existing.remove();
-
-            if (!save) continue;
-
-            const badge = document.createElement('span');
-            badge.className = 'card-badge';
-
-            if (i < currentWorld || completed) {
-                badge.classList.add('badge-completed');
-                badge.textContent = '\u2713 Cleared';
-            } else if (i === currentWorld && !completed) {
-                badge.classList.add('badge-current');
-                badge.textContent = '\u25B6 Current';
-            } else {
-                badge.classList.add('badge-locked');
-                badge.textContent = '\uD83D\uDD12 Locked';
-            }
-
-            card.appendChild(badge);
-        }
-    }
-
-    // Save management
-    function exportSave() {
-        const save = loadSave();
-        if (!save) { showToast('No save data found'); return; }
-        const json = JSON.stringify(save, null, 2);
-        navigator.clipboard.writeText(json).then(() => {
-            showToast('Save copied to clipboard');
-        }).catch(() => {
-            showToast('Failed to copy');
+    ambientParticles = [];
+    for (let i = 0; i < 40; i++) {
+        ambientParticles.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            life: Math.random(),
+            size: 0.5 + Math.random() * 1.5,
+            phase: Math.random() * Math.PI * 2
         });
     }
+}
 
-    function showImportModal() {
-        document.getElementById('import-modal').classList.add('active');
-        document.getElementById('import-textarea').value = '';
-        document.getElementById('import-textarea').focus();
-    }
-
-    function closeImportModal() {
-        document.getElementById('import-modal').classList.remove('active');
-    }
-
-    function doImport() {
-        const text = document.getElementById('import-textarea').value.trim();
-        if (!text) { showToast('Paste save JSON first'); return; }
-        try {
-            const parsed = JSON.parse(text);
-            if (!parsed || typeof parsed !== 'object') throw new Error('Invalid');
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-            closeImportModal();
-            showToast('Save imported successfully');
-            renderCampaign();
-        } catch(e) {
-            showToast('Invalid JSON');
+function updateParticles(dt) {
+    // Fire
+    for (let i = fireParticles.length - 1; i >= 0; i--) {
+        const p = fireParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0) {
+            fireParticles[i] = spawnFireParticle();
         }
     }
 
-    function resetProgress() {
-        if (!confirm('Reset all campaign progress? This cannot be undone.')) return;
-        localStorage.removeItem(STORAGE_KEY);
-        showToast('Progress reset');
-        renderCampaign();
-    }
-
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2000);
-    }
-
-    // Close modal on overlay click
-    document.getElementById('import-modal').addEventListener('click', function(e) {
-        if (e.target === this) closeImportModal();
-    });
-
-    // Init
-    function renderHallOfFame() {
-        const panel = document.getElementById('hall-of-fame');
-        const save = loadSave();
-        if (!save || !save.classStats) {
-            panel.style.display = 'none';
-            return;
+    // Ambient
+    const pType = CAMP_THEMES[getThemeIndex()].particleType;
+    for (const p of ambientParticles) {
+        if (pType === 'rain') {
+            p.vy = 1.5;
+            p.vx = -0.2;
+        } else if (pType === 'fireflies') {
+            p.vx = Math.sin(p.phase + p.life * 4) * 0.15;
+            p.vy = Math.cos(p.phase + p.life * 3) * 0.1;
+        } else if (pType === 'sparks') {
+            p.vy = -0.3 - Math.sin(p.phase) * 0.2;
+            p.vx = Math.cos(p.phase) * 0.15;
+        } else { // dust
+            p.vx = Math.sin(p.phase + p.life * 2) * 0.08;
+            p.vy = -0.05;
         }
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.002;
+        if (p.life <= 0 || p.x < -5 || p.x > W + 5 || p.y < -5 || p.y > H + 5) {
+            p.x = Math.random() * W;
+            p.y = pType === 'rain' ? -5 : (pType === 'sparks' ? H + 5 : Math.random() * H);
+            p.life = 1;
+            p.phase = Math.random() * Math.PI * 2;
+        }
+    }
+}
 
-        const CLASS_DEFS = [
-            { id: 'gunner',     name: 'Gunner',      cardClass: 'card-gunner' },
-            { id: 'darkknight', name: 'Dark Knight',  cardClass: 'card-darkknight' },
-            { id: 'ranger',     name: 'Ranger',       cardClass: 'card-ranger' },
-            { id: 'warlock',    name: 'Warlock',      cardClass: 'card-warlock' }
+// ---- DRAWING ----
+function drawSky(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+    const grd = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+    grd.addColorStop(0, theme.skyTop);
+    grd.addColorStop(1, theme.skyBot);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H * 0.6);
+}
+
+function drawStars(time) {
+    const ti = getThemeIndex();
+    if (ti !== 3 && ti !== 0) return; // Only cosmic and cyberpunk get stars
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (let i = 0; i < 50; i++) {
+        const sx = (i * 137.5 + 23) % W;
+        const sy = (i * 73.3 + 11) % (H * 0.5);
+        const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(time * 0.5 + i * 0.7));
+        ctx.globalAlpha = twinkle * (ti === 3 ? 0.8 : 0.4);
+        ctx.fillRect(Math.floor(sx), Math.floor(sy), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+}
+
+function drawBackgroundElements(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+    const bgType = theme.bgElements;
+
+    ctx.save();
+    if (bgType === 'neon') {
+        // Neon buildings silhouettes
+        ctx.fillStyle = '#0d0d2a';
+        const buildings = [
+            [30, 60, 40, 100], [80, 80, 35, 80], [130, 50, 50, 110],
+            [300, 70, 45, 90], [360, 45, 55, 115], [420, 85, 40, 75]
         ];
-
-        // Check if any class has been played
-        let anyPlayed = false;
-        for (const c of CLASS_DEFS) {
-            const cs = save.classStats[c.id];
-            if (cs && cs.totalRuns > 0) { anyPlayed = true; break; }
+        for (const [bx, by, bw, bh] of buildings) {
+            ctx.fillRect(bx, H * 0.55 - bh, bw, bh);
         }
-        if (!anyPlayed) {
-            panel.style.display = 'none';
-            return;
+        // Neon sign accents
+        const glow = 0.5 + 0.5 * Math.sin(time * 2);
+        ctx.strokeStyle = `rgba(0,255,255,${0.2 + glow * 0.3})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(42, H * 0.55 - 85, 16, 6);
+        ctx.strokeStyle = `rgba(255,0,128,${0.2 + glow * 0.2})`;
+        ctx.strokeRect(310, H * 0.55 - 60, 20, 4);
+    } else if (bgType === 'gothic') {
+        // Castle spires + dead trees
+        ctx.fillStyle = '#12081a';
+        // Spires
+        const spires = [[60, 40], [100, 60], [380, 50], [430, 35]];
+        for (const [sx, sh] of spires) {
+            ctx.beginPath();
+            ctx.moveTo(sx - 8, H * 0.55);
+            ctx.lineTo(sx, H * 0.55 - sh);
+            ctx.lineTo(sx + 8, H * 0.55);
+            ctx.fill();
         }
-
-        let html = '<div class="hof-title">Hall of Fame</div>';
-        html += '<div class="hof-grid">';
-
-        for (const c of CLASS_DEFS) {
-            const cs = save.classStats[c.id] || {};
-            const played = cs.totalRuns > 0;
-            const playedClass = played ? 'played' : 'unplayed';
-
-            // Mastery stars: 1 star for first run, 2 for 5min+ survival, 3 for 10min+
-            let starCount = 0;
-            if (cs.totalRuns > 0) starCount = 1;
-            if (cs.bestTime >= 300) starCount = 2;  // 5 minutes
-            if (cs.bestTime >= 600) starCount = 3;  // 10 minutes
-
-            let starsHtml = '';
-            for (let s = 0; s < 3; s++) {
-                starsHtml += s < starCount
-                    ? '<span class="hof-star-filled">\u2605</span>'
-                    : '<span class="hof-star-empty">\u2605</span>';
-            }
-
-            html += '<div class="hof-class ' + c.cardClass + ' ' + playedClass + '">';
-            html += '<div class="hof-class-name">' + c.name + '</div>';
-            html += '<div class="hof-stars">' + starsHtml + '</div>';
-
-            if (played) {
-                html += '<div class="hof-stat"><strong>' + formatTime(cs.bestTime) + '</strong> best time</div>';
-                html += '<div class="hof-stat"><strong>' + (cs.bestKills || 0) + '</strong> best kills</div>';
-                html += '<div class="hof-stat"><strong>' + cs.totalRuns + '</strong> runs</div>';
-            } else {
-                html += '<div class="hof-no-data">Not yet played</div>';
-            }
-
-            html += '</div>';
+        // Dead trees
+        ctx.strokeStyle = '#1a1020';
+        ctx.lineWidth = 2;
+        for (const tx of [20, 160, 320, 460]) {
+            ctx.beginPath();
+            ctx.moveTo(tx, H * 0.55);
+            ctx.lineTo(tx, H * 0.55 - 30);
+            ctx.moveTo(tx, H * 0.55 - 20);
+            ctx.lineTo(tx - 8, H * 0.55 - 30);
+            ctx.moveTo(tx, H * 0.55 - 15);
+            ctx.lineTo(tx + 6, H * 0.55 - 25);
+            ctx.stroke();
         }
+    } else if (bgType === 'forest') {
+        // Tall trees + mushrooms
+        ctx.fillStyle = '#0a180a';
+        const trees = [[25, 70], [70, 90], [120, 80], [350, 85], [400, 75], [450, 95]];
+        for (const [tx, th] of trees) {
+            // Trunk
+            ctx.fillStyle = '#1a1008';
+            ctx.fillRect(tx - 3, H * 0.55 - th, 6, th);
+            // Canopy
+            ctx.fillStyle = '#0a1a0a';
+            ctx.beginPath();
+            ctx.arc(tx, H * 0.55 - th - 10, 18, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Mushroom glow
+        const glow = 0.3 + 0.3 * Math.sin(time * 1.5);
+        ctx.fillStyle = `rgba(51,204,51,${glow})`;
+        ctx.beginPath();
+        ctx.arc(180, H * 0.55 - 5, 3, 0, Math.PI * 2);
+        ctx.arc(290, H * 0.55 - 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (bgType === 'cosmic') {
+        // Nebula glow + distant station
+        const glow = 0.3 + 0.2 * Math.sin(time * 0.8);
+        const nebula = ctx.createRadialGradient(100, 40, 0, 100, 40, 60);
+        nebula.addColorStop(0, `rgba(153,51,255,${glow})`);
+        nebula.addColorStop(1, 'transparent');
+        ctx.fillStyle = nebula;
+        ctx.fillRect(40, 0, 120, 100);
 
-        html += '</div>';
-        panel.innerHTML = html;
-        panel.style.display = 'block';
+        const nebula2 = ctx.createRadialGradient(380, 30, 0, 380, 30, 50);
+        nebula2.addColorStop(0, `rgba(65,105,225,${glow * 0.7})`);
+        nebula2.addColorStop(1, 'transparent');
+        ctx.fillStyle = nebula2;
+        ctx.fillRect(330, 0, 100, 80);
+
+        // Station silhouette
+        ctx.fillStyle = '#101025';
+        ctx.fillRect(350, H * 0.55 - 35, 80, 35);
+        ctx.fillRect(370, H * 0.55 - 50, 8, 15);
+        ctx.fillRect(410, H * 0.55 - 45, 6, 10);
+    }
+    ctx.restore();
+}
+
+function drawGround(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+    const groundY = Math.floor(H * 0.55);
+
+    // Ground fill
+    ctx.fillStyle = theme.groundColor;
+    ctx.fillRect(0, groundY, W, H - groundY);
+
+    // Ground lines (texture)
+    ctx.strokeStyle = theme.groundLine;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+        const ly = groundY + 10 + i * 12 + Math.sin(time * 0.3 + i) * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, ly);
+        for (let x = 0; x < W; x += 20) {
+            ctx.lineTo(x, ly + Math.sin(x * 0.03 + i) * 2);
+        }
+        ctx.stroke();
+    }
+}
+
+function drawCampfire(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+
+    // Glow on ground
+    const glowR = 50 + Math.sin(time * 3) * 8;
+    const glow = ctx.createRadialGradient(FIRE_X, FIRE_Y + 5, 0, FIRE_X, FIRE_Y + 5, glowR);
+    glow.addColorStop(0, theme.fireGlow);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(FIRE_X - glowR, FIRE_Y + 5 - glowR, glowR * 2, glowR * 2);
+
+    // Logs
+    ctx.fillStyle = '#3a2510';
+    ctx.save();
+    ctx.translate(FIRE_X, FIRE_Y + 4);
+    ctx.rotate(-0.3);
+    ctx.fillRect(-12, -2, 24, 4);
+    ctx.rotate(0.6);
+    ctx.fillRect(-12, -2, 24, 4);
+    ctx.restore();
+
+    // Stone ring
+    ctx.fillStyle = '#2a2a2a';
+    for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const sx = FIRE_X + Math.cos(a) * 14;
+        const sy = FIRE_Y + 4 + Math.sin(a) * 6;
+        ctx.fillRect(Math.floor(sx) - 2, Math.floor(sy) - 1, 4, 3);
     }
 
-    renderCampaign();
-    renderHallOfFame();
-    </script>
+    // Fire particles
+    for (const p of fireParticles) {
+        ctx.globalAlpha = p.life * 0.8;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size));
+    }
+    ctx.globalAlpha = 1;
+
+    // Core glow
+    const coreGlow = 0.6 + 0.4 * Math.sin(time * 5);
+    ctx.fillStyle = `rgba(255,200,100,${coreGlow * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(FIRE_X, FIRE_Y - 3, 6, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawAmbientParticles(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+    const pType = theme.particleType;
+
+    for (const p of ambientParticles) {
+        const alpha = p.life * 0.5;
+        if (pType === 'rain') {
+            ctx.strokeStyle = `rgba(0,200,255,${alpha * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x - 1, p.y + 3);
+            ctx.stroke();
+        } else if (pType === 'fireflies') {
+            const flicker = 0.3 + 0.7 * Math.abs(Math.sin(time * 3 + p.phase));
+            ctx.fillStyle = `rgba(180,255,50,${alpha * flicker})`;
+            ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 1);
+            // Tiny glow
+            ctx.fillStyle = `rgba(180,255,50,${alpha * flicker * 0.3})`;
+            ctx.fillRect(Math.floor(p.x) - 1, Math.floor(p.y) - 1, 3, 3);
+        } else if (pType === 'sparks') {
+            ctx.fillStyle = `rgba(200,150,255,${alpha * 0.6})`;
+            ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 1);
+        } else { // dust
+            ctx.fillStyle = `rgba(200,180,150,${alpha * 0.25})`;
+            ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 1);
+        }
+    }
+}
+
+// ---- CHARACTER DRAWING ----
+function drawCharGunner(x, y, r, time, highlight) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(-r*0.6, -r*0.2);
+    ctx.lineTo(-r*0.8, r);
+    ctx.lineTo(-r*0.2, r*0.8);
+    ctx.lineTo(r*0.2, r*0.8);
+    ctx.lineTo(r*0.8, r);
+    ctx.lineTo(r*0.6, -r*0.2);
+    ctx.closePath();
+    ctx.fillStyle = highlight ? '#2a2a4a' : '#1a1a2a';
+    ctx.fill();
+    ctx.strokeStyle = '#00ffff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Torso
+    ctx.fillStyle = highlight ? '#354060' : '#252540';
+    ctx.fillRect(-r*0.4, -r*0.3, r*0.8, r*0.6);
+    // Helmet
+    ctx.beginPath();
+    ctx.arc(0, -r*0.6, r*0.4, 0, Math.PI*2);
+    ctx.fillStyle = '#1a1a30';
+    ctx.fill();
+    ctx.strokeStyle = '#ff0080';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Visor
+    const glow = 0.5 + 0.5*Math.sin(time*3);
+    ctx.fillStyle = `rgba(0,255,255,${0.6+glow*0.4})`;
+    ctx.beginPath();
+    ctx.ellipse(0, -r*0.65, r*0.28, r*0.08, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Shoulders
+    ctx.fillStyle = '#ff0080';
+    ctx.fillRect(-r*0.55, -r*0.25, r*0.12, r*0.06);
+    ctx.fillRect(r*0.43, -r*0.25, r*0.12, r*0.06);
+    ctx.restore();
+}
+
+function drawCharDarkKnight(x, y, r, time, highlight) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Cloak
+    ctx.beginPath();
+    ctx.moveTo(-r*0.7, -r*0.3);
+    ctx.lineTo(-r*0.9, r);
+    ctx.lineTo(r*0.9, r);
+    ctx.lineTo(r*0.7, -r*0.3);
+    ctx.closePath();
+    ctx.fillStyle = highlight ? '#3a2a5a' : '#2a1a3a';
+    ctx.fill();
+    // Body
+    ctx.beginPath();
+    ctx.arc(0, -r*0.1, r*0.65, 0, Math.PI*2);
+    ctx.fillStyle = highlight ? '#4a3a5a' : '#3a2a4a';
+    ctx.fill();
+    // Head
+    ctx.beginPath();
+    ctx.arc(0, -r*0.7, r*0.35, 0, Math.PI*2);
+    ctx.fillStyle = '#e8dcc8';
+    ctx.fill();
+    // Eyes
+    const glow = 0.5 + 0.5*Math.sin(time*3);
+    ctx.fillStyle = `rgba(212,175,55,${0.6+glow*0.4})`;
+    ctx.beginPath();
+    ctx.arc(-r*0.12, -r*0.75, 2.5, 0, Math.PI*2);
+    ctx.arc(r*0.12, -r*0.75, 2.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawCharRanger(x, y, r, time, highlight) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Cloak
+    ctx.beginPath();
+    ctx.moveTo(-r*0.7, -r*0.3);
+    ctx.lineTo(-r*0.9, r);
+    ctx.lineTo(r*0.9, r);
+    ctx.lineTo(r*0.7, -r*0.3);
+    ctx.closePath();
+    ctx.fillStyle = highlight ? '#2a4a2a' : '#1a3a1a';
+    ctx.fill();
+    // Body
+    ctx.beginPath();
+    ctx.arc(0, -r*0.1, r*0.65, 0, Math.PI*2);
+    ctx.fillStyle = highlight ? '#3a5a3a' : '#2a4a2a';
+    ctx.fill();
+    // Head
+    ctx.beginPath();
+    ctx.arc(0, -r*0.7, r*0.35, 0, Math.PI*2);
+    ctx.fillStyle = '#d8e8c8';
+    ctx.fill();
+    // Eyes
+    const glow = 0.5 + 0.5*Math.sin(time*3);
+    ctx.fillStyle = `rgba(218,165,32,${0.6+glow*0.4})`;
+    ctx.beginPath();
+    ctx.arc(-r*0.12, -r*0.75, 2.5, 0, Math.PI*2);
+    ctx.arc(r*0.12, -r*0.75, 2.5, 0, Math.PI*2);
+    ctx.fill();
+    // Staff
+    ctx.strokeStyle = '#8B6914';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(r*0.5, -r*0.6);
+    ctx.lineTo(r*0.5, r*0.9);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(51,204,51,${0.4+glow*0.3})`;
+    ctx.beginPath();
+    ctx.arc(r*0.5, -r*0.7, 3, 0, Math.PI*2);
+    ctx.fill();
+    // Leaves
+    for (let i = 0; i < 3; i++) {
+        const la = time*2 + i*2.1;
+        const lx = Math.cos(la) * r*0.6;
+        const ly = r*0.7 + Math.sin(la*1.3) * 3;
+        ctx.fillStyle = `rgba(34,139,34,${0.3+0.2*Math.sin(time*3+i)})`;
+        ctx.beginPath();
+        ctx.ellipse(lx, ly, 3, 1.5, la, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawCharWarlock(x, y, r, time, highlight) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Engine glow
+    const ePulse = 0.6 + 0.4*Math.sin(time*10);
+    const grd = ctx.createRadialGradient(0, r*0.8, 0, 0, r*0.8, r*0.6);
+    grd.addColorStop(0, `rgba(51,136,255,${ePulse*0.8})`);
+    grd.addColorStop(0.5, `rgba(51,136,255,${ePulse*0.3})`);
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(-r*0.5, r*0.3, r, r*0.8);
+    // Ship
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(-r*0.7, r*0.6);
+    ctx.lineTo(-r*0.3, r*0.4);
+    ctx.lineTo(0, r*0.5);
+    ctx.lineTo(r*0.3, r*0.4);
+    ctx.lineTo(r*0.7, r*0.6);
+    ctx.closePath();
+    ctx.fillStyle = highlight ? '#556688' : '#445577';
+    ctx.fill();
+    ctx.strokeStyle = '#6688aa';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Cockpit
+    const cGlow = 0.5 + 0.5*Math.sin(time*3);
+    ctx.fillStyle = `rgba(153,51,255,${0.6+cGlow*0.4})`;
+    ctx.beginPath();
+    ctx.arc(0, -r*0.3, r*0.2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.3+cGlow*0.3})`;
+    ctx.beginPath();
+    ctx.arc(0, -r*0.3, r*0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+}
+
+const DRAW_FUNCS = [drawCharGunner, drawCharDarkKnight, drawCharRanger, drawCharWarlock];
+
+function drawCharacters(time) {
+    for (let i = 0; i < 4; i++) {
+        const pos = CHAR_POSITIONS[i];
+        const isHovered = hoveredChar === i;
+        const isSelected = selectedChar === i;
+        const state = getCharState(i);
+
+        // Idle bob
+        const bob = Math.sin(time * 2 + i * 1.5) * 2;
+        const drawY = pos.y + bob + (isHovered ? -2 : 0);
+
+        ctx.save();
+
+        // Locked = dim
+        if (state === 'locked') {
+            ctx.globalAlpha = 0.35;
+        }
+
+        // Selected ring
+        if (isSelected) {
+            const pulse = 0.5 + 0.5 * Math.sin(time * 4);
+            ctx.strokeStyle = CLASSES[i].accentColor;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.5 + pulse * 0.5;
+            ctx.beginPath();
+            ctx.ellipse(pos.x, drawY + 2, HIT_RADIUS, HIT_RADIUS * 0.5, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = state === 'locked' ? 0.35 : 1;
+        }
+
+        // Draw character
+        DRAW_FUNCS[i](pos.x, drawY, CHAR_RADIUS, time, isHovered || isSelected);
+
+        // Badge
+        if (state === 'cleared') {
+            ctx.fillStyle = '#d4af37';
+            ctx.font = '6px ' + "var(--pixel-font)";
+            ctx.textAlign = 'center';
+            ctx.fillText('\u2713', pos.x, drawY - CHAR_RADIUS - 6);
+        } else if (state === 'current') {
+            const pulse = 0.5 + 0.5 * Math.sin(time * 3);
+            ctx.fillStyle = `rgba(255,255,255,${0.4 + pulse * 0.4})`;
+            ctx.beginPath();
+            ctx.arc(pos.x, drawY - CHAR_RADIUS - 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Name label below
+        ctx.globalAlpha = state === 'locked' ? 0.35 : (isHovered || isSelected ? 1 : 0.6);
+        ctx.fillStyle = isHovered || isSelected ? CLASSES[i].accentColor : '#aaa';
+        ctx.font = '5px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(CLASSES[i].name, pos.x, drawY + CHAR_RADIUS + 10);
+
+        ctx.restore();
+    }
+}
+
+function drawCampProps(time) {
+    const theme = CAMP_THEMES[getThemeIndex()];
+
+    // Tent (left)
+    ctx.fillStyle = '#2a1a10';
+    ctx.beginPath();
+    ctx.moveTo(40, H * 0.55);
+    ctx.lineTo(70, H * 0.55 - 35);
+    ctx.lineTo(100, H * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#3a2a18';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Tent pole
+    ctx.strokeStyle = '#5a4020';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(70, H * 0.55 - 35);
+    ctx.lineTo(70, H * 0.55 - 42);
+    ctx.stroke();
+
+    // Weapon rack (right)
+    ctx.strokeStyle = '#4a3a2a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(400, H * 0.55);
+    ctx.lineTo(400, H * 0.55 - 25);
+    ctx.moveTo(420, H * 0.55);
+    ctx.lineTo(420, H * 0.55 - 25);
+    ctx.moveTo(396, H * 0.55 - 22);
+    ctx.lineTo(424, H * 0.55 - 22);
+    ctx.stroke();
+    // Weapons on rack
+    ctx.strokeStyle = '#777';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(405, H * 0.55 - 22);
+    ctx.lineTo(405, H * 0.55 - 35);
+    ctx.moveTo(415, H * 0.55 - 22);
+    ctx.lineTo(415, H * 0.55 - 33);
+    ctx.stroke();
+
+    // Cart/crate (far right)
+    ctx.fillStyle = '#2a2018';
+    ctx.fillRect(440, H * 0.55 - 14, 22, 14);
+    ctx.strokeStyle = '#3a3020';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(440, H * 0.55 - 14, 22, 14);
+    // Wheel
+    ctx.strokeStyle = '#4a3a28';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(445, H * 0.55 + 2, 4, 0, Math.PI * 2);
+    ctx.stroke();
+}
+
+function drawVignette() {
+    const grd = ctx.createRadialGradient(W/2, H/2, W*0.25, W/2, H/2, W*0.6);
+    grd.addColorStop(0, 'transparent');
+    grd.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+}
+
+// ---- RENDER LOOP ----
+function render(timestamp) {
+    const time = timestamp / 1000;
+    const dt = time - lastTime;
+    lastTime = time;
+
+    updateParticles(dt);
+
+    ctx.clearRect(0, 0, W, H);
+
+    drawSky(time);
+    drawStars(time);
+    drawBackgroundElements(time);
+    drawGround(time);
+    drawCampProps(time);
+    drawCharacters(time);
+    drawCampfire(time);
+    drawAmbientParticles(time);
+    drawVignette();
+
+    requestAnimationFrame(render);
+}
+
+// ---- INTERACTION ----
+function getHoveredChar(lx, ly) {
+    for (let i = 0; i < 4; i++) {
+        const pos = CHAR_POSITIONS[i];
+        const dx = lx - pos.x;
+        const dy = ly - pos.y;
+        if (dx * dx + dy * dy < HIT_RADIUS * HIT_RADIUS) return i;
+    }
+    return -1;
+}
+
+canvas = document.getElementById('camp-canvas');
+
+canvas.addEventListener('mousemove', (e) => {
+    const lp = screenToLogical(e.clientX, e.clientY);
+    mouseX = lp.x; mouseY = lp.y;
+    const prev = hoveredChar;
+    hoveredChar = getHoveredChar(lp.x, lp.y);
+    canvas.style.cursor = hoveredChar >= 0 ? 'pointer' : 'default';
+});
+
+canvas.addEventListener('click', (e) => {
+    const lp = screenToLogical(e.clientX, e.clientY);
+    const clicked = getHoveredChar(lp.x, lp.y);
+
+    // Close panels if clicking on canvas
+    if (settingsOpen) { toggleSettings(); return; }
+    if (hofOpen) { toggleHof(); return; }
+
+    if (clicked >= 0) {
+        if (selectedChar === clicked) {
+            // Deselect
+            selectedChar = -1;
+            closeInfoPanel();
+        } else {
+            selectedChar = clicked;
+            openInfoPanel(clicked);
+        }
+    } else {
+        selectedChar = -1;
+        closeInfoPanel();
+    }
+});
+
+// ---- INFO PANEL ----
+function openInfoPanel(idx) {
+    const cls = CLASSES[idx];
+    const state = getCharState(idx);
+    const panel = document.getElementById('info-panel');
+    const content = document.getElementById('info-content');
+
+    const maxStat = { hp: 150, speed: 200, damage: 1.5, defense: 1.5 };
+
+    let html = `<div class="info-icon">${cls.icon}</div>`;
+    html += `<div class="info-class-name" style="color:${cls.accentColor}">${cls.name}</div>`;
+    html += `<div class="info-class-desc">${cls.desc}</div>`;
+
+    // Stats
+    html += '<div class="info-section-label">STATS</div>';
+    for (const [key, label] of [['hp','HP'],['speed','SPD'],['damage','DMG'],['defense','DEF']]) {
+        const val = cls.stats[key];
+        const pct = Math.round((val / maxStat[key]) * 100);
+        html += `<div class="info-stat-row">
+            <span class="info-stat-label">${label}</span>
+            <div class="info-stat-track">
+                <div class="info-stat-fill" style="width:${pct}%;background:linear-gradient(90deg,${cls.gradient[0]},${cls.gradient[1]})"></div>
+            </div>
+            <span class="info-stat-val">${val}</span>
+        </div>`;
+    }
+
+    // Weapons
+    html += '<div class="info-section-label" style="margin-top:14px">WEAPONS</div>';
+    html += '<div class="info-weapons">';
+    for (const w of cls.weapons) {
+        html += `<span class="info-weapon-tag">${w}</span>`;
+    }
+    html += '</div>';
+
+    // Passive
+    html += '<div class="info-section-label">PASSIVE</div>';
+    html += `<div class="info-passive-name" style="color:${cls.accentColor}">${cls.passive.name}</div>`;
+    html += `<div class="info-passive-desc">${cls.passive.desc}</div>`;
+
+    // World info
+    html += `<div class="info-section-label">WORLD</div>`;
+    html += `<div style="font-family:var(--pixel-font);font-size:7px;color:${cls.accentColor};margin-bottom:14px">${cls.worldName} Arena</div>`;
+
+    // Play button
+    if (state === 'locked') {
+        html += `<div class="info-play-btn locked">LOCKED</div>`;
+        html += `<div class="info-lock-msg">Complete ${CLASSES[cls.worldIndex - 1]?.worldName || 'previous'} world first</div>`;
+    } else if (state === 'current') {
+        const { save } = getSaveState();
+        const label = save ? 'CONTINUE CAMPAIGN' : 'BEGIN CAMPAIGN';
+        html += `<a href="arena.html?world=${cls.worldKey}" class="info-play-btn">${label}</a>`;
+    } else {
+        // cleared or all complete
+        html += `<a href="arena.html?world=${cls.worldKey}" class="info-play-btn">ENTER ARENA</a>`;
+    }
+
+    content.innerHTML = html;
+    panel.classList.add('open');
+}
+
+function closeInfoPanel() {
+    document.getElementById('info-panel').classList.remove('open');
+}
+
+document.getElementById('info-close').addEventListener('click', () => {
+    selectedChar = -1;
+    closeInfoPanel();
+});
+
+// ---- HUD ----
+function updateHud() {
+    const { gold } = getSaveState();
+    const el = document.getElementById('hud-gold');
+    if (gold > 0) {
+        el.textContent = '\u{1FA99} ' + gold.toLocaleString();
+    } else {
+        el.textContent = '';
+    }
+}
+
+// ---- SETTINGS ----
+function toggleSettings() {
+    settingsOpen = !settingsOpen;
+    document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
+    if (settingsOpen && hofOpen) toggleHof();
+}
+
+document.getElementById('btn-settings').addEventListener('click', toggleSettings);
+
+document.getElementById('btn-export').addEventListener('click', () => {
+    const save = loadSave();
+    if (!save) { showToast('No save data'); return; }
+    navigator.clipboard.writeText(JSON.stringify(save, null, 2))
+        .then(() => showToast('Save copied'))
+        .catch(() => showToast('Copy failed'));
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+    toggleSettings();
+    document.getElementById('import-modal').classList.add('active');
+    document.getElementById('import-textarea').value = '';
+    document.getElementById('import-textarea').focus();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!confirm('Reset all progress? This cannot be undone.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    showToast('Progress reset');
+    toggleSettings();
+    selectedChar = -1;
+    closeInfoPanel();
+    updateHud();
+    renderHof();
+});
+
+document.getElementById('btn-import-cancel').addEventListener('click', () => {
+    document.getElementById('import-modal').classList.remove('active');
+});
+
+document.getElementById('btn-import-confirm').addEventListener('click', () => {
+    const text = document.getElementById('import-textarea').value.trim();
+    if (!text) { showToast('Paste JSON first'); return; }
+    try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object') throw new Error();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        document.getElementById('import-modal').classList.remove('active');
+        showToast('Save imported');
+        selectedChar = -1;
+        closeInfoPanel();
+        updateHud();
+        renderHof();
+    } catch(e) { showToast('Invalid JSON'); }
+});
+
+document.getElementById('import-modal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+});
+
+// ---- HALL OF FAME ----
+function toggleHof() {
+    hofOpen = !hofOpen;
+    document.getElementById('hof-panel').classList.toggle('open', hofOpen);
+    if (hofOpen && settingsOpen) toggleSettings();
+    if (hofOpen) renderHof();
+}
+
+document.getElementById('btn-hof').addEventListener('click', toggleHof);
+document.getElementById('hof-close').addEventListener('click', toggleHof);
+
+function renderHof() {
+    const container = document.getElementById('hof-content');
+    const save = loadSave();
+
+    if (!save || !save.classStats) {
+        container.innerHTML = '<div style="text-align:center;font-size:7px;color:rgba(176,160,144,0.4);padding:16px">No data yet. Play a run first!</div>';
+        return;
+    }
+
+    let anyPlayed = false;
+    for (const c of CLASSES) {
+        const cs = save.classStats[c.id];
+        if (cs && cs.totalRuns > 0) { anyPlayed = true; break; }
+    }
+    if (!anyPlayed) {
+        container.innerHTML = '<div style="text-align:center;font-size:7px;color:rgba(176,160,144,0.4);padding:16px">No data yet. Play a run first!</div>';
+        return;
+    }
+
+    let html = '<div class="hof-grid">';
+    for (const c of CLASSES) {
+        const cs = (save.classStats && save.classStats[c.id]) || {};
+        const played = cs.totalRuns > 0;
+
+        let starCount = 0;
+        if (cs.totalRuns > 0) starCount = 1;
+        if (cs.bestTime >= 300) starCount = 2;
+        if (cs.bestTime >= 600) starCount = 3;
+
+        let stars = '';
+        for (let s = 0; s < 3; s++) {
+            stars += s < starCount
+                ? '<span class="hof-star-on">\u2605</span>'
+                : '<span class="hof-star-off">\u2605</span>';
+        }
+
+        html += `<div class="hof-card ${played ? 'played' : 'unplayed'}">`;
+        html += `<div class="hof-card-name" style="color:${c.accentColor}">${c.name}</div>`;
+        html += `<div class="hof-stars">${stars}</div>`;
+        if (played) {
+            html += `<div class="hof-stat"><strong>${formatTime(cs.bestTime)}</strong> best</div>`;
+            html += `<div class="hof-stat"><strong>${cs.bestKills || 0}</strong> kills</div>`;
+            html += `<div class="hof-stat"><strong>${cs.totalRuns}</strong> runs</div>`;
+        } else {
+            html += '<div class="hof-no-data">Not played</div>';
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function formatTime(seconds) {
+    if (!seconds) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+// ---- TOAST ----
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ---- INIT ----
+initCanvas();
+initParticles();
+updateHud();
+requestAnimationFrame(render);
+</script>
 
 </body>
 </html>
