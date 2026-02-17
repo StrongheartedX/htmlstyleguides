@@ -1591,6 +1591,28 @@ function showToast(msg) {
     setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// ---- MUSIC ----
+let musicStarted = false;
+function initMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+    const script = document.createElement('script');
+    script.src = '../audio-tracker/playback-engine.js';
+    script.onload = function() {
+        fetch('../audio-tracker/songs/survivors-campfire.json')
+            .then(r => r.json())
+            .then(song => {
+                ChipPlayer.init();
+                ChipPlayer.load(song);
+                ChipPlayer.setVolume(0.12);
+                ChipPlayer.play();
+            });
+    };
+    document.body.appendChild(script);
+}
+document.addEventListener('click', initMusic, { once: true });
+document.addEventListener('keydown', initMusic, { once: true });
+
 // ---- INIT ----
 initCanvas();
 initParticles();

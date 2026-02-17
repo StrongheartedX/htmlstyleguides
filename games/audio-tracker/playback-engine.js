@@ -199,6 +199,27 @@ var ChipPlayer = (function () {
 
     load: function (songJSON) {
       song = songJSON;
+      // Normalize tracker-native format to compact format
+      if (song.sequence && !song.seq) {
+        song.seq = song.sequence;
+        for (var p = 0; p < song.patterns.length; p++) {
+          var pat = song.patterns[p];
+          if (pat.channels && !pat.ch) {
+            var len = pat.len || 16;
+            pat.ch = [];
+            for (var c = 0; c < pat.channels.length; c++) {
+              var dense = new Array(len);
+              for (var r = 0; r < len; r++) dense[r] = null;
+              var events = pat.channels[c];
+              for (var e = 0; e < events.length; e++) {
+                var ev = events[e];
+                dense[ev.r] = [ev.n, ev.i];
+              }
+              pat.ch.push(dense);
+            }
+          }
+        }
+      }
       seqIndex = 0;
       rowIndex = 0;
     },
