@@ -151,6 +151,11 @@ Let ring 2-4 rows before new notes.
 1. Write the complete JSON to `games/audio-tracker/songs/{kebab-case-title}.json`.
 2. Update `games/audio-tracker/songs/index.json` to add the new song entry.
 3. Verify the JSON is valid and all pattern IDs referenced in the sequence exist.
+4. Run the boundary gap fixer to extend note durations at pattern transitions:
+   ```bash
+   python3 games/audio-tracker/tools/fix-boundary-gaps.py --fix games/audio-tracker/songs/{kebab-case-title}.json
+   ```
+   This detects silent gaps where a note's `d` ends before the pattern boundary and the next pattern doesn't start on row 0, then extends durations to sustain through.
 
 ## Available Wave Types
 

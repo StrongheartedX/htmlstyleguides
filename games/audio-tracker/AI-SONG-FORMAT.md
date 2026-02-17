@@ -83,6 +83,16 @@ The tracker now accepts two song JSON styles:
 - For percussion, use sparse events and `noise` instrument.
 - Keep note-offs explicit (`n: -1`) when exact gate timing matters.
 
+## Post-Composition: Fix Boundary Gaps
+
+After generating a song, run the boundary gap fixer to smooth pattern transitions:
+
+```bash
+python3 games/audio-tracker/tools/fix-boundary-gaps.py --fix games/audio-tracker/songs/your-song.json
+```
+
+This scans for silent gaps at pattern boundaries — where a note's `d` ends before the pattern length and the next pattern doesn't immediately start a note — and extends durations to sustain through. Use `--all` to scan the entire library.
+
 ## Deep Composition Reference
 
 For music theory, style profiles, chord progressions, and full-length composition guidance, see the chiptune-composer skill:
