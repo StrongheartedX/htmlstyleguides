@@ -3676,6 +3676,25 @@ function renderGoldHUD(ctx) {
   ctx.fillText('G', coinX, coinY + 1);
 
   ctx.restore();
+
+  // Skill point indicator (below gold)
+  const saveData = SaveManager.load();
+  const spentPts = Object.keys(saveData.skillTree || {}).filter(k => saveData.skillTree[k]).length;
+  const availPts = (saveData.skillPoints || 0) - spentPts;
+  if (availPts > 0) {
+    ctx.save();
+    const spY = y + 28;
+    const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 300);
+    ctx.globalAlpha = pulse;
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 8;
+    ctx.fillText(`\u2B50 ${availPts} SP  [K]`, x, spY);
+    ctx.restore();
+  }
 }
 
 // ============================================================
