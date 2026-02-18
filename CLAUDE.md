@@ -29,7 +29,9 @@ A collection of CSS design system showcases, interactive educational stories, st
 │   ├── assets/             # Deck images (prefix with deck name)
 │   └── decks/              # JSON presentation files
 └── games/                  # Browser games (modular JS)
-    └── survivors/          # Survivors roguelike (arena + shop + themes)
+    ├── survivors/          # Survivors roguelike (arena + shop + themes)
+    └── music-visualizer/   # Canvas visualizer synced to chiptune songs
+        └── CLAUDE.md       # How to build renderers
 ```
 
 ## Core Principles
