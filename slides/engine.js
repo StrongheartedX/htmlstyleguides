@@ -192,12 +192,13 @@ const SlideEngine = (() => {
   function createText(el) {
     const div = document.createElement('div');
     const styleDef = theme.textStyles[el.style] || theme.textStyles.body || {};
+    const isCentered = styleDef.textAlign === 'center';
 
     div.style.cssText = `
       position: absolute;
       left: ${el.x}%; top: ${el.y}%;
       width: ${el.w || 'auto'}%;
-      transform: translateX(-50%);
+      ${isCentered ? 'transform: translateX(-50%);' : ''}
       white-space: pre-wrap; word-wrap: break-word;
     `;
 

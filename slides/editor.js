@@ -119,9 +119,10 @@ const SlideEditor = (() => {
     slide.elements.forEach(el => {
       if (el.type === 'text') {
         const d = document.createElement('div');
+        const sCentered = (theme.textStyles[el.style] || {}).textAlign === 'center';
         d.style.cssText = `
           position: absolute; left: ${el.x}%; top: ${el.y}%;
-          transform: translateX(-50%);
+          ${sCentered ? 'transform: translateX(-50%);' : ''}
           font-size: 3px; color: var(--slide-text, #333);
           white-space: nowrap; overflow: hidden;
           max-width: ${el.w || 80}%;
@@ -179,11 +180,12 @@ const SlideEditor = (() => {
     div.className = 'editor-element editor-text';
     const styleDef = theme.textStyles[el.style] || theme.textStyles.body || {};
 
+    const isCentered = styleDef.textAlign === 'center';
     div.style.cssText = `
       position: absolute;
       left: ${el.x}%; top: ${el.y}%;
       width: ${el.w || 'auto'}%;
-      transform: translateX(-50%);
+      ${isCentered ? 'transform: translateX(-50%);' : ''}
       cursor: move; white-space: pre-wrap; word-wrap: break-word;
       min-height: 1em; outline: none;
     `;
