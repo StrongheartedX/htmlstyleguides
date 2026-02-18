@@ -127,6 +127,28 @@ var SheetMusic = (function () {
     maxNoteDurationRows = 1;
     if (!song || !song.patterns || !song.sequence) return;
 
+    var patById = {};
+    for (var pi = 0; pi < song.patterns.length; pi++) {
+      var pRef = song.patterns[pi];
+      patById[pRef.id] = pRef;
+    }
+
+    function rowsUntilNextControlEvent(seqIndex, channel) {
+      var dist = 0;
+      for (var s2 = seqIndex + 1; s2 < song.sequence.length; s2++) {
+        var seq2 = song.sequence[s2];
+        if (!seq2) continue;
+        var pat2 = patById[seq2[channel]];
+        if (!pat2) continue;
+        for (var r2 = 0; r2 < pat2.length; r2++) {
+          var c2 = pat2.channels[channel][r2];
+          if (c2 && c2.note !== null) return dist + r2;
+        }
+        dist += pat2.length;
+      }
+      return null;
+    }
+
     totalRows = 0;
     var rowOffset = 0;
 
@@ -135,23 +157,18 @@ var SheetMusic = (function () {
       var seq = song.sequence[si];
       // Determine pattern length from first channel
       var firstPatId = seq[0];
-      var firstPat = null;
-      for (var p = 0; p < song.patterns.length; p++) {
-        if (song.patterns[p].id === firstPatId) { firstPat = song.patterns[p]; break; }
-      }
+      var firstPat = patById[firstPatId] || null;
       var patLen = firstPat ? firstPat.length : 16;
 
       for (var ch = 0; ch < 4; ch++) {
         var patId = seq[ch];
-        var pat = null;
-        for (var p2 = 0; p2 < song.patterns.length; p2++) {
-          if (song.patterns[p2].id === patId) { pat = song.patterns[p2]; break; }
-        }
+        var pat = patById[patId] || null;
         if (!pat) continue;
 
         // Walk through rows to find note-on events and compute durations
         var noteStart = -1;
         var noteMidi = 0;
+        var noteDurHint = 0;
 
         for (var r = 0; r < pat.length; r++) {
           var cell = pat.channels[ch][r];
@@ -164,6 +181,7 @@ var SheetMusic = (function () {
               if (noteStart >= 0) {
                 pushNote(noteStart + rowOffset, noteMidi, ch, r - noteStart);
                 noteStart = -1;
+                noteDurHint = 0;
               }
               continue;
             }
@@ -173,17 +191,33 @@ var SheetMusic = (function () {
             }
             noteStart = r;
             noteMidi = cell.note;
+            noteDurHint = (typeof cell._dur === 'number' && cell._dur > 0) ? cell._dur : 0;
           } else if (cell.note === -1) {
             // Note-off
             if (noteStart >= 0) {
               pushNote(noteStart + rowOffset, noteMidi, ch, r - noteStart);
               noteStart = -1;
+              noteDurHint = 0;
             }
           }
         }
         // If note still active at pattern end, close it
         if (noteStart >= 0) {
-          pushNote(noteStart + rowOffset, noteMidi, ch, pat.length - noteStart);
+          var dur = pat.length - noteStart;
+
+          // Event-format durations can intentionally sustain past a pattern
+          // boundary. Reflect that in notation unless a future event would
+          // cut the note sooner.
+          if (noteDurHint > dur) {
+            var extraWanted = noteDurHint - dur;
+            var rowsToNextControl = rowsUntilNextControlEvent(si, ch);
+            if (rowsToNextControl !== null) {
+              extraWanted = Math.min(extraWanted, rowsToNextControl);
+            }
+            if (extraWanted > 0) dur += extraWanted;
+          }
+
+          pushNote(noteStart + rowOffset, noteMidi, ch, dur);
         }
       }
 

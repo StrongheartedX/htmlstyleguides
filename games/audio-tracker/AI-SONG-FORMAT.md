@@ -78,10 +78,12 @@ The tracker now accepts two song JSON styles:
 ## Tips For AI Song Generation
 
 - Keep patterns short (`16` or `32` rows) and reuse via `sequence`.
+- Always set `patterns[].len`/`length` explicitly (do not rely on inference).
 - Use one intro pattern before loop section.
 - Put loop markers on `sequence` rows, not pattern rows.
 - For percussion, use sparse events and `noise` instrument.
 - Keep note-offs explicit (`n: -1`) when exact gate timing matters.
+- For seamless boundaries, let at least one pitched channel sustain or use pickup notes before major section changes.
 
 ## Post-Composition: Fix Boundary Gaps
 

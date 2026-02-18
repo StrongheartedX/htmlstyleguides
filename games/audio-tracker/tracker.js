@@ -31,7 +31,8 @@ var Tracker = (function () {
   var UNDO_LIMIT = 100;
 
   // Lookahead constants (seconds / ms)
-  var SCHEDULE_AHEAD = 0.1;      // 100 ms
+  // Slightly larger lookahead reduces underruns on busy tabs.
+  var SCHEDULE_AHEAD = 0.2;      // 200 ms
   var TICK_MS = 25;
 
   // ---------------------------------------------------------------------------
@@ -193,10 +194,11 @@ var Tracker = (function () {
   }
 
   function inferPatternLength(rawPattern) {
-    var length = toInt(rawPattern.length, NaN);
-    if (isNaN(length)) length = toInt(rawPattern.len, NaN);
+    var explicitLength = toInt(rawPattern.length, NaN);
+    if (isNaN(explicitLength)) explicitLength = toInt(rawPattern.len, NaN);
 
-    var inferred = 0;
+    var inferredRows = 0;
+    var inferredDurEnd = 0;
     var rawChannels = rawPattern.channels || rawPattern.ch || [];
     if (!Array.isArray(rawChannels)) rawChannels = [];
 
@@ -210,18 +212,32 @@ var Tracker = (function () {
           if (!looksLikeEvent(ev)) continue;
           var row = toInt((ev.r !== undefined) ? ev.r : ev.row, NaN);
           if (isNaN(row) || row < 0) continue;
-          var end = row + 1;
+          var rowEnd = row + 1;
+          if (rowEnd > inferredRows) inferredRows = rowEnd;
           var dur = toInt((ev.d !== undefined) ? ev.d : ev.dur, 0);
-          if (dur > 0) end = row + dur + 1;
-          if (end > inferred) inferred = end;
+          if (dur > 0) {
+            // `dur` is row-count duration; row 28 + d4 ends at row 32.
+            var durEnd = row + dur;
+            if (durEnd > inferredDurEnd) inferredDurEnd = durEnd;
+          }
         }
-      } else if (rc.length > inferred) {
-        inferred = rc.length;
+      } else if (rc.length > inferredRows) {
+        inferredRows = rc.length;
       }
     }
 
-    if (isNaN(length) || length < 1) length = inferred || 16;
-    if (inferred > length) length = inferred;
+    // If pattern length is explicitly declared, keep it authoritative.
+    // Only grow it when events are literally placed beyond the declared rows.
+    if (!isNaN(explicitLength) && explicitLength >= 1) {
+      var explicit = explicitLength;
+      if (inferredRows > explicit) explicit = inferredRows;
+      if (explicit < 1) explicit = 1;
+      return explicit;
+    }
+
+    var length = inferredRows;
+    if (inferredDurEnd > length) length = inferredDurEnd;
+    if (length < 1) length = 16;
     if (length < 1) length = 1;
     return length;
   }

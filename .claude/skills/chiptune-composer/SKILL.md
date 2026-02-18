@@ -44,6 +44,7 @@ Build the song JSON section by section. For each section:
 - **Register separation**: Keep bass in MIDI 36-55, melody in 60-84, harmony flexible but avoid crossing the melody.
 - **Phrase structure**: Use 4-bar or 8-bar phrases (16 or 32 rows at rpb=4). End phrases with clear cadences.
 - **Dynamic arc**: Build intensity across the song. Use sparser textures for intros and bridges, denser for climaxes.
+- **Pattern length contract**: Always set `patterns[].len` explicitly (usually 16 or 32) and treat it as fixed. Use cross-boundary `d` sustains to tie into the next pattern; do not rely on implicit pattern-length inference.
 
 ### Pattern Transition Techniques
 
@@ -156,6 +157,9 @@ Let ring 2-4 rows before new notes.
    python3 games/audio-tracker/tools/fix-boundary-gaps.py --fix games/audio-tracker/songs/{kebab-case-title}.json
    ```
    This detects silent gaps where a note's `d` ends before the pattern boundary and the next pattern doesn't start on row 0, then extends durations to sustain through.
+5. Spot-check transition continuity:
+   - Avoid all 4 channels going silent on the final 1-2 rows unless intentional.
+   - Verify each major section boundary has at least one glue technique (cross-boundary sustain, pickup, fill, or staggered channel switch).
 
 ## Available Wave Types
 
