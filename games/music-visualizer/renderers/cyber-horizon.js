@@ -97,6 +97,73 @@ window.Renderers['cyber-horizon'] = (function () {
         ctx.fillRect(sunX - sunR * 1.2, by, sunR * 2.4, bh);
       }
 
+      // Sunglasses
+      var glassY = sunY - sunR * 0.38;
+      var glassW = sunR * 0.32;
+      var glassH = sunR * 0.22;
+      var glassGap = sunR * 0.06;
+      var glassR = sunR * 0.06;
+      var bridgeY = glassY + glassH * 0.35;
+
+      ctx.fillStyle = "#0a0a0a";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = Math.max(1.5, sunR * 0.02);
+
+      // Left lens
+      var lx = sunX - glassGap - glassW;
+      ctx.beginPath();
+      ctx.moveTo(lx + glassR, glassY);
+      ctx.lineTo(lx + glassW - glassR, glassY);
+      ctx.quadraticCurveTo(lx + glassW, glassY, lx + glassW, glassY + glassR);
+      ctx.lineTo(lx + glassW, glassY + glassH - glassR);
+      ctx.quadraticCurveTo(lx + glassW, glassY + glassH, lx + glassW - glassR, glassY + glassH);
+      ctx.lineTo(lx + glassR, glassY + glassH);
+      ctx.quadraticCurveTo(lx, glassY + glassH, lx, glassY + glassH - glassR);
+      ctx.lineTo(lx, glassY + glassR);
+      ctx.quadraticCurveTo(lx, glassY, lx + glassR, glassY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Right lens
+      var rx = sunX + glassGap;
+      ctx.beginPath();
+      ctx.moveTo(rx + glassR, glassY);
+      ctx.lineTo(rx + glassW - glassR, glassY);
+      ctx.quadraticCurveTo(rx + glassW, glassY, rx + glassW, glassY + glassR);
+      ctx.lineTo(rx + glassW, glassY + glassH - glassR);
+      ctx.quadraticCurveTo(rx + glassW, glassY + glassH, rx + glassW - glassR, glassY + glassH);
+      ctx.lineTo(rx + glassR, glassY + glassH);
+      ctx.quadraticCurveTo(rx, glassY + glassH, rx, glassY + glassH - glassR);
+      ctx.lineTo(rx, glassY + glassR);
+      ctx.quadraticCurveTo(rx, glassY, rx + glassR, glassY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bridge
+      ctx.beginPath();
+      ctx.moveTo(sunX - glassGap, bridgeY);
+      ctx.quadraticCurveTo(sunX, bridgeY - sunR * 0.04, sunX + glassGap, bridgeY);
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = Math.max(2, sunR * 0.03);
+      ctx.stroke();
+
+      // Arms extending outward
+      ctx.beginPath();
+      ctx.moveTo(lx, glassY + glassH * 0.3);
+      ctx.lineTo(lx - sunR * 0.3, glassY + glassH * 0.15);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(rx + glassW, glassY + glassH * 0.3);
+      ctx.lineTo(rx + glassW + sunR * 0.3, glassY + glassH * 0.15);
+      ctx.stroke();
+
+      // Lens glare
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(lx + glassW * 0.15, glassY + glassH * 0.15, glassW * 0.25, glassH * 0.3);
+      ctx.fillRect(rx + glassW * 0.15, glassY + glassH * 0.15, glassW * 0.25, glassH * 0.3);
+
       // 4. Horizon & Grid
       var horY = h * 0.55;
       gridOffset += dt * 80 * (1 + energy * 2);
