@@ -266,12 +266,21 @@ window.Renderers["boom-boom-skyline"] = (function () {
     }
 
     // Buildings
-    ctx.fillStyle = "#0a0a12";
+    var buildingFill = "#060610";
+    var edgeColor = "rgba(100,120,180,0.12)";
+    ctx.fillStyle = buildingFill;
     for (var i = 0; i < buildings.length; i++) {
       var b = buildings[i];
       var bx = b.x;
       var by = h - b.h;
       ctx.fillRect(bx, by, b.w, b.h);
+
+      // Subtle edge highlights
+      ctx.fillStyle = edgeColor;
+      ctx.fillRect(bx, by, 1, b.h);
+      ctx.fillRect(bx + b.w - 1, by, 1, b.h);
+      ctx.fillRect(bx, by, b.w, 1);
+      ctx.fillStyle = buildingFill;
 
       // Antenna
       if (b.antenna > 0) {
@@ -281,7 +290,7 @@ window.Renderers["boom-boom-skyline"] = (function () {
         ctx.beginPath();
         ctx.arc(bx + b.w * 0.5, by - b.antenna, 2 * sc(), 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#0a0a12";
+        ctx.fillStyle = buildingFill;
       }
 
       // Windows
@@ -293,7 +302,7 @@ window.Renderers["boom-boom-skyline"] = (function () {
       for (var r = 0; r < b.windowRows; r++) {
         for (var c = 0; c < b.windowCols; c++) {
           if (rand() > 0.4) {
-            var brightness = 0.1 + rand() * 0.25;
+            var brightness = 0.15 + rand() * 0.3;
             var warm = rand() > 0.3;
             ctx.fillStyle = warm
               ? "rgba(255,220,130," + brightness + ")"
@@ -306,11 +315,11 @@ window.Renderers["boom-boom-skyline"] = (function () {
           }
         }
       }
-      ctx.fillStyle = "#0a0a12";
+      ctx.fillStyle = buildingFill;
     }
 
     // Ground line
-    ctx.fillStyle = "#050508";
+    ctx.fillStyle = "#030308";
     ctx.fillRect(0, h - 4, w, 4);
   }
 
@@ -398,7 +407,7 @@ window.Renderers["boom-boom-skyline"] = (function () {
       skyGrad.addColorStop(0, "#05071a");
       skyGrad.addColorStop(0.5, "#0a1028");
       skyGrad.addColorStop(0.85, "#111535");
-      skyGrad.addColorStop(1, "#0a0a12");
+      skyGrad.addColorStop(1, "#0c1025");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, w, h);
 
@@ -505,16 +514,13 @@ window.Renderers["boom-boom-skyline"] = (function () {
         }
       }
 
-      // --- Draw burst glow (behind everything) ---
+      // --- Draw burst glow (behind skyline) ---
       for (i = 0; i < particles.length; i++) {
         p = particles[i];
-        if (p.life / p.maxLife > 0.7) {
+        var lifeRat = p.life / p.maxLife;
+        if (lifeRat > 0.7) {
           var glowR = p.size * 15;
-          var glowAlpha = (p.life / p.maxLife - 0.7) * 0.12;
-          var glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-          glow.addColorStop(0, p.color.replace(")", "," + glowAlpha + ")").replace("#", "rgba(255,200,100,").replace(/rgba\(rgba/, "rgba("));
-          glow.addColorStop(1, "rgba(0,0,0,0)");
-          // Simplified glow: just draw a bright circle
+          var glowAlpha = (lifeRat - 0.7) * 0.12;
           ctx.globalAlpha = glowAlpha;
           ctx.fillStyle = p.color;
           ctx.beginPath();
