@@ -308,17 +308,10 @@ const SlideEditor = (() => {
       font-size: 0.8rem; color: var(--muted, #999);
       overflow: hidden;
     `;
-    div.textContent = '📊 Mermaid: ' + el.content.split('\n')[0];
-
-    div.addEventListener('dblclick', e => {
-      e.stopPropagation();
-      const newContent = prompt('Edit Mermaid source:', el.content);
-      if (newContent !== null) {
-        el.content = newContent;
-        renderCanvas();
-        saveDraft();
-      }
-    });
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'margin:0;padding:4px;font-size:0.65rem;line-height:1.3;white-space:pre-wrap;word-break:break-word;overflow:hidden;width:100%;height:100%;';
+    pre.textContent = el.content;
+    div.appendChild(pre);
 
     addResizeHandles(div, el);
     return div;
@@ -533,6 +526,14 @@ const SlideEditor = (() => {
         </label>
         <label>Content
           <textarea data-prop="content" rows="3">${escapeHtml(el.content)}</textarea>
+        </label>
+      `;
+    }
+
+    if (el.type === 'mermaid') {
+      html += `
+        <label>Mermaid Source
+          <textarea data-prop="content" rows="10" style="font-family:var(--font-code,monospace);font-size:0.8rem;white-space:pre;tab-size:2">${escapeHtml(el.content)}</textarea>
         </label>
       `;
     }
