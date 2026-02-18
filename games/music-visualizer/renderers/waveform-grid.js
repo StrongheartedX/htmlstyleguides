@@ -65,26 +65,8 @@ window.Renderers["waveform-grid"] = (function () {
       }
 
       var numCh = analysis.numChannels;
-      var laneH = (h - 40) / numCh;  // 40px for header
-      var headerH = 40;
-
-      // Header bar
-      ctx.fillStyle = "#161b22";
-      ctx.fillRect(0, 0, w, headerH);
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.font = "bold 12px monospace";
-      var songTitle = fd.song ? (fd.song.title || "Unknown") : "";
-      ctx.fillText(songTitle, 12, 26);
-
-      // Time display
-      var elapsed = fd.cursor.elapsed;
-      var mins = Math.floor(elapsed / 60);
-      var secs = Math.floor(elapsed % 60);
-      var timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
-      ctx.fillStyle = "rgba(255,255,255,0.4)";
-      ctx.textAlign = "right";
-      ctx.fillText(timeStr + "  BPM:" + (fd.song ? fd.song.bpm : "?"), w - 12, 26);
-      ctx.textAlign = "start";
+      var footerH = 28;
+      var laneH = (h - footerH) / numCh;
 
       // Current position in timeline
       var currentRow = fd.cursor.totalFracRow;
@@ -94,7 +76,7 @@ window.Renderers["waveform-grid"] = (function () {
 
       // Draw each channel lane
       for (var ch = 0; ch < numCh; ch++) {
-        var laneY = headerH + ch * laneH;
+        var laneY = ch * laneH;
         var colors = CH_COLORS[ch % CH_COLORS.length];
 
         // Lane background
@@ -149,8 +131,8 @@ window.Renderers["waveform-grid"] = (function () {
       ctx.lineWidth = 2;
       ctx.globalAlpha = 0.8;
       ctx.beginPath();
-      ctx.moveTo(playheadX, headerH);
-      ctx.lineTo(playheadX, h);
+      ctx.moveTo(playheadX, 0);
+      ctx.lineTo(playheadX, h - footerH);
       ctx.stroke();
       ctx.globalAlpha = 1;
 
@@ -160,17 +142,17 @@ window.Renderers["waveform-grid"] = (function () {
       phGrad.addColorStop(0.5, "rgba(255,255,255,0.05)");
       phGrad.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = phGrad;
-      ctx.fillRect(playheadX - 20, headerH, 40, h - headerH);
+      ctx.fillRect(playheadX - 20, 0, 40, h - footerH);
 
       // Beat flash overlay
       var beatFrac = (fd.cursor.totalFracRow % analysis.rpb) / analysis.rpb;
       if (beatFrac < 0.1) {
         var flashAlpha = (1 - beatFrac / 0.1) * 0.08;
         ctx.fillStyle = "rgba(255,255,255," + flashAlpha + ")";
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(0, 0, w, h - footerH);
       }
 
-      // Beat markers along bottom
+      // Beat markers
       var beatRowSpacing = analysis.rpb;
       ctx.strokeStyle = "rgba(255,255,255,0.06)";
       ctx.lineWidth = 1;
@@ -178,10 +160,33 @@ window.Renderers["waveform-grid"] = (function () {
         var bx = (br - startRow) * rowW;
         if (bx < 0 || bx > w) continue;
         ctx.beginPath();
-        ctx.moveTo(bx, headerH);
-        ctx.lineTo(bx, h);
+        ctx.moveTo(bx, 0);
+        ctx.lineTo(bx, h - footerH);
         ctx.stroke();
       }
+
+      // Footer bar with song info
+      var footerY = h - footerH;
+      ctx.fillStyle = "#161b22";
+      ctx.fillRect(0, footerY, w, footerH);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.beginPath();
+      ctx.moveTo(0, footerY);
+      ctx.lineTo(w, footerY);
+      ctx.stroke();
+
+      ctx.font = "bold 11px monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      var songTitle = fd.song ? (fd.song.title || "") : "";
+      ctx.fillText(songTitle, 12, footerY + 18);
+
+      var elapsed = fd.cursor.elapsed;
+      var mins = Math.floor(elapsed / 60);
+      var secs = Math.floor(elapsed % 60);
+      var timeStr = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
+      ctx.textAlign = "right";
+      ctx.fillText(timeStr + "  BPM:" + (fd.song ? fd.song.bpm : "?"), w - 12, footerY + 18);
+      ctx.textAlign = "start";
     },
 
     destroy: function () {
