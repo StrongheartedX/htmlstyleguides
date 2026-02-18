@@ -182,14 +182,14 @@ window.Renderers['cyber-horizon'] = (function () {
       if (fd.cursor) {
         var rpb = analysis.rpb || 4;
         var bFrac = (fd.cursor.totalFracRow % rpb) / rpb;
-        if (bFrac < 0.15) {
-          var alpha = (1 - bFrac / 0.15) * 0.15;
+        if (bFrac < 0.1) {
+          var alpha = (1 - bFrac / 0.1) * 0.08;
           ctx.fillStyle = "rgba(255, 255, 255, " + alpha + ")";
           ctx.fillRect(0, 0, w, h);
 
           // Flash the horizon line
-          ctx.strokeStyle = "rgba(255, 255, 255, " + (alpha * 2) + ")";
-          ctx.lineWidth = 4;
+          ctx.strokeStyle = "rgba(255, 255, 255, " + (alpha * 1.5) + ")";
+          ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.moveTo(0, horY);
           ctx.lineTo(w, horY);

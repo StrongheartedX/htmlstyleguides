@@ -146,8 +146,8 @@ window.Renderers["waveform-grid"] = (function () {
 
       // Beat flash overlay
       var beatFrac = (fd.cursor.totalFracRow % analysis.rpb) / analysis.rpb;
-      if (beatFrac < 0.1) {
-        var flashAlpha = (1 - beatFrac / 0.1) * 0.08;
+      if (beatFrac < 0.08) {
+        var flashAlpha = (1 - beatFrac / 0.08) * 0.05;
         ctx.fillStyle = "rgba(255,255,255," + flashAlpha + ")";
         ctx.fillRect(0, 0, w, h - footerH);
       }
