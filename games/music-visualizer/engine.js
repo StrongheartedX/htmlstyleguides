@@ -40,6 +40,13 @@ window.Visualizer = (function () {
    * Normalize song JSON to compact format (same logic as ChipPlayer.load).
    * Returns a shallow copy so the original stays untouched.
    */
+  /**
+   * Normalize song JSON to a consistent internal format for analysis.
+   * Handles two source formats:
+   *   1. Tracker-native: positional arrays of {note, inst, vol, fx} per row
+   *   2. Compact event: sparse arrays of {r, n, i} with explicit row index
+   * Both get converted to dense arrays: pat.ch[channel][row] = [midi, instIdx] | null
+   */
   function normalizeSong(raw) {
     var s = JSON.parse(JSON.stringify(raw));
     // rpb alias
@@ -75,7 +82,67 @@ window.Visualizer = (function () {
           var events = pat.channels[c];
           for (var e = 0; e < events.length; e++) {
             var ev = events[e];
-            if (ev && ev.note != null) {
+            if (!ev) continue;
+            if (ev.n != null && ev.r != null) {
+              // Compact event format: {r: row, n: note, i: instrument}
+              if (ev.n > 0 && ev.r < pat.len) {
+                dense[ev.r] = [ev.n, ev.i != null ? ev.i : 0];
+              }
+            } else if (ev.note != null) {
+              // Tracker-native format: positional, index e IS the row
+              dense[e] = [ev.note, ev.inst != null ? ev.inst : 0];
+            }
+          }
+          pat.ch.push(dense);
+        }
+      }
+    }
+    return s;
+  }
+
+  /**
+   * Build a song object in the exact format ChipPlayer expects:
+   * - seq[] array, bpm, rpb
+   * - instruments with short keys (a, d, s, r, vol, wave, etc.)
+   * - patterns with len and ch[channel][row] = [midi, instIdx] | null
+   */
+  function buildChipPlayerSong(raw) {
+    var s = JSON.parse(JSON.stringify(raw));
+    if (!s.rpb && s.rowsPerBeat) s.rpb = s.rowsPerBeat;
+    if (!s.rpb) s.rpb = 4;
+    if (s.sequence && !s.seq) s.seq = s.sequence;
+
+    // Normalize instruments to short keys
+    if (s.instruments) {
+      for (var i = 0; i < s.instruments.length; i++) {
+        var inst = s.instruments[i];
+        if (inst.attack !== undefined && inst.a === undefined) inst.a = inst.attack;
+        if (inst.decay !== undefined && inst.d === undefined) inst.d = inst.decay;
+        if (inst.sustain !== undefined && inst.s === undefined) inst.s = inst.sustain;
+        if (inst.release !== undefined && inst.r === undefined) inst.r = inst.release;
+        if (inst.volume !== undefined && inst.vol === undefined) inst.vol = inst.volume;
+      }
+    }
+
+    // Normalize patterns to ch[][] dense format
+    for (var p = 0; p < s.patterns.length; p++) {
+      var pat = s.patterns[p];
+      if (!pat.len && pat.length) pat.len = pat.length;
+      if (!pat.len) pat.len = 16;
+      if (pat.channels && !pat.ch) {
+        pat.ch = [];
+        for (var c = 0; c < pat.channels.length; c++) {
+          var dense = new Array(pat.len);
+          for (var r = 0; r < pat.len; r++) dense[r] = null;
+          var events = pat.channels[c];
+          for (var e = 0; e < events.length; e++) {
+            var ev = events[e];
+            if (!ev) continue;
+            if (ev.n != null && ev.r != null) {
+              // Compact event: {r, n, i}
+              if (ev.n > 0 && ev.r < pat.len) dense[ev.r] = [ev.n, ev.i != null ? ev.i : 0];
+            } else if (ev.note != null) {
+              // Tracker-native: positional
               dense[e] = [ev.note, ev.inst != null ? ev.inst : 0];
             }
           }
@@ -416,9 +483,11 @@ window.Visualizer = (function () {
       song = normalizeSong(songJSON);
       analysis = analyzeSong(song);
 
-      // Load into ChipPlayer
+      // Build a ChipPlayer-compatible copy of the song.
+      // ChipPlayer expects compact format: seq[], patterns with ch[][] = [midi, inst]
+      // and instruments with short keys (a, d, s, r, vol).
       if (window.ChipPlayer) {
-        ChipPlayer.load(song);
+        ChipPlayer.load(buildChipPlayerSong(songJSON));
       }
 
       // Re-init current renderer with new analysis
