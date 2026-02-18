@@ -33,6 +33,9 @@ window.Renderers["pixel-platform-runner"] = (function () {
   var skylineFar = [];
   var skylineMid = [];
   var skylineNear = [];
+  var skylineFarSpan = 1;
+  var skylineMidSpan = 1;
+  var skylineNearSpan = 1;
   var dust = [];
   var stars = [];
   var MAX_DUST = 220;
@@ -187,13 +190,15 @@ window.Renderers["pixel-platform-runner"] = (function () {
   }
 
   function buildSkyline() {
-    function makeLayer(count, minW, maxW, minH, maxH, minGap, maxGap) {
+    function makeLayer(minW, maxW, minH, maxH, minGap, maxGap, pad, maxItems) {
       var arr = [];
-      var x = -80;
+      var x = -120;
+      var startX = x;
+      var target = w + pad;
       var i = 0;
       var bw;
       var bh;
-      while (x < w + 140 && i < count) {
+      while (x < target && i < maxItems) {
         bw = minW + Math.random() * (maxW - minW);
         bh = h * (minH + Math.random() * (maxH - minH));
         arr.push({
@@ -205,12 +210,23 @@ window.Renderers["pixel-platform-runner"] = (function () {
         x += bw + minGap + Math.random() * (maxGap - minGap);
         i++;
       }
-      return arr;
+      return {
+        items: arr,
+        span: Math.max(w + pad, x - startX + 140)
+      };
     }
 
-    skylineFar = makeLayer(70, 12, 34, 0.06, 0.14, 2, 6);
-    skylineMid = makeLayer(90, 10, 30, 0.08, 0.18, 2, 5);
-    skylineNear = makeLayer(110, 8, 26, 0.1, 0.2, 1, 4);
+    var widthScale = clamp(w / 1400, 0.9, 2.2);
+    var far = makeLayer(12 * widthScale, 34 * widthScale, 0.06, 0.14, 2, 6, 520, 380);
+    var mid = makeLayer(10 * widthScale, 30 * widthScale, 0.08, 0.18, 2, 5, 620, 460);
+    var near = makeLayer(8 * widthScale, 26 * widthScale, 0.1, 0.2, 1, 4, 760, 540);
+
+    skylineFar = far.items;
+    skylineMid = mid.items;
+    skylineNear = near.items;
+    skylineFarSpan = Math.max(1, far.span);
+    skylineMidSpan = Math.max(1, mid.span);
+    skylineNearSpan = Math.max(1, near.span);
   }
 
   function buildStars() {
@@ -337,7 +353,6 @@ window.Renderers["pixel-platform-runner"] = (function () {
     var moonR;
     var moonX;
     var moonY;
-    var layerShift = w + 220;
     var b;
 
     g.addColorStop(0, "#111327");
@@ -375,8 +390,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
 
     // Far parallax layer
     for (i = 0; i < skylineFar.length; i++) {
-      sx = skylineFar[i].x - (scrollRow * 1.25) % layerShift;
-      if (sx < -120) sx += layerShift;
+      sx = skylineFar[i].x - (scrollRow * 1.25) % skylineFarSpan;
+      if (sx < -120) sx += skylineFarSpan;
       sy = h * 0.66;
       bh = skylineFar[i].h * (0.9 + harmonyPulse() * 0.08 + Math.sin(t * 0.42 + skylineFar[i].phase) * 0.04);
       ctx.fillStyle = "rgba(48,44,72,0.34)";
@@ -385,8 +400,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
 
     // Mid parallax layer
     for (i = 0; i < skylineMid.length; i++) {
-      sx = skylineMid[i].x - (scrollRow * 2.1) % layerShift;
-      if (sx < -120) sx += layerShift;
+      sx = skylineMid[i].x - (scrollRow * 2.1) % skylineMidSpan;
+      if (sx < -120) sx += skylineMidSpan;
       sy = h * 0.73;
       bh = skylineMid[i].h * (0.9 + harmonyPulse() * 0.11 + Math.sin(t * 0.48 + skylineMid[i].phase) * 0.05);
       ctx.fillStyle = "rgba(58,52,84,0.48)";
@@ -397,8 +412,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
 
     // Near parallax layer
     for (i = 0; i < skylineNear.length; i++) {
-      sx = skylineNear[i].x - (scrollRow * 3.35) % layerShift;
-      if (sx < -120) sx += layerShift;
+      sx = skylineNear[i].x - (scrollRow * 3.35) % skylineNearSpan;
+      if (sx < -120) sx += skylineNearSpan;
       sy = h * 0.8;
       bh = skylineNear[i].h * (0.9 + harmonyPulse() * 0.14 + Math.sin(t * 0.56 + skylineNear[i].phase) * 0.06);
       ctx.fillStyle = "rgba(76,64,106,0.58)";
@@ -746,6 +761,9 @@ window.Renderers["pixel-platform-runner"] = (function () {
       skylineFar = [];
       skylineMid = [];
       skylineNear = [];
+      skylineFarSpan = 1;
+      skylineMidSpan = 1;
+      skylineNearSpan = 1;
       stars = [];
       segIndex = 0;
       lastSegIndex = -1;
