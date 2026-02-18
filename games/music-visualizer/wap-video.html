@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAP — Wireless Access Protocol Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a12;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,10,18,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #ff2d95;
+            text-shadow: 0 0 30px rgba(255,45,149,0.6), 0 0 60px rgba(255,45,149,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #ff2d95;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #ff2d95;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,149,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255,45,149,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Wireless Access Protocol</div>
+        <div class="play-sub">a stick figure music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── WAP Video Renderer ──────────────────────────────────────────
+    window.Renderers['wap-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Tunables ──
+        var BG = '#0a0a12';
+        var FLOOR_Y_RATIO = 0.82;
+        var POLE_HEIGHT_RATIO = 0.55;
+
+        // Figure colors
+        var COLORS = {
+            poleDancer1: '#ff2d95',  // hot pink
+            poleDancer2: '#00e5ff',  // cyan
+            floor1: '#ffea00',       // yellow
+            floor2: '#ff4444',       // red
+            floor3: '#448aff'        // blue
+        };
+
+        var SPOTLIGHT_COLORS = ['#ff2d95', '#00e5ff', '#ffea00', '#ff4444', '#448aff', '#aa44ff'];
+
+        // ── State ──
+        var floorY = 0;
+        var poleH = 0;
+        var poleX1 = 0, poleX2 = 0;
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var spotlightPhase = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Section state
+        var sectionMood = 'intro';  // intro, verse, hook, bridge, build, outro
+        var sectionEnergy = 0;
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+        var freezeTimer = 0;
+        var freezeExplode = false;
+        var lastSeqIndex = -1;
+
+        // ── Stick Figure Joint System ──
+        // Joints: head, neck, lShoulder, rShoulder, lElbow, rElbow, lHand, rHand, hip, lKnee, rKnee, lAnkle, rAnkle
+        // Bone sizes relative to figure height
+        var BONE = {
+            headR: 0.09,
+            neck: 0.08,
+            shoulder: 0.14,
+            upperArm: 0.13,
+            forearm: 0.12,
+            torso: 0.22,
+            thigh: 0.18,
+            shin: 0.17
+        };
+
+        // ── Pose Parameters ──
+        // Each figure has a set of lerped parameters that define its current pose
+        function createPoseParams() {
+            return {
+                bounce: 0,       // -1 to 1, vertical bob
+                armRaise: 0,     // 0 to 1, arms raised overhead
+                lean: 0,         // -1 to 1, torso lean left/right
+                kick: 0,         // 0 to 1, one leg kicks out
+                kickSide: 1,     // 1 or -1, which leg kicks
+                hipThrust: 0,    // 0 to 1, hip forward
+                headBang: 0,     // 0 to 1, head forward
+                armPump: 0,      // 0 to 1, fist pump
+                armPumpSide: 1,
+                windmill: 0,     // 0 to 1, arms spinning
+                windmillAngle: 0,
+                splits: 0,       // 0 to 1, legs split wide
+                freeze: false
+            };
+        }
+
+        function createPoseTargets() {
+            return createPoseParams();
+        }
+
+        // ── Figure State ──
+        var figures = [];
+
+        function createPoleDancer(color, poleX, phaseOffset) {
+            return {
+                type: 'pole',
+                color: color,
+                poleX: poleX,
+                phaseOffset: phaseOffset,
+                orbitAngle: phaseOffset,
+                orbitSpeed: 1.8,
+                slideY: 0.5,       // 0=top, 1=bottom of pole
+                slideTarget: 0.5,
+                hangMode: false,    // one-hand hang
+                upsideDown: false,
+                kickSpin: 0,
+                params: createPoseParams(),
+                targets: createPoseTargets(),
+                active: false,
+                figureH: 0
+            };
+        }
+
+        function createFloorDancer(color, xPos) {
+            return {
+                type: 'floor',
+                color: color,
+                x: xPos,
+                params: createPoseParams(),
+                targets: createPoseTargets(),
+                currentMove: 'BasicBounce',
+                moveBeatCounter: 0,
+                splitsBeatTimer: 0,
+                active: false,
+                figureH: 0
+            };
+        }
+
+        // ── Move Pool for Floor Dancers ──
+        var MOVES = {
+            BasicBounce: function(t, e) { t.bounce = 0.3 + e * 0.3; },
+            ArmPump: function(t, e) { t.bounce = 0.2; t.armPump = 0.8 + e * 0.2; t.armPumpSide = Math.random() > 0.5 ? 1 : -1; },
+            HipThrust: function(t, e) { t.hipThrust = 0.6 + e * 0.4; t.bounce = 0.15; t.lean = (Math.random() - 0.5) * 0.3; },
+            Windmill: function(t, e) { t.windmill = 0.7 + e * 0.3; t.bounce = 0.1; },
+            RunningMan: function(t, e) { t.kick = 0.5 + e * 0.3; t.kickSide = Math.random() > 0.5 ? 1 : -1; t.armPump = 0.4; t.armPumpSide = -t.kickSide; },
+            HeadBang: function(t, e) { t.headBang = 0.7 + e * 0.3; t.bounce = 0.25; },
+            Splits: function(t, e) { t.splits = 0.9; t.bounce = -0.1; },
+            FreezeFrame: function(t, e) { t.armRaise = 1; t.lean = (Math.random() - 0.5) * 0.6; t.kick = 0.3; }
+        };
+
+        var MOVE_NAMES = Object.keys(MOVES);
+
+        // Weighted move selection based on energy
+        function pickMove(energy) {
+            if (sectionMood === 'bridge') return 'BasicBounce';
+            var weights;
+            if (energy > 0.7) {
+                weights = { BasicBounce: 1, ArmPump: 4, HipThrust: 3, Windmill: 3, RunningMan: 3, HeadBang: 3, Splits: 1, FreezeFrame: 2 };
+            } else if (energy > 0.4) {
+                weights = { BasicBounce: 3, ArmPump: 3, HipThrust: 2, Windmill: 1, RunningMan: 2, HeadBang: 2, Splits: 0, FreezeFrame: 1 };
+            } else {
+                weights = { BasicBounce: 5, ArmPump: 1, HipThrust: 1, Windmill: 0, RunningMan: 1, HeadBang: 1, Splits: 0, FreezeFrame: 0 };
+            }
+            var total = 0;
+            for (var k in weights) total += weights[k];
+            var r = Math.random() * total;
+            var acc = 0;
+            for (var k2 in weights) {
+                acc += weights[k2];
+                if (r <= acc) return k2;
+            }
+            return 'BasicBounce';
+        }
+
+        // ── Lerp helper ──
+        function lerpParam(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        function lerpParams(fig, dt) {
+            var speed = freezeTimer > 0 ? 0.5 : 12;
+            var p = fig.params;
+            var t = fig.targets;
+            p.bounce = lerpParam(p.bounce, t.bounce, speed, dt);
+            p.armRaise = lerpParam(p.armRaise, t.armRaise, speed, dt);
+            p.lean = lerpParam(p.lean, t.lean, speed, dt);
+            p.kick = lerpParam(p.kick, t.kick, speed, dt);
+            p.hipThrust = lerpParam(p.hipThrust, t.hipThrust, speed, dt);
+            p.headBang = lerpParam(p.headBang, t.headBang, speed, dt);
+            p.armPump = lerpParam(p.armPump, t.armPump, speed, dt);
+            p.windmill = lerpParam(p.windmill, t.windmill, speed, dt);
+            p.splits = lerpParam(p.splits, t.splits, speed, dt);
+            // Continuous windmill angle
+            p.windmillAngle += p.windmill * dt * 8;
+        }
+
+        // ── Compute joints from parameters ──
+        // Returns an object with joint positions relative to (0,0) at feet center
+        // figH is total figure height in pixels
+        function computeJoints(params, figH) {
+            var b = {};
+            for (var k in BONE) b[k] = BONE[k] * figH;
+
+            var bounceOff = params.bounce * figH * 0.06;
+            var leanOff = params.lean * figH * 0.08;
+            var hipOff = params.hipThrust * figH * 0.04;
+            var headBangOff = params.headBang * figH * 0.06;
+
+            // Feet are at y=0, figure extends upward (negative y)
+            var totalH = b.shin + b.thigh + b.torso + b.neck + b.headR * 2;
+
+            // Ankle positions (splits widen them)
+            var splitW = params.splits * figH * 0.25;
+            var lAnkle = { x: -b.shoulder * 0.3 - splitW + leanOff, y: 0 };
+            var rAnkle = { x: b.shoulder * 0.3 + splitW + leanOff, y: 0 };
+
+            // Knees
+            var kneeY = -b.shin + bounceOff + params.splits * b.shin * 0.5;
+            var kickOff = params.kick * figH * 0.15;
+            var lKnee, rKnee;
+            if (params.kickSide > 0) {
+                lKnee = { x: -b.shoulder * 0.15 - splitW * 0.5 + leanOff, y: kneeY };
+                rKnee = { x: b.shoulder * 0.15 + splitW * 0.5 + kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
+            } else {
+                lKnee = { x: -b.shoulder * 0.15 - splitW * 0.5 - kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
+                rKnee = { x: b.shoulder * 0.15 + splitW * 0.5 + leanOff, y: kneeY };
+            }
+
+            // Hip
+            var hipY = kneeY - b.thigh + bounceOff;
+            var hip = { x: leanOff + hipOff, y: hipY };
+
+            // Neck
+            var neckY = hipY - b.torso;
+            var neck = { x: leanOff * 1.2, y: neckY };
+
+            // Head
+            var headY = neckY - b.neck - b.headR;
+            var head = { x: leanOff * 1.3 + headBangOff, y: headY };
+
+            // Shoulders
+            var lShoulder = { x: neck.x - b.shoulder, y: neckY + b.neck * 0.2 };
+            var rShoulder = { x: neck.x + b.shoulder, y: neckY + b.neck * 0.2 };
+
+            // Arms
+            var armRaise = params.armRaise;
+            var armAngleBase = Math.PI * 0.4; // arms at sides
+            var armAngleRaised = -Math.PI * 0.3; // arms up
+
+            var lArmAngle = armAngleBase + (armAngleRaised - armAngleBase) * armRaise;
+            var rArmAngle = armAngleBase + (armAngleRaised - armAngleBase) * armRaise;
+
+            // Arm pump overrides one arm
+            if (params.armPump > 0.1) {
+                var pumpAngle = -Math.PI * 0.4 * params.armPump;
+                if (params.armPumpSide > 0) rArmAngle = pumpAngle;
+                else lArmAngle = pumpAngle;
+            }
+
+            // Windmill overrides both arms
+            if (params.windmill > 0.3) {
+                var wa = params.windmillAngle;
+                lArmAngle = wa;
+                rArmAngle = wa + Math.PI;
+            }
+
+            var lElbow = {
+                x: lShoulder.x + Math.sin(lArmAngle) * b.upperArm,
+                y: lShoulder.y + Math.cos(lArmAngle) * b.upperArm
+            };
+            var rElbow = {
+                x: rShoulder.x + Math.sin(rArmAngle) * b.upperArm,
+                y: rShoulder.y + Math.cos(rArmAngle) * b.upperArm
+            };
+
+            var lHand = {
+                x: lElbow.x + Math.sin(lArmAngle + 0.3) * b.forearm,
+                y: lElbow.y + Math.cos(lArmAngle + 0.3) * b.forearm
+            };
+            var rHand = {
+                x: rElbow.x + Math.sin(rArmAngle + 0.3) * b.forearm,
+                y: rElbow.y + Math.cos(rArmAngle + 0.3) * b.forearm
+            };
+
+            return {
+                head: head, headR: b.headR,
+                neck: neck,
+                lShoulder: lShoulder, rShoulder: rShoulder,
+                lElbow: lElbow, rElbow: rElbow,
+                lHand: lHand, rHand: rHand,
+                hip: hip,
+                lKnee: lKnee, rKnee: rKnee,
+                lAnkle: lAnkle, rAnkle: rAnkle
+            };
+        }
+
+        // ── Draw a stick figure ──
+        function drawFigure(ctx, joints, color, alpha, scaleX) {
+            scaleX = scaleX || 1;
+            var lw = Math.max(3, W * 0.004);
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Glow
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 12;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lw;
+
+            function line(a, b) {
+                ctx.beginPath();
+                ctx.moveTo(a.x * scaleX, a.y);
+                ctx.lineTo(b.x * scaleX, b.y);
+                ctx.stroke();
+            }
+
+            // Torso
+            line(joints.neck, joints.hip);
+            // Shoulders
+            line(joints.lShoulder, joints.rShoulder);
+            // Left arm
+            line(joints.lShoulder, joints.lElbow);
+            line(joints.lElbow, joints.lHand);
+            // Right arm
+            line(joints.rShoulder, joints.rElbow);
+            line(joints.rElbow, joints.rHand);
+            // Left leg
+            line(joints.hip, joints.lKnee);
+            line(joints.lKnee, joints.lAnkle);
+            // Right leg
+            line(joints.hip, joints.rKnee);
+            line(joints.rKnee, joints.rAnkle);
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(joints.head.x * scaleX, joints.head.y, joints.headR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner glow fill for head
+            ctx.fillStyle = color;
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Pole dancer compute & draw ──
+        function updatePoleDancer(fig, dt, beat, energy, fractionalBeat) {
+            // Speed multiplier per section
+            var speedMult = sectionMood === 'hook' ? 1.5 : sectionMood === 'build' ? 2.0 : sectionMood === 'bridge' ? 0.4 : 1.0;
+            fig.orbitAngle += fig.orbitSpeed * energy * speedMult * dt;
+
+            // Slide target changes on beats
+            if (beat !== lastBeat) {
+                if (sectionMood === 'hook' || sectionMood === 'build') {
+                    fig.slideTarget = 0.2 + Math.random() * 0.6;
+                    fig.hangMode = Math.random() > 0.5;
+                    fig.upsideDown = sectionMood === 'hook' && Math.random() > 0.92;
+                    fig.kickSpin = Math.random() > 0.4 ? 1 : 0;
+                } else if (sectionMood === 'bridge') {
+                    fig.slideTarget = 0.4 + Math.random() * 0.2;
+                    fig.hangMode = false;
+                    fig.upsideDown = false;
+                    fig.kickSpin = 0;
+                } else {
+                    fig.slideTarget = 0.3 + Math.random() * 0.5;
+                    fig.hangMode = Math.random() > 0.7;
+                    fig.upsideDown = false;
+                    fig.kickSpin = Math.random() > 0.6 ? 0.5 : 0;
+                }
+            }
+
+            fig.slideY = lerpParam(fig.slideY, fig.slideTarget, 4, dt);
+
+            // Pose targets for pole dancer
+            var t = fig.targets;
+            t.bounce = 0.1;
+            t.armRaise = fig.hangMode ? 0.9 : 0.3;
+            t.lean = Math.sin(fig.orbitAngle * 0.5) * 0.3;
+            t.kick = fig.kickSpin * 0.6;
+            t.kickSide = Math.sin(fig.orbitAngle) > 0 ? 1 : -1;
+
+            if (fig.upsideDown) {
+                t.armRaise = 0;
+                t.kick = 0.8;
+                t.splits = 0.3;
+            } else {
+                t.splits = 0;
+            }
+
+            lerpParams(fig, dt);
+        }
+
+        function drawPoleDancer(ctx, fig) {
+            if (!fig.active) return;
+
+            var poleTop = floorY - poleH;
+            var poleBot = floorY;
+            var figY = poleTop + fig.slideY * poleH;
+
+            // Faux-3D: orbit around pole
+            var cosA = Math.cos(fig.orbitAngle);
+            var sinA = Math.sin(fig.orbitAngle);
+            var orbitR = W * 0.025;
+            var figX = fig.poleX + sinA * orbitR;
+
+            // Foreshortening: scale X based on how much figure faces camera
+            var scaleX = 0.3 + Math.abs(cosA) * 0.7;
+
+            // Depth: behind pole when cos < 0
+            var behind = cosA < 0;
+
+            fig.figureH = H * 0.16;
+            var joints = computeJoints(fig.params, fig.figureH);
+
+            // If upside down, flip
+            var flipY = fig.upsideDown ? -1 : 1;
+
+            ctx.save();
+            ctx.translate(figX, figY);
+            if (fig.upsideDown) ctx.scale(1, -1);
+
+            if (behind) {
+                // Draw pole in front (draw figure first, then pole over it)
+                drawFigure(ctx, joints, fig.color, 0.5, scaleX);
+            } else {
+                drawFigure(ctx, joints, fig.color, 1.0, scaleX);
+            }
+
+            ctx.restore();
+
+            return behind;
+        }
+
+        // ── Floor dancer compute & draw ──
+        function updateFloorDancer(fig, dt, beat, energy) {
+            if (beat !== lastBeat) {
+                fig.moveBeatCounter++;
+
+                // Splits snap-back: hold 4 beats then SNAP up in 1
+                if (fig.currentMove === 'Splits') {
+                    fig.splitsBeatTimer++;
+                    if (fig.splitsBeatTimer >= 4) {
+                        fig.currentMove = 'ArmPump';
+                        fig.moveBeatCounter = 0;
+                        fig.splitsBeatTimer = 0;
+                    }
+                } else {
+                    fig.splitsBeatTimer = 0;
+                }
+
+                // Change move every 2-4 beats (unless mid-splits)
+                var interval = sectionMood === 'hook' ? 2 : 4;
+                if (fig.moveBeatCounter >= interval && fig.currentMove !== 'Splits') {
+                    fig.currentMove = pickMove(energy);
+                    fig.moveBeatCounter = 0;
+                    if (fig.currentMove === 'Splits') fig.splitsBeatTimer = 0;
+                }
+
+                // Apply move to targets
+                var t = fig.targets;
+                // Reset
+                t.bounce = 0; t.armRaise = 0; t.lean = 0; t.kick = 0;
+                t.hipThrust = 0; t.headBang = 0; t.armPump = 0;
+                t.windmill = 0; t.splits = 0;
+
+                if (freezeTimer <= 0) {
+                    MOVES[fig.currentMove](t, energy);
+                }
+            }
+
+            lerpParams(fig, dt);
+        }
+
+        function drawFloorDancer(ctx, fig) {
+            if (!fig.active) return;
+
+            fig.figureH = H * 0.18;
+            var joints = computeJoints(fig.params, fig.figureH);
+
+            ctx.save();
+            ctx.translate(fig.x, floorY);
+            drawFigure(ctx, joints, fig.color, 1.0, 1.0);
+            ctx.restore();
+        }
+
+        // ── Spotlights ──
+        function drawSpotlights(ctx, beat, energy) {
+            var numSpots = 5;
+            var spotW = W / numSpots;
+            var brightness = 0.06 + energy * 0.1 + beatPulse * 0.08;
+
+            if (sectionMood === 'intro') brightness *= introFadeIn;
+            if (sectionMood === 'bridge') brightness *= 0.4;
+            if (sectionMood === 'build') brightness *= 1.5;
+            // Final hook strobes
+            if (sectionMood === 'hook' && lastSeqIndex >= 36) brightness *= 1.3;
+
+            for (var i = 0; i < numSpots; i++) {
+                var cx = spotW * (i + 0.5);
+                var colorIdx = (i + Math.floor(spotlightPhase)) % SPOTLIGHT_COLORS.length;
+                var col = SPOTLIGHT_COLORS[colorIdx];
+
+                // Parse hex to rgb
+                var r = parseInt(col.slice(1,3), 16);
+                var g = parseInt(col.slice(3,5), 16);
+                var b = parseInt(col.slice(5,7), 16);
+
+                var grad = ctx.createLinearGradient(cx, 0, cx, floorY);
+                grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + (brightness * 0.8) + ')');
+                grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = grad;
+
+                // Cone shape
+                var topW = spotW * 0.1;
+                var botW = spotW * 0.7;
+                ctx.beginPath();
+                ctx.moveTo(cx - topW, 0);
+                ctx.lineTo(cx + topW, 0);
+                ctx.lineTo(cx + botW, floorY);
+                ctx.lineTo(cx - botW, floorY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // ── Title Text ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var fontSize = Math.max(16, Math.min(W * 0.045, 56));
+            ctx.save();
+            ctx.globalAlpha = titleAlpha;
+            ctx.font = '700 ' + fontSize + 'px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Neon glow
+            ctx.shadowColor = '#ff2d95';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#ff2d95';
+            ctx.fillText('WIRELESS ACCESS PROTOCOL', W / 2, H * 0.15);
+
+            // Second pass for extra glow
+            ctx.shadowBlur = 60;
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.fillText('WIRELESS ACCESS PROTOCOL', W / 2, H * 0.15);
+
+            ctx.restore();
+        }
+
+        // ── Poles ──
+        function drawPole(ctx, x) {
+            var poleTop = floorY - poleH;
+            var lw = Math.max(2, W * 0.003);
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(200,200,220,0.6)';
+            ctx.lineWidth = lw;
+            ctx.shadowColor = 'rgba(200,200,220,0.3)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(x, poleTop);
+            ctx.lineTo(x, floorY);
+            ctx.stroke();
+
+            // Highlight
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = lw * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(x - lw * 0.3, poleTop);
+            ctx.lineTo(x - lw * 0.3, floorY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ── Stage floor ──
+        function drawFloor(ctx) {
+            var lw = Math.max(1, W * 0.002);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = lw;
+            ctx.shadowColor = 'rgba(255,255,255,0.1)';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(W, floorY);
+            ctx.stroke();
+
+            // Reflection gradient
+            var grad = ctx.createLinearGradient(0, floorY, 0, floorY + H * 0.1);
+            grad.addColorStop(0, 'rgba(255,255,255,0.04)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, floorY, W, H * 0.1);
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Section mapping ──
+        function mapSection(seqIndex) {
+            if (seqIndex <= 3) return 'intro';
+            if (seqIndex <= 11) return 'verse';
+            if (seqIndex <= 17) return 'hook';
+            if (seqIndex <= 25) return 'verse';
+            if (seqIndex <= 31) return 'hook';
+            if (seqIndex <= 33) return 'bridge';
+            if (seqIndex <= 35) return 'build';
+            if (seqIndex <= 43) return 'hook';
+            return 'outro';
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            floorY = H * FLOOR_Y_RATIO;
+            poleH = H * POLE_HEIGHT_RATIO;
+            poleX1 = W * 0.25;
+            poleX2 = W * 0.75;
+
+            figures = [
+                createPoleDancer(COLORS.poleDancer1, poleX1, 0),
+                createPoleDancer(COLORS.poleDancer2, poleX2, Math.PI),
+                createFloorDancer(COLORS.floor1, W * 0.38),
+                createFloorDancer(COLORS.floor2, W * 0.50),
+                createFloorDancer(COLORS.floor3, W * 0.62)
+            ];
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            spotlightPhase = 0;
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            freezeTimer = 0;
+            lastSeqIndex = -1;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            floorY = H * FLOOR_Y_RATIO;
+            poleH = H * POLE_HEIGHT_RATIO;
+            poleX1 = W * 0.25;
+            poleX2 = W * 0.75;
+
+            // Update figure positions
+            if (figures.length >= 5) {
+                figures[0].poleX = poleX1;
+                figures[1].poleX = poleX2;
+                figures[2].x = W * 0.38;
+                figures[3].x = W * 0.50;
+                figures[4].x = W * 0.62;
+            }
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state: dim scene
+                drawFloor(ctx);
+                drawPole(ctx, poleX1);
+                drawPole(ctx, poleX2);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            var fracRow = cursor.fractionalRow;
+            var fracBeat = (cursor.totalFracRow % (analysis ? analysis.rpb : 4)) / (analysis ? analysis.rpb : 4);
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+
+                // Bass drop freeze at hook entry
+                if (newSection === 'hook' && oldSection !== 'hook') {
+                    freezeTimer = 2; // beats
+                    freezeExplode = true;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            sectionEnergy = energy;
+
+            // ── Intro fade-in ──
+            if (sectionMood === 'intro') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.3);
+                // Activate figures one by one
+                var introProgress = Math.min(1, cursor.elapsed / (analysis ? analysis.secondsPerBeat * 16 : 8));
+                for (var i = 0; i < figures.length; i++) {
+                    figures[i].active = introProgress > (i + 1) / 6;
+                }
+            } else {
+                introFadeIn = 1;
+                // All active in non-intro (except outro)
+                if (sectionMood === 'outro') {
+                    outroFadeOut = Math.max(0, outroFadeOut - dt * 0.15);
+                    // Turn off figures gradually — "last person dancing"
+                    var outroProgress = 1 - outroFadeOut;
+                    figures[0].active = outroProgress < 0.3;
+                    figures[1].active = outroProgress < 0.5;
+                    figures[2].active = outroProgress < 0.7;
+                    figures[3].active = outroProgress < 0.85;
+                    figures[4].active = true; // last person dancing!
+                } else {
+                    for (var j = 0; j < figures.length; j++) figures[j].active = true;
+                    outroFadeOut = 1;
+                }
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                spotlightPhase += 0.7 + Math.random() * 0.6;
+
+                // Flash on hook beats
+                if (sectionMood === 'hook' && energy > 0.5) {
+                    flashAlpha = 0.15 + energy * 0.1;
+                }
+
+                // Freeze timer countdown
+                if (freezeTimer > 0) {
+                    freezeTimer--;
+                    if (freezeTimer <= 0 && freezeExplode) {
+                        flashAlpha = 0.4;
+                        freezeExplode = false;
+                        // Explode all figures into high energy poses
+                        for (var fe = 0; fe < figures.length; fe++) {
+                            var t = figures[fe].targets;
+                            t.armRaise = 1;
+                            t.bounce = 0.8;
+                            t.kick = 0.5;
+                        }
+                    }
+                }
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-6 * dt);
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'hook') ? 1 : 0;
+            titleAlpha = lerpParam(titleAlpha, titleTarget, 4, dt);
+
+            // ── Update figures ──
+            for (var fi = 0; fi < figures.length; fi++) {
+                var fig = figures[fi];
+                if (!fig.active) continue;
+                if (fig.type === 'pole') {
+                    updatePoleDancer(fig, dt, beat, energy, fracBeat);
+                } else {
+                    updateFloorDancer(fig, dt, beat, energy);
+                }
+            }
+
+            lastBeat = beat;
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Spotlights
+            drawSpotlights(ctx, beat, energy);
+
+            // 2. Title
+            drawTitle(ctx);
+
+            // 3. Floor
+            drawFloor(ctx);
+
+            // 4. Poles (behind figures)
+            // Draw pole, then behind-pole dancers, then front-pole dancers
+            var poleBehind = [];
+            var poleFront = [];
+
+            for (var pi = 0; pi < 2; pi++) {
+                var pfig = figures[pi];
+                if (!pfig.active) continue;
+                var cosA = Math.cos(pfig.orbitAngle);
+                if (cosA < 0) {
+                    poleBehind.push(pfig);
+                } else {
+                    poleFront.push(pfig);
+                }
+            }
+
+            // Draw behind-pole figures, then poles, then front-pole figures
+            for (var bi = 0; bi < poleBehind.length; bi++) {
+                drawPoleDancer(ctx, poleBehind[bi]);
+            }
+
+            drawPole(ctx, poleX1);
+            drawPole(ctx, poleX2);
+
+            for (var fri = 0; fri < poleFront.length; fri++) {
+                drawPoleDancer(ctx, poleFront[fri]);
+            }
+
+            // 5. Floor dancers
+            for (var di = 2; di < figures.length; di++) {
+                drawFloorDancer(ctx, figures[di]);
+            }
+
+            // 6. Flash
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'WAP Stick Figure Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('wap-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/wireless-access-protocol.json';
+            // Try fetch first (works on http/https), fall back to XHR (works on file://)
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        // Also allow clicking canvas to toggle play/pause after started
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
