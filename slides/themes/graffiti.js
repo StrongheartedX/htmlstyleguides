@@ -1,0 +1,25 @@
+window.SLIDE_THEME = {
+  name: 'Graffiti',
+  googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@400;700&family=Space+Mono&display=swap',
+  cssVars: {
+    '--slide-bg': '#1a1a1a',
+    '--slide-text': '#f0e6d3',
+    '--accent': '#ff3366',
+    '--accent-light': 'rgba(255,51,102,0.2)',
+    '--border': '#444',
+    '--muted': '#999',
+    '--font-title': "'Permanent Marker', cursive",
+    '--font-body': "'Caveat', cursive",
+    '--font-code': "'Space Mono', monospace",
+  },
+  textStyles: {
+    title:    { fontSize: '4.5rem', fontWeight: 400, fontFamily: 'var(--font-title)', color: '#ff3366', textAlign: 'center', textShadow: '3px 3px 0 #000, -1px -1px 0 #000' },
+    subtitle: { fontSize: '2rem',   fontWeight: 700, fontFamily: 'var(--font-body)',  color: '#7dff3f', textAlign: 'center' },
+    heading:  { fontSize: '2.8rem', fontWeight: 400, fontFamily: 'var(--font-title)', color: '#ffcc00' },
+    body:     { fontSize: '1.6rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--slide-text)', lineHeight: 1.5 },
+    caption:  { fontSize: '1.1rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: '#999' },
+    code:     { fontSize: '1.1rem', fontWeight: 400, fontFamily: 'var(--font-code)',  color: '#7dff3f', background: '#000', padding: '0.2em 0.4em', borderRadius: '2px' },
+  },
+  transition: 'slide',
+  slideRadius: '0px',
+};

@@ -1,0 +1,25 @@
+window.SLIDE_THEME = {
+  name: 'Default',
+  googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code&display=swap',
+  cssVars: {
+    '--slide-bg': '#ffffff',
+    '--slide-text': '#1a1a1a',
+    '--accent': '#2563eb',
+    '--accent-light': '#dbeafe',
+    '--border': '#e5e7eb',
+    '--muted': '#6b7280',
+    '--font-title': "'Inter', sans-serif",
+    '--font-body': "'Inter', sans-serif",
+    '--font-code': "'Fira Code', monospace",
+  },
+  textStyles: {
+    title:    { fontSize: '4rem',   fontWeight: 700, fontFamily: 'var(--font-title)', color: 'var(--slide-text)', textAlign: 'center' },
+    subtitle: { fontSize: '1.8rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--accent)', textAlign: 'center' },
+    heading:  { fontSize: '2.4rem', fontWeight: 600, fontFamily: 'var(--font-title)', color: 'var(--slide-text)' },
+    body:     { fontSize: '1.4rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--slide-text)', lineHeight: 1.6 },
+    caption:  { fontSize: '1rem',   fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--muted)' },
+    code:     { fontSize: '1.1rem', fontWeight: 400, fontFamily: 'var(--font-code)',  color: 'var(--slide-text)', background: '#f3f4f6', padding: '0.2em 0.4em', borderRadius: '4px' },
+  },
+  transition: 'fade',
+  slideRadius: '8px',
+};

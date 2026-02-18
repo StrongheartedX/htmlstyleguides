@@ -1,0 +1,25 @@
+window.SLIDE_THEME = {
+  name: 'Cyberpunk',
+  googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap',
+  cssVars: {
+    '--slide-bg': '#0a0a1a',
+    '--slide-text': '#c0e0ff',
+    '--accent': '#ff0080',
+    '--accent-light': 'rgba(255,0,128,0.15)',
+    '--border': '#1a1a3a',
+    '--muted': '#6688aa',
+    '--font-title': "'Orbitron', sans-serif",
+    '--font-body': "'Share Tech Mono', monospace",
+    '--font-code': "'Share Tech Mono', monospace",
+  },
+  textStyles: {
+    title:    { fontSize: '3.5rem', fontWeight: 900, fontFamily: 'var(--font-title)', color: '#00ffff', textAlign: 'center', textShadow: '0 0 20px rgba(0,255,255,0.5), 0 0 40px rgba(0,255,255,0.2)' },
+    subtitle: { fontSize: '1.6rem', fontWeight: 500, fontFamily: 'var(--font-title)', color: '#ff0080', textAlign: 'center', letterSpacing: '0.2em', textTransform: 'uppercase' },
+    heading:  { fontSize: '2.2rem', fontWeight: 700, fontFamily: 'var(--font-title)', color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.3)' },
+    body:     { fontSize: '1.3rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--slide-text)', lineHeight: 1.6 },
+    caption:  { fontSize: '1rem',   fontWeight: 400, fontFamily: 'var(--font-body)',  color: '#6688aa' },
+    code:     { fontSize: '1.1rem', fontWeight: 400, fontFamily: 'var(--font-code)',  color: '#39ff14', background: '#050515', padding: '0.2em 0.4em', borderRadius: '2px' },
+  },
+  transition: 'slide',
+  slideRadius: '2px',
+};

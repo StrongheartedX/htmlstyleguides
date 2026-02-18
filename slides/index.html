@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slides — HTML Presentations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 4rem 2rem;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  h1 {
+    font-size: 2.5rem; font-weight: 300;
+    margin-bottom: 0.5rem; letter-spacing: -1px;
+  }
+  .subtitle {
+    color: #888; font-size: 1rem; margin-bottom: 2rem;
+  }
+
+  .nav-links {
+    display: flex; gap: 0.75rem; flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+  .nav-links a {
+    color: #888; text-decoration: none; font-size: 0.9rem;
+    border: 1px solid #333; padding: 0.4rem 1rem; border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover { color: #e0e0e0; border-color: #666; }
+  .nav-links .primary {
+    color: #2563eb; border-color: #1d4ed8;
+  }
+  .nav-links .primary:hover { color: #60a5fa; border-color: #2563eb; background: rgba(37,99,235,0.1); }
+
+  /* ── Deck Grid ─────────────────────────────────────── */
+  .deck-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .deck-card {
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .deck-card:hover {
+    transform: translateY(-4px);
+    border-color: #444;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  .deck-preview {
+    aspect-ratio: 16/9;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #2a2a2a;
+    position: relative;
+    overflow: hidden;
+  }
+  .deck-preview-text {
+    font-size: 1.2rem; font-weight: 600;
+    color: #555; text-align: center; padding: 1rem;
+  }
+  .deck-info {
+    padding: 1rem;
+  }
+  .deck-info h2 {
+    font-size: 1.1rem; font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .deck-info p {
+    font-size: 0.85rem; color: #888; line-height: 1.4;
+  }
+  .deck-meta {
+    display: flex; gap: 0.75rem; margin-top: 0.75rem;
+    font-size: 0.75rem; color: #666;
+  }
+  .deck-actions {
+    display: flex; gap: 0.5rem; padding: 0 1rem 1rem;
+  }
+  .deck-actions a {
+    font-size: 0.8rem; color: #2563eb; text-decoration: none;
+    padding: 4px 10px; border: 1px solid #1d4ed8; border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .deck-actions a:hover {
+    background: rgba(37,99,235,0.15); color: #60a5fa;
+  }
+
+  /* ── New Deck Card ─────────────────────────────────── */
+  .deck-card-new {
+    border: 2px dashed #333;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .deck-card-new:hover {
+    border-color: #2563eb;
+    transform: translateY(-4px);
+  }
+  .deck-card-new span {
+    font-size: 1.1rem; color: #666;
+  }
+  .deck-card-new:hover span { color: #2563eb; }
+
+  @media (max-width: 768px) {
+    body { padding: 2rem 1rem; }
+    h1 { font-size: 1.8rem; }
+    .deck-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Slides</h1>
+  <p class="subtitle">HTML presentations — no build tools, no frameworks, just JSON + themes.</p>
+
+  <div class="nav-links">
+    <a href="../index.html">← Style Guides</a>
+    <a href="../stories/index.html">Stories</a>
+    <a href="../techguides/index.html">Tech Guides</a>
+    <a href="edit.html" class="primary">+ New Presentation</a>
+  </div>
+
+  <div class="deck-grid" id="deck-grid">
+    <div class="deck-card-new" onclick="window.location='edit.html'">
+      <span>+ Create New Presentation</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const KNOWN_DECKS = [
+  { file: 'demo', title: 'Slides Engine Demo', description: 'Example deck demonstrating all element types, shapes, and Mermaid diagrams.', slides: 6, theme: 'default' },
+];
+
+const grid = document.getElementById('deck-grid');
+
+KNOWN_DECKS.forEach(info => {
+  const card = document.createElement('a');
+  card.href = `view.html?deck=${info.file}`;
+  card.className = 'deck-card';
+  card.innerHTML = `
+    <div class="deck-preview">
+      <div class="deck-preview-text">${info.title}</div>
+    </div>
+    <div class="deck-info">
+      <h2>${info.title}</h2>
+      <p>${info.description}</p>
+      <div class="deck-meta">
+        <span>${info.slides} slides</span>
+        <span>Theme: ${info.theme}</span>
+      </div>
+    </div>
+    <div class="deck-actions">
+      <a href="view.html?deck=${info.file}">Present</a>
+      <a href="edit.html?deck=${info.file}">Edit</a>
+    </div>
+  `;
+  grid.insertBefore(card, grid.firstChild);
+});
+</script>
+</body>
+</html>
