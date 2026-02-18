@@ -1,6 +1,6 @@
 # Tech Guides
 
-25 self-contained HTML reference documents for developer tools and concepts, each styled with a design system from `/styles/`.
+43 self-contained HTML reference documents for developer tools and concepts, each styled with a design system from `/styles/`.
 
 ## Concept
 

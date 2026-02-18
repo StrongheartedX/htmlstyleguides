@@ -1,6 +1,6 @@
 # Interactive Stories
 
-32 interactive HTML narratives that teach history through a style guide's visual aesthetic.
+33 interactive HTML narratives that teach history through a style guide's visual aesthetic.
 
 For deep reference (audio narration, parallel workflows, advanced patterns), see `STORY-CREATION-GUIDE.md` in this directory.
 
