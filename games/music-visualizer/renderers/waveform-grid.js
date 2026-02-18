@@ -125,8 +125,9 @@ window.Renderers["waveform-grid"] = (function () {
           if (!note) continue;
 
           var x = (r - startRow) * rowW;
-          // Note block height based on normalized pitch
-          var noteH = 8 + note.normalized * (laneH - 20);
+          // Note block height based on pitch within song's range
+          var norm = (note.midi - analysis.pitchRange.min) / analysis.pitchRange.span;
+          var noteH = 8 + norm * (laneH - 20);
           var noteY = laneY + (laneH - noteH) / 2;
 
           // Color by instrument
