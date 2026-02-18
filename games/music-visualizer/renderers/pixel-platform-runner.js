@@ -30,7 +30,9 @@ window.Renderers["pixel-platform-runner"] = (function () {
   var idlePhase = 0;
   var lastBeatSeen = -1;
 
-  var skyline = [];
+  var skylineFar = [];
+  var skylineMid = [];
+  var skylineNear = [];
   var dust = [];
   var stars = [];
   var MAX_DUST = 220;
@@ -185,23 +187,30 @@ window.Renderers["pixel-platform-runner"] = (function () {
   }
 
   function buildSkyline() {
-    var x = -20;
-    var i = 0;
-    var bw;
-    var bh;
-    skyline = [];
-    while (x < w + 40 && i < 120) {
-      bw = 10 + Math.random() * 24;
-      bh = h * (0.08 + Math.random() * 0.16);
-      skyline.push({
-        x: x,
-        w: bw,
-        h: bh,
-        phase: Math.random() * Math.PI * 2
-      });
-      x += bw + 2 + Math.random() * 4;
-      i++;
+    function makeLayer(count, minW, maxW, minH, maxH, minGap, maxGap) {
+      var arr = [];
+      var x = -80;
+      var i = 0;
+      var bw;
+      var bh;
+      while (x < w + 140 && i < count) {
+        bw = minW + Math.random() * (maxW - minW);
+        bh = h * (minH + Math.random() * (maxH - minH));
+        arr.push({
+          x: x,
+          w: bw,
+          h: bh,
+          phase: Math.random() * Math.PI * 2
+        });
+        x += bw + minGap + Math.random() * (maxGap - minGap);
+        i++;
+      }
+      return arr;
     }
+
+    skylineFar = makeLayer(70, 12, 34, 0.06, 0.14, 2, 6);
+    skylineMid = makeLayer(90, 10, 30, 0.08, 0.18, 2, 5);
+    skylineNear = makeLayer(110, 8, 26, 0.1, 0.2, 1, 4);
   }
 
   function buildStars() {
@@ -215,7 +224,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
         y: Math.random() * h * 0.52,
         s: 0.7 + Math.random() * 1.3,
         p: Math.random() * Math.PI * 2,
-        t: 0.5 + Math.random() * 1.6
+        t: 0.5 + Math.random() * 1.6,
+        d: 0.2 + Math.random() * 0.9
       });
     }
   }
@@ -324,6 +334,11 @@ window.Renderers["pixel-platform-runner"] = (function () {
     var sy;
     var bh;
     var beatA;
+    var moonR;
+    var moonX;
+    var moonY;
+    var layerShift = w + 220;
+    var b;
 
     g.addColorStop(0, "#111327");
     g.addColorStop(0.55, "#1a1c33");
@@ -331,23 +346,65 @@ window.Renderers["pixel-platform-runner"] = (function () {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 
+    moonR = Math.min(w, h) * 0.055;
+    moonX = w * 0.78;
+    moonY = h * 0.2;
+    b = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonR * 3);
+    b.addColorStop(0, "rgba(225,230,255,0.18)");
+    b.addColorStop(1, "rgba(225,230,255,0)");
+    ctx.fillStyle = b;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = "rgba(225,230,255,0.22)";
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(17,19,39,0.4)";
+    ctx.beginPath();
+    ctx.arc(moonX + moonR * 0.33, moonY - moonR * 0.1, moonR * 0.92, 0, Math.PI * 2);
+    ctx.fill();
+
     for (i = 0; i < stars.length; i++) {
       st = stars[i];
       a = (0.08 + (Math.sin(t * st.t + st.p) * 0.5 + 0.5) * 0.18) * (0.6 + energy * 0.8);
+      sx = st.x - (scrollRow * (0.12 + st.d * 0.28)) % (w + 20);
+      if (sx < -3) sx += (w + 20);
       ctx.fillStyle = "rgba(210,220,255," + a + ")";
-      ctx.fillRect(st.x, st.y, st.s, st.s);
+      ctx.fillRect(sx, st.y, st.s, st.s);
     }
 
-    // Far skyline
-    for (i = 0; i < skyline.length; i++) {
-      sx = (skyline[i].x - (scrollRow * 2.2) % (w + 80));
-      if (sx < -40) sx += (w + 80);
-      sy = h * 0.72;
-      bh = skyline[i].h * (0.86 + harmonyPulse() * 0.12 + Math.sin(t * 0.5 + skyline[i].phase) * 0.05);
-      ctx.fillStyle = "rgba(58,52,84,0.5)";
-      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skyline[i].w), Math.floor(bh));
+    // Far parallax layer
+    for (i = 0; i < skylineFar.length; i++) {
+      sx = skylineFar[i].x - (scrollRow * 1.25) % layerShift;
+      if (sx < -120) sx += layerShift;
+      sy = h * 0.66;
+      bh = skylineFar[i].h * (0.9 + harmonyPulse() * 0.08 + Math.sin(t * 0.42 + skylineFar[i].phase) * 0.04);
+      ctx.fillStyle = "rgba(48,44,72,0.34)";
+      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skylineFar[i].w), Math.floor(bh));
+    }
+
+    // Mid parallax layer
+    for (i = 0; i < skylineMid.length; i++) {
+      sx = skylineMid[i].x - (scrollRow * 2.1) % layerShift;
+      if (sx < -120) sx += layerShift;
+      sy = h * 0.73;
+      bh = skylineMid[i].h * (0.9 + harmonyPulse() * 0.11 + Math.sin(t * 0.48 + skylineMid[i].phase) * 0.05);
+      ctx.fillStyle = "rgba(58,52,84,0.48)";
+      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skylineMid[i].w), Math.floor(bh));
+      ctx.fillStyle = skylineStyle.glow + (0.03 + energy * 0.04) + ")";
+      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skylineMid[i].w), 1);
+    }
+
+    // Near parallax layer
+    for (i = 0; i < skylineNear.length; i++) {
+      sx = skylineNear[i].x - (scrollRow * 3.35) % layerShift;
+      if (sx < -120) sx += layerShift;
+      sy = h * 0.8;
+      bh = skylineNear[i].h * (0.9 + harmonyPulse() * 0.14 + Math.sin(t * 0.56 + skylineNear[i].phase) * 0.06);
+      ctx.fillStyle = "rgba(76,64,106,0.58)";
+      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skylineNear[i].w), Math.floor(bh));
       ctx.fillStyle = skylineStyle.glow + (0.05 + energy * 0.08) + ")";
-      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skyline[i].w), 1);
+      ctx.fillRect(Math.floor(sx), Math.floor(sy - bh), Math.floor(skylineNear[i].w), 1);
     }
 
     // Ground glow
@@ -416,9 +473,10 @@ window.Renderers["pixel-platform-runner"] = (function () {
     }
   }
 
-  function drawRunner(ctx, x, y, air, style, dance, danceMode) {
+  function drawRunner(ctx, x, y, air, style, dance, danceMode, scale) {
     var px = Math.floor(x);
-    var py = Math.floor(y);
+    var s = scale || 1;
+    var py = Math.floor(y - 6 * s);
     var danceOn = dance > 0.001 && !air;
     var kick = (((t * 18) | 0) % 2) ? 1 : -1;
     var bounce = danceOn ? (((Math.sin(t * 20) * 1.4) | 0)) : 0;
@@ -428,8 +486,21 @@ window.Renderers["pixel-platform-runner"] = (function () {
     var eye = (runnerBlink > 0.92) ? 0 : 1;
     var legL = legBob;
     var legR = -legBob;
+    var sx;
+    var sy;
+    var sw;
+    var sh;
 
-    py += bounce;
+    function fill(rx, ry, rw, rh, color) {
+      sx = Math.floor(px + rx * s);
+      sy = Math.floor(py + ry * s);
+      sw = Math.max(1, Math.floor(rw * s));
+      sh = Math.max(1, Math.floor(rh * s));
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, sw, sh);
+    }
+
+    py += bounce * s;
 
     if (danceOn) {
       if (danceMode === 0) {
@@ -451,36 +522,28 @@ window.Renderers["pixel-platform-runner"] = (function () {
     }
 
     // shadow
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(px - 6, py + 9, 14, 3);
+    fill(-6, 9, 14, 3, "rgba(0,0,0,0.35)");
 
     // body
-    ctx.fillStyle = "#111722";
-    ctx.fillRect(px - 2, py - 7, 6, 8);
-    ctx.fillStyle = style.top;
-    ctx.fillRect(px - 1, py - 6, 4, 5);
+    fill(-2, -7, 6, 8, "#111722");
+    fill(-1, -6, 4, 5, style.top);
 
     // head
-    ctx.fillStyle = "#f6d7b0";
-    ctx.fillRect(px - 2, py - 13, 6, 6);
-    ctx.fillStyle = "#2d1d16";
-    ctx.fillRect(px - 3, py - 14, 8, 2);
+    fill(-2, -13, 6, 6, "#f6d7b0");
+    fill(-3, -14, 8, 2, "#2d1d16");
 
     // eye
     if (eye) {
-      ctx.fillStyle = "#1a232f";
-      ctx.fillRect(px + 1, py - 11, 1, 1);
+      fill(1, -11, 1, 1, "#1a232f");
     }
 
     // arms
-    ctx.fillStyle = style.side;
-    ctx.fillRect(px - 4, py - 5 + armLY, 2, 4);
-    ctx.fillRect(px + 4, py - 5 + (air ? -1 : 0) + armRY, 2, 4);
+    fill(-4, -5 + armLY, 2, 4, style.side);
+    fill(4, -5 + (air ? -1 : 0) + armRY, 2, 4, style.side);
 
     // legs
-    ctx.fillStyle = "#0b121a";
-    ctx.fillRect(px - 1, py + 1 + legL, 2, 5);
-    ctx.fillRect(px + 1, py + 1 + legR, 2, 5);
+    fill(-1, 1 + legL, 2, 5, "#0b121a");
+    fill(1, 1 + legR, 2, 5, "#0b121a");
   }
 
   function updateAndDrawDust(ctx, dt) {
@@ -555,6 +618,7 @@ window.Renderers["pixel-platform-runner"] = (function () {
       var worldRow = 0;
       var pose;
       var runnerX = w * 0.32;
+      var runnerScale = 1;
       var runnerStyle;
       var percNow;
       var bassNow;
@@ -593,6 +657,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
         worldRow = (path.length > 0) ? path[0].row : 0;
       }
 
+      runnerScale = clamp(Math.floor(Math.min(w, h) / 420), 1, 3);
+
       percNow = currentNotes[roleMap.percussion];
       bassNow = currentNotes[roleMap.bass];
       leadNow = currentNotes[roleMap.lead];
@@ -622,7 +688,7 @@ window.Renderers["pixel-platform-runner"] = (function () {
       }
 
       if (cursor && percNow && Math.random() < (0.05 + (percNow.vol || 0.3) * 0.12)) {
-        spawnDust(runnerX + 10, pose.groundY + camBob + 2, styleOf(roleMap.percussion), (2 + ((percNow.vol || 0.3) * 5)) | 0, -14);
+        spawnDust(runnerX + 10 * runnerScale * 0.6, pose.groundY + camBob + 2, styleOf(roleMap.percussion), (2 + ((percNow.vol || 0.3) * 5)) | 0, -14);
       }
 
       if (cursor && leadNow && !pose.air) {
@@ -646,7 +712,7 @@ window.Renderers["pixel-platform-runner"] = (function () {
       if (cursor) {
         if (cursor.beat !== lastBeatSeen) {
           if (danceTimer > 0.001 && !pose.air) {
-            spawnDust(runnerX + 2, pose.groundY + camBob + 2, styleOf(roleMap.lead), (3 + ((energySmooth * 5) | 0)), -12);
+            spawnDust(runnerX + 2 * runnerScale * 0.6, pose.groundY + camBob + 2, styleOf(roleMap.lead), (3 + ((energySmooth * 5) | 0)), -12);
           }
           lastBeatSeen = cursor.beat;
         }
@@ -661,7 +727,7 @@ window.Renderers["pixel-platform-runner"] = (function () {
       }
 
       runnerFrame += dt * (cursor ? (8 + energySmooth * 10) : 3);
-      drawRunner(ctx, runnerX, pose.y + camBob - 6, pose.air, runnerStyle, danceTimer, danceStyle);
+      drawRunner(ctx, runnerX, pose.y + camBob, pose.air, runnerStyle, danceTimer, danceStyle, runnerScale);
       updateAndDrawDust(ctx, dt);
 
       if (!cursor) {
@@ -677,7 +743,9 @@ window.Renderers["pixel-platform-runner"] = (function () {
       analysis = null;
       path = [];
       dust = [];
-      skyline = [];
+      skylineFar = [];
+      skylineMid = [];
+      skylineNear = [];
       stars = [];
       segIndex = 0;
       lastSegIndex = -1;
