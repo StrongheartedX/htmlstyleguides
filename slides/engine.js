@@ -396,7 +396,12 @@ const SlideEngine = (() => {
         case 'f': case 'F':
           if (!e.ctrlKey && !e.metaKey) toggleFullscreen(); break;
         case 'Escape':
-          if (document.fullscreenElement) document.exitFullscreen(); break;
+          if (document.fullscreenElement) { document.exitFullscreen(); }
+          else { window.location.href = 'index.html'; }
+          break;
+        case 'q': case 'Q':
+          if (!e.ctrlKey && !e.metaKey) window.location.href = 'index.html';
+          break;
         case 'e': case 'E':
           if (!e.ctrlKey && !e.metaKey) {
             const deckParam = new URLSearchParams(window.location.search).get('deck');
