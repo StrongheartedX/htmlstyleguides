@@ -31,8 +31,7 @@ var Tracker = (function () {
   var UNDO_LIMIT = 100;
 
   // Lookahead constants (seconds / ms)
-  // Slightly larger lookahead reduces underruns on busy tabs.
-  var SCHEDULE_AHEAD = 0.2;      // 200 ms
+  var SCHEDULE_AHEAD = 0.1;      // 100 ms
   var TICK_MS = 25;
 
   // ---------------------------------------------------------------------------
@@ -226,19 +225,18 @@ var Tracker = (function () {
       }
     }
 
-    // If pattern length is explicitly declared, keep it authoritative.
-    // Only grow it when events are literally placed beyond the declared rows.
+    // Start from explicit length if declared, otherwise from inferred rows.
+    var length;
     if (!isNaN(explicitLength) && explicitLength >= 1) {
-      var explicit = explicitLength;
-      if (inferredRows > explicit) explicit = inferredRows;
-      if (explicit < 1) explicit = 1;
-      return explicit;
+      length = explicitLength;
+    } else {
+      length = inferredRows;
     }
 
-    var length = inferredRows;
+    // Always extend if events or durations reach past the current length.
+    if (inferredRows > length) length = inferredRows;
     if (inferredDurEnd > length) length = inferredDurEnd;
     if (length < 1) length = 16;
-    if (length < 1) length = 1;
     return length;
   }
 
