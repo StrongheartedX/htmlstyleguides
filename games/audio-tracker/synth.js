@@ -122,10 +122,14 @@ var Synth = (function () {
 
   function applyRelease(gainNode, instrument, time) {
     var r = instrument.release || 0.1;
+    var s = instrument.sustain !== undefined ? instrument.sustain : 0.6;
+    var vol = instrument.volume !== undefined ? instrument.volume : 0.8;
     var g = gainNode.gain;
-    // Cancel future ramps and ramp to zero
+    // Cancel future ramps and ramp to zero.
+    // Use the instrument's sustain level rather than g.value, which only
+    // reflects the gain at JS-execution time — not at the scheduled time.
     g.cancelScheduledValues(time);
-    g.setValueAtTime(g.value, time);
+    g.setValueAtTime(s * vol, time);
     g.linearRampToValueAtTime(0, time + r);
     return r;
   }
@@ -241,7 +245,10 @@ var Synth = (function () {
       handle.osc2.stop(stopTime);
     }
 
-    // Clean up after stop
+    // Clean up after stop — delay must account for the scheduled stop time
+    // being in the future, not just the release envelope duration.
+    var cleanupDelay = (stopTime - ctx.currentTime + 0.05) * 1000;
+    if (cleanupDelay < 50) cleanupDelay = 50;
     setTimeout(function () {
       try {
         handle.osc1.disconnect();
@@ -252,7 +259,7 @@ var Synth = (function () {
         // already disconnected
       }
       removeVoice(handle);
-    }, (releaseDur + 0.05) * 1000);
+    }, cleanupDelay);
   }
 
   /**
