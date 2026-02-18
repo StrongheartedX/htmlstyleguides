@@ -359,7 +359,11 @@ const SlideEngine = (() => {
           svgEl.style.maxHeight = '100%';
         }
       } catch (e) {
-        container.innerHTML = `<pre style="color:red;font-size:0.9rem">Mermaid error: ${e.message}</pre>`;
+        const errPre = document.createElement('pre');
+        errPre.style.cssText = 'color:red;font-size:0.9rem';
+        errPre.textContent = 'Mermaid error: ' + e.message;
+        container.innerHTML = '';
+        container.appendChild(errPre);
       }
     }
   }

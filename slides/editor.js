@@ -437,11 +437,16 @@ const SlideEditor = (() => {
 
     if (isResizing && el.type !== 'line') {
       if (resizeDir.includes('e')) {
-        el.w = Math.max(5, pctX - (el.x - (el.w || 20) / 2));
+        const styleDef = (el.type === 'text' && theme.textStyles[el.style]) || {};
+        const isCentered = styleDef.textAlign === 'center';
+        if (isCentered) {
+          el.w = Math.max(5, pctX - (el.x - (el.w || 20) / 2));
+        } else {
+          el.w = Math.max(5, pctX - el.x);
+        }
       }
       if (resizeDir.includes('s')) {
-        const h = el.h || el.w || 20;
-        el.h = Math.max(5, pctY - el.y + h / 2);
+        el.h = Math.max(5, pctY - el.y);
       }
       renderCanvas();
     }
@@ -749,11 +754,7 @@ const SlideEditor = (() => {
   }
 
   function previewInViewer() {
-    const json = JSON.stringify(deck);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    // Store in sessionStorage for the viewer to pick up
-    sessionStorage.setItem('slides-preview', json);
+    sessionStorage.setItem('slides-preview', JSON.stringify(deck));
     window.open('view.html?preview=1', '_blank');
   }
 
