@@ -21,6 +21,11 @@ window.Renderers["pixel-platform-runner"] = (function () {
   var path = [];
   var segIndex = 0;
   var lastSegIndex = -1;
+  var goalRow = 0;
+  var goalNorm = 0.5;
+  var goalCh = 1;
+  var victoryActive = false;
+  var victoryBurstDone = false;
 
   var t = 0;
   var energySmooth = 0;
@@ -130,6 +135,8 @@ window.Renderers["pixel-platform-runner"] = (function () {
     var steps;
     var s;
     var midNorm;
+    var last;
+    var bridgeRow;
 
     path = [];
     if (!analysis || !analysis.timeline || analysis.timeline.length === 0) return;
@@ -186,6 +193,35 @@ window.Renderers["pixel-platform-runner"] = (function () {
 
     for (i = path.length - 2; i >= 0; i--) {
       if (path[i].row === path[i + 1].row) path.splice(i, 1);
+    }
+
+    if (path.length > 0) {
+      last = path[path.length - 1];
+      goalRow = last.row + 6;
+      goalNorm = clamp(last.norm * 0.62 + 0.26, 0.26, 0.76);
+      goalCh = roleMap.harmony;
+
+      bridgeRow = last.row + 3;
+      if (bridgeRow < goalRow) {
+        path.push({
+          row: bridgeRow,
+          norm: lerp(last.norm, goalNorm, 0.5),
+          vol: 0.28,
+          ch: roleMap.harmony
+        });
+      }
+
+      path.push({
+        row: goalRow,
+        norm: goalNorm,
+        vol: 0.35,
+        ch: goalCh
+      });
+    } else {
+      goalRow = 12;
+      goalNorm = 0.52;
+      goalCh = roleMap.harmony;
+      path.push({ row: goalRow, norm: goalNorm, vol: 0.35, ch: goalCh });
     }
   }
 
@@ -561,6 +597,98 @@ window.Renderers["pixel-platform-runner"] = (function () {
     fill(1, 1 + legR, 2, 5, "#0b121a");
   }
 
+  function drawPrincess(ctx, x, y, scale, glow) {
+    var px = Math.floor(x);
+    var s = Math.max(1, scale || 1);
+    var py = Math.floor(y - 6 * s);
+    var pulse = 0.2 + glow * 0.6;
+    var sx;
+    var sy;
+    var sw;
+    var sh;
+
+    function fill(rx, ry, rw, rh, color) {
+      sx = Math.floor(px + rx * s);
+      sy = Math.floor(py + ry * s);
+      sw = Math.max(1, Math.floor(rw * s));
+      sh = Math.max(1, Math.floor(rh * s));
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, sw, sh);
+    }
+
+    // shadow
+    fill(-6, 10, 14, 3, "rgba(0,0,0,0.34)");
+
+    // gown
+    fill(-3, -5, 8, 11, "#d86bb4");
+    fill(-2, -4, 6, 9, "#f291c9");
+
+    // sleeves
+    fill(-5, -3, 2, 4, "#f291c9");
+    fill(5, -3, 2, 4, "#f291c9");
+
+    // head + hair
+    fill(-2, -12, 6, 6, "#f8d7b8");
+    fill(-3, -13, 8, 2, "#6a3b25");
+    fill(-3, -11, 2, 3, "#6a3b25");
+    fill(4, -11, 2, 3, "#6a3b25");
+
+    // crown
+    fill(-2, -15, 6, 2, "#f6d66a");
+    fill(-1, -16, 1, 1, "#f6d66a");
+    fill(1, -17, 1, 1, "#f6d66a");
+    fill(3, -16, 1, 1, "#f6d66a");
+
+    // eyes
+    fill(0, -10, 1, 1, "#272733");
+    fill(2, -10, 1, 1, "#272733");
+
+    // victory sparkle
+    if (glow > 0.02) {
+      fill(8, -12, 1, 1, "rgba(255,240,170," + pulse + ")");
+      fill(9, -13, 1, 3, "rgba(255,240,170," + (pulse * 0.8) + ")");
+      fill(8, -14, 3, 1, "rgba(255,240,170," + (pulse * 0.8) + ")");
+    }
+  }
+
+  function drawGoalReward(ctx, worldRow, rowW, scale) {
+    var gx;
+    var gy;
+    var st;
+    var pulse;
+    var flagX;
+    var flagY;
+    var towerW;
+    var towerH;
+
+    if (goalRow <= 0) return;
+    gx = w * 0.32 + (goalRow - worldRow) * rowW;
+    if (gx < -120 || gx > w + 120) return;
+
+    gy = platformY(goalNorm) + camBob;
+    st = styleOf(goalCh);
+    pulse = (Math.sin(t * 6) * 0.5 + 0.5) * (0.2 + energySmooth * 0.5);
+
+    towerW = Math.max(10, Math.floor(8 * scale));
+    towerH = Math.max(24, Math.floor(26 * scale));
+
+    // tower
+    ctx.fillStyle = "rgba(40,34,58,0.95)";
+    ctx.fillRect(Math.floor(gx + rowW * 0.92), Math.floor(gy - towerH), towerW, towerH + 8);
+    ctx.fillStyle = st.glow + (0.12 + pulse * 0.2) + ")";
+    ctx.fillRect(Math.floor(gx + rowW * 0.92), Math.floor(gy - towerH), towerW, 2);
+
+    // banner
+    flagX = Math.floor(gx + rowW * 0.92 + towerW - 1);
+    flagY = Math.floor(gy - towerH + 2);
+    ctx.fillStyle = "#f2d46a";
+    ctx.fillRect(flagX, flagY, 1, Math.max(10, Math.floor(10 * scale)));
+    ctx.fillStyle = victoryActive ? "#ff7abf" : "#c79dff";
+    ctx.fillRect(flagX + 1, flagY + 1, Math.max(4, Math.floor(5 * scale)), Math.max(3, Math.floor(3 * scale)));
+
+    drawPrincess(ctx, gx + rowW * 0.7, gy, scale, victoryActive ? pulse + 0.3 : pulse * 0.35);
+  }
+
   function updateAndDrawDust(ctx, dt) {
     var i;
     var d;
@@ -591,6 +719,11 @@ window.Renderers["pixel-platform-runner"] = (function () {
       w = width;
       h = height;
       analysis = a;
+      goalRow = 0;
+      goalNorm = 0.5;
+      goalCh = roleMap.harmony;
+      victoryActive = false;
+      victoryBurstDone = false;
 
       rebuildRoles();
       buildPath();
@@ -672,6 +805,10 @@ window.Renderers["pixel-platform-runner"] = (function () {
         worldRow = (path.length > 0) ? path[0].row : 0;
       }
 
+      if (goalRow > 0 && worldRow > goalRow + 0.2) {
+        worldRow = goalRow + 0.2;
+      }
+
       runnerScale = clamp(Math.floor(Math.min(w, h) / 420), 1, 3);
 
       percNow = currentNotes[roleMap.percussion];
@@ -685,6 +822,7 @@ window.Renderers["pixel-platform-runner"] = (function () {
 
       drawBackground(ctx, energySmooth, worldRow);
       drawPlatforms(ctx, worldRow, rowW);
+      drawGoalReward(ctx, worldRow, rowW, runnerScale);
 
       pose = getPose(worldRow);
       runnerStyle = styleOf(pose.ch);
@@ -706,6 +844,11 @@ window.Renderers["pixel-platform-runner"] = (function () {
         spawnDust(runnerX + 10 * runnerScale * 0.6, pose.groundY + camBob + 2, styleOf(roleMap.percussion), (2 + ((percNow.vol || 0.3) * 5)) | 0, -14);
       }
 
+      if (cursor && cursor.totalFracRow < goalRow - 5) {
+        victoryActive = false;
+        victoryBurstDone = false;
+      }
+
       if (cursor && leadNow && !pose.air) {
         if (lastLeadMidi === leadNow.midi) leadHold += dt;
         else leadHold = dt;
@@ -725,15 +868,31 @@ window.Renderers["pixel-platform-runner"] = (function () {
       }
 
       if (cursor) {
+        if (!victoryActive && worldRow >= goalRow - 0.12) {
+          victoryActive = true;
+        }
+        if (victoryActive && !victoryBurstDone) {
+          spawnDust(runnerX + 8, pose.groundY + camBob, styleOf(roleMap.harmony), 16, -34);
+          spawnDust(runnerX - 8, pose.groundY + camBob, styleOf(roleMap.percussion), 16, -34);
+          danceTimer = Math.max(danceTimer, 1.15);
+          danceCooldown = Math.max(danceCooldown, 0.45);
+          victoryBurstDone = true;
+        }
+
         if (cursor.beat !== lastBeatSeen) {
           if (danceTimer > 0.001 && !pose.air) {
             spawnDust(runnerX + 2 * runnerScale * 0.6, pose.groundY + camBob + 2, styleOf(roleMap.lead), (3 + ((energySmooth * 5) | 0)), -12);
+          }
+          if (victoryActive && !pose.air) {
+            spawnDust(runnerX + 12, pose.groundY + camBob + 1, styleOf(roleMap.harmony), 4 + ((energySmooth * 6) | 0), -18);
           }
           lastBeatSeen = cursor.beat;
         }
       } else {
         lastBeatSeen = -1;
         danceTimer = 0;
+        victoryActive = false;
+        victoryBurstDone = false;
       }
 
       if (!cursor) {
@@ -764,6 +923,11 @@ window.Renderers["pixel-platform-runner"] = (function () {
       skylineFarSpan = 1;
       skylineMidSpan = 1;
       skylineNearSpan = 1;
+      goalRow = 0;
+      goalNorm = 0.5;
+      goalCh = roleMap.harmony;
+      victoryActive = false;
+      victoryBurstDone = false;
       stars = [];
       segIndex = 0;
       lastSegIndex = -1;
