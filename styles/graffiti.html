@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRAFFITI — Street Art Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&family=Permanent+Marker&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           GRAFFITI / STREET ART DESIGN SYSTEM
+           Concrete walls, spray cans, wildstyle letters, drip effects.
+           Walking through a graffiti-covered alley in your browser.
+        ================================================================ */
+
+        /* --- DESIGN TOKENS / CSS VARIABLES --- */
+        :root {
+            /* WALL COLORS — The surfaces we paint on */
+            --wall-dark: #1A1A2E;
+            --wall-concrete: #2D2D2D;
+            --wall-brick: #3D2B1F;
+
+            /* SPRAY COLORS — The palette in the can bag */
+            --spray-chrome: #C0C0C0;
+            --spray-red: #FF2E00;
+            --spray-gold: #FFD700;
+            --spray-green: #00FF41;
+            --spray-magenta: #FF00FF;
+            --spray-blue: #00BFFF;
+            --spray-orange: #FF6B00;
+
+            /* UTILITY COLORS */
+            --outline-black: #000000;
+            --highlight-white: #FFFFFF;
+            --paper-aged: #F5F0DC;
+
+            /* TEXT */
+            --text-primary: #E8E8E8;
+            --text-muted: #8A8A8A;
+
+            /* GLOW VARIANTS */
+            --glow-red: rgba(255, 46, 0, 0.5);
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --glow-green: rgba(0, 255, 65, 0.5);
+            --glow-magenta: rgba(255, 0, 255, 0.5);
+            --glow-blue: rgba(0, 191, 255, 0.5);
+            --glow-chrome: rgba(192, 192, 192, 0.4);
+
+            /* TYPOGRAPHY */
+            --font-display: 'Rubik Spray Paint', cursive;
+            --font-heading: 'Permanent Marker', cursive;
+            --font-body: 'Space Grotesk', sans-serif;
+
+            /* SPACING SCALE — 4px base unit */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+            --space-10: 128px;
+
+            /* TRANSITIONS */
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.3s ease;
+            --transition-slow: 0.5s ease;
+
+            /* BORDER RADIUS */
+            --radius-sm: 2px;
+            --radius-md: 6px;
+            --radius-lg: 12px;
+            --radius-xl: 20px;
+        }
+
+        /* --- KEYFRAME ANIMATIONS --- */
+
+        @keyframes drip {
+            0% { transform: scaleY(0); opacity: 0; }
+            40% { opacity: 1; }
+            100% { transform: scaleY(1); opacity: 0.85; }
+        }
+
+        @keyframes spray-in {
+            0% { opacity: 0; transform: scale(0.7) rotate(-5deg); }
+            60% { opacity: 1; transform: scale(1.05) rotate(1deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes splatter-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* --- RESET & BASE STYLES --- */
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            min-height: 100vh;
+            /* Concrete wall texture — layered CSS gradients for grain noise */
+            background-color: var(--wall-dark);
+            background-image:
+                /* Fine grain noise layer 1 */
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.008) 2px,
+                    rgba(255, 255, 255, 0.008) 4px
+                ),
+                /* Fine grain noise layer 2 — cross-hatch */
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(255, 255, 255, 0.005) 3px,
+                    rgba(255, 255, 255, 0.005) 6px
+                ),
+                /* Diagonal texture */
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(0, 0, 0, 0.03) 8px,
+                    rgba(0, 0, 0, 0.03) 10px
+                ),
+                /* Diagonal counter-texture */
+                repeating-linear-gradient(
+                    -45deg,
+                    transparent,
+                    transparent 12px,
+                    rgba(45, 45, 45, 0.15) 12px,
+                    rgba(45, 45, 45, 0.15) 14px
+                ),
+                /* Large surface variation */
+                radial-gradient(ellipse at 20% 50%, rgba(61, 43, 31, 0.15) 0%, transparent 70%),
+                radial-gradient(ellipse at 80% 30%, rgba(45, 45, 45, 0.2) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 80%, rgba(61, 43, 31, 0.1) 0%, transparent 50%);
+        }
+
+        /* --- CONTAINER --- */
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-5);
+            position: relative;
+        }
+
+        /* --- DRIP EFFECT on section headers --- */
+
+        .drip-header {
+            position: relative;
+            display: inline-block;
+        }
+
+        .drip-header::after {
+            content: '';
+            position: absolute;
+            bottom: -18px;
+            left: 15%;
+            width: 8px;
+            height: 22px;
+            background: inherit;
+            clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%);
+            animation: drip 2s ease-in-out infinite;
+            transform-origin: top center;
+        }
+
+        .drip-header .drip-2 {
+            position: absolute;
+            bottom: -24px;
+            left: 55%;
+            width: 6px;
+            height: 28px;
+            background: inherit;
+            clip-path: polygon(0 0, 100% 0, 65% 100%, 35% 100%);
+            animation: drip 2.5s ease-in-out 0.5s infinite;
+            transform-origin: top center;
+        }
+
+        .drip-header .drip-3 {
+            position: absolute;
+            bottom: -14px;
+            left: 82%;
+            width: 5px;
+            height: 16px;
+            background: inherit;
+            clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+            animation: drip 3s ease-in-out 1s infinite;
+            transform-origin: top center;
+        }
+
+        /* --- SECTION STYLES --- */
+
+        section {
+            margin-bottom: var(--space-9);
+            position: relative;
+        }
+
+        .section-number {
+            font-family: var(--font-heading);
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--spray-chrome);
+            margin-bottom: var(--space-2);
+            display: block;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            /* Caution tape — repeating diagonal stripe */
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--spray-gold),
+                var(--spray-gold) 10px,
+                var(--outline-black) 10px,
+                var(--outline-black) 20px
+            );
+        }
+
+        .section-desc {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-6);
+            max-width: 650px;
+        }
+
+        /* --- CAUTION TAPE DIVIDER --- */
+
+        .caution-tape {
+            width: 100%;
+            height: 24px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--spray-gold),
+                var(--spray-gold) 15px,
+                var(--outline-black) 15px,
+                var(--outline-black) 30px
+            );
+            margin: var(--space-7) 0;
+            transform: rotate(-0.5deg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ================================================================
+           HEADER
+        ================================================================ */
+
+        header {
+            text-align: center;
+            padding: var(--space-9) 0 var(--space-8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Splatter accents in header corners */
+        header::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: -10px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 40%, var(--spray-red) 0%, var(--spray-red) 10%, transparent 10%),
+                radial-gradient(circle at 60% 20%, var(--spray-magenta) 0%, var(--spray-magenta) 6%, transparent 6%),
+                radial-gradient(circle at 45% 65%, var(--spray-red) 0%, var(--spray-red) 14%, transparent 14%),
+                radial-gradient(circle at 70% 50%, var(--spray-orange) 0%, var(--spray-orange) 5%, transparent 5%),
+                radial-gradient(circle at 20% 70%, var(--spray-red) 0%, var(--spray-red) 8%, transparent 8%),
+                radial-gradient(circle at 80% 75%, var(--spray-gold) 0%, var(--spray-gold) 4%, transparent 4%),
+                radial-gradient(circle at 50% 40%, rgba(255, 46, 0, 0.2) 0%, transparent 50%);
+            opacity: 0.8;
+            pointer-events: none;
+            animation: splatter-pulse 4s ease-in-out infinite;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 30px;
+            right: -20px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 35% 35%, var(--spray-blue) 0%, var(--spray-blue) 9%, transparent 9%),
+                radial-gradient(circle at 55% 60%, var(--spray-green) 0%, var(--spray-green) 12%, transparent 12%),
+                radial-gradient(circle at 70% 30%, var(--spray-blue) 0%, var(--spray-blue) 5%, transparent 5%),
+                radial-gradient(circle at 25% 65%, var(--spray-green) 0%, var(--spray-green) 7%, transparent 7%),
+                radial-gradient(circle at 50% 45%, rgba(0, 191, 255, 0.2) 0%, transparent 45%);
+            opacity: 0.8;
+            pointer-events: none;
+            animation: splatter-pulse 5s ease-in-out 1s infinite;
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: 5.5rem;
+            color: var(--spray-red);
+            letter-spacing: 8px;
+            text-shadow:
+                /* 8-directional thick outline */
+                -4px -4px 0 var(--outline-black),
+                 4px -4px 0 var(--outline-black),
+                -4px  4px 0 var(--outline-black),
+                 4px  4px 0 var(--outline-black),
+                -4px  0   0 var(--outline-black),
+                 4px  0   0 var(--outline-black),
+                 0   -4px 0 var(--outline-black),
+                 0    4px 0 var(--outline-black),
+                /* Chrome highlight */
+                -1px -1px 0 var(--spray-chrome),
+                /* Heavy drop shadow */
+                8px 8px 0 rgba(0, 0, 0, 0.6),
+                12px 12px 20px rgba(0, 0, 0, 0.4);
+            transform: skewX(-3deg);
+            display: inline-block;
+            position: relative;
+            z-index: 1;
+            animation: spray-in 0.8s ease-out;
+        }
+
+        .header-subtitle {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            color: var(--spray-chrome);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-top: var(--space-4);
+            text-shadow:
+                2px 2px 0 var(--outline-black),
+                -1px -1px 0 var(--outline-black);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-divider {
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--spray-red), var(--spray-gold), var(--spray-green), var(--spray-blue), var(--spray-magenta));
+            margin: var(--space-5) auto 0;
+            border-radius: var(--radius-sm);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ================================================================
+           01. COLOR PALETTE
+        ================================================================ */
+
+        .color-group-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            color: var(--spray-chrome);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-4);
+            margin-top: var(--space-6);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .color-swatch {
+            border-radius: var(--radius-lg);
+            padding: 0;
+            overflow: hidden;
+            transform: rotate(var(--rotation, -1deg));
+            background: var(--paper-aged);
+            border: 3px solid var(--highlight-white);
+            box-shadow:
+                2px 2px 0 rgba(0, 0, 0, 0.3),
+                4px 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            animation: spray-in 0.6s ease-out backwards;
+        }
+
+        .color-swatch:nth-child(odd) { --rotation: -2deg; }
+        .color-swatch:nth-child(even) { --rotation: 1.5deg; }
+        .color-swatch:nth-child(3n) { --rotation: -0.5deg; }
+        .color-swatch:nth-child(4n) { --rotation: 2.5deg; }
+
+        .color-swatch:hover {
+            transform: scale(1.08) rotate(0deg);
+            box-shadow:
+                3px 3px 0 rgba(0, 0, 0, 0.4),
+                6px 6px 16px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+        }
+
+        .color-preview {
+            height: 90px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Spray can nozzle detail */
+        .color-preview::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.6) 30%, transparent 70%);
+        }
+
+        .color-info {
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+        }
+
+        .color-name {
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            color: var(--outline-black);
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: var(--space-1);
+        }
+
+        .color-hex {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--wall-concrete);
+        }
+
+        .color-usage {
+            font-family: var(--font-body);
+            font-size: 0.65rem;
+            color: var(--wall-concrete);
+            display: block;
+            margin-top: var(--space-1);
+        }
+
+        /* ================================================================
+           02. TYPOGRAPHY
+        ================================================================ */
+
+        .type-specimen {
+            margin-bottom: var(--space-7);
+            padding: var(--space-6);
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid var(--spray-chrome);
+            border-radius: var(--radius-sm);
+        }
+
+        .type-label {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--spray-gold);
+            margin-bottom: var(--space-3);
+            display: block;
+        }
+
+        .type-meta {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+        }
+
+        .type-display {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            line-height: 1.1;
+            color: var(--spray-red);
+        }
+
+        .type-heading-sample {
+            font-family: var(--font-heading);
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        .type-body-sample {
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Type scale */
+        .type-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .type-scale-item {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-5);
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid rgba(192, 192, 192, 0.1);
+        }
+
+        .type-scale-label {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--spray-chrome);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .type-scale-size {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+
+        /* Throw-up demo */
+        .throw-up-demo {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            color: var(--spray-gold);
+            text-shadow:
+                -3px -3px 0 var(--outline-black),
+                 3px -3px 0 var(--outline-black),
+                -3px  3px 0 var(--outline-black),
+                 3px  3px 0 var(--outline-black),
+                -3px  0   0 var(--outline-black),
+                 3px  0   0 var(--outline-black),
+                 0   -3px 0 var(--outline-black),
+                 0    3px 0 var(--outline-black),
+                6px 6px 0 rgba(0, 0, 0, 0.5);
+            text-align: center;
+            padding: var(--space-6);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-md);
+            transform: skewX(-2deg);
+        }
+
+        /* ================================================================
+           03. SPACING
+        ================================================================ */
+
+        .spacing-scale {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .spacing-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .spacing-label {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--spray-chrome);
+            min-width: 80px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .spacing-value {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 50px;
+            flex-shrink: 0;
+        }
+
+        .spacing-bar {
+            height: 20px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(90deg, var(--spray-red), var(--spray-orange));
+            position: relative;
+            box-shadow: 0 2px 6px rgba(255, 46, 0, 0.3);
+            transition: transform var(--transition-fast);
+        }
+
+        .spacing-bar:hover {
+            transform: scaleX(1.02);
+        }
+
+        .spacing-item:nth-child(2n) .spacing-bar {
+            background: linear-gradient(90deg, var(--spray-blue), var(--spray-green));
+            box-shadow: 0 2px 6px rgba(0, 191, 255, 0.3);
+        }
+
+        .spacing-item:nth-child(3n) .spacing-bar {
+            background: linear-gradient(90deg, var(--spray-magenta), var(--spray-blue));
+            box-shadow: 0 2px 6px rgba(255, 0, 255, 0.3);
+        }
+
+        .spacing-item:nth-child(4n) .spacing-bar {
+            background: linear-gradient(90deg, var(--spray-gold), var(--spray-orange));
+            box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+        }
+
+        /* ================================================================
+           04. BUTTONS
+        ================================================================ */
+
+        .btn-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            align-items: center;
+        }
+
+        .btn-group-label {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            color: var(--spray-chrome);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            width: 100%;
+            margin-bottom: var(--space-2);
+            margin-top: var(--space-4);
+        }
+
+        /* Base button */
+        .btn {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: var(--space-3) var(--space-5);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            transition:
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast),
+                background-color var(--transition-fast);
+            position: relative;
+            text-decoration: none;
+        }
+
+        /* Primary — Spray Red */
+        .btn-primary {
+            background: var(--spray-red);
+            color: var(--highlight-white);
+            box-shadow:
+                0 2px 0 rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(255, 46, 0, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow:
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 8px 20px rgba(255, 46, 0, 0.4),
+                0 0 20px var(--glow-red);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Secondary — Chrome */
+        .btn-secondary {
+            background: var(--spray-chrome);
+            color: var(--outline-black);
+            box-shadow:
+                0 2px 0 rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(192, 192, 192, 0.2);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow:
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 8px 20px rgba(192, 192, 192, 0.3),
+                0 0 20px var(--glow-chrome);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* Accent — Gold */
+        .btn-accent {
+            background: var(--spray-gold);
+            color: var(--outline-black);
+            box-shadow:
+                0 2px 0 rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow:
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 8px 20px rgba(255, 215, 0, 0.4),
+                0 0 20px var(--glow-gold);
+        }
+
+        .btn-accent:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* Success — Green */
+        .btn-success {
+            background: var(--spray-green);
+            color: var(--outline-black);
+            box-shadow:
+                0 2px 0 rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(0, 255, 65, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow:
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 8px 20px rgba(0, 255, 65, 0.4),
+                0 0 20px var(--glow-green);
+        }
+
+        .btn-success:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* Danger — Magenta */
+        .btn-danger {
+            background: var(--spray-magenta);
+            color: var(--highlight-white);
+            box-shadow:
+                0 2px 0 rgba(0, 0, 0, 0.3),
+                0 4px 12px rgba(255, 0, 255, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow:
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                0 8px 20px rgba(255, 0, 255, 0.4),
+                0 0 20px var(--glow-magenta);
+        }
+
+        .btn-danger:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* Ghost / Outline Buttons */
+        .btn-ghost {
+            background: transparent;
+            color: var(--spray-chrome);
+            border: 2px solid var(--spray-chrome);
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(192, 192, 192, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--glow-chrome);
+        }
+
+        .btn-ghost-red {
+            background: transparent;
+            color: var(--spray-red);
+            border: 2px solid var(--spray-red);
+            box-shadow: none;
+        }
+
+        .btn-ghost-red:hover {
+            background: rgba(255, 46, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--glow-red);
+        }
+
+        .btn-ghost-gold {
+            background: transparent;
+            color: var(--spray-gold);
+            border: 2px solid var(--spray-gold);
+            box-shadow: none;
+        }
+
+        .btn-ghost-gold:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
+
+        /* Sticker Buttons */
+        .btn-sticker {
+            background: var(--paper-aged);
+            color: var(--outline-black);
+            border: 3px solid var(--highlight-white);
+            border-radius: var(--radius-lg);
+            transform: rotate(-2deg);
+            box-shadow:
+                2px 2px 0 rgba(0, 0, 0, 0.3),
+                4px 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: var(--font-heading);
+        }
+
+        .btn-sticker:hover {
+            transform: rotate(0deg) scale(1.08);
+            box-shadow:
+                3px 3px 0 rgba(0, 0, 0, 0.4),
+                6px 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-sticker-alt {
+            background: var(--spray-red);
+            color: var(--highlight-white);
+            border: 3px solid var(--highlight-white);
+            border-radius: var(--radius-lg);
+            transform: rotate(1.5deg);
+            box-shadow:
+                2px 2px 0 rgba(0, 0, 0, 0.3),
+                4px 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: var(--font-heading);
+        }
+
+        .btn-sticker-alt:hover {
+            transform: rotate(0deg) scale(1.08);
+            box-shadow:
+                3px 3px 0 rgba(0, 0, 0, 0.4),
+                6px 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Button Sizes */
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: var(--space-2) var(--space-3);
+            letter-spacing: 1px;
+        }
+
+        .btn-md {
+            font-size: 0.95rem;
+            padding: var(--space-3) var(--space-5);
+        }
+
+        .btn-lg {
+            font-size: 1.15rem;
+            padding: var(--space-4) var(--space-7);
+            letter-spacing: 2px;
+        }
+
+        /* Disabled */
+        .btn:disabled,
+        .btn.btn-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+            filter: grayscale(60%);
+        }
+
+        .btn:disabled:hover,
+        .btn.btn-disabled:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ================================================================
+           05. FORMS
+        ================================================================ */
+
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-label {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--spray-chrome);
+            display: block;
+            margin-bottom: var(--space-2);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-primary);
+            background: var(--wall-concrete);
+            border: 2px solid var(--spray-chrome);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-4);
+            width: 100%;
+            max-width: 480px;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--spray-blue);
+            box-shadow:
+                0 0 8px var(--glow-blue),
+                0 0 20px rgba(0, 191, 255, 0.15);
+        }
+
+        .form-input:disabled,
+        .form-select:disabled,
+        .form-textarea:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(60%);
+            border-color: var(--text-muted);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C0C0C0' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-4) center;
+            padding-right: var(--space-7);
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.01) 2px,
+                    rgba(255, 255, 255, 0.01) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(255, 255, 255, 0.008) 3px,
+                    rgba(255, 255, 255, 0.008) 6px
+                );
+            background-color: var(--wall-concrete);
+        }
+
+        /* Custom Checkbox */
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--spray-chrome);
+            border-radius: var(--radius-sm);
+            background: var(--wall-concrete);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .form-checkbox input[type="checkbox"]:checked {
+            background: var(--spray-green);
+            border-color: var(--spray-green);
+        }
+
+        .form-checkbox input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--outline-black) 40%, transparent 50%,
+                var(--outline-black) 55%, transparent 60%,
+                var(--outline-black) 70%, transparent 75%);
+            transform: translate(-50%, -50%);
+        }
+
+        .form-checkbox input[type="checkbox"]:focus {
+            box-shadow: 0 0 8px var(--glow-green);
+        }
+
+        /* Custom Radio */
+        .form-radio {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .form-radio input[type="radio"] {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--spray-chrome);
+            border-radius: 50%;
+            background: var(--wall-concrete);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .form-radio input[type="radio"]:checked {
+            border-color: var(--spray-magenta);
+        }
+
+        .form-radio input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                var(--spray-magenta) 0%, var(--spray-magenta) 45%,
+                rgba(255, 0, 255, 0.4) 55%,
+                transparent 70%);
+            transform: translate(-50%, -50%);
+        }
+
+        .form-radio input[type="radio"]:focus {
+            box-shadow: 0 0 8px var(--glow-magenta);
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--space-5);
+            flex-wrap: wrap;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* ================================================================
+           06. CARDS / PANELS
+        ================================================================ */
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+
+        /* Wheat-paste poster card */
+        .card-wheatpaste {
+            background: var(--paper-aged);
+            color: var(--outline-black);
+            padding: var(--space-6);
+            transform: rotate(-1.5deg);
+            clip-path: polygon(
+                0% 2%, 3% 0%, 8% 1%, 15% 0%, 22% 2%, 30% 0%, 38% 1%,
+                45% 0%, 52% 2%, 60% 0%, 68% 1%, 75% 0%, 82% 2%, 90% 0%,
+                95% 1%, 100% 0%, 100% 98%, 97% 100%, 92% 99%, 85% 100%,
+                78% 98%, 70% 100%, 62% 99%, 55% 100%, 48% 98%, 40% 100%,
+                32% 99%, 25% 100%, 18% 98%, 10% 100%, 5% 99%, 0% 100%
+            );
+            box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
+            transition: transform var(--transition-fast);
+        }
+
+        .card-wheatpaste:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+
+        .card-wheatpaste .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            margin-bottom: var(--space-3);
+            color: var(--wall-dark);
+        }
+
+        .card-wheatpaste .card-body {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--wall-concrete);
+        }
+
+        /* Concrete panel */
+        .card-concrete {
+            background: var(--wall-concrete);
+            border: 2px solid var(--spray-chrome);
+            border-radius: var(--radius-sm);
+            padding: var(--space-5);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 4px 12px rgba(0, 0, 0, 0.4);
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.01) 2px,
+                    rgba(255, 255, 255, 0.01) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(255, 255, 255, 0.008) 3px,
+                    rgba(255, 255, 255, 0.008) 6px
+                );
+        }
+
+        .card-concrete .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            color: var(--spray-chrome);
+            margin-bottom: var(--space-3);
+            letter-spacing: 1px;
+        }
+
+        .card-concrete .card-body {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .card-concrete code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            color: var(--spray-green);
+        }
+
+        /* Tagged card */
+        .card-tagged {
+            background: var(--wall-dark);
+            border: 2px solid rgba(192, 192, 192, 0.2);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .card-tagged:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-tagged .card-tag {
+            position: absolute;
+            top: 12px;
+            right: -8px;
+            background: var(--spray-red);
+            color: var(--highlight-white);
+            font-family: var(--font-heading);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: var(--space-1) var(--space-3);
+            transform: rotate(3deg);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-tagged .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .card-tagged .card-body {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Gallery card */
+        .card-gallery {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            border: 3px solid var(--spray-chrome);
+        }
+
+        .card-gallery:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-gallery .card-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(
+                135deg,
+                var(--spray-red) 0%,
+                var(--spray-magenta) 25%,
+                var(--spray-blue) 50%,
+                var(--spray-green) 75%,
+                var(--spray-gold) 100%
+            );
+            position: relative;
+        }
+
+        .card-gallery .card-image::after {
+            content: 'ART';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-5deg);
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-gallery .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+            padding: var(--space-5) var(--space-4) var(--space-4);
+        }
+
+        .card-gallery .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            color: var(--highlight-white);
+        }
+
+        .card-gallery .card-body {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--spray-chrome);
+            margin-top: var(--space-1);
+        }
+
+        /* ================================================================
+           07. ALERTS / NOTIFICATIONS
+        ================================================================ */
+
+        .alert {
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-5);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+            position: relative;
+            font-family: var(--font-body);
+            max-width: 600px;
+        }
+
+        .alert-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            line-height: 1;
+            margin-top: var(--space-1);
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-message {
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity var(--transition-fast);
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .alert-close:hover {
+            opacity: 1;
+        }
+
+        /* Warning — caution tape pattern */
+        .alert-warning {
+            background-image: repeating-linear-gradient(
+                -45deg,
+                var(--spray-gold),
+                var(--spray-gold) 10px,
+                var(--outline-black) 10px,
+                var(--outline-black) 20px
+            );
+            background-size: 100% 100%;
+            color: var(--outline-black);
+            transform: rotate(-0.5deg);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .alert-warning .alert-title {
+            color: var(--outline-black);
+        }
+
+        /* Inner content panel for readability on caution stripes */
+        .alert-warning .alert-inner {
+            background: rgba(255, 215, 0, 0.9);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+            width: 100%;
+        }
+
+        /* Error / Danger — spray red with drip bottom */
+        .alert-danger {
+            background: var(--spray-red);
+            color: var(--highlight-white);
+            transform: rotate(0.4deg);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+            overflow: visible;
+        }
+
+        .alert-danger::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 10%;
+            width: 80%;
+            height: 14px;
+            background: var(--spray-red);
+            clip-path: polygon(
+                0% 0%, 5% 100%, 8% 30%, 12% 80%, 16% 0%, 20% 60%,
+                25% 0%, 30% 90%, 34% 0%, 40% 70%, 45% 0%, 50% 85%,
+                55% 0%, 60% 60%, 65% 0%, 70% 95%, 75% 0%, 80% 50%,
+                85% 0%, 90% 75%, 95% 0%, 100% 0%
+            );
+            opacity: 0.85;
+        }
+
+        /* Success — spray green */
+        .alert-success {
+            background: var(--spray-green);
+            color: var(--outline-black);
+            transform: rotate(-0.3deg);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Info — spray blue with chrome outline */
+        .alert-info {
+            background: rgba(0, 191, 255, 0.15);
+            color: var(--text-primary);
+            border: 2px solid var(--spray-blue);
+            transform: rotate(0.3deg);
+            box-shadow:
+                0 0 10px var(--glow-blue),
+                3px 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .alert-info .alert-title {
+            color: var(--spray-blue);
+        }
+
+        /* ================================================================
+           08. NAVIGATION
+        ================================================================ */
+
+        /* Subway-map nav */
+        .nav-subway {
+            position: relative;
+            padding-left: var(--space-7);
+            margin-bottom: var(--space-7);
+        }
+
+        .nav-subway::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--spray-chrome);
+            border-radius: var(--radius-sm);
+        }
+
+        .nav-subway-item {
+            position: relative;
+            padding: var(--space-3) 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-subway-item::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * var(--space-7) + 10px);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--wall-dark);
+            border: 3px solid var(--spray-chrome);
+            z-index: 1;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .nav-subway-item:hover::before {
+            background: var(--spray-red);
+            border-color: var(--spray-red);
+            box-shadow: 0 0 10px var(--glow-red);
+        }
+
+        .nav-subway-item.active::before {
+            background: var(--spray-gold);
+            border-color: var(--spray-gold);
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+
+        .nav-subway-link {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: color var(--transition-fast);
+        }
+
+        .nav-subway-link:hover {
+            color: var(--spray-red);
+        }
+
+        .nav-subway-item.active .nav-subway-link {
+            color: var(--spray-gold);
+        }
+
+        /* Pill nav bar */
+        .nav-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            margin-bottom: var(--space-7);
+        }
+
+        .nav-pill {
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-xl);
+            background: var(--paper-aged);
+            color: var(--outline-black);
+            border: 2px solid var(--highlight-white);
+            box-shadow:
+                2px 2px 0 rgba(0, 0, 0, 0.3),
+                3px 3px 6px rgba(0, 0, 0, 0.2);
+            transition:
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast),
+                background-color var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .nav-pill:nth-child(odd) { transform: rotate(-1.5deg); }
+        .nav-pill:nth-child(even) { transform: rotate(1deg); }
+
+        .nav-pill:hover {
+            transform: rotate(0deg) scale(1.08);
+            box-shadow:
+                3px 3px 0 rgba(0, 0, 0, 0.4),
+                5px 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-pill.active {
+            background: var(--spray-red);
+            color: var(--highlight-white);
+            border-color: var(--spray-red);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            margin-bottom: var(--space-7);
+        }
+
+        .breadcrumb-link {
+            color: var(--spray-chrome);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .breadcrumb-link:hover {
+            color: var(--spray-blue);
+        }
+
+        .breadcrumb-link.current {
+            color: var(--spray-gold);
+            pointer-events: none;
+        }
+
+        .breadcrumb-sep {
+            color: var(--spray-red);
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            user-select: none;
+        }
+
+        /* ================================================================
+           09. TAGS & BADGES
+        ================================================================ */
+
+        .tag-collection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            align-items: center;
+            margin-bottom: var(--space-6);
+        }
+
+        /* Writer tag — rotated sticker */
+        .tag-writer {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: var(--paper-aged);
+            color: var(--outline-black);
+            padding: var(--space-1) var(--space-3);
+            border: 2px solid var(--highlight-white);
+            border-radius: var(--radius-sm);
+            box-shadow:
+                2px 2px 0 rgba(0, 0, 0, 0.3),
+                3px 3px 6px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+            transition: transform var(--transition-fast);
+        }
+
+        .tag-writer:nth-child(1) { transform: rotate(-3deg); }
+        .tag-writer:nth-child(2) { transform: rotate(2deg); }
+        .tag-writer:nth-child(3) { transform: rotate(-1deg); }
+        .tag-writer:nth-child(4) { transform: rotate(4deg); }
+        .tag-writer:nth-child(5) { transform: rotate(-2.5deg); }
+        .tag-writer:nth-child(6) { transform: rotate(1.5deg); }
+
+        .tag-writer:hover {
+            transform: rotate(0deg) scale(1.1);
+        }
+
+        /* Crew badge — chrome outline rounded */
+        .badge-crew {
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--spray-chrome);
+            padding: var(--space-2) var(--space-4);
+            border: 2px solid var(--spray-chrome);
+            border-radius: var(--radius-xl);
+            background: rgba(192, 192, 192, 0.1);
+            box-shadow: 0 0 8px var(--glow-chrome);
+            display: inline-block;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .badge-crew:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 16px var(--glow-chrome);
+        }
+
+        /* Status pill */
+        .pill-status {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-xl);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .pill-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .pill-online {
+            background: rgba(0, 255, 65, 0.15);
+            color: var(--spray-green);
+        }
+        .pill-online::before {
+            background: var(--spray-green);
+            box-shadow: 0 0 6px var(--glow-green);
+        }
+
+        .pill-offline {
+            background: rgba(255, 46, 0, 0.15);
+            color: var(--spray-red);
+        }
+        .pill-offline::before {
+            background: var(--spray-red);
+            box-shadow: 0 0 6px var(--glow-red);
+        }
+
+        .pill-away {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--spray-gold);
+        }
+        .pill-away::before {
+            background: var(--spray-gold);
+            box-shadow: 0 0 6px var(--glow-gold);
+        }
+
+        /* Category tag — outlined with skew */
+        .tag-category {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--spray-blue);
+            padding: var(--space-1) var(--space-3);
+            border: 1.5px solid var(--spray-blue);
+            border-radius: var(--radius-sm);
+            display: inline-block;
+            transition: transform var(--transition-fast), background-color var(--transition-fast);
+        }
+
+        .tag-category:nth-child(odd) { transform: skewX(-3deg); }
+        .tag-category:nth-child(even) { transform: skewX(2deg); }
+
+        .tag-category:hover {
+            background: rgba(0, 191, 255, 0.1);
+            transform: skewX(0deg);
+        }
+
+        .tag-category.tag-red {
+            color: var(--spray-red);
+            border-color: var(--spray-red);
+        }
+        .tag-category.tag-red:hover {
+            background: rgba(255, 46, 0, 0.1);
+        }
+
+        .tag-category.tag-green {
+            color: var(--spray-green);
+            border-color: var(--spray-green);
+        }
+        .tag-category.tag-green:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .tag-category.tag-gold {
+            color: var(--spray-gold);
+            border-color: var(--spray-gold);
+        }
+        .tag-category.tag-gold:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .tag-category.tag-magenta {
+            color: var(--spray-magenta);
+            border-color: var(--spray-magenta);
+        }
+        .tag-category.tag-magenta:hover {
+            background: rgba(255, 0, 255, 0.1);
+        }
+
+        /* ================================================================
+           FOOTER
+        ================================================================ */
+
+        .site-footer {
+            text-align: center;
+            padding: var(--space-7) 0 var(--space-8);
+            margin-top: var(--space-9);
+            border-top: 24px solid transparent;
+            border-image: repeating-linear-gradient(
+                -45deg,
+                var(--spray-gold),
+                var(--spray-gold) 15px,
+                var(--outline-black) 15px,
+                var(--outline-black) 30px
+            ) 24;
+        }
+
+        .footer-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--spray-red);
+            text-shadow:
+                -3px -3px 0 var(--outline-black),
+                 3px -3px 0 var(--outline-black),
+                -3px  3px 0 var(--outline-black),
+                 3px  3px 0 var(--outline-black),
+                 5px 5px 0 rgba(0, 0, 0, 0.5);
+            margin-bottom: var(--space-3);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            color: var(--spray-chrome);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-5);
+        }
+
+        .footer-link {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--spray-blue);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-link:hover {
+            color: var(--spray-gold);
+        }
+
+        .footer-meta {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: var(--space-4);
+        }
+
+        /* ================================================================
+           RESPONSIVE BREAKPOINTS
+        ================================================================ */
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-6) var(--space-4);
+            }
+
+            .header-title {
+                font-size: 3rem;
+                letter-spacing: 4px;
+                transform: skewX(-1.5deg);
+            }
+
+            .header-subtitle {
+                font-size: 1rem;
+                letter-spacing: 3px;
+            }
+
+            .section-title {
+                font-size: 1.6rem;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: var(--space-3);
+            }
+
+            .color-preview {
+                height: 70px;
+            }
+
+            .type-display {
+                font-size: 2.5rem;
+            }
+
+            .type-specimen {
+                padding: var(--space-4);
+            }
+
+            .type-scale-item {
+                flex-direction: column;
+                gap: var(--space-1);
+            }
+
+            .type-scale-label {
+                min-width: auto;
+            }
+
+            .throw-up-demo {
+                font-size: 2rem;
+                padding: var(--space-4);
+                transform: skewX(-1deg);
+            }
+
+            .spacing-item {
+                gap: var(--space-2);
+            }
+
+            .spacing-label {
+                min-width: 65px;
+                font-size: 0.7rem;
+            }
+
+            .spacing-value {
+                min-width: 40px;
+                font-size: 0.65rem;
+            }
+
+            .btn-grid {
+                gap: var(--space-3);
+            }
+
+            .btn-lg {
+                font-size: 1rem;
+                padding: var(--space-3) var(--space-5);
+            }
+
+            header::before,
+            header::after {
+                width: 100px;
+                height: 100px;
+            }
+
+            .caution-tape {
+                height: 18px;
+            }
+
+            /* 05. Forms */
+            .form-input,
+            .form-select,
+            .form-textarea {
+                max-width: 100%;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-row .form-group {
+                min-width: 100%;
+            }
+
+            /* 06. Cards */
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-5);
+            }
+
+            .card-wheatpaste {
+                transform: rotate(-0.5deg);
+            }
+
+            .card-gallery .card-image {
+                height: 160px;
+            }
+
+            /* 07. Alerts */
+            .alert {
+                max-width: 100%;
+            }
+
+            /* 08. Navigation */
+            .nav-pills {
+                gap: var(--space-2);
+            }
+
+            .nav-pill {
+                font-size: 0.7rem;
+                padding: var(--space-2) var(--space-3);
+            }
+
+            .breadcrumb {
+                font-size: 0.75rem;
+            }
+
+            /* 09. Tags & Badges */
+            .tag-collection {
+                gap: var(--space-3);
+            }
+
+            .color-swatch:nth-child(odd) { --rotation: -1deg; }
+            .color-swatch:nth-child(even) { --rotation: 0.5deg; }
+            .color-swatch:nth-child(3n) { --rotation: -0.3deg; }
+            .color-swatch:nth-child(4n) { --rotation: 1deg; }
+
+            .btn-sticker { transform: rotate(-1deg); }
+            .btn-sticker-alt { transform: rotate(0.5deg); }
+
+            .nav-pill:nth-child(odd) { transform: rotate(-0.5deg); }
+            .nav-pill:nth-child(even) { transform: rotate(0.5deg); }
+
+            .tag-writer:nth-child(1) { transform: rotate(-1.5deg); }
+            .tag-writer:nth-child(2) { transform: rotate(1deg); }
+            .tag-writer:nth-child(3) { transform: rotate(-0.5deg); }
+            .tag-writer:nth-child(4) { transform: rotate(2deg); }
+            .tag-writer:nth-child(5) { transform: rotate(-1deg); }
+            .tag-writer:nth-child(6) { transform: rotate(0.5deg); }
+
+            .tag-category:nth-child(odd) { transform: skewX(-1.5deg); }
+            .tag-category:nth-child(even) { transform: skewX(1deg); }
+
+            /* Footer */
+            .footer-title {
+                font-size: 1.8rem;
+            }
+
+            .footer-tagline {
+                font-size: 0.75rem;
+                letter-spacing: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ============================================================
+             HEADER
+        ============================================================ -->
+        <header>
+            <h1 class="header-title">GRAFFITI</h1>
+            <p class="header-subtitle">Street Art Design System</p>
+            <div class="header-divider"></div>
+        </header>
+
+        <div class="caution-tape"></div>
+
+        <!-- ============================================================
+             01. COLOR PALETTE
+        ============================================================ -->
+        <section id="color-palette">
+            <span class="section-number">01</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-red); background-color: var(--spray-red);">
+                Color Palette
+                <span class="drip-2" style="background: var(--spray-red);"></span>
+                <span class="drip-3" style="background: var(--spray-red);"></span>
+            </h2>
+            <p class="section-desc">Every color in the bag. From chrome caps to neon fills — the spray palette for the street.</p>
+
+            <h3 class="color-group-title">Spray Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-red);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Red</span>
+                        <span class="color-hex">#FF2E00</span>
+                        <span class="color-usage">Primary / Krylon Red</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-gold);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Gold</span>
+                        <span class="color-hex">#FFD700</span>
+                        <span class="color-usage">Accent / Montana Gold</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-green);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Green</span>
+                        <span class="color-hex">#00FF41</span>
+                        <span class="color-usage">Success / Neon</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-magenta);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Magenta</span>
+                        <span class="color-hex">#FF00FF</span>
+                        <span class="color-usage">Wildstyle / Danger</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-blue);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Blue</span>
+                        <span class="color-hex">#00BFFF</span>
+                        <span class="color-usage">Electric Blue</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-orange);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Orange</span>
+                        <span class="color-hex">#FF6B00</span>
+                        <span class="color-usage">Burnt Orange</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--spray-chrome);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Spray Chrome</span>
+                        <span class="color-hex">#C0C0C0</span>
+                        <span class="color-usage">Silver Outlines</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="color-group-title">Wall Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--wall-dark);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Wall Dark</span>
+                        <span class="color-hex">#1A1A2E</span>
+                        <span class="color-usage">Deep Background</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--wall-concrete);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Wall Concrete</span>
+                        <span class="color-hex">#2D2D2D</span>
+                        <span class="color-usage">Concrete Surface</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--wall-brick);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Wall Brick</span>
+                        <span class="color-hex">#3D2B1F</span>
+                        <span class="color-usage">Brick Undertone</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="color-group-title">Utility Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--outline-black);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Outline Black</span>
+                        <span class="color-hex">#000000</span>
+                        <span class="color-usage">Outlines</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--highlight-white); border-bottom: 1px solid var(--spray-chrome);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Highlight White</span>
+                        <span class="color-hex">#FFFFFF</span>
+                        <span class="color-usage">Highlights</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--paper-aged);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Paper Aged</span>
+                        <span class="color-hex">#F5F0DC</span>
+                        <span class="color-usage">Sticker / Paper BG</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--text-primary);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Text Primary</span>
+                        <span class="color-hex">#E8E8E8</span>
+                        <span class="color-usage">Body Text</span>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background-color: var(--text-muted);"></div>
+                    <div class="color-info">
+                        <span class="color-name">Text Muted</span>
+                        <span class="color-hex">#8A8A8A</span>
+                        <span class="color-usage">Secondary Text</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(0.5deg);"></div>
+
+        <!-- ============================================================
+             02. TYPOGRAPHY
+        ============================================================ -->
+        <section id="typography">
+            <span class="section-number">02</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-blue); background-color: var(--spray-blue);">
+                Typography
+                <span class="drip-2" style="background: var(--spray-blue);"></span>
+                <span class="drip-3" style="background: var(--spray-blue);"></span>
+            </h2>
+            <p class="section-desc">Three typefaces for three voices: tags, throw-ups, and body text on the wall.</p>
+
+            <!-- Rubik Spray Paint — Display -->
+            <div class="type-specimen">
+                <span class="type-label">Display / Tags — Rubik Spray Paint</span>
+                <div class="type-display">
+                    Spray Paint Tags
+                </div>
+                <p class="type-meta">Font: Rubik Spray Paint &middot; Use for hero text, splash displays, large decorative titles</p>
+            </div>
+
+            <!-- Permanent Marker — Headings -->
+            <div class="type-specimen">
+                <span class="type-label">Headings / Throw-ups — Permanent Marker</span>
+                <div class="type-heading-sample" style="font-size: 2.5rem;">
+                    Quick Marker Headings
+                </div>
+                <p class="type-meta">Font: Permanent Marker &middot; Use for section headings, labels, UI emphasis</p>
+            </div>
+
+            <!-- Space Grotesk — Body -->
+            <div class="type-specimen">
+                <span class="type-label">Body / Utility — Space Grotesk</span>
+                <div class="type-body-sample" style="font-size: 1rem;">
+                    Space Grotesk brings clean geometric readability to the chaos. Used for body copy, metadata, form fields, and anywhere legibility matters on the wall. Available in weights 400, 500, and 700.
+                </div>
+                <div class="type-body-sample" style="font-size: 1rem; font-weight: 700; margin-top: var(--space-2);">
+                    Bold weight for emphasis and strong labels. The structured backbone behind every wild piece.
+                </div>
+                <p class="type-meta">Font: Space Grotesk 400/500/700 &middot; Use for body text, captions, metadata</p>
+            </div>
+
+            <!-- Type Scale -->
+            <h3 class="color-group-title" style="margin-top: var(--space-7);">Type Scale</h3>
+            <div class="type-scale">
+                <div class="type-scale-item">
+                    <span class="type-scale-label">Display</span>
+                    <span class="type-scale-size">4rem</span>
+                    <span style="font-family: var(--font-display); font-size: 4rem; line-height: 1.1; color: var(--spray-red);">Graffiti</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H1</span>
+                    <span class="type-scale-size">2.5rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 2.5rem; line-height: 1.2;">Heading One</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H2</span>
+                    <span class="type-scale-size">2rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 2rem; line-height: 1.2;">Heading Two</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H3</span>
+                    <span class="type-scale-size">1.5rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 1.5rem; line-height: 1.3;">Heading Three</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H4</span>
+                    <span class="type-scale-size">1.25rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 1.25rem; line-height: 1.3;">Heading Four</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H5</span>
+                    <span class="type-scale-size">1rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 1rem; line-height: 1.4;">Heading Five</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">H6</span>
+                    <span class="type-scale-size">0.875rem</span>
+                    <span style="font-family: var(--font-heading); font-size: 0.875rem; line-height: 1.4;">Heading Six</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">Body</span>
+                    <span class="type-scale-size">1rem</span>
+                    <span style="font-family: var(--font-body); font-size: 1rem; line-height: 1.6;">Body text for readable content on the wall.</span>
+                </div>
+                <div class="type-scale-item">
+                    <span class="type-scale-label">Caption</span>
+                    <span class="type-scale-size">0.75rem</span>
+                    <span style="font-family: var(--font-body); font-size: 0.75rem; line-height: 1.4; color: var(--text-muted);">Caption text for metadata and small labels.</span>
+                </div>
+            </div>
+
+            <!-- Throw-up Demo -->
+            <h3 class="color-group-title" style="margin-top: var(--space-7);">Throw-up Style Demo</h3>
+            <div class="throw-up-demo">
+                WILDSTYLE
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(-0.8deg);"></div>
+
+        <!-- ============================================================
+             03. SPACING
+        ============================================================ -->
+        <section id="spacing">
+            <span class="section-number">03</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-green); background-color: var(--spray-green);">
+                Spacing
+                <span class="drip-2" style="background: var(--spray-green);"></span>
+                <span class="drip-3" style="background: var(--spray-green);"></span>
+            </h2>
+            <p class="section-desc">A 4px base unit scales up to give structure to the chaos. Every dimension measured in multiples of 4.</p>
+
+            <div class="spacing-scale">
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-1</span>
+                    <span class="spacing-value">4px</span>
+                    <div class="spacing-bar" style="width: 4px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-2</span>
+                    <span class="spacing-value">8px</span>
+                    <div class="spacing-bar" style="width: 8px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-3</span>
+                    <span class="spacing-value">12px</span>
+                    <div class="spacing-bar" style="width: 12px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-4</span>
+                    <span class="spacing-value">16px</span>
+                    <div class="spacing-bar" style="width: 16px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-5</span>
+                    <span class="spacing-value">24px</span>
+                    <div class="spacing-bar" style="width: 24px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-6</span>
+                    <span class="spacing-value">32px</span>
+                    <div class="spacing-bar" style="width: 32px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-7</span>
+                    <span class="spacing-value">48px</span>
+                    <div class="spacing-bar" style="width: 48px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-8</span>
+                    <span class="spacing-value">64px</span>
+                    <div class="spacing-bar" style="width: 64px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-9</span>
+                    <span class="spacing-value">96px</span>
+                    <div class="spacing-bar" style="width: 96px;"></div>
+                </div>
+                <div class="spacing-item">
+                    <span class="spacing-label">--space-10</span>
+                    <span class="spacing-value">128px</span>
+                    <div class="spacing-bar" style="width: 128px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(0.3deg);"></div>
+
+        <!-- ============================================================
+             04. BUTTONS
+        ============================================================ -->
+        <section id="buttons">
+            <span class="section-number">04</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-gold); background-color: var(--spray-gold);">
+                Buttons
+                <span class="drip-2" style="background: var(--spray-gold);"></span>
+                <span class="drip-3" style="background: var(--spray-gold);"></span>
+            </h2>
+            <p class="section-desc">Hit the wall with intent. Solid fills, ghost outlines, sticker slaps, and every size from tag to mural.</p>
+
+            <!-- Solid Buttons -->
+            <label class="btn-group-label">Solid Buttons</label>
+            <div class="btn-grid">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-accent">Accent</button>
+                <button class="btn btn-success">Success</button>
+                <button class="btn btn-danger">Danger</button>
+            </div>
+
+            <!-- Ghost / Outline Buttons -->
+            <label class="btn-group-label">Ghost / Outline</label>
+            <div class="btn-grid">
+                <button class="btn btn-ghost">Ghost Chrome</button>
+                <button class="btn btn-ghost-red">Ghost Red</button>
+                <button class="btn btn-ghost-gold">Ghost Gold</button>
+            </div>
+
+            <!-- Sticker Buttons -->
+            <label class="btn-group-label">Sticker Style</label>
+            <div class="btn-grid">
+                <button class="btn btn-sticker">Sticker Slap</button>
+                <button class="btn btn-sticker-alt">Red Sticker</button>
+            </div>
+
+            <!-- Button Sizes -->
+            <label class="btn-group-label">Sizes</label>
+            <div class="btn-grid">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary btn-md">Medium</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+
+            <!-- Disabled State -->
+            <label class="btn-group-label">Disabled</label>
+            <div class="btn-grid">
+                <button class="btn btn-primary" disabled>Disabled Primary</button>
+                <button class="btn btn-secondary" disabled>Disabled Secondary</button>
+                <button class="btn btn-ghost btn-disabled">Disabled Ghost</button>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(-0.4deg);"></div>
+
+        <!-- ============================================================
+             05. FORMS
+        ============================================================ -->
+        <section id="forms">
+            <span class="section-number">05</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-magenta); background-color: var(--spray-magenta);">
+                Forms
+                <span class="drip-2" style="background: var(--spray-magenta);"></span>
+                <span class="drip-3" style="background: var(--spray-magenta);"></span>
+            </h2>
+            <p class="section-desc">Stencil-cut inputs on concrete. Every field looks like it was sprayed through a template onto the wall.</p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="input-name">Writer Name</label>
+                    <input class="form-input" type="text" id="input-name" placeholder="Enter your tag name...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="input-email">Email</label>
+                    <input class="form-input" type="email" id="input-email" placeholder="your@crew.com">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="select-style">Preferred Style</label>
+                <select class="form-select" id="select-style">
+                    <option value="">Select a style...</option>
+                    <option value="wildstyle">Wildstyle</option>
+                    <option value="throwup">Throw-up</option>
+                    <option value="blockbuster">Blockbuster</option>
+                    <option value="stencil">Stencil</option>
+                    <option value="character">Character</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="textarea-bio">Bio / Message</label>
+                <textarea class="form-textarea" id="textarea-bio" placeholder="Tell us about your work on the wall..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Mediums</label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" checked>
+                        <span>Spray Paint</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox">
+                        <span>Markers</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" checked>
+                        <span>Stencils</span>
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox">
+                        <span>Wheat Paste</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Experience Level</label>
+                    <label class="form-radio">
+                        <input type="radio" name="experience" value="toy">
+                        <span>Toy (Beginner)</span>
+                    </label>
+                    <label class="form-radio">
+                        <input type="radio" name="experience" value="writer" checked>
+                        <span>Writer (Intermediate)</span>
+                    </label>
+                    <label class="form-radio">
+                        <input type="radio" name="experience" value="king">
+                        <span>King (Expert)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="input-disabled">Disabled Input</label>
+                <input class="form-input" type="text" id="input-disabled" value="This field is locked" disabled>
+            </div>
+
+            <div class="btn-grid" style="margin-top: var(--space-5);">
+                <button class="btn btn-primary">Submit</button>
+                <button class="btn btn-ghost">Cancel</button>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(0.6deg);"></div>
+
+        <!-- ============================================================
+             06. CARDS / PANELS
+        ============================================================ -->
+        <section id="cards">
+            <span class="section-number">06</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-orange); background-color: var(--spray-orange);">
+                Cards / Panels
+                <span class="drip-2" style="background: var(--spray-orange);"></span>
+                <span class="drip-3" style="background: var(--spray-orange);"></span>
+            </h2>
+            <p class="section-desc">Containers for content on the wall. Wheat-pasted posters, concrete slabs, tagged panels, and gallery frames.</p>
+
+            <div class="card-grid">
+                <!-- Wheat-paste poster card -->
+                <div class="card-wheatpaste">
+                    <h3 class="card-title">Wheat-Paste Poster</h3>
+                    <p class="card-body">Aged paper background with torn edges, like a poster slapped on the wall weeks ago. The rain has warped the corners but the message still stands. Perfect for announcements and featured content.</p>
+                </div>
+
+                <!-- Concrete panel -->
+                <div class="card-concrete">
+                    <h3 class="card-title">Concrete Panel</h3>
+                    <p class="card-body">A slab of digital concrete with chrome trim. Good for code blocks, data tables, or anything that needs a hard, structured surface.</p>
+                    <p class="card-body" style="margin-top: var(--space-3);">
+                        Example: <code>npm install spray-paint</code>
+                    </p>
+                </div>
+
+                <!-- Tagged card -->
+                <div class="card-tagged">
+                    <span class="card-tag">New</span>
+                    <h3 class="card-title">Tagged Card</h3>
+                    <p class="card-body">A clean dark panel with a spray-red corner tag. The tag badge marks this content as special, fresh, or important. Hover to lift it off the wall.</p>
+                </div>
+
+                <!-- Gallery card -->
+                <div class="card-gallery">
+                    <div class="card-image"></div>
+                    <div class="card-overlay">
+                        <h3 class="card-title">Gallery Piece</h3>
+                        <p class="card-body">Framed art on the wall</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional card variations -->
+            <h3 class="color-group-title" style="margin-top: var(--space-7);">More Variations</h3>
+            <div class="card-grid">
+                <div class="card-wheatpaste" style="transform: rotate(1deg);">
+                    <h3 class="card-title">Event Flyer</h3>
+                    <p class="card-body">Come to the jam session under the bridge. Bring cans, caps, and respect for the wall. All writers welcome.</p>
+                </div>
+
+                <div class="card-tagged">
+                    <span class="card-tag">Hot</span>
+                    <h3 class="card-title">Trending Spot</h3>
+                    <p class="card-body">This wall has been getting heavy traffic. New pieces going up every night. Check the latest work from the local crew.</p>
+                </div>
+
+                <div class="card-concrete">
+                    <h3 class="card-title">System Status</h3>
+                    <p class="card-body">Server uptime: <code>99.7%</code></p>
+                    <p class="card-body" style="margin-top: var(--space-2);">Last deploy: <code>2 hours ago</code></p>
+                    <p class="card-body" style="margin-top: var(--space-2);">Build: <code>passing</code></p>
+                </div>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(-0.6deg);"></div>
+
+        <!-- ============================================================
+             07. ALERTS / NOTIFICATIONS
+        ============================================================ -->
+        <section id="alerts">
+            <span class="section-number">07</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-chrome); background-color: var(--spray-chrome);">
+                Alerts / Notifications
+                <span class="drip-2" style="background: var(--spray-chrome);"></span>
+                <span class="drip-3" style="background: var(--spray-chrome);"></span>
+            </h2>
+            <p class="section-desc">Messages slapped on the wall. Caution tape warnings, spray-dripped errors, neon success, and chrome info panels.</p>
+
+            <!-- Warning -->
+            <div class="alert alert-warning">
+                <div class="alert-inner">
+                    <span class="alert-icon">&#9888;</span>
+                    <div class="alert-content">
+                        <div class="alert-title">Warning: Wet Paint</div>
+                        <p class="alert-message">This section is still being painted. Watch your step and do not lean on the wall. The clear coat has not been applied yet.</p>
+                    </div>
+                    <button class="alert-close" aria-label="Close">&times;</button>
+                </div>
+            </div>
+
+            <!-- Error / Danger -->
+            <div class="alert alert-danger">
+                <span class="alert-icon">&#10060;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Danger: Busted</div>
+                    <p class="alert-message">Security spotted. Time to pack the cans and bounce. This wall is too hot right now. Come back another night.</p>
+                </div>
+                <button class="alert-close" aria-label="Close">&times;</button>
+            </div>
+
+            <!-- Success -->
+            <div class="alert alert-success">
+                <span class="alert-icon">&#10004;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Success: Piece Completed</div>
+                    <p class="alert-message">The mural is finished. Colors are clean, outlines are crisp, and the fill is even. Time to sign it and photograph the work.</p>
+                </div>
+                <button class="alert-close" aria-label="Close">&times;</button>
+            </div>
+
+            <!-- Info -->
+            <div class="alert alert-info">
+                <span class="alert-icon">&#8505;</span>
+                <div class="alert-content">
+                    <div class="alert-title">Info: Wall Status</div>
+                    <p class="alert-message">This wall is a legal spot. Permission granted by the property owner. Paint freely but respect the existing work and neighboring pieces.</p>
+                </div>
+                <button class="alert-close" aria-label="Close">&times;</button>
+            </div>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(0.4deg);"></div>
+
+        <!-- ============================================================
+             08. NAVIGATION
+        ============================================================ -->
+        <section id="navigation">
+            <span class="section-number">08</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-blue); background-color: var(--spray-blue);">
+                Navigation
+                <span class="drip-2" style="background: var(--spray-blue);"></span>
+                <span class="drip-3" style="background: var(--spray-blue);"></span>
+            </h2>
+            <p class="section-desc">Find your way through the city. Subway-map lines, sticker-tab pill bars, and spray-arrow breadcrumbs.</p>
+
+            <!-- Subway-map nav -->
+            <h3 class="color-group-title">Subway Map Nav</h3>
+            <nav class="nav-subway">
+                <div class="nav-subway-item">
+                    <a href="#color-palette" class="nav-subway-link">Color Palette</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#typography" class="nav-subway-link">Typography</a>
+                </div>
+                <div class="nav-subway-item active">
+                    <a href="#spacing" class="nav-subway-link">Spacing</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#buttons" class="nav-subway-link">Buttons</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#forms" class="nav-subway-link">Forms</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#cards" class="nav-subway-link">Cards / Panels</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#alerts" class="nav-subway-link">Alerts</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#navigation" class="nav-subway-link">Navigation</a>
+                </div>
+                <div class="nav-subway-item">
+                    <a href="#tags-badges" class="nav-subway-link">Tags &amp; Badges</a>
+                </div>
+            </nav>
+
+            <!-- Pill nav bar -->
+            <h3 class="color-group-title">Pill Nav Bar</h3>
+            <nav class="nav-pills">
+                <a href="#" class="nav-pill active">All</a>
+                <a href="#" class="nav-pill">Wildstyle</a>
+                <a href="#" class="nav-pill">Throw-ups</a>
+                <a href="#" class="nav-pill">Stencils</a>
+                <a href="#" class="nav-pill">Characters</a>
+                <a href="#" class="nav-pill">Tags</a>
+            </nav>
+
+            <!-- Breadcrumb -->
+            <h3 class="color-group-title">Breadcrumb</h3>
+            <nav class="breadcrumb">
+                <a href="#" class="breadcrumb-link">Home</a>
+                <span class="breadcrumb-sep">&#9654;</span>
+                <a href="#" class="breadcrumb-link">Style Guides</a>
+                <span class="breadcrumb-sep">&#9654;</span>
+                <a href="#" class="breadcrumb-link current">Graffiti</a>
+            </nav>
+        </section>
+
+        <div class="caution-tape" style="transform: rotate(-0.3deg);"></div>
+
+        <!-- ============================================================
+             09. TAGS & BADGES
+        ============================================================ -->
+        <section id="tags-badges">
+            <span class="section-number">09</span>
+            <h2 class="section-title drip-header" style="color: var(--spray-gold); background-color: var(--spray-gold);">
+                Tags &amp; Badges
+                <span class="drip-2" style="background: var(--spray-gold);"></span>
+                <span class="drip-3" style="background: var(--spray-gold);"></span>
+            </h2>
+            <p class="section-desc">Stickers, crew badges, status pills, and category tags. The small marks that identify who was here.</p>
+
+            <!-- Writer tags -->
+            <h3 class="color-group-title">Writer Tags</h3>
+            <div class="tag-collection">
+                <span class="tag-writer">KASE2</span>
+                <span class="tag-writer">SEEN</span>
+                <span class="tag-writer">DONDI</span>
+                <span class="tag-writer">LADY PINK</span>
+                <span class="tag-writer">FUTURA</span>
+                <span class="tag-writer">BLADE</span>
+            </div>
+
+            <!-- Crew badges -->
+            <h3 class="color-group-title">Crew Badges</h3>
+            <div class="tag-collection">
+                <span class="badge-crew">TMR Crew</span>
+                <span class="badge-crew">RTW</span>
+                <span class="badge-crew">TFP Collective</span>
+                <span class="badge-crew">WCA</span>
+            </div>
+
+            <!-- Status pills -->
+            <h3 class="color-group-title">Status Pills</h3>
+            <div class="tag-collection">
+                <span class="pill-status pill-online">Online</span>
+                <span class="pill-status pill-offline">Offline</span>
+                <span class="pill-status pill-away">Away</span>
+            </div>
+
+            <!-- Category tags -->
+            <h3 class="color-group-title">Category Tags</h3>
+            <div class="tag-collection">
+                <span class="tag-category">Wildstyle</span>
+                <span class="tag-category tag-red">Throw-up</span>
+                <span class="tag-category tag-green">Stencil</span>
+                <span class="tag-category tag-gold">Character</span>
+                <span class="tag-category tag-magenta">Abstract</span>
+                <span class="tag-category">Blockbuster</span>
+                <span class="tag-category tag-red">Political</span>
+                <span class="tag-category tag-green">Mural</span>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             FOOTER
+        ============================================================ -->
+        <footer class="site-footer">
+            <h2 class="footer-title">GRAFFITI</h2>
+            <p class="footer-tagline">Made with spray paint and CSS</p>
+            <a href="../index.html" class="footer-link">&larr; Back to Style Guides</a>
+            <p class="footer-meta">A street art design system &middot; No frameworks, no build tools, just raw style on the wall.</p>
+        </footer>
+
+    </div>
+</body>
+</html>
