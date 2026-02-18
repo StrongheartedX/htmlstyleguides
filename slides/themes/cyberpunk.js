@@ -17,7 +17,7 @@ window.SLIDE_THEME = {
     subtitle: { fontSize: '1.6rem', fontWeight: 500, fontFamily: 'var(--font-title)', color: '#ff0080', textAlign: 'center', letterSpacing: '0.2em', textTransform: 'uppercase' },
     heading:  { fontSize: '2.2rem', fontWeight: 700, fontFamily: 'var(--font-title)', color: '#00ffff', textShadow: '0 0 10px rgba(0,255,255,0.3)' },
     body:     { fontSize: '1.3rem', fontWeight: 400, fontFamily: 'var(--font-body)',  color: 'var(--slide-text)', lineHeight: 1.6 },
-    caption:  { fontSize: '1rem',   fontWeight: 400, fontFamily: 'var(--font-body)',  color: '#6688aa' },
+    caption:  { fontSize: '1rem',   fontWeight: 400, fontFamily: 'var(--font-body)',  color: '#6688aa', textAlign: 'center' },
     code:     { fontSize: '1.1rem', fontWeight: 400, fontFamily: 'var(--font-code)',  color: '#39ff14', background: '#050515', padding: '0.2em 0.4em', borderRadius: '2px' },
   },
   transition: 'slide',
