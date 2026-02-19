@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonus Stage Bounce — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a2e;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,10,46,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(16px, 4vw, 40px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #ffea00;
+            text-shadow: 0 0 30px rgba(255,234,0,0.6), 0 0 60px rgba(255,234,0,0.3),
+                         3px 3px 0 #ff4444;
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(10px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #ffea00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #ffea00;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,234,0,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255,234,0,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: 'Press Start 2P', monospace;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">< Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Bonus Stage Bounce</div>
+        <div class="play-sub">a retro arcade music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Bonus Stage Bounce Video Renderer ──────────────────────────────
+    window.Renderers['bonus-stage-bounce-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Colors ──
+        var BG = '#0a0a2e';
+        var COLORS = {
+            coin:    '#ffea00',
+            gem:     '#ff2d95',
+            star:    '#00e5ff',
+            block:   '#ff4444',
+            floor1:  '#33cc33',
+            floor2:  '#2299ff',
+            text:    '#ffffff',
+            score:   '#ffea00',
+            timer:   '#ff4444'
+        };
+
+        var CHECKER_COLORS = ['#1a1a4e', '#12123a'];
+        var STAGE_PALETTES = [
+            { bg: '#0a0a2e', checker1: '#1a1a4e', checker2: '#12123a', accent: '#ffea00' },
+            { bg: '#1a0020', checker1: '#2a1040', checker2: '#1a0828', accent: '#ff2d95' },
+            { bg: '#001a2e', checker1: '#0a2a4e', checker2: '#001830', accent: '#00e5ff' },
+            { bg: '#1a1a00', checker1: '#2a2a10', checker2: '#1a1a00', accent: '#ff8800' },
+            { bg: '#0a2e0a', checker1: '#1a4e1a', checker2: '#0a2e0a', accent: '#33ff33' }
+        ];
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var score = 0;
+        var displayScore = 0;
+        var timer = 99;
+        var comboCount = 0;
+        var comboTimer = 0;
+        var lastSeqIndex = -1;
+        var stageIndex = 0;
+        var stageTransition = 0;
+        var introFade = 0;
+        var titleAlpha = 0;
+        var scanlineOffset = 0;
+
+        // Floor scroll
+        var floorScrollZ = 0;
+
+        // Collectibles
+        var items = [];
+        var MAX_ITEMS = 60;
+        var sparkles = [];
+        var MAX_SPARKLES = 100;
+
+        // Blocks (breakable)
+        var blocks = [];
+        var MAX_BLOCKS = 20;
+        var blockDebris = [];
+
+        // Section tracking
+        var sectionMood = 'intro';
+
+        // ── Collectible types ──
+        var ITEM_TYPES = [
+            { name: 'coin',  color: '#ffea00', points: 100,  size: 1.0 },
+            { name: 'gem',   color: '#ff2d95', points: 250,  size: 0.8 },
+            { name: 'star',  color: '#00e5ff', points: 500,  size: 1.2 },
+            { name: 'ring',  color: '#ff8800', points: 150,  size: 0.9 }
+        ];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function clamp(v, mn, mx) { return v < mn ? mn : v > mx ? mx : v; }
+
+        function pixelRect(ctx, x, y, w, h) {
+            ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+        }
+
+        // ── Draw a pixel-art coin ──
+        function drawCoin(ctx, x, y, size, phase) {
+            var s = size;
+            var squeeze = 0.5 + Math.abs(Math.cos(phase)) * 0.5;
+            var w = s * squeeze;
+            ctx.fillStyle = '#ffea00';
+            pixelRect(ctx, x - w/2, y - s/2, w, s);
+            // inner highlight
+            ctx.fillStyle = '#fff8aa';
+            pixelRect(ctx, x - w/4, y - s/4, w/2, s/3);
+            // dollar sign
+            ctx.fillStyle = '#cc9900';
+            pixelRect(ctx, x - w/8, y - s/3, w/4, s * 0.6);
+        }
+
+        // ── Draw a pixel-art gem ──
+        function drawGem(ctx, x, y, size, phase) {
+            var s = size;
+            var glow = 0.7 + Math.sin(phase) * 0.3;
+            ctx.globalAlpha *= glow;
+            // Diamond shape via rects
+            ctx.fillStyle = '#ff2d95';
+            pixelRect(ctx, x - s/2, y - s/6, s, s/3);
+            pixelRect(ctx, x - s/3, y - s/3, s * 0.66, s * 0.66);
+            // highlight
+            ctx.fillStyle = '#ffaacc';
+            pixelRect(ctx, x - s/6, y - s/4, s/3, s/4);
+            ctx.globalAlpha /= glow;
+        }
+
+        // ── Draw a pixel-art star ──
+        function drawStar(ctx, x, y, size, phase) {
+            var s = size;
+            var rot = phase * 0.5;
+            ctx.fillStyle = '#00e5ff';
+            // Cross shape
+            pixelRect(ctx, x - s/6, y - s/2, s/3, s);
+            pixelRect(ctx, x - s/2, y - s/6, s, s/3);
+            // Diagonal fills
+            pixelRect(ctx, x - s/3, y - s/3, s/4, s/4);
+            pixelRect(ctx, x + s/12, y - s/3, s/4, s/4);
+            pixelRect(ctx, x - s/3, y + s/12, s/4, s/4);
+            pixelRect(ctx, x + s/12, y + s/12, s/4, s/4);
+            // center glow
+            ctx.fillStyle = '#aaffff';
+            pixelRect(ctx, x - s/6, y - s/6, s/3, s/3);
+        }
+
+        // ── Draw a pixel-art ring ──
+        function drawRing(ctx, x, y, size, phase) {
+            var s = size;
+            var squeeze = 0.6 + Math.abs(Math.sin(phase * 1.5)) * 0.4;
+            ctx.fillStyle = '#ff8800';
+            // Outer ring
+            pixelRect(ctx, x - s/2 * squeeze, y - s/2, s * squeeze, s/5);
+            pixelRect(ctx, x - s/2 * squeeze, y + s/2 - s/5, s * squeeze, s/5);
+            pixelRect(ctx, x - s/2 * squeeze, y - s/2, s/5 * squeeze, s);
+            pixelRect(ctx, x + s/2 * squeeze - s/5 * squeeze, y - s/2, s/5 * squeeze, s);
+            // highlight
+            ctx.fillStyle = '#ffcc66';
+            pixelRect(ctx, x - s/3 * squeeze, y - s/3, s/5 * squeeze, s/5);
+        }
+
+        var DRAW_ITEM = [drawCoin, drawGem, drawStar, drawRing];
+
+        // ── Create collectible ──
+        function spawnItem(energy) {
+            if (items.length >= MAX_ITEMS) return;
+            var type = Math.floor(Math.random() * ITEM_TYPES.length);
+            // Higher energy = more valuable items
+            if (energy > 0.6 && Math.random() > 0.5) type = 2; // star
+            if (energy > 0.8 && Math.random() > 0.7) type = 1; // gem
+
+            var baseSize = Math.min(W, H) * 0.035;
+            items.push({
+                x: Math.random() * W * 0.8 + W * 0.1,
+                y: -baseSize,
+                vy: 60 + Math.random() * 120 + energy * 80,
+                vx: (Math.random() - 0.5) * 60,
+                type: type,
+                size: baseSize * ITEM_TYPES[type].size,
+                phase: Math.random() * Math.PI * 2,
+                bounceY: 0,
+                grounded: false,
+                groundY: H * 0.65 + Math.random() * (H * 0.15),
+                life: 1.0,
+                collected: false,
+                collectTimer: 0
+            });
+        }
+
+        // ── Create block ──
+        function spawnBlock() {
+            if (blocks.length >= MAX_BLOCKS) return;
+            var bw = Math.min(W, H) * 0.06;
+            blocks.push({
+                x: Math.random() * W * 0.7 + W * 0.15,
+                y: H * 0.35 + Math.random() * H * 0.2,
+                w: bw + Math.random() * bw * 0.5,
+                h: bw * 0.8,
+                hp: 3,
+                maxHp: 3,
+                shake: 0,
+                color: Math.random() > 0.5 ? '#cc6600' : '#886622',
+                hasItem: Math.random() > 0.3
+            });
+        }
+
+        // ── Create sparkle ──
+        function spawnSparkle(x, y, color, count) {
+            for (var i = 0; i < count && sparkles.length < MAX_SPARKLES; i++) {
+                var angle = Math.random() * Math.PI * 2;
+                var speed = 80 + Math.random() * 200;
+                sparkles.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 50,
+                    life: 1.0,
+                    size: 2 + Math.random() * 4,
+                    color: color
+                });
+            }
+        }
+
+        // ── Create block debris ──
+        function spawnDebris(x, y, w, h, color) {
+            var pieces = 6 + Math.floor(Math.random() * 4);
+            for (var i = 0; i < pieces; i++) {
+                var angle = Math.random() * Math.PI * 2;
+                var speed = 100 + Math.random() * 200;
+                blockDebris.push({
+                    x: x + Math.random() * w,
+                    y: y + Math.random() * h,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 150,
+                    life: 1.0,
+                    size: 3 + Math.random() * 6,
+                    color: color,
+                    rot: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 10
+                });
+            }
+        }
+
+        // ── Section mapping ──
+        function mapSection(seqIndex, patternId) {
+            if (seqIndex <= 1) return 'intro';
+            if (patternId === 7) return 'outro';
+            if (patternId === 4 || patternId === 9) return 'bridge';
+            if (patternId === 6) return 'peak';
+            if (patternId === 5) return 'power';
+            if (patternId === 3) return 'swagger';
+            if (patternId === 8) return 'callresponse';
+            if (patternId === 10) return 'groove';
+            return 'hook';
+        }
+
+        // ── Checker floor with perspective ──
+        function drawCheckerFloor(ctx, energy, palette) {
+            var floorTop = H * 0.7;
+            var rows = 12;
+            var cols = 10;
+            var vanishY = H * 0.4;
+
+            for (var r = 0; r < rows; r++) {
+                var t0 = r / rows;
+                var t1 = (r + 1) / rows;
+                // Perspective: rows get taller near bottom
+                var y0 = floorTop + Math.pow(t0, 0.7) * (H - floorTop);
+                var y1 = floorTop + Math.pow(t1, 0.7) * (H - floorTop);
+                // Width narrows toward vanishing point
+                var w0 = W * (0.5 + t0 * 0.8);
+                var w1 = W * (0.5 + t1 * 0.8);
+                var cx0 = (W - w0) / 2;
+                var cx1 = (W - w1) / 2;
+
+                var scrollOffset = Math.floor((floorScrollZ + r) % 2);
+
+                for (var c = 0; c < cols; c++) {
+                    var ct0 = c / cols;
+                    var ct1 = (c + 1) / cols;
+                    var x0l = cx0 + ct0 * w0;
+                    var x0r = cx0 + ct1 * w0;
+                    var x1l = cx1 + ct0 * w1;
+                    var x1r = cx1 + ct1 * w1;
+
+                    var checkerVal = (c + scrollOffset) % 2;
+                    ctx.fillStyle = checkerVal ? palette.checker1 : palette.checker2;
+
+                    // Brighten on energy
+                    if (energy > 0.6 && checkerVal) {
+                        var bright = (energy - 0.6) * 0.3;
+                        ctx.fillStyle = checkerVal ? palette.accent : palette.checker2;
+                        ctx.globalAlpha = 0.15 + bright;
+                    }
+
+                    ctx.beginPath();
+                    ctx.moveTo(x0l, y0);
+                    ctx.lineTo(x0r, y0);
+                    ctx.lineTo(x1r, y1);
+                    ctx.lineTo(x1l, y1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // Floor edge glow
+            ctx.strokeStyle = palette.accent;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = palette.accent;
+            ctx.beginPath();
+            ctx.moveTo(0, floorTop);
+            ctx.lineTo(W, floorTop);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // ── HUD: Score and Timer ──
+        function drawHUD(ctx, energy) {
+            var fontSize = Math.max(10, Math.min(W * 0.022, 20));
+            ctx.font = fontSize + 'px "Press Start 2P", monospace';
+            ctx.textBaseline = 'top';
+
+            // Score
+            var scoreStr = 'SCORE ' + String(Math.floor(displayScore)).padStart(8, '0');
+            ctx.fillStyle = COLORS.score;
+            ctx.shadowColor = '#ffea00';
+            ctx.shadowBlur = 6 + beatPulse * 10;
+            ctx.fillText(scoreStr, W * 0.05, H * 0.04);
+            ctx.shadowBlur = 0;
+
+            // Timer
+            var timerStr = 'TIME ' + String(Math.max(0, Math.floor(timer))).padStart(3, '0');
+            ctx.fillStyle = timer < 20 ? '#ff4444' : '#ffffff';
+            ctx.shadowColor = timer < 20 ? '#ff4444' : '#ffffff';
+            ctx.shadowBlur = timer < 20 ? 8 + beatPulse * 12 : 4;
+            ctx.textAlign = 'right';
+            ctx.fillText(timerStr, W * 0.95, H * 0.04);
+            ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+
+            // Stage indicator
+            var stageStr = 'STAGE ' + (stageIndex + 1);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.textAlign = 'center';
+            ctx.fillText(stageStr, W * 0.5, H * 0.04);
+            ctx.textAlign = 'left';
+
+            // Combo
+            if (comboTimer > 0 && comboCount > 1) {
+                var comboSize = fontSize * 1.5 + comboTimer * 4;
+                ctx.font = Math.floor(comboSize) + 'px "Press Start 2P", monospace';
+                ctx.fillStyle = '#ff2d95';
+                ctx.globalAlpha = clamp(comboTimer, 0, 1);
+                ctx.shadowColor = '#ff2d95';
+                ctx.shadowBlur = 15;
+                ctx.textAlign = 'center';
+                ctx.fillText(comboCount + 'x COMBO!', W * 0.5, H * 0.12);
+                ctx.textAlign = 'left';
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ── Stage title flash ──
+        function drawStageTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            var fontSize = Math.max(16, Math.min(W * 0.05, 48));
+            ctx.save();
+            ctx.font = fontSize + 'px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var titles = ['COIN RAIN', 'BLOCK BREAK', 'SPEED RUN', 'STAR RUSH', 'FINAL STAGE'];
+            var title = titles[stageIndex % titles.length];
+
+            // Shadow/outline
+            ctx.fillStyle = '#000';
+            ctx.fillText(title, W/2 + 3, H * 0.35 + 3);
+
+            // Main text
+            ctx.fillStyle = STAGE_PALETTES[stageIndex % STAGE_PALETTES.length].accent;
+            ctx.shadowColor = STAGE_PALETTES[stageIndex % STAGE_PALETTES.length].accent;
+            ctx.shadowBlur = 20;
+            ctx.globalAlpha = titleAlpha;
+            ctx.fillText(title, W/2, H * 0.35);
+
+            // "READY?" or "GO!" below
+            var subSize = fontSize * 0.5;
+            ctx.font = Math.floor(subSize) + 'px "Press Start 2P", monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(titleAlpha > 0.5 ? 'READY?' : 'GO!', W/2, H * 0.35 + fontSize * 1.2);
+
+            ctx.restore();
+        }
+
+        // ── Scanlines overlay ──
+        function drawScanlines(ctx) {
+            ctx.save();
+            ctx.globalAlpha = 0.06;
+            ctx.fillStyle = '#000';
+            for (var y = 0; y < H; y += 3) {
+                ctx.fillRect(0, y, W, 1);
+            }
+            // CRT vignette
+            ctx.globalAlpha = 1;
+            var vg = ctx.createRadialGradient(W/2, H/2, W*0.3, W/2, H/2, W*0.8);
+            vg.addColorStop(0, 'rgba(0,0,0,0)');
+            vg.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Background parallax stars ──
+        var bgStars = [];
+        function initBgStars() {
+            bgStars = [];
+            for (var i = 0; i < 60; i++) {
+                bgStars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H * 0.7,
+                    size: 1 + Math.random() * 2,
+                    speed: 10 + Math.random() * 30,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function drawBgStars(ctx, dt, energy) {
+            ctx.save();
+            for (var i = 0; i < bgStars.length; i++) {
+                var s = bgStars[i];
+                s.twinkle += dt * (2 + energy * 3);
+                s.x -= s.speed * dt * (1 + energy);
+                if (s.x < -5) { s.x = W + 5; s.y = Math.random() * H * 0.65; }
+                var alpha = 0.3 + Math.sin(s.twinkle) * 0.3;
+                ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+                pixelRect(ctx, s.x, s.y, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ── "BONUS STAGE" title ──
+        function drawBonusTitle(ctx) {
+            var fontSize = Math.max(12, Math.min(W * 0.035, 36));
+            ctx.save();
+            ctx.font = fontSize + 'px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var text = 'BONUS STAGE BOUNCE';
+            var y = H * 0.15;
+
+            // Glow
+            ctx.shadowColor = '#ffea00';
+            ctx.shadowBlur = 20 + beatPulse * 20;
+
+            // Draw each letter with slight color variation
+            var totalW = ctx.measureText(text).width;
+            var startX = W/2 - totalW/2;
+            var colors = ['#ffea00', '#ff2d95', '#00e5ff', '#ff8800', '#33ff33'];
+
+            for (var i = 0; i < text.length; i++) {
+                var ch = text[i];
+                var cw = ctx.measureText(ch).width;
+                var bounce = Math.sin(beatPulse * Math.PI + i * 0.3) * 5;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillText(ch, startX + cw/2, y + bounce);
+                startX += cw;
+            }
+
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            items = [];
+            sparkles = [];
+            blocks = [];
+            blockDebris = [];
+            score = 0;
+            displayScore = 0;
+            timer = 99;
+            comboCount = 0;
+            comboTimer = 0;
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            lastSeqIndex = -1;
+            stageIndex = 0;
+            stageTransition = 0;
+            introFade = 0;
+            titleAlpha = 0;
+            floorScrollZ = 0;
+            sectionMood = 'intro';
+            initBgStars();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            initBgStars();
+        }
+
+        // ── Main Render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+            var pal = STAGE_PALETTES[stageIndex % STAGE_PALETTES.length];
+
+            // Background
+            ctx.fillStyle = pal.bg;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: dim arcade scene
+                drawBgStars(ctx, dt, 0);
+                drawCheckerFloor(ctx, 0, pal);
+                drawScanlines(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            var rpb = analysis ? analysis.rpb : 4;
+
+            // ── Section transitions ──
+            // Determine current pattern from sequence
+            var currentPatternId = -1;
+            if (frameData.song && frameData.song.sequence && seqIdx < frameData.song.sequence.length) {
+                currentPatternId = frameData.song.sequence[seqIdx][0];
+            }
+
+            var newSection = mapSection(seqIdx, currentPatternId);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+
+                // Stage changes on major section shifts
+                if (newSection !== oldSection && newSection !== 'intro' && newSection !== 'outro') {
+                    if (newSection === 'peak' || newSection === 'power' || newSection === 'swagger') {
+                        stageIndex = (stageIndex + 1) % STAGE_PALETTES.length;
+                        titleAlpha = 1.5;
+                        flashAlpha = 0.3;
+                        // Spawn fresh blocks for block-break stages
+                        if (newSection === 'swagger' || newSection === 'power') {
+                            for (var bi = 0; bi < 8; bi++) spawnBlock();
+                        }
+                    }
+                }
+            }
+
+            // ── Intro fade ──
+            if (sectionMood === 'intro') {
+                introFade = Math.min(1, introFade + dt * 0.5);
+            } else {
+                introFade = 1;
+            }
+
+            // ── Beat handling ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                comboTimer = Math.max(0, comboTimer - 0.3);
+
+                // Spawn items on beats
+                var spawnCount = 1;
+                if (energy > 0.5) spawnCount = 2;
+                if (energy > 0.7) spawnCount = 3;
+                if (sectionMood === 'peak') spawnCount += 2;
+
+                for (var si = 0; si < spawnCount; si++) {
+                    spawnItem(energy);
+                }
+
+                // Auto-collect items near ground on snare hits (beat % 2 === 1)
+                if (beat % 2 === 1) {
+                    for (var ci = 0; ci < items.length; ci++) {
+                        var it = items[ci];
+                        if (it.grounded && !it.collected && Math.random() > 0.3) {
+                            it.collected = true;
+                            it.collectTimer = 0.4;
+                            score += ITEM_TYPES[it.type].points * (1 + comboCount * 0.1);
+                            comboCount++;
+                            comboTimer = 2.0;
+                            spawnSparkle(it.x, it.y, ITEM_TYPES[it.type].color, 6);
+                        }
+                    }
+                }
+
+                // Hit blocks on kick beats (beat % 4 === 0)
+                if (beat % 4 === 0 && blocks.length > 0) {
+                    var bi2 = Math.floor(Math.random() * blocks.length);
+                    var blk = blocks[bi2];
+                    blk.hp--;
+                    blk.shake = 0.3;
+                    if (blk.hp <= 0) {
+                        spawnDebris(blk.x, blk.y, blk.w, blk.h, blk.color);
+                        if (blk.hasItem) {
+                            score += 1000;
+                            spawnSparkle(blk.x + blk.w/2, blk.y + blk.h/2, '#ffea00', 12);
+                        }
+                        blocks.splice(bi2, 1);
+                        flashAlpha = 0.15;
+                    }
+                }
+
+                // Flash on high energy beats
+                if (energy > 0.7 && sectionMood !== 'bridge') {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.08);
+                }
+
+                // Timer ticks
+                timer = Math.max(0, 99 - (cursor.elapsed || 0) * 0.5);
+
+                lastBeat = beat;
+            }
+
+            // ── Decay ──
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-6 * dt);
+            titleAlpha = Math.max(0, titleAlpha - dt * 0.8);
+            comboTimer = Math.max(0, comboTimer - dt);
+            if (comboTimer <= 0) comboCount = 0;
+
+            // Score lerp
+            displayScore = lerp(displayScore, score, 1 - Math.exp(-8 * dt));
+
+            // Floor scroll
+            floorScrollZ += dt * (2 + energy * 4);
+
+            // ── Update items ──
+            for (var ui = items.length - 1; ui >= 0; ui--) {
+                var item = items[ui];
+                item.phase += dt * 4;
+
+                if (item.collected) {
+                    item.collectTimer -= dt;
+                    item.y -= 200 * dt;
+                    item.life -= dt * 3;
+                    if (item.life <= 0 || item.collectTimer <= 0) {
+                        items.splice(ui, 1);
+                        continue;
+                    }
+                } else if (!item.grounded) {
+                    item.vy += 300 * dt; // gravity
+                    item.y += item.vy * dt;
+                    item.x += item.vx * dt;
+
+                    // Bounce off ground
+                    if (item.y >= item.groundY) {
+                        item.y = item.groundY;
+                        item.vy = -Math.abs(item.vy) * (0.4 + energy * 0.3);
+                        item.vx *= 0.8;
+                        // Second bounce = grounded
+                        if (Math.abs(item.vy) < 40) {
+                            item.grounded = true;
+                            item.vy = 0;
+                        }
+                    }
+
+                    // Bounce off walls
+                    if (item.x < 0 || item.x > W) item.vx *= -1;
+                } else {
+                    // Grounded items bounce on beats
+                    item.bounceY = -beatPulse * 8 * energy;
+                    item.life -= dt * 0.15;
+                    if (item.life <= 0) {
+                        items.splice(ui, 1);
+                        continue;
+                    }
+                }
+            }
+
+            // ── Update sparkles ──
+            for (var spi = sparkles.length - 1; spi >= 0; spi--) {
+                var sp = sparkles[spi];
+                sp.x += sp.vx * dt;
+                sp.y += sp.vy * dt;
+                sp.vy += 200 * dt;
+                sp.life -= dt * 2.5;
+                if (sp.life <= 0) { sparkles.splice(spi, 1); }
+            }
+
+            // ── Update debris ──
+            for (var di = blockDebris.length - 1; di >= 0; di--) {
+                var d = blockDebris[di];
+                d.x += d.vx * dt;
+                d.y += d.vy * dt;
+                d.vy += 400 * dt;
+                d.rot += d.rotSpeed * dt;
+                d.life -= dt * 1.5;
+                if (d.life <= 0) { blockDebris.splice(di, 1); }
+            }
+
+            // ── Update blocks ──
+            for (var ubi = 0; ubi < blocks.length; ubi++) {
+                blocks[ubi].shake = Math.max(0, blocks[ubi].shake - dt * 4);
+            }
+
+            pal = STAGE_PALETTES[stageIndex % STAGE_PALETTES.length];
+
+            // ── DRAW SCENE ──
+
+            // 1. Background
+            ctx.fillStyle = pal.bg;
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalAlpha = introFade;
+
+            // 2. Stars
+            drawBgStars(ctx, dt, energy);
+
+            // 3. Bonus title (hook/peak sections)
+            if (sectionMood === 'hook' || sectionMood === 'peak' || sectionMood === 'power') {
+                drawBonusTitle(ctx);
+            }
+
+            // 4. Blocks
+            for (var dbi = 0; dbi < blocks.length; dbi++) {
+                var blk2 = blocks[dbi];
+                var shakeX = blk2.shake * (Math.random() - 0.5) * 8;
+                var shakeY = blk2.shake * (Math.random() - 0.5) * 8;
+                ctx.save();
+
+                // Block body
+                ctx.fillStyle = blk2.color;
+                pixelRect(ctx, blk2.x + shakeX, blk2.y + shakeY, blk2.w, blk2.h);
+
+                // Cracks based on HP
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                var damage = 1 - blk2.hp / blk2.maxHp;
+                if (damage > 0.3) {
+                    ctx.beginPath();
+                    ctx.moveTo(blk2.x + blk2.w * 0.3 + shakeX, blk2.y + shakeY);
+                    ctx.lineTo(blk2.x + blk2.w * 0.5 + shakeX, blk2.y + blk2.h * 0.6 + shakeY);
+                    ctx.stroke();
+                }
+                if (damage > 0.6) {
+                    ctx.beginPath();
+                    ctx.moveTo(blk2.x + blk2.w * 0.7 + shakeX, blk2.y + shakeY);
+                    ctx.lineTo(blk2.x + blk2.w * 0.4 + shakeX, blk2.y + blk2.h + shakeY);
+                    ctx.stroke();
+                }
+
+                // Highlight
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                pixelRect(ctx, blk2.x + shakeX, blk2.y + shakeY, blk2.w, blk2.h * 0.3);
+
+                // Question mark
+                var qSize = Math.max(8, blk2.h * 0.5);
+                ctx.font = Math.floor(qSize) + 'px "Press Start 2P", monospace';
+                ctx.fillStyle = '#ffea00';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('?', blk2.x + blk2.w/2 + shakeX, blk2.y + blk2.h/2 + shakeY);
+                ctx.textAlign = 'left';
+
+                ctx.restore();
+            }
+
+            // 5. Block debris
+            for (var ddi = 0; ddi < blockDebris.length; ddi++) {
+                var db = blockDebris[ddi];
+                ctx.save();
+                ctx.translate(db.x, db.y);
+                ctx.rotate(db.rot);
+                ctx.globalAlpha = db.life;
+                ctx.fillStyle = db.color;
+                pixelRect(ctx, -db.size/2, -db.size/2, db.size, db.size);
+                ctx.restore();
+            }
+
+            // 6. Checker floor
+            drawCheckerFloor(ctx, energy, pal);
+
+            // 7. Items
+            for (var ii = 0; ii < items.length; ii++) {
+                var it2 = items[ii];
+                ctx.save();
+                ctx.globalAlpha = clamp(it2.life, 0, 1) * introFade;
+
+                if (it2.collected) {
+                    ctx.globalAlpha *= 0.6;
+                    // Scale up on collect
+                    var scale = 1 + (0.4 - it2.collectTimer) * 2;
+                    ctx.translate(it2.x, it2.y + it2.bounceY);
+                    ctx.scale(scale, scale);
+                    DRAW_ITEM[it2.type](ctx, 0, 0, it2.size, it2.phase);
+                } else {
+                    DRAW_ITEM[it2.type](ctx, it2.x, it2.y + it2.bounceY, it2.size, it2.phase);
+                }
+
+                ctx.restore();
+            }
+
+            // 8. Sparkles
+            for (var ski = 0; ski < sparkles.length; ski++) {
+                var sk = sparkles[ski];
+                ctx.save();
+                ctx.globalAlpha = clamp(sk.life, 0, 1);
+                ctx.fillStyle = sk.color;
+                pixelRect(ctx, sk.x - sk.size/2, sk.y - sk.size/2, sk.size, sk.size);
+                ctx.restore();
+            }
+
+            // 9. HUD
+            ctx.globalAlpha = introFade;
+            drawHUD(ctx, energy);
+
+            // 10. Stage title
+            drawStageTitle(ctx);
+
+            // 11. Flash
+            if (flashAlpha > 0.01) {
+                ctx.save();
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // 12. Scanlines (always on top)
+            ctx.globalAlpha = 1;
+            drawScanlines(ctx);
+        }
+
+        return {
+            name: 'Bonus Stage Bounce Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('bonus-stage-bounce-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/bonus-stage-bounce.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

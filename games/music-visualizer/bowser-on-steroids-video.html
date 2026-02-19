@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bowser on Steroids — Boss Battle Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0000;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,0,0,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #ff4400;
+            text-shadow: 0 0 30px rgba(255,68,0,0.6), 0 0 60px rgba(255,68,0,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #ff4400;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #ff4400;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,68,0,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255,68,0,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Bowser on Steroids</div>
+        <div class="play-sub">an epic boss battle</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Bowser on Steroids Video Renderer ──────────────────────────────
+    window.Renderers['bowser-on-steroids-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Color palette ──
+        var LAVA_DARK = '#1a0500';
+        var LAVA_MID = '#ff4400';
+        var LAVA_HOT = '#ff8800';
+        var LAVA_WHITE = '#ffffcc';
+        var CASTLE_DARK = '#1a0a05';
+        var SKY_BLACK = '#050000';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var screenShakeX = 0;
+        var screenShakeY = 0;
+        var shakeIntensity = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var elapsed = 0;
+
+        // Section tracking
+        var scene = 'approach'; // approach, battle1, chase, breakdown, enrage, diminution, finale, end
+        var sceneProgress = 0;
+        var lastSeqIndex = -1;
+
+        // Particles
+        var fireParticles = [];
+        var debrisParticles = [];
+        var lavaDrops = [];
+        var MAX_FIRE = 300;
+        var MAX_DEBRIS = 80;
+        var MAX_LAVA = 50;
+
+        // Boss state
+        var bossX = 0;
+        var bossY = 0;
+        var bossScale = 1;
+        var bossTargetX = 0;
+        var bossBreathTimer = 0;
+        var bossStompPhase = 0;
+        var bossRoarTimer = 0;
+        var bossEyeGlow = 0;
+        var bossArmAngle = 0;
+        var bossArmTarget = 0;
+
+        // Castle state
+        var castleSegments = [];
+        var castleDamage = 0;
+        var groundY = 0;
+
+        // Lava river
+        var lavaPhase = 0;
+
+        // Stars / embers in sky
+        var embers = [];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+        function rand(lo, hi) { return lo + Math.random() * (hi - lo); }
+
+        function smoothstep(t) {
+            t = clamp(t, 0, 1);
+            return t * t * (3 - 2 * t);
+        }
+
+        // ── Section detection from pattern names ──
+        // Sequence of 56 entries, patterns:
+        // 0: Ominous Intro, 1: Intro Build, 2: Castle Theme A, 3: Castle A Variant,
+        // 4: Chase B, 5: Chase B', 6: Breakdown, 7: Rebuild,
+        // 8: Rampage C, 9: Rampage C', 10: Diminution, 11: Sequence Chain,
+        // 12: Finale Peak, 13: Hard Stop
+        function detectScene(seqIndex, patternId) {
+            if (patternId <= 1) return 'approach';
+            if (patternId <= 3) return 'battle1';
+            if (patternId <= 5) return 'chase';
+            if (patternId === 6) return 'breakdown';
+            if (patternId === 7) return 'rebuild';
+            if (patternId <= 9) return 'enrage';
+            if (patternId === 10) return 'diminution';
+            if (patternId === 11) return 'chain';
+            if (patternId === 12) return 'finale';
+            if (patternId === 13) return 'end';
+            return 'approach';
+        }
+
+        // ── Init castle ──
+        function initCastle() {
+            castleSegments = [];
+            var numTowers = 7;
+            for (var i = 0; i < numTowers; i++) {
+                var cx = (i / (numTowers - 1)) * W;
+                var h = rand(H * 0.2, H * 0.45);
+                var w = rand(W * 0.04, W * 0.08);
+                castleSegments.push({
+                    x: cx, baseY: groundY, w: w, h: h,
+                    damage: 0, collapsed: false,
+                    crumbleVelX: 0, crumbleVelY: 0,
+                    hasBattlement: Math.random() > 0.3,
+                    hasMerlon: Math.random() > 0.4
+                });
+            }
+            // Add connecting walls between towers
+            for (var j = 0; j < numTowers - 1; j++) {
+                var seg = castleSegments[j];
+                var next = castleSegments[j + 1];
+                var wallH = Math.min(seg.h, next.h) * 0.6;
+                castleSegments.push({
+                    x: (seg.x + next.x) / 2,
+                    baseY: groundY,
+                    w: (next.x - seg.x) * 0.8,
+                    h: wallH,
+                    damage: 0, collapsed: false,
+                    crumbleVelX: 0, crumbleVelY: 0,
+                    hasBattlement: false, hasMerlon: false
+                });
+            }
+        }
+
+        // ── Init embers ──
+        function initEmbers() {
+            embers = [];
+            for (var i = 0; i < 60; i++) {
+                embers.push({
+                    x: rand(0, W),
+                    y: rand(0, H),
+                    vx: rand(-10, 10),
+                    vy: rand(-40, -10),
+                    life: rand(0, 1),
+                    size: rand(1, 3),
+                    bright: rand(0.3, 1)
+                });
+            }
+        }
+
+        // ── INIT ──
+        function init(ctx, w, h, anal) {
+            W = w; H = h;
+            analysis = anal;
+            groundY = H * 0.78;
+            bossX = W * 0.5;
+            bossY = groundY;
+            bossTargetX = W * 0.5;
+            bossScale = 1;
+            castleDamage = 0;
+            scene = 'approach';
+            lastSeqIndex = -1;
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            screenShakeX = 0;
+            screenShakeY = 0;
+            elapsed = 0;
+            fireParticles = [];
+            debrisParticles = [];
+            lavaDrops = [];
+            titleAlpha = 0;
+            titleTarget = 0;
+            initCastle();
+            initEmbers();
+        }
+
+        // ── RESIZE ──
+        function resize(w, h) {
+            W = w; H = h;
+            groundY = H * 0.78;
+            initCastle();
+            initEmbers();
+        }
+
+        // ── Spawn particles ──
+        function spawnFire(x, y, count, energy) {
+            for (var i = 0; i < count; i++) {
+                if (fireParticles.length >= MAX_FIRE) break;
+                fireParticles.push({
+                    x: x + rand(-20, 20),
+                    y: y + rand(-10, 10),
+                    vx: rand(-30, 30) * energy,
+                    vy: rand(-120, -30) * (0.5 + energy),
+                    life: 1,
+                    decay: rand(0.5, 2.0),
+                    size: rand(2, 8 + energy * 6),
+                    hot: Math.random() < energy * 0.5
+                });
+            }
+        }
+
+        function spawnDebris(x, y, count) {
+            for (var i = 0; i < count; i++) {
+                if (debrisParticles.length >= MAX_DEBRIS) break;
+                debrisParticles.push({
+                    x: x + rand(-10, 10),
+                    y: y,
+                    vx: rand(-80, 80),
+                    vy: rand(-150, -40),
+                    life: 1,
+                    decay: rand(0.3, 0.8),
+                    size: rand(3, 10),
+                    rot: rand(0, Math.PI * 2),
+                    rotV: rand(-4, 4),
+                    gravity: rand(200, 400)
+                });
+            }
+        }
+
+        function spawnLava(x, y) {
+            if (lavaDrops.length >= MAX_LAVA) return;
+            lavaDrops.push({
+                x: x, y: y,
+                vx: rand(-20, 20),
+                vy: rand(-80, -30),
+                life: 1,
+                decay: rand(0.4, 1.0),
+                size: rand(3, 7)
+            });
+        }
+
+        // ── Update particles ──
+        function updateParticles(dt) {
+            var i;
+            for (i = fireParticles.length - 1; i >= 0; i--) {
+                var p = fireParticles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy -= 20 * dt; // slight upward accel
+                p.life -= p.decay * dt;
+                if (p.life <= 0) fireParticles.splice(i, 1);
+            }
+            for (i = debrisParticles.length - 1; i >= 0; i--) {
+                var d = debrisParticles[i];
+                d.x += d.vx * dt;
+                d.y += d.vy * dt;
+                d.vy += d.gravity * dt;
+                d.rot += d.rotV * dt;
+                d.life -= d.decay * dt;
+                if (d.life <= 0 || d.y > H + 20) debrisParticles.splice(i, 1);
+            }
+            for (i = lavaDrops.length - 1; i >= 0; i--) {
+                var lv = lavaDrops[i];
+                lv.x += lv.vx * dt;
+                lv.y += lv.vy * dt;
+                lv.vy += 300 * dt;
+                lv.life -= lv.decay * dt;
+                if (lv.life <= 0 || lv.y > H + 10) lavaDrops.splice(i, 1);
+            }
+            // Update embers
+            for (i = 0; i < embers.length; i++) {
+                var e = embers[i];
+                e.x += e.vx * dt;
+                e.y += e.vy * dt;
+                e.life -= 0.15 * dt;
+                if (e.life <= 0 || e.y < -10) {
+                    e.x = rand(0, W);
+                    e.y = rand(groundY, H);
+                    e.life = 1;
+                    e.vy = rand(-40, -10);
+                }
+                if (e.x < -10) e.x = W + 10;
+                if (e.x > W + 10) e.x = -10;
+            }
+        }
+
+        // ── Draw sky gradient ──
+        function drawSky(ctx, energy) {
+            var grad = ctx.createLinearGradient(0, 0, 0, groundY);
+            var r = Math.floor(5 + energy * 30);
+            var g = Math.floor(energy * 5);
+            grad.addColorStop(0, 'rgb(' + r + ',' + g + ',0)');
+            grad.addColorStop(0.6, 'rgb(' + Math.floor(r * 1.5) + ',' + Math.floor(g + energy * 10) + ',0)');
+            grad.addColorStop(1, '#1a0500');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, groundY);
+        }
+
+        // ── Draw embers ──
+        function drawEmbers(ctx, energy) {
+            for (var i = 0; i < embers.length; i++) {
+                var e = embers[i];
+                var alpha = e.life * e.bright * (0.3 + energy * 0.7);
+                ctx.fillStyle = 'rgba(255,' + Math.floor(100 + e.bright * 100) + ',0,' + alpha + ')';
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ── Draw lava river ──
+        function drawLava(ctx, energy) {
+            var lavaY = groundY + 2;
+            var grad = ctx.createLinearGradient(0, lavaY, 0, H);
+            grad.addColorStop(0, 'rgba(255,68,0,' + (0.6 + energy * 0.4) + ')');
+            grad.addColorStop(0.3, 'rgba(255,136,0,' + (0.4 + energy * 0.3) + ')');
+            grad.addColorStop(1, 'rgba(30,5,0,0.9)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, lavaY, W, H - lavaY);
+
+            // Lava surface waves
+            ctx.beginPath();
+            ctx.moveTo(0, lavaY);
+            for (var x = 0; x <= W; x += 4) {
+                var wave = Math.sin(x * 0.02 + lavaPhase) * 3 * (1 + energy);
+                var wave2 = Math.sin(x * 0.05 + lavaPhase * 1.7) * 2;
+                ctx.lineTo(x, lavaY + wave + wave2);
+            }
+            ctx.lineTo(W, lavaY + 20);
+            ctx.lineTo(0, lavaY + 20);
+            ctx.closePath();
+            var surfGrad = ctx.createLinearGradient(0, lavaY - 5, 0, lavaY + 20);
+            surfGrad.addColorStop(0, 'rgba(255,255,200,' + (0.3 + energy * 0.5) + ')');
+            surfGrad.addColorStop(1, 'rgba(255,68,0,0)');
+            ctx.fillStyle = surfGrad;
+            ctx.fill();
+
+            // Lava glow upward
+            var glowGrad = ctx.createLinearGradient(0, lavaY, 0, lavaY - H * 0.15);
+            glowGrad.addColorStop(0, 'rgba(255,68,0,' + (0.08 + energy * 0.12) + ')');
+            glowGrad.addColorStop(1, 'rgba(255,68,0,0)');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, lavaY - H * 0.15, W, H * 0.15);
+        }
+
+        // ── Draw castle ──
+        function drawCastle(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < castleSegments.length; i++) {
+                var seg = castleSegments[i];
+                if (seg.collapsed && seg.damage >= 1) continue;
+
+                var dx = seg.collapsed ? seg.crumbleVelX : 0;
+                var dy = seg.collapsed ? seg.crumbleVelY : 0;
+                var topY = seg.baseY - seg.h * (1 - seg.damage * 0.5);
+
+                ctx.fillStyle = '#0d0604';
+                ctx.shadowColor = 'rgba(255,68,0,' + (0.1 + energy * 0.2) + ')';
+                ctx.shadowBlur = 10 + energy * 20;
+
+                ctx.fillRect(
+                    seg.x - seg.w / 2 + dx,
+                    topY + dy,
+                    seg.w,
+                    seg.baseY - topY
+                );
+
+                // Battlement crenellations
+                if (seg.hasBattlement && seg.damage < 0.5) {
+                    var merlonW = seg.w / 5;
+                    for (var m = 0; m < 5; m += 2) {
+                        ctx.fillRect(
+                            seg.x - seg.w / 2 + m * merlonW + dx,
+                            topY - merlonW + dy,
+                            merlonW,
+                            merlonW
+                        );
+                    }
+                }
+
+                // Window slits glowing with fire
+                if (seg.h > H * 0.15 && seg.damage < 0.7) {
+                    var winY = topY + seg.h * 0.3;
+                    var winGlow = 'rgba(255,' + Math.floor(100 + energy * 155) + ',0,' + (0.3 + energy * 0.5) + ')';
+                    ctx.fillStyle = winGlow;
+                    ctx.fillRect(seg.x - 3 + dx, winY + dy, 6, 15);
+                    if (seg.h > H * 0.25) {
+                        ctx.fillRect(seg.x - 3 + dx, winY + 30 + dy, 6, 15);
+                    }
+                }
+
+                // Damage cracks
+                if (seg.damage > 0.2) {
+                    ctx.strokeStyle = 'rgba(255,68,0,' + (seg.damage * 0.5) + ')';
+                    ctx.lineWidth = 1 + seg.damage * 2;
+                    ctx.beginPath();
+                    var crackY = topY + seg.h * 0.4;
+                    ctx.moveTo(seg.x - seg.w * 0.3 + dx, crackY + dy);
+                    ctx.lineTo(seg.x + dx, crackY + seg.h * 0.1 + dy);
+                    ctx.lineTo(seg.x + seg.w * 0.2 + dx, crackY - seg.h * 0.05 + dy);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Draw the Boss (geometric monster silhouette) ──
+        function drawBoss(ctx, energy, beat) {
+            ctx.save();
+            ctx.translate(bossX + screenShakeX * 0.3, bossY + screenShakeY * 0.3);
+
+            var s = bossScale * (H * 0.003);
+            var stompOff = Math.sin(bossStompPhase) * 5 * energy;
+            var breathSwell = Math.sin(bossBreathTimer * 2) * 3;
+
+            // Shadow on ground
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath();
+            ctx.ellipse(0, 10, 60 * s, 10 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body (big blocky torso)
+            var bodyW = (45 + breathSwell) * s;
+            var bodyH = 70 * s;
+            var bodyTop = -bodyH - 30 * s + stompOff;
+
+            // Legs
+            var legW = 18 * s;
+            var legH = 30 * s;
+            ctx.fillStyle = '#1a0800';
+            ctx.fillRect(-bodyW * 0.6, bodyTop + bodyH, legW, legH);
+            ctx.fillRect(bodyW * 0.6 - legW, bodyTop + bodyH, legW, legH);
+
+            // Feet / claws
+            ctx.fillStyle = '#2a0a00';
+            ctx.fillRect(-bodyW * 0.7, bodyTop + bodyH + legH - 5, legW + 8, 8);
+            ctx.fillRect(bodyW * 0.6 - legW - 4, bodyTop + bodyH + legH - 5, legW + 8, 8);
+
+            // Main body
+            ctx.fillStyle = '#1a0800';
+            ctx.shadowColor = 'rgba(255,68,0,' + (0.2 + energy * 0.4) + ')';
+            ctx.shadowBlur = 20 + energy * 30;
+            ctx.beginPath();
+            ctx.moveTo(-bodyW, bodyTop + bodyH);
+            ctx.lineTo(-bodyW - 5 * s, bodyTop + bodyH * 0.3);
+            ctx.lineTo(-bodyW * 0.8, bodyTop);
+            ctx.lineTo(bodyW * 0.8, bodyTop);
+            ctx.lineTo(bodyW + 5 * s, bodyTop + bodyH * 0.3);
+            ctx.lineTo(bodyW, bodyTop + bodyH);
+            ctx.closePath();
+            ctx.fill();
+
+            // Shell / spikes on back
+            ctx.fillStyle = '#2a0a00';
+            var spikeCount = 5;
+            for (var sp = 0; sp < spikeCount; sp++) {
+                var spX = lerp(-bodyW * 0.6, bodyW * 0.6, sp / (spikeCount - 1));
+                var spH = (15 + Math.sin(sp + bossBreathTimer) * 5) * s;
+                ctx.beginPath();
+                ctx.moveTo(spX - 6 * s, bodyTop + 5);
+                ctx.lineTo(spX, bodyTop - spH);
+                ctx.lineTo(spX + 6 * s, bodyTop + 5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Arms
+            var armLen = 40 * s;
+            var armAngle = bossArmAngle;
+            ctx.lineWidth = 12 * s;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#1a0800';
+
+            // Left arm
+            ctx.beginPath();
+            ctx.moveTo(-bodyW, bodyTop + bodyH * 0.2);
+            ctx.lineTo(-bodyW - Math.cos(armAngle) * armLen, bodyTop + bodyH * 0.2 + Math.sin(armAngle) * armLen);
+            ctx.stroke();
+            // Claw
+            var clawX = -bodyW - Math.cos(armAngle) * armLen;
+            var clawY = bodyTop + bodyH * 0.2 + Math.sin(armAngle) * armLen;
+            ctx.lineWidth = 4 * s;
+            for (var c = -1; c <= 1; c++) {
+                ctx.beginPath();
+                ctx.moveTo(clawX, clawY);
+                ctx.lineTo(clawX - 12 * s, clawY + (8 + c * 6) * s);
+                ctx.stroke();
+            }
+
+            // Right arm
+            ctx.lineWidth = 12 * s;
+            ctx.beginPath();
+            ctx.moveTo(bodyW, bodyTop + bodyH * 0.2);
+            ctx.lineTo(bodyW + Math.cos(armAngle) * armLen, bodyTop + bodyH * 0.2 + Math.sin(armAngle) * armLen);
+            ctx.stroke();
+            clawX = bodyW + Math.cos(armAngle) * armLen;
+            clawY = bodyTop + bodyH * 0.2 + Math.sin(armAngle) * armLen;
+            ctx.lineWidth = 4 * s;
+            for (var c2 = -1; c2 <= 1; c2++) {
+                ctx.beginPath();
+                ctx.moveTo(clawX, clawY);
+                ctx.lineTo(clawX + 12 * s, clawY + (8 + c2 * 6) * s);
+                ctx.stroke();
+            }
+
+            // Head
+            var headY = bodyTop - 15 * s;
+            var headW = 30 * s;
+            var headH = 22 * s;
+            ctx.fillStyle = '#1a0800';
+            ctx.shadowBlur = 15 + energy * 25;
+            ctx.beginPath();
+            ctx.moveTo(-headW, headY + headH);
+            ctx.lineTo(-headW - 5 * s, headY);
+            ctx.lineTo(-headW * 0.3, headY - headH * 0.3);
+            ctx.lineTo(headW * 0.3, headY - headH * 0.3);
+            ctx.lineTo(headW + 5 * s, headY);
+            ctx.lineTo(headW, headY + headH);
+            ctx.closePath();
+            ctx.fill();
+
+            // Horns
+            ctx.fillStyle = '#3a1500';
+            ctx.beginPath();
+            ctx.moveTo(-headW * 0.6, headY - headH * 0.1);
+            ctx.lineTo(-headW - 15 * s, headY - headH - 20 * s);
+            ctx.lineTo(-headW * 0.3, headY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(headW * 0.6, headY - headH * 0.1);
+            ctx.lineTo(headW + 15 * s, headY - headH - 20 * s);
+            ctx.lineTo(headW * 0.3, headY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eyes (glowing)
+            var eyeGlow = bossEyeGlow;
+            var eyeR = 5 * s;
+            ctx.fillStyle = 'rgba(255,' + Math.floor(50 + eyeGlow * 200) + ',0,' + (0.6 + eyeGlow * 0.4) + ')';
+            ctx.shadowColor = 'rgba(255,68,0,' + eyeGlow + ')';
+            ctx.shadowBlur = 20 + eyeGlow * 40;
+            ctx.beginPath();
+            ctx.arc(-headW * 0.35, headY + headH * 0.2, eyeR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(headW * 0.35, headY + headH * 0.2, eyeR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth / jaw
+            ctx.fillStyle = 'rgba(255,50,0,' + (0.3 + energy * 0.4) + ')';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(-headW * 0.5, headY + headH * 0.6);
+            var jawOpen = (bossRoarTimer > 0 ? 8 : 2) * s;
+            ctx.lineTo(0, headY + headH + jawOpen);
+            ctx.lineTo(headW * 0.5, headY + headH * 0.6);
+            ctx.closePath();
+            ctx.fill();
+
+            // Teeth
+            if (bossRoarTimer > 0 || energy > 0.5) {
+                ctx.fillStyle = '#ffccaa';
+                ctx.shadowBlur = 0;
+                var teethCount = 5;
+                for (var ti = 0; ti < teethCount; ti++) {
+                    var tx = lerp(-headW * 0.4, headW * 0.4, ti / (teethCount - 1));
+                    var ty = headY + headH * 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(tx - 2 * s, ty);
+                    ctx.lineTo(tx, ty + 6 * s);
+                    ctx.lineTo(tx + 2 * s, ty);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            // Fire breath during roar
+            if (bossRoarTimer > 0) {
+                var breathLen = bossRoarTimer * 200 * s * energy;
+                var breathDir = bossX > W * 0.5 ? -1 : 1;
+                var mouthX = 0;
+                var mouthY2 = headY + headH + jawOpen;
+
+                for (var fi = 0; fi < 8; fi++) {
+                    var fAlpha = (1 - fi / 8) * bossRoarTimer * 0.6;
+                    var fDist = (fi / 8) * breathLen;
+                    var fSpread = fi * 4 * s;
+                    ctx.fillStyle = fi < 3
+                        ? 'rgba(255,255,200,' + fAlpha + ')'
+                        : 'rgba(255,' + Math.floor(100 + fi * 20) + ',0,' + fAlpha + ')';
+                    ctx.beginPath();
+                    ctx.arc(mouthX + breathDir * fDist, mouthY2 + rand(-fSpread, fSpread), (8 - fi) * s, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw fire particles ──
+        function drawFireParticles(ctx) {
+            for (var i = 0; i < fireParticles.length; i++) {
+                var p = fireParticles[i];
+                var alpha = p.life * 0.8;
+                var r = 255;
+                var g = p.hot ? Math.floor(200 + p.life * 55) : Math.floor(60 + p.life * 120);
+                var b = p.hot ? Math.floor(150 * p.life) : 0;
+                ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ── Draw debris ──
+        function drawDebris(ctx) {
+            for (var i = 0; i < debrisParticles.length; i++) {
+                var d = debrisParticles[i];
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rot);
+                ctx.fillStyle = 'rgba(40,15,5,' + d.life + ')';
+                ctx.fillRect(-d.size / 2, -d.size / 2, d.size, d.size);
+                ctx.restore();
+            }
+        }
+
+        // ── Draw lava drops ──
+        function drawLavaDrops(ctx) {
+            for (var i = 0; i < lavaDrops.length; i++) {
+                var lv = lavaDrops[i];
+                ctx.fillStyle = 'rgba(255,150,0,' + (lv.life * 0.9) + ')';
+                ctx.shadowColor = 'rgba(255,100,0,0.5)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(lv.x, lv.y, lv.size * lv.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.floor(Math.min(W * 0.08, 72));
+            ctx.font = '900 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Glow
+            ctx.shadowColor = 'rgba(255,68,0,' + titleAlpha + ')';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = 'rgba(255,68,0,' + titleAlpha + ')';
+            ctx.fillText('BOWSER ON STEROIDS', W / 2, H * 0.15);
+
+            // White core
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = 'rgba(255,255,255,' + (titleAlpha * 0.7) + ')';
+            ctx.fillText('BOWSER ON STEROIDS', W / 2, H * 0.15);
+
+            ctx.restore();
+        }
+
+        // ── Draw screen flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha > 0.01) {
+                ctx.fillStyle = 'rgba(255,200,100,' + flashAlpha + ')';
+                ctx.fillRect(0, 0, W, H);
+            }
+        }
+
+        // ── Draw vignette ──
+        function drawVignette(ctx, energy) {
+            var grad = ctx.createRadialGradient(W / 2, H / 2, W * 0.2, W / 2, H / 2, W * 0.8);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,' + (0.4 + (1 - energy) * 0.3) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ── RENDER ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var width = frameData.width;
+            var height = frameData.height;
+            var dt = frameData.dt;
+            var cursor = frameData.cursor;
+            var currentNotes = frameData.currentNotes;
+            var anal = frameData.analysis;
+            var song = frameData.song;
+
+            W = width;
+            H = height;
+            groundY = H * 0.78;
+            elapsed += dt;
+            lavaPhase += dt * 2;
+
+            // ── Determine energy and beat ──
+            var energy = 0;
+            var beat = 0;
+            var fracBeat = 0;
+            var seqIndex = 0;
+            var patternId = 0;
+
+            if (cursor) {
+                var tIdx = cursor.timelineIndex || 0;
+                energy = (anal && anal.energy) ? (anal.energy[tIdx] || 0) : 0;
+                beat = cursor.beat || 0;
+                fracBeat = cursor.fractionalRow || 0;
+                seqIndex = cursor.seqIndex || 0;
+
+                // Get pattern ID from song sequence
+                if (song && song.sequence && song.sequence[seqIndex]) {
+                    patternId = song.sequence[seqIndex][0];
+                    if (typeof patternId === 'undefined') patternId = 0;
+                }
+
+                // Detect scene
+                var newScene = detectScene(seqIndex, patternId);
+                if (newScene !== scene) {
+                    scene = newScene;
+                    sceneProgress = 0;
+                    // Flash on scene change
+                    flashAlpha = 0.6;
+                    shakeIntensity = 15;
+                }
+                sceneProgress += dt;
+
+                // Beat detection
+                var currentBeat = Math.floor(beat);
+                if (currentBeat !== lastBeat) {
+                    lastBeat = currentBeat;
+                    beatPulse = 1;
+
+                    // Stomp effects on beat
+                    if (energy > 0.3) {
+                        shakeIntensity = Math.max(shakeIntensity, energy * 12);
+                        spawnFire(bossX + rand(-50, 50), groundY, Math.floor(energy * 8), energy);
+                    }
+
+                    // Heavy beats: debris + lava
+                    if (energy > 0.6) {
+                        var targetSeg = castleSegments[Math.floor(Math.random() * castleSegments.length)];
+                        if (targetSeg && targetSeg.damage < 1) {
+                            spawnDebris(targetSeg.x, targetSeg.baseY - targetSeg.h * 0.5, Math.floor(energy * 5));
+                        }
+                        spawnLava(bossX + rand(-80, 80), groundY);
+                    }
+
+                    // Roar on strong beats in high energy sections
+                    if (energy > 0.7 && currentBeat % 4 === 0) {
+                        bossRoarTimer = 0.5;
+                        flashAlpha = Math.max(flashAlpha, 0.3);
+                    }
+                }
+
+                // Sequence index change = new pattern
+                if (seqIndex !== lastSeqIndex) {
+                    lastSeqIndex = seqIndex;
+                    // Damage castle over time
+                    if (scene === 'battle1' || scene === 'chase' || scene === 'enrage' || scene === 'finale') {
+                        castleDamage = clamp(castleDamage + 0.04, 0, 1);
+                        for (var ci = 0; ci < castleSegments.length; ci++) {
+                            if (Math.random() < 0.3) {
+                                castleSegments[ci].damage = clamp(castleSegments[ci].damage + rand(0.05, 0.15), 0, 1);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Idle state
+                energy = 0.1 + Math.sin(elapsed * 0.5) * 0.05;
+            }
+
+            // ── Update boss behavior per scene ──
+            var bossBaseScale;
+            switch (scene) {
+                case 'approach':
+                    bossBaseScale = 0.6 + sceneProgress * 0.05;
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.3 + energy * 0.3, dt * 2);
+                    titleTarget = sceneProgress > 1 ? 1 : sceneProgress;
+                    bossArmTarget = Math.PI * 0.3;
+                    break;
+                case 'battle1':
+                    bossBaseScale = 0.9 + energy * 0.15;
+                    bossTargetX = W * 0.5 + Math.sin(elapsed * 0.8) * W * 0.2;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.6 + energy * 0.4, dt * 3);
+                    titleTarget = Math.max(0, 1 - sceneProgress * 0.5);
+                    bossArmTarget = Math.PI * 0.4 + Math.sin(elapsed * 3) * 0.3;
+                    break;
+                case 'chase':
+                    bossBaseScale = 1.0 + energy * 0.1;
+                    bossTargetX = W * 0.3 + Math.sin(elapsed * 1.5) * W * 0.35;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.8 + energy * 0.2, dt * 4);
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.5 + Math.sin(elapsed * 4) * 0.4;
+                    break;
+                case 'breakdown':
+                    bossBaseScale = 0.85;
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.2 + Math.sin(elapsed * 2) * 0.2, dt * 2);
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.2;
+                    break;
+                case 'rebuild':
+                    bossBaseScale = 0.9 + sceneProgress * 0.1;
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.4 + sceneProgress * 0.3, dt * 3);
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.35 + sceneProgress * 0.2;
+                    break;
+                case 'enrage':
+                    bossBaseScale = 1.1 + energy * 0.2;
+                    bossTargetX = W * 0.5 + Math.sin(elapsed * 2) * W * 0.3;
+                    bossEyeGlow = 1;
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.6 + Math.sin(elapsed * 5) * 0.5;
+                    // Extra fire constantly
+                    if (Math.random() < energy) {
+                        spawnFire(bossX + rand(-100, 100), groundY - rand(0, 80), 3, energy);
+                    }
+                    break;
+                case 'diminution':
+                    bossBaseScale = 1.0 - sceneProgress * 0.03;
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.5, dt * 2);
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.3;
+                    break;
+                case 'chain':
+                    bossBaseScale = 1.05 + energy * 0.15;
+                    bossTargetX = W * 0.5 + Math.sin(elapsed * 3) * W * 0.25;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.7 + energy * 0.3, dt * 4);
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.5 + Math.sin(elapsed * 4) * 0.4;
+                    break;
+                case 'finale':
+                    bossBaseScale = 1.3 + energy * 0.3;
+                    bossTargetX = W * 0.5 + Math.sin(elapsed * 2.5) * W * 0.15;
+                    bossEyeGlow = 1;
+                    titleTarget = sceneProgress > 2 ? clamp((sceneProgress - 2) * 0.5, 0, 1) : 0;
+                    bossArmTarget = Math.PI * 0.7 + Math.sin(elapsed * 6) * 0.3;
+                    // Maximum destruction
+                    if (Math.random() < 0.8) {
+                        spawnFire(rand(0, W), groundY - rand(0, 50), 4, 1);
+                    }
+                    if (Math.random() < 0.3) {
+                        spawnLava(rand(0, W), groundY);
+                    }
+                    break;
+                case 'end':
+                    bossBaseScale = lerp(bossScale, 1.5, dt * 0.5);
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = lerp(bossEyeGlow, 0.1, dt);
+                    titleTarget = 1;
+                    bossArmTarget = Math.PI * 0.2;
+                    break;
+                default:
+                    bossBaseScale = 1;
+                    bossTargetX = W * 0.5;
+                    bossEyeGlow = 0.5;
+                    titleTarget = 0;
+                    bossArmTarget = Math.PI * 0.3;
+            }
+
+            // Smooth boss updates
+            bossScale = lerp(bossScale, bossBaseScale, dt * 3);
+            bossX = lerp(bossX, bossTargetX, dt * 2);
+            bossArmAngle = lerp(bossArmAngle, bossArmTarget, dt * 5);
+            bossStompPhase += dt * (3 + energy * 8);
+            bossBreathTimer += dt;
+            bossRoarTimer = Math.max(0, bossRoarTimer - dt * 2);
+
+            // Update decay timers
+            beatPulse = Math.max(0, beatPulse - dt * 6);
+            flashAlpha = Math.max(0, flashAlpha - dt * 3);
+            titleAlpha = lerp(titleAlpha, titleTarget, dt * 2);
+
+            // Screen shake decay
+            shakeIntensity = Math.max(0, shakeIntensity - dt * 25);
+            screenShakeX = (Math.random() - 0.5) * shakeIntensity;
+            screenShakeY = (Math.random() - 0.5) * shakeIntensity;
+
+            // Update particles
+            updateParticles(dt);
+
+            // Continuous fire from lava surface
+            if (Math.random() < energy * 0.4) {
+                spawnFire(rand(0, W), groundY + rand(-5, 10), 1, energy * 0.3);
+            }
+
+            // ── DRAW ──
+            ctx.save();
+            ctx.translate(screenShakeX, screenShakeY);
+
+            // 1. Sky
+            drawSky(ctx, energy);
+
+            // 2. Embers in sky
+            drawEmbers(ctx, energy);
+
+            // 3. Castle (background)
+            drawCastle(ctx, energy);
+
+            // 4. Boss
+            drawBoss(ctx, energy, beat);
+
+            // 5. Lava river (foreground)
+            drawLava(ctx, energy);
+
+            // 6. Fire particles
+            drawFireParticles(ctx);
+
+            // 7. Debris
+            drawDebris(ctx);
+
+            // 8. Lava drops
+            drawLavaDrops(ctx);
+
+            ctx.restore();
+
+            // 9. Title (not affected by shake)
+            drawTitle(ctx);
+
+            // 10. Vignette
+            drawVignette(ctx, energy);
+
+            // 11. Flash (screen-wide)
+            drawFlash(ctx);
+
+            // 12. Beat pulse border
+            if (beatPulse > 0.01) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,68,0,' + (beatPulse * 0.4) + ')';
+                ctx.lineWidth = 3 + beatPulse * 4;
+                ctx.shadowColor = 'rgba(255,68,0,' + beatPulse + ')';
+                ctx.shadowBlur = 20;
+                ctx.strokeRect(2, 2, W - 4, H - 4);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Bowser on Steroids Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('bowser-on-steroids-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/bowser-on-steroids.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

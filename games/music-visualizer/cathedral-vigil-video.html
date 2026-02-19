@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cathedral Vigil — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0810;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,8,16,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #e8b84a;
+            text-shadow: 0 0 30px rgba(232,184,74,0.6), 0 0 60px rgba(232,184,74,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+            letter-spacing: 0.06em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #e8b84a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #e8b84a;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,74,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(232,184,74,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Cathedral Vigil</div>
+        <div class="play-sub">a candlelit meditation</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- Cathedral Vigil Video Renderer --
+    window.Renderers['cathedral-vigil-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Colors --
+        var BG_TOP = [10, 8, 20];
+        var BG_BOT = [18, 14, 10];
+        var STONE_COLOR = 'rgba(60,55,70,';
+        var STONE_HIGHLIGHT = 'rgba(90,82,100,';
+        var CANDLE_BASE = [232, 184, 74];    // warm amber
+        var CANDLE_BRIGHT = [255, 230, 150]; // bright gold
+        var GLASS_COLORS = [
+            [70, 100, 200],   // blue
+            [180, 50, 60],    // red
+            [60, 160, 80],    // green
+            [200, 160, 50],   // gold
+            [140, 60, 180],   // purple
+            [50, 150, 180]    // teal
+        ];
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var sectionMood = 'intro';
+        var lastSeqIndex = -1;
+        var introFadeIn = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var elapsed = 0;
+
+        // Candle state
+        var candles = [];
+        var CANDLE_ROWS = 4;
+        var CANDLES_PER_ROW = 12;
+        var candlesLit = 0;
+        var candlesLitTarget = 0;
+
+        // Dust motes
+        var dustMotes = [];
+        var DUST_COUNT = 120;
+
+        // Light rays
+        var lightRays = [];
+        var RAY_COUNT = 7;
+
+        // Stained glass windows
+        var windows = [];
+        var WINDOW_COUNT = 3;
+
+        // Arches
+        var archPositions = [];
+
+        // Dawn glow
+        var dawnGlow = 0;
+        var dawnTarget = 0;
+
+        // -- Section mapping --
+        // seq: 0-1 Torches Intro, 2-3 Nave A/B, 4 Nave A, 5 Procession,
+        // 6 Rose Window Rise, 7-8 Nave A/B, 9 Cloister Calm, 10-11 Nave A/B,
+        // 12 Thunder Arch, 13 Bell Refrain, 14-15 Nave A/B, 16 Crypt Bridge,
+        // 17 Cadential Turn, 18-19 Nave A/B, 20 Rose Window, 21 Procession,
+        // 22-23 Nave A/B, 24 Bell Refrain, 25 Thunder Arch, 26-27 Nave A/B,
+        // 28 Cloister Calm, 29 Rose Window, 30-31 Nave A/B, 32 Crypt Bridge,
+        // 33 Cadential Turn, 34-35 Nave A/B, 36 Procession, 37 Rose Window,
+        // 38 Bell Refrain, 39 Cadential Turn
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'intro';          // Torches Intro
+            if (seqIndex <= 5) return 'nave';            // Nave themes + Procession
+            if (seqIndex === 6) return 'roseWindow';     // Rose Window Rise
+            if (seqIndex <= 9) return 'nave';            // Nave + Cloister
+            if (seqIndex <= 11) return 'nave';           // Nave themes
+            if (seqIndex <= 13) return 'thunder';        // Thunder Arch + Bell Refrain
+            if (seqIndex <= 17) return 'nave';           // Nave + Crypt + Cadential
+            if (seqIndex <= 21) return 'nave';           // Nave + Rose + Procession
+            if (seqIndex <= 25) return 'thunder';        // Nave + Bell + Thunder
+            if (seqIndex <= 29) return 'nave';           // Nave + Cloister + Rose
+            if (seqIndex <= 33) return 'nave';           // Nave + Crypt + Cadential
+            if (seqIndex <= 37) return 'dawn';           // Nave + Procession + Rose
+            if (seqIndex <= 39) return 'dawn';           // Bell + Cadential (finale)
+            return 'fade';
+        }
+
+        // -- Lerp helper --
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // -- Init candles --
+        function initCandles() {
+            candles = [];
+            for (var row = 0; row < CANDLE_ROWS; row++) {
+                for (var col = 0; col < CANDLES_PER_ROW; col++) {
+                    var xSpread = W * 0.7;
+                    var xStart = (W - xSpread) / 2;
+                    var x = xStart + (col / (CANDLES_PER_ROW - 1)) * xSpread;
+
+                    // Rows go from front (bottom) to back (higher, smaller)
+                    var depthT = row / (CANDLE_ROWS - 1);
+                    var baseY = H * 0.72 - depthT * H * 0.22;
+                    var scale = 1.0 - depthT * 0.4;
+
+                    // Slight offset for natural look
+                    x += (Math.random() - 0.5) * W * 0.015;
+                    baseY += (Math.random() - 0.5) * H * 0.01;
+
+                    candles.push({
+                        x: x,
+                        y: baseY,
+                        scale: scale,
+                        flickerPhase: Math.random() * Math.PI * 2,
+                        flickerSpeed: 2 + Math.random() * 3,
+                        lit: false,
+                        litAlpha: 0,
+                        index: row * CANDLES_PER_ROW + col
+                    });
+                }
+            }
+        }
+
+        // -- Init dust motes --
+        function initDust() {
+            dustMotes = [];
+            for (var i = 0; i < DUST_COUNT; i++) {
+                dustMotes.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: -3 - Math.random() * 8,
+                    size: 0.5 + Math.random() * 1.5,
+                    alpha: 0.1 + Math.random() * 0.3,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // -- Init light rays --
+        function initRays() {
+            lightRays = [];
+            for (var i = 0; i < RAY_COUNT; i++) {
+                var t = (i + 0.5) / RAY_COUNT;
+                lightRays.push({
+                    x: W * (0.15 + t * 0.7),
+                    angle: -0.15 + (Math.random() - 0.5) * 0.1,
+                    width: W * (0.03 + Math.random() * 0.04),
+                    alpha: 0,
+                    targetAlpha: 0,
+                    colorIdx: i % GLASS_COLORS.length
+                });
+            }
+        }
+
+        // -- Init stained glass windows --
+        function initWindows() {
+            windows = [];
+            var positions = [0.22, 0.5, 0.78];
+            for (var i = 0; i < WINDOW_COUNT; i++) {
+                var colors = [];
+                for (var p = 0; p < 8; p++) {
+                    colors.push(GLASS_COLORS[Math.floor(Math.random() * GLASS_COLORS.length)]);
+                }
+                windows.push({
+                    x: W * positions[i],
+                    y: H * 0.12,
+                    w: W * 0.12,
+                    h: H * 0.28,
+                    colors: colors,
+                    glow: 0,
+                    targetGlow: 0
+                });
+            }
+        }
+
+        // -- Init arches --
+        function initArches() {
+            archPositions = [];
+            var count = 5;
+            for (var i = 0; i < count; i++) {
+                var t = (i + 0.5) / count;
+                archPositions.push({
+                    x: W * t,
+                    depth: i / (count - 1)
+                });
+            }
+        }
+
+        // -- Draw background --
+        function drawBackground(ctx, energy) {
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            var r0 = BG_TOP[0], g0 = BG_TOP[1], b0 = BG_TOP[2];
+            var r1 = BG_BOT[0], g1 = BG_BOT[1], b1 = BG_BOT[2];
+
+            // Dawn shifts background warmer
+            if (dawnGlow > 0) {
+                r0 = Math.floor(lerp(r0, 40, dawnGlow * 0.6));
+                g0 = Math.floor(lerp(g0, 25, dawnGlow * 0.4));
+                b0 = Math.floor(lerp(b0, 50, dawnGlow * 0.3));
+                r1 = Math.floor(lerp(r1, 50, dawnGlow));
+                g1 = Math.floor(lerp(g1, 35, dawnGlow * 0.7));
+                b1 = Math.floor(lerp(b1, 20, dawnGlow * 0.5));
+            }
+
+            grad.addColorStop(0, 'rgb(' + r0 + ',' + g0 + ',' + b0 + ')');
+            grad.addColorStop(1, 'rgb(' + r1 + ',' + g1 + ',' + b1 + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // -- Draw stone arches --
+        function drawArches(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < archPositions.length; i++) {
+                var arch = archPositions[i];
+                var scale = 0.6 + (1 - arch.depth) * 0.4;
+                var archW = W * 0.18 * scale;
+                var archH = H * 0.65 * scale;
+                var x = arch.x;
+                var topY = H * 0.05;
+
+                // Stone pillar left
+                ctx.fillStyle = STONE_COLOR + (0.15 + energy * 0.05) + ')';
+                ctx.fillRect(x - archW / 2 - W * 0.015, topY, W * 0.03, archH + H * 0.3);
+
+                // Stone pillar right
+                ctx.fillRect(x + archW / 2 - W * 0.015, topY, W * 0.03, archH + H * 0.3);
+
+                // Pointed arch top
+                ctx.strokeStyle = STONE_HIGHLIGHT + (0.2 + energy * 0.08) + ')';
+                ctx.lineWidth = 2 + scale * 2;
+                ctx.beginPath();
+                ctx.moveTo(x - archW / 2, topY + archH);
+                // Gothic pointed arch
+                ctx.quadraticCurveTo(x - archW * 0.1, topY, x, topY - archH * 0.1);
+                ctx.quadraticCurveTo(x + archW * 0.1, topY, x + archW / 2, topY + archH);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // -- Draw stained glass windows --
+        function drawStainedGlass(ctx, energy) {
+            for (var wi = 0; wi < windows.length; wi++) {
+                var win = windows[wi];
+                var x = win.x - win.w / 2;
+                var y = win.y;
+                var w = win.w;
+                var h = win.h;
+
+                // Window frame
+                ctx.save();
+                ctx.strokeStyle = STONE_COLOR + '0.4)';
+                ctx.lineWidth = 3;
+
+                // Pointed top window shape
+                ctx.beginPath();
+                ctx.moveTo(x, y + h);
+                ctx.lineTo(x, y + h * 0.3);
+                ctx.quadraticCurveTo(x + w * 0.1, y, x + w / 2, y - h * 0.08);
+                ctx.quadraticCurveTo(x + w * 0.9, y, x + w, y + h * 0.3);
+                ctx.lineTo(x + w, y + h);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Glass panels glow
+                var glow = win.glow;
+                if (glow > 0.01) {
+                    ctx.save();
+                    ctx.clip();
+                    var panelH = h / 4;
+                    var panelW = w / 2;
+                    for (var p = 0; p < 8; p++) {
+                        var px = x + (p % 2) * panelW;
+                        var py = y + Math.floor(p / 2) * panelH;
+                        var c = win.colors[p];
+                        ctx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (glow * 0.4) + ')';
+                        ctx.fillRect(px, py, panelW, panelH);
+                    }
+                    ctx.restore();
+
+                    // Outer glow
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    var glowGrad = ctx.createRadialGradient(
+                        win.x, y + h * 0.4, w * 0.1,
+                        win.x, y + h * 0.4, w * 1.5
+                    );
+                    glowGrad.addColorStop(0, 'rgba(200,180,140,' + (glow * 0.15) + ')');
+                    glowGrad.addColorStop(1, 'rgba(200,180,140,0)');
+                    ctx.fillStyle = glowGrad;
+                    ctx.fillRect(win.x - w * 1.5, y - h * 0.5, w * 3, h * 2);
+                    ctx.restore();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // -- Draw light rays through windows --
+        function drawLightRays(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < lightRays.length; i++) {
+                var ray = lightRays[i];
+                if (ray.alpha < 0.005) continue;
+
+                var c = GLASS_COLORS[ray.colorIdx];
+                var topX = ray.x;
+                var botX = topX + Math.sin(ray.angle) * H;
+                var hw = ray.width;
+
+                var grad = ctx.createLinearGradient(topX, 0, botX, H);
+                grad.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (ray.alpha * 0.3) + ')');
+                grad.addColorStop(0.5, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (ray.alpha * 0.15) + ')');
+                grad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(topX - hw * 0.3, 0);
+                ctx.lineTo(topX + hw * 0.3, 0);
+                ctx.lineTo(botX + hw, H);
+                ctx.lineTo(botX - hw, H);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Draw a single candle with flame --
+        function drawCandle(ctx, candle, energy, beat) {
+            if (candle.litAlpha < 0.005) return;
+
+            var x = candle.x;
+            var y = candle.y;
+            var s = candle.scale;
+            var alpha = candle.litAlpha;
+
+            var candleW = W * 0.004 * s;
+            var candleH = H * 0.035 * s;
+
+            // Candle body
+            ctx.fillStyle = 'rgba(220,200,170,' + (alpha * 0.8) + ')';
+            ctx.fillRect(x - candleW, y - candleH, candleW * 2, candleH);
+
+            // Flame flicker
+            var flicker = Math.sin(candle.flickerPhase) * 0.3 +
+                          Math.sin(candle.flickerPhase * 1.7) * 0.2;
+            var beatFlicker = beatPulse * 0.3;
+            var flameH = (H * 0.018 + H * 0.008 * energy) * s * (1 + flicker + beatFlicker);
+            var flameW = candleW * 1.2 * (1 + flicker * 0.3);
+
+            var flameY = y - candleH;
+
+            // Flame glow
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var glowR = flameH * 4 * (0.8 + energy * 0.5);
+            var glow = ctx.createRadialGradient(x, flameY - flameH * 0.5, 0, x, flameY - flameH * 0.5, glowR);
+            glow.addColorStop(0, 'rgba(' + CANDLE_BRIGHT[0] + ',' + CANDLE_BRIGHT[1] + ',' + CANDLE_BRIGHT[2] + ',' + (alpha * 0.08 * (1 + energy * 0.3)) + ')');
+            glow.addColorStop(0.4, 'rgba(' + CANDLE_BASE[0] + ',' + CANDLE_BASE[1] + ',' + CANDLE_BASE[2] + ',' + (alpha * 0.03) + ')');
+            glow.addColorStop(1, 'rgba(' + CANDLE_BASE[0] + ',' + CANDLE_BASE[1] + ',' + CANDLE_BASE[2] + ',0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(x - glowR, flameY - flameH - glowR, glowR * 2, glowR * 2);
+            ctx.restore();
+
+            // Flame shape (teardrop)
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            // Outer flame (amber)
+            ctx.fillStyle = 'rgba(' + CANDLE_BASE[0] + ',' + CANDLE_BASE[1] + ',' + CANDLE_BASE[2] + ',0.9)';
+            ctx.beginPath();
+            ctx.moveTo(x, flameY - flameH);
+            ctx.quadraticCurveTo(x + flameW * 1.5, flameY - flameH * 0.3, x, flameY);
+            ctx.quadraticCurveTo(x - flameW * 1.5, flameY - flameH * 0.3, x, flameY - flameH);
+            ctx.fill();
+
+            // Inner flame (bright)
+            ctx.fillStyle = 'rgba(' + CANDLE_BRIGHT[0] + ',' + CANDLE_BRIGHT[1] + ',' + CANDLE_BRIGHT[2] + ',0.95)';
+            ctx.beginPath();
+            var innerH = flameH * 0.6;
+            var innerW = flameW * 0.6;
+            ctx.moveTo(x, flameY - innerH);
+            ctx.quadraticCurveTo(x + innerW, flameY - innerH * 0.2, x, flameY);
+            ctx.quadraticCurveTo(x - innerW, flameY - innerH * 0.2, x, flameY - innerH);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // -- Draw floor (stone) --
+        function drawFloor(ctx, energy) {
+            var floorY = H * 0.78;
+            ctx.save();
+
+            // Dark stone floor
+            var floorGrad = ctx.createLinearGradient(0, floorY, 0, H);
+            floorGrad.addColorStop(0, 'rgba(30,25,35,' + (0.9 + energy * 0.05) + ')');
+            floorGrad.addColorStop(1, 'rgba(15,12,18,1)');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, floorY, W, H - floorY);
+
+            // Stone tile lines
+            ctx.strokeStyle = 'rgba(50,45,55,' + (0.15 + energy * 0.05) + ')';
+            ctx.lineWidth = 1;
+            var tileSize = W * 0.06;
+            for (var tx = 0; tx < W; tx += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(tx, floorY);
+                ctx.lineTo(tx, H);
+                ctx.stroke();
+            }
+            for (var ty = floorY; ty < H; ty += tileSize * 0.6) {
+                ctx.beginPath();
+                ctx.moveTo(0, ty);
+                ctx.lineTo(W, ty);
+                ctx.stroke();
+            }
+
+            // Warm reflection from candles
+            var refGrad = ctx.createLinearGradient(0, floorY, 0, floorY + H * 0.1);
+            refGrad.addColorStop(0, 'rgba(232,184,74,' + (0.03 + energy * 0.02 + candlesLit / (CANDLE_ROWS * CANDLES_PER_ROW) * 0.04) + ')');
+            refGrad.addColorStop(1, 'rgba(232,184,74,0)');
+            ctx.fillStyle = refGrad;
+            ctx.fillRect(0, floorY, W, H * 0.1);
+
+            ctx.restore();
+        }
+
+        // -- Draw dust motes --
+        function drawDust(ctx, energy, dt) {
+            ctx.save();
+            for (var i = 0; i < dustMotes.length; i++) {
+                var m = dustMotes[i];
+                m.phase += dt * 0.5;
+                m.x += (m.vx + Math.sin(m.phase) * 3) * dt;
+                m.y += m.vy * dt * (0.3 + energy * 0.5);
+
+                if (m.y < -10) { m.y = H + 10; m.x = Math.random() * W; }
+                if (m.x < -10) m.x = W + 10;
+                if (m.x > W + 10) m.x = -10;
+
+                // Motes glow more when near candles / in light
+                var litRatio = candlesLit / (CANDLE_ROWS * CANDLES_PER_ROW);
+                var dustAlpha = m.alpha * (0.3 + litRatio * 0.7) * introFadeIn;
+
+                ctx.globalAlpha = dustAlpha;
+                ctx.fillStyle = 'rgba(255,240,200,1)';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Draw title --
+        function drawTitleText(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Warm golden glow
+            ctx.shadowColor = 'rgba(232,184,74,0.8)';
+            ctx.shadowBlur = 40;
+            ctx.globalAlpha = titleAlpha;
+            ctx.fillStyle = '#e8b84a';
+            ctx.fillText('CATHEDRAL VIGIL', W / 2, H * 0.12);
+
+            // White highlight
+            ctx.shadowColor = 'rgba(255,255,255,0.4)';
+            ctx.shadowBlur = 20;
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.fillStyle = '#fff';
+            ctx.fillText('CATHEDRAL VIGIL', W / 2, H * 0.12);
+
+            ctx.restore();
+        }
+
+        // -- Dawn effect --
+        function drawDawnGlow(ctx) {
+            if (dawnGlow < 0.01) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Warm light from windows
+            for (var wi = 0; wi < windows.length; wi++) {
+                var win = windows[wi];
+                var grad = ctx.createRadialGradient(
+                    win.x, win.y + win.h * 0.3, 0,
+                    win.x, win.y + win.h * 0.3, W * 0.4
+                );
+                grad.addColorStop(0, 'rgba(255,220,150,' + (dawnGlow * 0.12) + ')');
+                grad.addColorStop(0.5, 'rgba(255,200,120,' + (dawnGlow * 0.04) + ')');
+                grad.addColorStop(1, 'rgba(255,180,100,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // Overall warm wash
+            var topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+            topGrad.addColorStop(0, 'rgba(255,210,130,' + (dawnGlow * 0.06) + ')');
+            topGrad.addColorStop(1, 'rgba(255,210,130,0)');
+            ctx.fillStyle = topGrad;
+            ctx.fillRect(0, 0, W, H * 0.6);
+
+            ctx.restore();
+        }
+
+        // -- Init --
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            introFadeIn = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            candlesLit = 0;
+            candlesLitTarget = 0;
+            dawnGlow = 0;
+            dawnTarget = 0;
+            elapsed = 0;
+
+            initCandles();
+            initDust();
+            initRays();
+            initWindows();
+            initArches();
+        }
+
+        // -- Resize --
+        function resize(width, height) {
+            W = width; H = height;
+            initCandles();
+            initRays();
+            initWindows();
+            initArches();
+        }
+
+        // -- Main render --
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            // Background
+            drawBackground(ctx, 0);
+
+            if (!cursor) {
+                // Idle: dim cathedral with a few lit candles
+                drawArches(ctx, 0);
+                drawStainedGlass(ctx, 0);
+                drawFloor(ctx, 0);
+                // Draw a handful of candles gently flickering
+                for (var ci = 0; ci < candles.length; ci++) {
+                    var c = candles[ci];
+                    c.flickerPhase += c.flickerSpeed * dt;
+                    if (ci < 6) {
+                        c.litAlpha = lerpSmooth(c.litAlpha, 0.3, 2, dt);
+                    }
+                    drawCandle(ctx, c, 0, 0);
+                }
+                drawDust(ctx, 0, dt);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            elapsed = cursor.elapsed || 0;
+
+            // -- Section transitions --
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+            }
+
+            // -- Intro fade-in --
+            if (sectionMood === 'intro') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.4);
+            } else {
+                introFadeIn = Math.min(1, introFadeIn + dt * 2);
+            }
+
+            // -- Beat pulse --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Light candles progressively
+                if (sectionMood === 'intro') {
+                    candlesLitTarget = Math.min(CANDLE_ROWS * CANDLES_PER_ROW * 0.15, candlesLitTarget + 2);
+                } else if (sectionMood === 'nave') {
+                    candlesLitTarget = Math.min(CANDLE_ROWS * CANDLES_PER_ROW * 0.6, candlesLitTarget + 1);
+                } else if (sectionMood === 'roseWindow' || sectionMood === 'thunder') {
+                    candlesLitTarget = CANDLE_ROWS * CANDLES_PER_ROW * 0.85;
+                } else if (sectionMood === 'dawn' || sectionMood === 'fade') {
+                    candlesLitTarget = CANDLE_ROWS * CANDLES_PER_ROW;
+                }
+            }
+            beatPulse *= Math.exp(-6 * dt);
+            lastBeat = beat;
+
+            // Candles lit count
+            candlesLit = lerpSmooth(candlesLit, candlesLitTarget, 3, dt);
+
+            // -- Section-specific state --
+            // Title appears during intro and thunder
+            titleTarget = (sectionMood === 'intro' || sectionMood === 'thunder') ? 1 : 0;
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 3, dt);
+
+            // Dawn glow
+            dawnTarget = (sectionMood === 'dawn' || sectionMood === 'fade') ? 1 : 0;
+            dawnGlow = lerpSmooth(dawnGlow, dawnTarget, 1.5, dt);
+
+            // Window glow driven by section
+            var windowGlowTarget = 0;
+            if (sectionMood === 'roseWindow') windowGlowTarget = 0.9;
+            else if (sectionMood === 'thunder') windowGlowTarget = 0.6 + energy * 0.3;
+            else if (sectionMood === 'dawn') windowGlowTarget = 1.0;
+            else if (sectionMood === 'nave') windowGlowTarget = 0.2 + energy * 0.2;
+            else if (sectionMood === 'intro') windowGlowTarget = 0.05;
+
+            for (var wi = 0; wi < windows.length; wi++) {
+                windows[wi].targetGlow = windowGlowTarget;
+                windows[wi].glow = lerpSmooth(windows[wi].glow, windows[wi].targetGlow, 3, dt);
+            }
+
+            // Light rays driven by window glow and energy
+            var rayBase = 0;
+            if (sectionMood === 'roseWindow') rayBase = 0.6;
+            else if (sectionMood === 'thunder') rayBase = 0.3 + beatPulse * 0.4;
+            else if (sectionMood === 'dawn') rayBase = 0.8 + energy * 0.2;
+            else if (sectionMood === 'nave') rayBase = energy * 0.15;
+
+            for (var ri = 0; ri < lightRays.length; ri++) {
+                lightRays[ri].targetAlpha = rayBase * (0.6 + Math.sin(elapsed * 0.3 + ri) * 0.4);
+                lightRays[ri].alpha = lerpSmooth(lightRays[ri].alpha, lightRays[ri].targetAlpha, 2, dt);
+                lightRays[ri].angle += (Math.sin(elapsed * 0.1 + ri * 0.7) * 0.002) * dt * 60;
+            }
+
+            // Update candle states
+            for (var ci2 = 0; ci2 < candles.length; ci2++) {
+                var candle = candles[ci2];
+                candle.flickerPhase += candle.flickerSpeed * dt;
+
+                var shouldBeLit = candle.index < Math.floor(candlesLit);
+                var targetA = shouldBeLit ? 1 : 0;
+                candle.litAlpha = lerpSmooth(candle.litAlpha, targetA, shouldBeLit ? 4 : 1, dt);
+                candle.lit = shouldBeLit;
+            }
+
+            // -- Draw scene layers (back to front) --
+
+            // 1. Background already drawn
+
+            // 2. Stone arches
+            drawArches(ctx, energy);
+
+            // 3. Stained glass windows
+            drawStainedGlass(ctx, energy);
+
+            // 4. Light rays
+            drawLightRays(ctx, energy);
+
+            // 5. Dawn glow
+            drawDawnGlow(ctx);
+
+            // 6. Floor
+            drawFloor(ctx, energy);
+
+            // 7. Candles (back rows first)
+            for (var ci3 = 0; ci3 < candles.length; ci3++) {
+                drawCandle(ctx, candles[ci3], energy, beat);
+            }
+
+            // 8. Dust motes
+            drawDust(ctx, energy, dt);
+
+            // 9. Title
+            drawTitleText(ctx);
+
+            // 10. Gentle vignette
+            ctx.save();
+            var vigR = Math.max(W, H) * 0.7;
+            var vig = ctx.createRadialGradient(W / 2, H / 2, vigR * 0.4, W / 2, H / 2, vigR);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, 'rgba(0,0,0,' + (0.4 - dawnGlow * 0.2) + ')');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        return {
+            name: 'Cathedral Vigil',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('cathedral-vigil-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/cathedral-vigil.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

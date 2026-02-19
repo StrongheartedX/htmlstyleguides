@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazaar of the Midnight Sun — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #1a0a04;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(26,10,4,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #f5a623;
+            text-shadow: 0 0 30px rgba(245,166,35,0.6), 0 0 60px rgba(245,166,35,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #f5a623;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #f5a623;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(245,166,35,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Bazaar of the Midnight Sun</div>
+        <div class="play-sub">a nordic marketplace under eternal twilight</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Bazaar of the Midnight Sun Video Renderer ──────────────────────
+    window.Renderers['bazaar-midnight-sun-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var SKY_TOP = [25, 12, 50];       // deep purple
+        var SKY_MID = [60, 20, 40];       // dusky rose
+        var SKY_BOT = [200, 100, 30];     // amber horizon
+        var SUN_COLOR = '#f5a623';
+        var SUN_GLOW = [245, 166, 35];
+        var GROUND_COLOR = '#1a0e06';
+        var SAND_COLOR = [50, 30, 15];
+
+        var LANTERN_COLORS = ['#f5a623', '#ff6b35', '#e74c3c', '#ffea00', '#ff8c42', '#ffd700'];
+        var FABRIC_COLORS = ['#c0392b', '#8e44ad', '#2980b9', '#27ae60', '#f39c12', '#e74c3c', '#1abc9c', '#d35400'];
+        var SPICE_COLORS = ['#f5a623', '#e74c3c', '#c0392b', '#d4a017', '#8b4513', '#ff6347', '#daa520'];
+
+        // ── State ──
+        var horizonY = 0;
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+        var lastSeqIndex = -1;
+        var sectionMood = 'intro';
+        var sceneIndex = 0; // 0=entrance, 1=spice alley, 2=silk tent, 3=rooftop
+
+        // Sun state
+        var sunX = 0, sunY = 0, sunR = 0;
+        var sunPulse = 0;
+
+        // Particles (dust/spice)
+        var particles = [];
+        var NUM_PARTICLES = 120;
+
+        // Lanterns
+        var lanterns = [];
+        var NUM_LANTERNS = 14;
+
+        // Market stalls
+        var stalls = [];
+        var NUM_STALLS = 7;
+
+        // Merchants (silhouettes)
+        var merchants = [];
+        var NUM_MERCHANTS = 10;
+
+        // Spice pyramids
+        var spicePyramids = [];
+
+        // Fabric canopies
+        var canopies = [];
+
+        // Stars
+        var stars = [];
+        var NUM_STARS = 80;
+
+        // Title state
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Aurora state (for aurora section)
+        var auroraWaves = [];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpColor(c1, c2, t) {
+            return [
+                Math.round(lerp(c1[0], c2[0], t)),
+                Math.round(lerp(c1[1], c2[1], t)),
+                Math.round(lerp(c1[2], c2[2], t))
+            ];
+        }
+        function rgb(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+        function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+        function rand(min, max) { return min + Math.random() * (max - min); }
+
+        // Seeded-ish stable random for stall placement
+        function stableRand(seed) {
+            var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+            return x - Math.floor(x);
+        }
+
+        // ── Section mapping ──
+        function mapSection(seqIdx) {
+            // 0-3: First Light (intro)
+            if (seqIdx <= 3) return 'intro';
+            // 4-9: Merchants (building)
+            if (seqIdx <= 9) return 'merchants';
+            // 10-19: Haggling (energetic)
+            if (seqIdx <= 19) return 'haggling';
+            // 20-26: Aurora Appears + Bridge (ethereal)
+            if (seqIdx <= 26) return 'aurora';
+            // 27-37: Dance (peak)
+            if (seqIdx <= 37) return 'dance';
+            // 38-41: Sun Dips (winding down)
+            if (seqIdx <= 41) return 'sundips';
+            // 42-45: Last Merchant (outro)
+            return 'outro';
+        }
+
+        function mapScene(seqIdx) {
+            if (seqIdx <= 3) return 0;   // entrance
+            if (seqIdx <= 9) return 0;   // entrance with stalls
+            if (seqIdx <= 19) return 1;  // spice alley
+            if (seqIdx <= 26) return 2;  // silk tent / aurora
+            if (seqIdx <= 37) return 3;  // rooftop view
+            if (seqIdx <= 41) return 2;  // back to silk tent
+            return 0;                     // entrance farewell
+        }
+
+        // ── Init functions ──
+        function initParticles() {
+            particles = [];
+            for (var i = 0; i < NUM_PARTICLES; i++) {
+                particles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: rand(-15, 15),
+                    vy: rand(-8, -25),
+                    size: rand(1, 3.5),
+                    alpha: rand(0.1, 0.5),
+                    color: SPICE_COLORS[Math.floor(Math.random() * SPICE_COLORS.length)],
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function initLanterns() {
+            lanterns = [];
+            for (var i = 0; i < NUM_LANTERNS; i++) {
+                lanterns.push({
+                    x: (i / NUM_LANTERNS) * W + rand(-20, 20),
+                    y: rand(horizonY * 0.15, horizonY * 0.55),
+                    size: rand(8, 18),
+                    color: LANTERN_COLORS[Math.floor(Math.random() * LANTERN_COLORS.length)],
+                    swingPhase: Math.random() * Math.PI * 2,
+                    swingSpeed: rand(1.5, 3),
+                    swingAmp: rand(8, 20),
+                    ropeLen: rand(15, 40),
+                    flicker: 0
+                });
+            }
+        }
+
+        function initStalls() {
+            stalls = [];
+            for (var i = 0; i < NUM_STALLS; i++) {
+                var sw = rand(W * 0.08, W * 0.14);
+                stalls.push({
+                    x: W * 0.08 + (i / NUM_STALLS) * W * 0.84,
+                    w: sw,
+                    h: rand(H * 0.12, H * 0.22),
+                    canopyColor: FABRIC_COLORS[Math.floor(Math.random() * FABRIC_COLORS.length)],
+                    canopyStripe: FABRIC_COLORS[Math.floor(Math.random() * FABRIC_COLORS.length)],
+                    hasGoods: Math.random() > 0.3,
+                    goodsColor: SPICE_COLORS[Math.floor(Math.random() * SPICE_COLORS.length)]
+                });
+            }
+        }
+
+        function initMerchants() {
+            merchants = [];
+            for (var i = 0; i < NUM_MERCHANTS; i++) {
+                merchants.push({
+                    x: rand(W * 0.05, W * 0.95),
+                    scale: rand(0.6, 1.2),
+                    walkSpeed: rand(5, 20) * (Math.random() > 0.5 ? 1 : -1),
+                    walkPhase: Math.random() * Math.PI * 2,
+                    type: Math.floor(Math.random() * 3), // 0=standing, 1=walking, 2=gesturing
+                    sway: Math.random() * Math.PI * 2,
+                    active: false
+                });
+            }
+        }
+
+        function initSpicePyramids() {
+            spicePyramids = [];
+            for (var i = 0; i < 5; i++) {
+                spicePyramids.push({
+                    x: W * 0.15 + (i / 5) * W * 0.7,
+                    color1: SPICE_COLORS[Math.floor(Math.random() * SPICE_COLORS.length)],
+                    color2: SPICE_COLORS[Math.floor(Math.random() * SPICE_COLORS.length)],
+                    size: rand(15, 30)
+                });
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (var i = 0; i < NUM_STARS; i++) {
+                stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * horizonY * 0.6,
+                    size: rand(0.5, 2),
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: rand(0.5, 2)
+                });
+            }
+        }
+
+        function initAurora() {
+            auroraWaves = [];
+            for (var i = 0; i < 5; i++) {
+                auroraWaves.push({
+                    y: horizonY * (0.1 + i * 0.08),
+                    amplitude: rand(15, 40),
+                    frequency: rand(0.002, 0.006),
+                    speed: rand(0.3, 0.8),
+                    phase: Math.random() * Math.PI * 2,
+                    color1: [50 + i * 20, 200 - i * 20, 100 + i * 30],
+                    color2: [100 + i * 15, 80, 200 - i * 20],
+                    alpha: 0.15 - i * 0.02
+                });
+            }
+        }
+
+        // ── Drawing functions ──
+
+        function drawSky(ctx, energy, elapsed) {
+            // Gradient sky - changes with scene
+            var topColor, midColor, botColor;
+            if (sectionMood === 'aurora') {
+                topColor = [15, 8, 40];
+                midColor = [30, 15, 50];
+                botColor = [180, 80, 40];
+            } else if (sectionMood === 'dance') {
+                topColor = [35, 15, 55];
+                midColor = [70, 25, 45];
+                botColor = [220, 110, 35];
+            } else if (sectionMood === 'sundips' || sectionMood === 'outro') {
+                topColor = [15, 8, 35];
+                midColor = [40, 15, 35];
+                botColor = [160, 70, 25];
+            } else {
+                topColor = SKY_TOP;
+                midColor = SKY_MID;
+                botColor = SKY_BOT;
+            }
+
+            var grad = ctx.createLinearGradient(0, 0, 0, horizonY);
+            grad.addColorStop(0, rgb(topColor));
+            grad.addColorStop(0.6, rgb(midColor));
+            grad.addColorStop(1, rgb(botColor));
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, horizonY);
+        }
+
+        function drawStars(ctx, energy, elapsed) {
+            if (sectionMood === 'dance' || sectionMood === 'haggling') return; // too bright
+            var baseAlpha = sectionMood === 'intro' ? 0.8 : sectionMood === 'aurora' ? 0.9 : 0.4;
+            ctx.save();
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                s.twinkle += s.speed * 0.02;
+                var a = baseAlpha * (0.4 + 0.6 * Math.abs(Math.sin(s.twinkle)));
+                ctx.globalAlpha = a * introFadeIn * outroFadeOut;
+                ctx.fillStyle = '#ffe8b0';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawSun(ctx, energy, beat, elapsed) {
+            // Massive sun hovering at horizon
+            sunX = W * 0.5 + Math.sin(elapsed * 0.05) * W * 0.05;
+            var baseSunY = horizonY * 0.72;
+            // Sun dips lower during sundips/outro
+            if (sectionMood === 'sundips') baseSunY = horizonY * 0.85;
+            else if (sectionMood === 'outro') baseSunY = horizonY * 0.95;
+            sunY = baseSunY;
+            sunR = Math.min(W, H) * 0.12;
+
+            sunPulse = sunPulse * 0.92 + beatPulse * 0.08;
+
+            ctx.save();
+
+            // Outer glow
+            var glowR = sunR * (2.5 + energy * 1.5 + sunPulse * 0.5);
+            var glowGrad = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, glowR);
+            glowGrad.addColorStop(0, rgba(SUN_GLOW, 0.3 + energy * 0.15));
+            glowGrad.addColorStop(0.4, rgba(SUN_GLOW, 0.08));
+            glowGrad.addColorStop(1, rgba(SUN_GLOW, 0));
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(sunX - glowR, sunY - glowR, glowR * 2, glowR * 2);
+
+            // Sun body
+            var bodyGrad = ctx.createRadialGradient(sunX, sunY - sunR * 0.1, 0, sunX, sunY, sunR);
+            bodyGrad.addColorStop(0, '#fff5e0');
+            bodyGrad.addColorStop(0.3, '#ffd700');
+            bodyGrad.addColorStop(0.7, '#f5a623');
+            bodyGrad.addColorStop(1, '#e8730e');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunR * (1 + sunPulse * 0.05), 0, Math.PI * 2);
+            ctx.fill();
+
+            // Rays
+            ctx.globalCompositeOperation = 'lighter';
+            var numRays = 12;
+            var rayAlpha = 0.06 + energy * 0.08 + sunPulse * 0.04;
+            for (var i = 0; i < numRays; i++) {
+                var angle = (i / numRays) * Math.PI * 2 + elapsed * 0.1;
+                var rayLen = sunR * (3 + energy * 2);
+                var rayW = sunR * 0.15;
+                ctx.fillStyle = rgba(SUN_GLOW, rayAlpha);
+                ctx.beginPath();
+                ctx.moveTo(sunX + Math.cos(angle) * sunR, sunY + Math.sin(angle) * sunR);
+                ctx.lineTo(sunX + Math.cos(angle - 0.03) * rayLen, sunY + Math.sin(angle - 0.03) * rayLen);
+                ctx.lineTo(sunX + Math.cos(angle + 0.03) * rayLen, sunY + Math.sin(angle + 0.03) * rayLen);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function drawAurora(ctx, energy, elapsed) {
+            if (sectionMood !== 'aurora' && sectionMood !== 'sundips') return;
+            var intensity = sectionMood === 'aurora' ? 1 : 0.4;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < auroraWaves.length; i++) {
+                var w = auroraWaves[i];
+                w.phase += w.speed * 0.016;
+                var alpha = w.alpha * intensity * (0.5 + energy * 0.5);
+                ctx.beginPath();
+                ctx.moveTo(0, w.y);
+                for (var x = 0; x <= W; x += 4) {
+                    var dy = Math.sin(x * w.frequency + w.phase + elapsed * 0.3) * w.amplitude;
+                    dy += Math.sin(x * w.frequency * 1.7 + w.phase * 1.3) * w.amplitude * 0.4;
+                    ctx.lineTo(x, w.y + dy);
+                }
+                ctx.lineTo(W, w.y + w.amplitude * 2);
+                ctx.lineTo(0, w.y + w.amplitude * 2);
+                ctx.closePath();
+                var t = (Math.sin(elapsed * 0.5 + i) + 1) * 0.5;
+                var col = lerpColor(w.color1, w.color2, t);
+                ctx.fillStyle = rgba(col, alpha * introFadeIn * outroFadeOut);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawGround(ctx, energy) {
+            // Sandy ground below horizon
+            ctx.save();
+            var grad = ctx.createLinearGradient(0, horizonY, 0, H);
+            grad.addColorStop(0, '#3d2410');
+            grad.addColorStop(0.3, '#2a1808');
+            grad.addColorStop(1, GROUND_COLOR);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, horizonY, W, H - horizonY);
+
+            // Horizon glow line
+            ctx.strokeStyle = rgba(SUN_GLOW, 0.2 + energy * 0.15);
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(245,166,35,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(0, horizonY);
+            ctx.lineTo(W, horizonY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawStall(ctx, stall, baseY, energy) {
+            var x = stall.x;
+            var w = stall.w;
+            var h = stall.h;
+            var postH = h * 1.2;
+
+            ctx.save();
+            ctx.globalAlpha = introFadeIn * outroFadeOut;
+
+            // Posts (silhouette)
+            ctx.fillStyle = '#0d0804';
+            ctx.fillRect(x - w * 0.5, baseY - postH, 3, postH);
+            ctx.fillRect(x + w * 0.5 - 3, baseY - postH, 3, postH);
+
+            // Canopy
+            var canopyY = baseY - postH;
+            ctx.fillStyle = stall.canopyColor;
+            ctx.globalAlpha = (introFadeIn * outroFadeOut) * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x - w * 0.6, canopyY);
+            ctx.quadraticCurveTo(x, canopyY + h * 0.15, x + w * 0.6, canopyY);
+            ctx.lineTo(x + w * 0.6, canopyY + h * 0.08);
+            ctx.quadraticCurveTo(x, canopyY + h * 0.22, x - w * 0.6, canopyY + h * 0.08);
+            ctx.closePath();
+            ctx.fill();
+
+            // Stripes on canopy
+            ctx.fillStyle = stall.canopyStripe;
+            ctx.globalAlpha = (introFadeIn * outroFadeOut) * 0.3;
+            for (var s = 0; s < 3; s++) {
+                var sx = x - w * 0.4 + s * w * 0.35;
+                ctx.fillRect(sx, canopyY, w * 0.12, h * 0.12);
+            }
+
+            // Counter
+            ctx.globalAlpha = (introFadeIn * outroFadeOut) * 0.8;
+            ctx.fillStyle = '#1a0e06';
+            ctx.fillRect(x - w * 0.45, baseY - h * 0.35, w * 0.9, h * 0.1);
+
+            // Goods on counter
+            if (stall.hasGoods) {
+                ctx.fillStyle = stall.goodsColor;
+                ctx.globalAlpha = (introFadeIn * outroFadeOut) * 0.6;
+                for (var g = 0; g < 4; g++) {
+                    var gx = x - w * 0.35 + g * w * 0.22;
+                    var gs = w * 0.06 + energy * 2;
+                    ctx.beginPath();
+                    ctx.arc(gx, baseY - h * 0.38, gs, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawSpicePyramid(ctx, pyramid, baseY, energy) {
+            var x = pyramid.x;
+            var s = pyramid.size * (1 + energy * 0.1);
+
+            ctx.save();
+            ctx.globalAlpha = introFadeIn * outroFadeOut * 0.8;
+
+            // Pyramid shape
+            ctx.fillStyle = pyramid.color1;
+            ctx.beginPath();
+            ctx.moveTo(x, baseY - s);
+            ctx.lineTo(x - s * 0.8, baseY);
+            ctx.lineTo(x + s * 0.8, baseY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Highlight
+            ctx.fillStyle = pyramid.color2;
+            ctx.globalAlpha = introFadeIn * outroFadeOut * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x, baseY - s);
+            ctx.lineTo(x + s * 0.8, baseY);
+            ctx.lineTo(x + s * 0.3, baseY);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawLantern(ctx, lantern, energy, elapsed) {
+            var swingAngle = Math.sin(lantern.swingPhase + elapsed * lantern.swingSpeed) * lantern.swingAmp * (0.3 + energy * 0.7);
+            var lx = lantern.x + swingAngle;
+            var ly = lantern.y;
+            var s = lantern.size;
+
+            // Flickering
+            lantern.flicker = lantern.flicker * 0.9 + beatPulse * 0.3;
+            var flickerAlpha = 0.6 + lantern.flicker * 0.3 + energy * 0.15 + Math.sin(elapsed * 8 + lantern.swingPhase) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha = introFadeIn * outroFadeOut;
+
+            // Rope
+            ctx.strokeStyle = 'rgba(100,70,40,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(lantern.x, lantern.y - lantern.ropeLen);
+            ctx.lineTo(lx, ly);
+            ctx.stroke();
+
+            // Lantern glow
+            var glowR = s * (3 + energy * 2 + lantern.flicker);
+            var glowGrad = ctx.createRadialGradient(lx, ly, s * 0.3, lx, ly, glowR);
+            var col = lantern.color;
+            var r = parseInt(col.slice(1,3), 16);
+            var g = parseInt(col.slice(3,5), 16);
+            var b = parseInt(col.slice(5,7), 16);
+            glowGrad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + (flickerAlpha * 0.4) + ')');
+            glowGrad.addColorStop(0.5, 'rgba(' + r + ',' + g + ',' + b + ',' + (flickerAlpha * 0.1) + ')');
+            glowGrad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(lx - glowR, ly - glowR, glowR * 2, glowR * 2);
+
+            // Lantern body
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = col;
+            ctx.globalAlpha = introFadeIn * outroFadeOut * flickerAlpha;
+            ctx.beginPath();
+            // Lantern shape: rounded rectangle
+            var lw = s * 0.7;
+            var lh = s;
+            ctx.moveTo(lx - lw, ly - lh * 0.4);
+            ctx.quadraticCurveTo(lx - lw, ly - lh * 0.6, lx, ly - lh * 0.6);
+            ctx.quadraticCurveTo(lx + lw, ly - lh * 0.6, lx + lw, ly - lh * 0.4);
+            ctx.lineTo(lx + lw * 0.8, ly + lh * 0.4);
+            ctx.quadraticCurveTo(lx, ly + lh * 0.5, lx - lw * 0.8, ly + lh * 0.4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Inner light
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = introFadeIn * outroFadeOut * flickerAlpha * 0.5;
+            ctx.beginPath();
+            ctx.arc(lx, ly - lh * 0.1, s * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawMerchant(ctx, merchant, baseY, energy, elapsed) {
+            if (!merchant.active) return;
+
+            var x = merchant.x;
+            var sc = merchant.scale;
+            var figH = H * 0.08 * sc;
+            var bounce = 0;
+
+            // Walking merchants move
+            if (merchant.type === 1) {
+                merchant.walkPhase += merchant.walkSpeed * 0.016;
+                x += Math.sin(merchant.walkPhase * 0.5) * W * 0.05;
+                bounce = Math.abs(Math.sin(merchant.walkPhase * 2)) * 3;
+            }
+
+            // Gesturing merchants sway more on beats
+            if (merchant.type === 2) {
+                merchant.sway += 2.5 * 0.016;
+                bounce = Math.sin(merchant.sway + beatPulse * Math.PI) * 3 * energy;
+            }
+
+            var y = baseY - bounce;
+
+            ctx.save();
+            ctx.globalAlpha = introFadeIn * outroFadeOut * 0.85;
+            ctx.fillStyle = '#0d0804';
+
+            // Head
+            var headR = figH * 0.12;
+            ctx.beginPath();
+            ctx.arc(x, y - figH + headR, headR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(x - figH * 0.15, y - figH + headR * 2.5);
+            ctx.lineTo(x + figH * 0.15, y - figH + headR * 2.5);
+            ctx.lineTo(x + figH * 0.2, y);
+            ctx.lineTo(x - figH * 0.2, y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Arms (gesturing merchants raise arms on beat)
+            if (merchant.type === 2 && energy > 0.4) {
+                var armAngle = Math.sin(elapsed * 3) * 0.4 + beatPulse * 0.3;
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#0d0804';
+                ctx.beginPath();
+                ctx.moveTo(x - figH * 0.12, y - figH * 0.55);
+                ctx.lineTo(x - figH * 0.35, y - figH * (0.55 + armAngle * 0.3));
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + figH * 0.12, y - figH * 0.55);
+                ctx.lineTo(x + figH * 0.35, y - figH * (0.55 + armAngle * 0.25));
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawParticles(ctx, energy, elapsed) {
+            ctx.save();
+            var densityMult = sectionMood === 'haggling' || sectionMood === 'dance' ? 1.5 : sectionMood === 'aurora' ? 0.5 : 1;
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.twinkle += 0.03;
+                p.x += p.vx * 0.016 * (1 + energy);
+                p.y += p.vy * 0.016 * (0.3 + energy * 0.7);
+
+                // Wrap
+                if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+                if (p.x < -10) p.x = W + 10;
+                if (p.x > W + 10) p.x = -10;
+
+                var a = p.alpha * (0.5 + 0.5 * Math.abs(Math.sin(p.twinkle))) * densityMult;
+                a *= introFadeIn * outroFadeOut;
+                if (a < 0.02) continue;
+
+                ctx.globalAlpha = a;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (1 + energy * 0.3), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawShadows(ctx, energy) {
+            // Long amber shadows cast from the sun
+            if (sectionMood === 'outro') return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.globalAlpha = 0.15 + energy * 0.1;
+
+            // Shadow direction based on sun position
+            var shadowDir = (sunX - W * 0.5) / W;
+
+            for (var i = 0; i < stalls.length; i++) {
+                var s = stalls[i];
+                var baseY = horizonY + H * 0.05;
+                ctx.fillStyle = '#0a0503';
+                ctx.beginPath();
+                ctx.moveTo(s.x - s.w * 0.5, baseY);
+                ctx.lineTo(s.x + s.w * 0.5, baseY);
+                ctx.lineTo(s.x + s.w * 0.5 + shadowDir * s.h, baseY + s.h * 0.6);
+                ctx.lineTo(s.x - s.w * 0.5 + shadowDir * s.h, baseY + s.h * 0.6);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawTitle(ctx, elapsed) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.035, 42));
+            ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var y = H * 0.12;
+            var text = 'BAZAAR OF THE MIDNIGHT SUN';
+
+            // Glow
+            ctx.shadowColor = '#f5a623';
+            ctx.shadowBlur = 40;
+            ctx.globalAlpha = titleAlpha * 0.7;
+            ctx.fillStyle = '#f5a623';
+            ctx.fillText(text, W * 0.5, y);
+
+            // Main text
+            ctx.shadowBlur = 20;
+            ctx.globalAlpha = titleAlpha;
+            ctx.fillStyle = '#fff5e0';
+            ctx.fillText(text, W * 0.5, y);
+
+            ctx.restore();
+        }
+
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        function drawHeatHaze(ctx, energy, elapsed) {
+            // Subtle heat distortion lines near horizon
+            if (energy < 0.2) return;
+            ctx.save();
+            ctx.globalAlpha = energy * 0.08 * introFadeIn * outroFadeOut;
+            ctx.strokeStyle = 'rgba(245,166,35,0.3)';
+            ctx.lineWidth = 1;
+            for (var i = 0; i < 5; i++) {
+                var hy = horizonY - 5 + i * 3;
+                ctx.beginPath();
+                for (var x = 0; x < W; x += 3) {
+                    var dy = Math.sin(x * 0.02 + elapsed * 2 + i) * 2;
+                    if (x === 0) ctx.moveTo(x, hy + dy);
+                    else ctx.lineTo(x, hy + dy);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawVignette(ctx) {
+            ctx.save();
+            var grad = ctx.createRadialGradient(W * 0.5, H * 0.5, W * 0.25, W * 0.5, H * 0.5, W * 0.75);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            horizonY = H * 0.55;
+
+            initParticles();
+            initLanterns();
+            initStalls();
+            initMerchants();
+            initSpicePyramids();
+            initStars();
+            initAurora();
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            lastSeqIndex = -1;
+            sectionMood = 'intro';
+            sceneIndex = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            sunPulse = 0;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            horizonY = H * 0.55;
+            initLanterns();
+            initStalls();
+            initSpicePyramids();
+            initStars();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = GROUND_COLOR;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state
+                drawSky(ctx, 0, 0);
+                drawSun(ctx, 0, 0, 0);
+                drawGround(ctx, 0);
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            var elapsed = cursor.elapsed;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            var newScene = mapScene(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                sceneIndex = newScene;
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Intro fade ──
+            if (sectionMood === 'intro') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.25);
+                // Activate merchants gradually
+                var introProgress = Math.min(1, elapsed / (analysis ? analysis.secondsPerBeat * 16 : 8));
+                for (var i = 0; i < merchants.length; i++) {
+                    merchants[i].active = introProgress > (i + 1) / (merchants.length + 1);
+                }
+            } else if (sectionMood === 'outro') {
+                introFadeIn = 1;
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.12);
+                // Turn off merchants gradually
+                var outroP = 1 - outroFadeOut;
+                for (var oi = 0; oi < merchants.length; oi++) {
+                    merchants[oi].active = outroP < (oi + 1) / merchants.length;
+                }
+            } else {
+                introFadeIn = 1;
+                outroFadeOut = 1;
+                for (var mi = 0; mi < merchants.length; mi++) merchants[mi].active = true;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                // Flash on dance beats
+                if ((sectionMood === 'dance' || sectionMood === 'haggling') && energy > 0.6) {
+                    flashAlpha = 0.08 + energy * 0.06;
+                }
+            }
+            lastBeat = beat;
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-6 * dt);
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'dance' || sectionMood === 'haggling') ? 1 : 0;
+            titleAlpha += (titleTarget - titleAlpha) * (1 - Math.exp(-4 * dt));
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx, energy, elapsed);
+
+            // 2. Stars
+            drawStars(ctx, energy, elapsed);
+
+            // 3. Aurora (only during aurora section)
+            drawAurora(ctx, energy, elapsed);
+
+            // 4. Sun
+            drawSun(ctx, energy, beat, elapsed);
+
+            // 5. Heat haze
+            drawHeatHaze(ctx, energy, elapsed);
+
+            // 6. Ground
+            drawGround(ctx, energy);
+
+            // 7. Shadows
+            drawShadows(ctx, energy);
+
+            // 8. Market stalls
+            var stallBaseY = horizonY + H * 0.06;
+            if (sectionMood !== 'intro' || introFadeIn > 0.3) {
+                for (var si = 0; si < stalls.length; si++) {
+                    drawStall(ctx, stalls[si], stallBaseY, energy);
+                }
+            }
+
+            // 9. Spice pyramids (scene 1: spice alley)
+            if (sceneIndex === 1 || sceneIndex === 0) {
+                var spiceY = horizonY + H * 0.08;
+                for (var pi = 0; pi < spicePyramids.length; pi++) {
+                    drawSpicePyramid(ctx, spicePyramids[pi], spiceY, energy);
+                }
+            }
+
+            // 10. Merchants
+            var merchantBaseY = horizonY + H * 0.1;
+            for (var mri = 0; mri < merchants.length; mri++) {
+                drawMerchant(ctx, merchants[mri], merchantBaseY, energy, elapsed);
+            }
+
+            // 11. Lanterns
+            for (var li = 0; li < lanterns.length; li++) {
+                drawLantern(ctx, lanterns[li], energy, elapsed);
+            }
+
+            // 12. Particles (dust/spice)
+            drawParticles(ctx, energy, elapsed);
+
+            // 13. Title
+            drawTitle(ctx, elapsed);
+
+            // 14. Vignette
+            drawVignette(ctx);
+
+            // 15. Flash
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'Bazaar of the Midnight Sun',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('bazaar-midnight-sun-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/bazaar-of-the-midnight-sun.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

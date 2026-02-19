@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fencing Match in a Thunderstorm — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #06060c;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(6,6,12,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(16px, 4vw, 40px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #c0c8e0;
+            text-shadow: 0 0 30px rgba(180,200,255,0.4), 0 0 60px rgba(140,160,220,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #8090c0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #8090c0;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(128,144,192,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(128,144,192,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Fencing Match in a Thunderstorm</div>
+        <div class="play-sub">a rooftop duel</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Fencing Match in a Thunderstorm Video Renderer ──────────────
+    window.Renderers['fencing-thunderstorm-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var SKY_TOP = '#04040a';
+        var SKY_BOT = '#0c0e18';
+        var ROOF_COLOR = '#18181f';
+        var ROOF_EDGE = '#2a2a36';
+        var FENCER_A_COLOR = '#8898c8';   // steel blue
+        var FENCER_B_COLOR = '#c09070';   // warm bronze
+        var LIGHTNING_COLOR = '#e0e8ff';
+        var RAIN_COLOR = 'rgba(160,180,220,';
+        var SPARK_COLOR = '#fffae0';
+
+        // ── Layout ──
+        var ROOF_Y_RATIO = 0.78;
+        var roofY = 0;
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'storm';  // storm, salute, bout1, lightning, bout2, interlude, finale, denouement
+
+        // Rain
+        var raindrops = [];
+        var rainIntensity = 0.3;
+
+        // Lightning
+        var lightningBolts = [];
+        var lightningTimer = 0;
+        var lightningFreeze = 0;   // freeze-frame alpha
+
+        // Sparks from sword clash
+        var sparks = [];
+
+        // Fencer state
+        var fencerA = {
+            x: 0, baseX: 0,
+            stance: 0,        // 0=neutral, -1=back, 1=lunge
+            swordAngle: 0,
+            swordTarget: 0,
+            bodyLean: 0,
+            leanTarget: 0,
+            armExtend: 0.5,
+            armTarget: 0.5,
+            legSpread: 0,
+            legTarget: 0,
+            parry: 0,
+            attackFlash: 0,
+            facing: 1          // 1=right, -1=left
+        };
+
+        var fencerB = {
+            x: 0, baseX: 0,
+            stance: 0,
+            swordAngle: 0,
+            swordTarget: 0,
+            bodyLean: 0,
+            leanTarget: 0,
+            armExtend: 0.5,
+            armTarget: 0.5,
+            legSpread: 0,
+            legTarget: 0,
+            parry: 0,
+            attackFlash: 0,
+            facing: -1
+        };
+
+        // Cloud layer
+        var clouds = [];
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Thunder rumble visual (screen shake)
+        var shakeX = 0, shakeY = 0;
+        var shakeIntensity = 0;
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+
+        // ── Section mapping ──
+        // 52 sequence entries total
+        // 0-2: storm intro (Thunder Rumble + Rain)
+        // 3: salute (Swords Drawn)
+        // 4-11: bout1 (First Bout patterns)
+        // 12: lightning break
+        // 13-15: bout2 start
+        // 16-21: bout2 continued
+        // 22-23: thunder interlude
+        // 24-28: bout2 intensifies
+        // 29-39: finale (Final Bout patterns)
+        // 40-49: finale reprises
+        // 50-51: denouement
+        function mapSection(seqIndex) {
+            if (seqIndex <= 2) return 'storm';
+            if (seqIndex <= 3) return 'salute';
+            if (seqIndex <= 11) return 'bout1';
+            if (seqIndex <= 12) return 'lightning';
+            if (seqIndex <= 21) return 'bout2';
+            if (seqIndex <= 23) return 'interlude';
+            if (seqIndex <= 28) return 'bout2';
+            if (seqIndex <= 47) return 'finale';
+            if (seqIndex <= 49) return 'denouement';
+            return 'denouement';
+        }
+
+        // ── Rain system ──
+        function initRain() {
+            raindrops = [];
+            for (var i = 0; i < 500; i++) {
+                raindrops.push({
+                    x: Math.random() * W * 1.3 - W * 0.15,
+                    y: Math.random() * H,
+                    speed: rand(600, 1200),
+                    len: rand(8, 25),
+                    alpha: rand(0.1, 0.5),
+                    wind: rand(-1, -0.3)
+                });
+            }
+        }
+
+        function updateRain(dt, intensity) {
+            for (var i = 0; i < raindrops.length; i++) {
+                var r = raindrops[i];
+                r.y += r.speed * dt * intensity;
+                r.x += r.wind * r.speed * dt * 0.3;
+                if (r.y > H + 20) {
+                    r.y = -r.len;
+                    r.x = Math.random() * W * 1.3 - W * 0.15;
+                }
+            }
+        }
+
+        function drawRain(ctx, intensity) {
+            if (intensity < 0.05) return;
+            ctx.save();
+            ctx.lineCap = 'round';
+            for (var i = 0; i < raindrops.length; i++) {
+                var r = raindrops[i];
+                var a = r.alpha * intensity;
+                if (a < 0.02) continue;
+                ctx.strokeStyle = RAIN_COLOR + a + ')';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(r.x, r.y);
+                ctx.lineTo(r.x + r.wind * r.len * 0.3, r.y + r.len);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Lightning system ──
+        function createBolt(x, y, targetY) {
+            var segments = [];
+            var cx = x, cy = y;
+            var step = (targetY - y) / rand(8, 16);
+            while (cy < targetY) {
+                var nx = cx + rand(-40, 40);
+                var ny = cy + step;
+                segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+                // Branch chance
+                if (Math.random() > 0.7) {
+                    var bx = nx + rand(-60, 60);
+                    var by = ny + rand(20, 60);
+                    segments.push({ x1: nx, y1: ny, x2: bx, y2: by, branch: true });
+                }
+                cx = nx;
+                cy = ny;
+            }
+            return {
+                segments: segments,
+                alpha: 1,
+                decay: rand(2, 5),
+                glow: rand(20, 50)
+            };
+        }
+
+        function triggerLightning(count) {
+            count = count || 1;
+            for (var i = 0; i < count; i++) {
+                var x = rand(W * 0.1, W * 0.9);
+                lightningBolts.push(createBolt(x, -10, roofY + rand(-20, 30)));
+            }
+            flashAlpha = Math.max(flashAlpha, rand(0.15, 0.4));
+            shakeIntensity = Math.max(shakeIntensity, rand(2, 6));
+        }
+
+        function updateLightning(dt) {
+            for (var i = lightningBolts.length - 1; i >= 0; i--) {
+                lightningBolts[i].alpha -= lightningBolts[i].decay * dt;
+                if (lightningBolts[i].alpha <= 0) {
+                    lightningBolts.splice(i, 1);
+                }
+            }
+        }
+
+        function drawLightning(ctx) {
+            for (var i = 0; i < lightningBolts.length; i++) {
+                var bolt = lightningBolts[i];
+                if (bolt.alpha <= 0) continue;
+                ctx.save();
+                ctx.globalAlpha = bolt.alpha;
+                ctx.shadowColor = LIGHTNING_COLOR;
+                ctx.shadowBlur = bolt.glow * bolt.alpha;
+                ctx.strokeStyle = LIGHTNING_COLOR;
+                ctx.lineCap = 'round';
+
+                for (var j = 0; j < bolt.segments.length; j++) {
+                    var s = bolt.segments[j];
+                    ctx.lineWidth = s.branch ? 1.5 : 3;
+                    ctx.beginPath();
+                    ctx.moveTo(s.x1, s.y1);
+                    ctx.lineTo(s.x2, s.y2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // ── Spark system (sword clashes) ──
+        function emitSparks(x, y, count) {
+            for (var i = 0; i < count; i++) {
+                var angle = rand(-Math.PI, Math.PI);
+                var speed = rand(100, 400);
+                sparks.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - rand(50, 150),
+                    life: rand(0.2, 0.6),
+                    maxLife: 0.6,
+                    size: rand(1, 3)
+                });
+            }
+        }
+
+        function updateSparks(dt) {
+            for (var i = sparks.length - 1; i >= 0; i--) {
+                var s = sparks[i];
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.vy += 500 * dt; // gravity
+                s.life -= dt;
+                if (s.life <= 0) sparks.splice(i, 1);
+            }
+        }
+
+        function drawSparks(ctx) {
+            ctx.save();
+            for (var i = 0; i < sparks.length; i++) {
+                var s = sparks[i];
+                var a = Math.max(0, s.life / s.maxLife);
+                ctx.fillStyle = SPARK_COLOR;
+                ctx.globalAlpha = a;
+                ctx.shadowColor = SPARK_COLOR;
+                ctx.shadowBlur = 8;
+                ctx.fillRect(s.x - s.size * 0.5, s.y - s.size * 0.5, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Cloud system ──
+        function initClouds() {
+            clouds = [];
+            for (var i = 0; i < 12; i++) {
+                clouds.push({
+                    x: rand(-200, W + 200),
+                    y: rand(-30, H * 0.25),
+                    w: rand(150, 400),
+                    h: rand(40, 100),
+                    speed: rand(5, 20),
+                    alpha: rand(0.15, 0.4)
+                });
+            }
+        }
+
+        function updateClouds(dt) {
+            for (var i = 0; i < clouds.length; i++) {
+                var c = clouds[i];
+                c.x += c.speed * dt;
+                if (c.x - c.w > W + 100) {
+                    c.x = -c.w - rand(50, 200);
+                    c.y = rand(-30, H * 0.25);
+                }
+            }
+        }
+
+        function drawClouds(ctx, lightningIntensity) {
+            ctx.save();
+            for (var i = 0; i < clouds.length; i++) {
+                var c = clouds[i];
+                var lit = c.alpha + lightningIntensity * 0.3;
+                ctx.fillStyle = 'rgba(30,32,48,' + Math.min(0.8, lit) + ')';
+                ctx.beginPath();
+                ctx.ellipse(c.x, c.y, c.w * 0.5, c.h * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // lighter center
+                ctx.fillStyle = 'rgba(50,54,72,' + (lit * 0.5) + ')';
+                ctx.beginPath();
+                ctx.ellipse(c.x + c.w * 0.1, c.y - c.h * 0.1, c.w * 0.3, c.h * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Rooftop ──
+        function drawRooftop(ctx, energy) {
+            // Flat roof surface
+            ctx.save();
+            ctx.fillStyle = ROOF_COLOR;
+            ctx.fillRect(0, roofY, W, H - roofY);
+
+            // Edge line
+            ctx.strokeStyle = ROOF_EDGE;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, roofY);
+            ctx.lineTo(W, roofY);
+            ctx.stroke();
+
+            // Wet reflection shimmer
+            var shimmer = 0.02 + energy * 0.04 + flashAlpha * 0.15;
+            var grad = ctx.createLinearGradient(0, roofY, 0, roofY + (H - roofY) * 0.3);
+            grad.addColorStop(0, 'rgba(140,160,220,' + shimmer + ')');
+            grad.addColorStop(1, 'rgba(140,160,220,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, roofY, W, (H - roofY) * 0.3);
+
+            // Puddle reflections
+            ctx.fillStyle = 'rgba(100,120,180,' + (shimmer * 0.5) + ')';
+            for (var i = 0; i < 5; i++) {
+                var px = W * (0.15 + i * 0.18);
+                var py = roofY + (H - roofY) * rand(0.3, 0.7);
+                ctx.beginPath();
+                ctx.ellipse(px, py, rand(20, 50), rand(3, 8), 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Cityscape silhouette (far background) ──
+        function drawCityscape(ctx, lightningIntensity) {
+            ctx.save();
+            var baseY = roofY;
+            var buildingAlpha = 0.08 + lightningIntensity * 0.25;
+            ctx.fillStyle = 'rgba(20,22,35,' + Math.min(1, buildingAlpha + 0.3) + ')';
+
+            // Draw distant buildings
+            var bw = W / 20;
+            for (var i = 0; i < 20; i++) {
+                var bh = rand(H * 0.1, H * 0.45);
+                var bx = i * bw + rand(-5, 5);
+                ctx.fillRect(bx, baseY - bh, bw - 2, bh);
+
+                // Lightning reveals windows
+                if (lightningIntensity > 0.1) {
+                    ctx.fillStyle = 'rgba(200,210,240,' + (lightningIntensity * 0.15) + ')';
+                    var winSize = 2;
+                    var winGap = 8;
+                    for (var wy = baseY - bh + 10; wy < baseY - 10; wy += winGap) {
+                        for (var wx = bx + 4; wx < bx + bw - 6; wx += winGap) {
+                            if (Math.random() > 0.6) {
+                                ctx.fillRect(wx, wy, winSize, winSize);
+                            }
+                        }
+                    }
+                    ctx.fillStyle = 'rgba(20,22,35,' + Math.min(1, buildingAlpha + 0.3) + ')';
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Fencer drawing ──
+        function drawFencer(ctx, fencer, color, figH) {
+            var x = fencer.x;
+            var facing = fencer.facing;
+            var lean = fencer.bodyLean;
+            var armExt = fencer.armExtend;
+            var legSpr = fencer.legSpread;
+            var swordAng = fencer.swordAngle;
+
+            // Dimensions
+            var headR = figH * 0.06;
+            var torsoLen = figH * 0.3;
+            var upperArm = figH * 0.14;
+            var forearm = figH * 0.13;
+            var thigh = figH * 0.2;
+            var shin = figH * 0.2;
+            var swordLen = figH * 0.35;
+
+            // Key positions (feet at y=0 relative)
+            var hipX = lean * figH * 0.08 * facing;
+            var hipY = -(shin + thigh);
+            var neckX = hipX + lean * figH * 0.04 * facing;
+            var neckY = hipY - torsoLen;
+            var headX = neckX + lean * figH * 0.02 * facing;
+            var headY = neckY - headR * 1.5;
+
+            // Front shoulder (sword arm)
+            var fShoulderX = neckX + facing * figH * 0.06;
+            var fShoulderY = neckY + figH * 0.02;
+
+            // Back shoulder
+            var bShoulderX = neckX - facing * figH * 0.06;
+            var bShoulderY = neckY + figH * 0.02;
+
+            // Sword arm: extends forward
+            var elbowAngle = -0.3 + armExt * 0.6;
+            var fElbowX = fShoulderX + facing * Math.cos(elbowAngle) * upperArm;
+            var fElbowY = fShoulderY + Math.sin(elbowAngle) * upperArm;
+
+            var handAngle = elbowAngle - 0.2 + armExt * 0.4;
+            var fHandX = fElbowX + facing * Math.cos(handAngle) * forearm;
+            var fHandY = fElbowY + Math.sin(handAngle) * forearm;
+
+            // Back arm (guard hand, behind body)
+            var bElbowX = bShoulderX - facing * upperArm * 0.4;
+            var bElbowY = bShoulderY + upperArm * 0.3;
+            var bHandX = bElbowX - facing * forearm * 0.2;
+            var bHandY = bElbowY - forearm * 0.5;
+
+            // Legs
+            var frontFoot = legSpr * figH * 0.12;
+            var backFoot = legSpr * figH * 0.08;
+            var fAnkleX = hipX + facing * (figH * 0.05 + frontFoot);
+            var fAnkleY = 0;
+            var bAnkleX = hipX - facing * (figH * 0.05 + backFoot);
+            var bAnkleY = 0;
+
+            var fKneeX = (hipX + fAnkleX) * 0.5 + facing * figH * 0.02;
+            var fKneeY = hipY * 0.45 - legSpr * figH * 0.04;
+            var bKneeX = (hipX + bAnkleX) * 0.5;
+            var bKneeY = hipY * 0.45;
+
+            // Sword from hand
+            var swordEndX = fHandX + facing * Math.cos(swordAng) * swordLen;
+            var swordEndY = fHandY + Math.sin(swordAng) * swordLen;
+
+            // Draw
+            ctx.save();
+            ctx.translate(x, roofY);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+
+            function line(x1, y1, x2, y2) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // Back leg
+            line(hipX, hipY, bKneeX, bKneeY);
+            line(bKneeX, bKneeY, bAnkleX, bAnkleY);
+
+            // Front leg
+            line(hipX, hipY, fKneeX, fKneeY);
+            line(fKneeX, fKneeY, fAnkleX, fAnkleY);
+
+            // Torso
+            line(hipX, hipY, neckX, neckY);
+
+            // Back arm
+            line(bShoulderX, bShoulderY, bElbowX, bElbowY);
+            line(bElbowX, bElbowY, bHandX, bHandY);
+
+            // Front arm (sword arm)
+            line(fShoulderX, fShoulderY, fElbowX, fElbowY);
+            line(fElbowX, fElbowY, fHandX, fHandY);
+
+            // Sword
+            ctx.strokeStyle = '#c0c8e0';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#e0e8ff';
+            ctx.shadowBlur = 6;
+            line(fHandX, fHandY, swordEndX, swordEndY);
+
+            // Guard (small crossbar at hand)
+            var guardLen = figH * 0.04;
+            var guardAngle = swordAng + Math.PI * 0.5;
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = color;
+            line(
+                fHandX + Math.cos(guardAngle) * guardLen,
+                fHandY + Math.sin(guardAngle) * guardLen,
+                fHandX - Math.cos(guardAngle) * guardLen,
+                fHandY - Math.sin(guardAngle) * guardLen
+            );
+
+            // Head
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Fencing mask visor line
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(headX - headR * 0.6 * facing, headY - headR * 0.2);
+            ctx.lineTo(headX + headR * 0.8 * facing, headY - headR * 0.1);
+            ctx.stroke();
+
+            // Attack flash (glow on sword tip)
+            if (fencer.attackFlash > 0.05) {
+                ctx.save();
+                ctx.globalAlpha = fencer.attackFlash;
+                ctx.shadowColor = SPARK_COLOR;
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = SPARK_COLOR;
+                ctx.beginPath();
+                ctx.arc(swordEndX, swordEndY, 4 + fencer.attackFlash * 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+
+            // Return sword tip position in world coords for clash detection
+            return { tipX: x + swordEndX, tipY: roofY + swordEndY };
+        }
+
+        // ── Fencer AI / choreography ──
+        function updateFencer(fencer, dt, beat, energy, isA) {
+            var speed = 8;
+
+            // Lerp all params toward targets
+            fencer.bodyLean = lerpExp(fencer.bodyLean, fencer.leanTarget, speed, dt);
+            fencer.armExtend = lerpExp(fencer.armExtend, fencer.armTarget, speed * 1.5, dt);
+            fencer.legSpread = lerpExp(fencer.legSpread, fencer.legTarget, speed, dt);
+            fencer.swordAngle = lerpExp(fencer.swordAngle, fencer.swordTarget, speed * 2, dt);
+
+            // Position lerps toward stance
+            var centerX = W * 0.5;
+            var spread = W * (0.08 + energy * 0.06);
+            var lungeOffset = fencer.stance * W * 0.06;
+            var targetX = fencer.baseX + lungeOffset * fencer.facing;
+            fencer.x = lerpExp(fencer.x, targetX, 6, dt);
+
+            // Attack flash decay
+            fencer.attackFlash *= Math.exp(-8 * dt);
+        }
+
+        function choreographBeat(beat, energy, seqIdx) {
+            // Determine who attacks based on pattern
+            var beatMod = beat % 8;
+            var isClash = false;
+
+            if (sectionMood === 'storm') {
+                // Both at rest, swords down
+                setGuard(fencerA, 0.3, 0, -0.3, 0.3);
+                setGuard(fencerB, 0.3, 0, -0.3, 0.3);
+                return false;
+            }
+
+            if (sectionMood === 'salute') {
+                // Formal salute: swords raised
+                setGuard(fencerA, 0.5, 0, -1.2, 0.1);
+                setGuard(fencerB, 0.5, 0, -1.2, 0.1);
+                return false;
+            }
+
+            if (sectionMood === 'interlude') {
+                // Both step back, catch breath
+                setGuard(fencerA, 0.4, -0.2, -0.2, 0.2);
+                setGuard(fencerB, 0.4, -0.2, -0.2, 0.2);
+                return false;
+            }
+
+            if (sectionMood === 'denouement') {
+                // A salutes (victor), B lowers sword
+                setGuard(fencerA, 0.5, 0, -1.0, 0.1);
+                setGuard(fencerB, 0.3, -0.3, 0.5, 0.1);
+                return false;
+            }
+
+            // Active bouts
+            var aggression = sectionMood === 'bout1' ? 0.5 : sectionMood === 'bout2' ? 0.7 : 0.95;
+            var tempo = sectionMood === 'finale' ? 2 : sectionMood === 'bout2' ? 4 : 8;
+
+            if (beatMod % tempo === 0 || (energy > 0.6 && beatMod % 2 === 0)) {
+                // Alternating attacks
+                var aAttacks = (beat % (tempo * 2)) < tempo;
+
+                if (energy > 0.8 && sectionMood === 'finale') {
+                    // Simultaneous attacks (clash!)
+                    setLunge(fencerA, aggression);
+                    setLunge(fencerB, aggression);
+                    isClash = true;
+                } else if (aAttacks) {
+                    setLunge(fencerA, aggression);
+                    setParry(fencerB, aggression);
+                    fencerA.attackFlash = 0.8;
+                } else {
+                    setParry(fencerA, aggression);
+                    setLunge(fencerB, aggression);
+                    fencerB.attackFlash = 0.8;
+                }
+            } else {
+                // Return to guard between attacks
+                var guardIntensity = 0.4 + energy * 0.2;
+                setGuard(fencerA, guardIntensity, rand(-0.1, 0.1), rand(-0.4, -0.1), 0.4);
+                setGuard(fencerB, guardIntensity, rand(-0.1, 0.1), rand(-0.4, -0.1), 0.4);
+            }
+
+            return isClash;
+        }
+
+        function setLunge(f, intensity) {
+            f.stance = 0.5 + intensity * 0.5;
+            f.leanTarget = 0.4 + intensity * 0.4;
+            f.armTarget = 0.7 + intensity * 0.3;
+            f.legTarget = 0.5 + intensity * 0.4;
+            f.swordTarget = -0.1 + rand(-0.15, 0.15);
+        }
+
+        function setParry(f, intensity) {
+            f.stance = -0.2 - intensity * 0.2;
+            f.leanTarget = -0.2 - intensity * 0.2;
+            f.armTarget = 0.3 + rand(0, 0.3);
+            f.legTarget = 0.2 + intensity * 0.1;
+            // Parry angles: high, low, or side
+            var parryType = Math.random();
+            if (parryType < 0.33) {
+                f.swordTarget = -0.8 + rand(-0.2, 0.2); // high parry
+            } else if (parryType < 0.66) {
+                f.swordTarget = 0.3 + rand(-0.2, 0.2);  // low parry
+            } else {
+                f.swordTarget = -0.3 + rand(-0.3, 0.3);  // lateral
+            }
+        }
+
+        function setGuard(f, armExt, lean, swordAng, legSpr) {
+            f.stance = 0;
+            f.leanTarget = lean;
+            f.armTarget = armExt;
+            f.legTarget = legSpr;
+            f.swordTarget = swordAng;
+        }
+
+        // ── Sky gradient ──
+        function drawSky(ctx, lightningIntensity) {
+            var grad = ctx.createLinearGradient(0, 0, 0, roofY);
+            if (lightningIntensity > 0.1) {
+                var li = lightningIntensity * 0.3;
+                grad.addColorStop(0, 'rgba(' + Math.floor(20 + li * 80) + ',' + Math.floor(22 + li * 85) + ',' + Math.floor(40 + li * 100) + ',1)');
+                grad.addColorStop(1, 'rgba(' + Math.floor(12 + li * 60) + ',' + Math.floor(14 + li * 65) + ',' + Math.floor(24 + li * 80) + ',1)');
+            } else {
+                grad.addColorStop(0, SKY_TOP);
+                grad.addColorStop(1, SKY_BOT);
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, roofY);
+        }
+
+        // ── Title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = titleAlpha;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(14, Math.min(W * 0.03, 36));
+            ctx.font = '700 ' + fontSize + 'px "JetBrains Mono", monospace';
+
+            // Glow
+            ctx.shadowColor = LIGHTNING_COLOR;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#c0c8e0';
+            ctx.fillText('FENCING MATCH IN A THUNDERSTORM', W * 0.5, H * 0.12);
+
+            // Subtitle during finale
+            if (sectionMood === 'finale') {
+                ctx.font = '400 ' + (fontSize * 0.5) + 'px "JetBrains Mono", monospace';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = 'rgba(180,190,220,0.6)';
+                ctx.fillText('THE FINAL BOUT', W * 0.5, H * 0.12 + fontSize * 1.2);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = LIGHTNING_COLOR;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Freeze frame silhouettes ──
+        function drawFreezeFrame(ctx, alpha) {
+            if (alpha < 0.02) return;
+            ctx.save();
+            ctx.globalAlpha = alpha * 0.08;
+            ctx.fillStyle = LIGHTNING_COLOR;
+            ctx.fillRect(0, 0, W, roofY);
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            roofY = H * ROOF_Y_RATIO;
+
+            fencerA.baseX = W * 0.38;
+            fencerA.x = fencerA.baseX;
+            fencerA.facing = 1;
+
+            fencerB.baseX = W * 0.62;
+            fencerB.x = fencerB.baseX;
+            fencerB.facing = -1;
+
+            initRain();
+            initClouds();
+
+            lightningBolts = [];
+            sparks = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            shakeIntensity = 0;
+            shakeX = 0;
+            shakeY = 0;
+            lightningFreeze = 0;
+            lastSeqIndex = -1;
+            titleAlpha = 0;
+            sectionMood = 'storm';
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            roofY = H * ROOF_Y_RATIO;
+            fencerA.baseX = W * 0.38;
+            fencerB.baseX = W * 0.62;
+            initRain();
+            initClouds();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = SKY_TOP;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: dark stormy scene
+                drawSky(ctx, 0);
+                drawCityscape(ctx, 0);
+                drawClouds(ctx, 0);
+                drawRooftop(ctx, 0);
+                updateRain(dt, 0.2);
+                drawRain(ctx, 0.2);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Rain intensity tracks energy and section ──
+            var targetRain;
+            if (sectionMood === 'storm') targetRain = 0.3 + energy * 0.3;
+            else if (sectionMood === 'interlude') targetRain = 0.4;
+            else if (sectionMood === 'denouement') targetRain = Math.max(0, 0.3 - (cursor.elapsed > 5 ? 0.3 : 0));
+            else targetRain = 0.4 + energy * 0.6;
+            rainIntensity = lerpExp(rainIntensity, targetRain, 3, dt);
+
+            // ── Beat detection ──
+            var isClash = false;
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Choreograph fencer moves
+                isClash = choreographBeat(beat, energy, seqIdx);
+
+                // Lightning on high energy beats
+                if (energy > 0.5 && Math.random() < energy * 0.4) {
+                    triggerLightning(1);
+                }
+                // Extra lightning during lightning break sections
+                if (sectionMood === 'lightning') {
+                    triggerLightning(Math.random() > 0.5 ? 2 : 1);
+                    flashAlpha = Math.max(flashAlpha, 0.2);
+                }
+
+                // Sword clash sparks
+                if (isClash || (energy > 0.4 && sectionMood !== 'storm' && sectionMood !== 'interlude' && sectionMood !== 'denouement')) {
+                    var clashX = (fencerA.x + fencerB.x) * 0.5;
+                    var clashY = roofY - H * 0.2;
+                    var sparkCount = isClash ? 25 : Math.floor(8 + energy * 15);
+                    emitSparks(clashX, clashY, sparkCount);
+
+                    if (isClash) {
+                        flashAlpha = Math.max(flashAlpha, 0.1 + energy * 0.15);
+                        shakeIntensity = Math.max(shakeIntensity, 3 + energy * 4);
+                    }
+                }
+
+                // Freeze frame on section changes
+                if (seqIdx !== lastSeqIndex - 1 && (sectionMood === 'finale' || sectionMood === 'lightning')) {
+                    lightningFreeze = 0.3;
+                }
+            }
+
+            lastBeat = beat;
+
+            // ── Decay ──
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            lightningFreeze *= Math.exp(-3 * dt);
+            shakeIntensity *= Math.exp(-6 * dt);
+
+            // Screen shake
+            if (shakeIntensity > 0.1) {
+                shakeX = (Math.random() - 0.5) * shakeIntensity * 2;
+                shakeY = (Math.random() - 0.5) * shakeIntensity * 2;
+            } else {
+                shakeX = 0; shakeY = 0;
+            }
+
+            // Title visibility
+            if (sectionMood === 'storm' || sectionMood === 'salute') {
+                titleTarget = 1;
+            } else if (sectionMood === 'finale') {
+                titleTarget = 0.7;
+            } else if (sectionMood === 'denouement') {
+                titleTarget = 0.5;
+            } else {
+                titleTarget = 0;
+            }
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update systems ──
+            updateFencer(fencerA, dt, beat, energy, true);
+            updateFencer(fencerB, dt, beat, energy, false);
+            updateRain(dt, rainIntensity);
+            updateClouds(dt);
+            updateLightning(dt);
+            updateSparks(dt);
+
+            // Lightning intensity for glow effects
+            var lightningIntensity = 0;
+            for (var li = 0; li < lightningBolts.length; li++) {
+                lightningIntensity = Math.max(lightningIntensity, lightningBolts[li].alpha);
+            }
+            lightningIntensity = Math.max(lightningIntensity, flashAlpha);
+
+            // ── Draw scene (back to front) ──
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // 1. Sky
+            drawSky(ctx, lightningIntensity);
+
+            // 2. Distant cityscape
+            drawCityscape(ctx, lightningIntensity);
+
+            // 3. Clouds
+            drawClouds(ctx, lightningIntensity);
+
+            // 4. Lightning bolts (behind rooftop)
+            drawLightning(ctx);
+
+            // 5. Freeze-frame silhouette effect
+            drawFreezeFrame(ctx, lightningFreeze);
+
+            // 6. Rain (behind fencers)
+            drawRain(ctx, rainIntensity * 0.6);
+
+            // 7. Rooftop
+            drawRooftop(ctx, energy);
+
+            // 8. Fencers
+            var figH = H * 0.3;
+            var tipA = drawFencer(ctx, fencerA, FENCER_A_COLOR, figH);
+            var tipB = drawFencer(ctx, fencerB, FENCER_B_COLOR, figH);
+
+            // 9. Sparks
+            drawSparks(ctx);
+
+            // 10. Foreground rain
+            drawRain(ctx, rainIntensity * 0.4);
+
+            // 11. Title
+            drawTitle(ctx);
+
+            // 12. Flash
+            drawFlash(ctx);
+
+            ctx.restore();
+        }
+
+        return {
+            name: 'Fencing Match in a Thunderstorm',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('fencing-thunderstorm-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/fencing-match-in-a-thunderstorm.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

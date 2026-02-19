@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialectic of the Ramen — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #1a0e08;
+            color: #fff;
+            font-family: 'Noto Serif JP', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(26,14,8,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            color: #f5a623;
+            text-shadow: 0 0 30px rgba(245,166,35,0.6), 0 0 60px rgba(245,166,35,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #f5a623;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #f5a623;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(245,166,35,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Dialectic of the Ramen</div>
+        <div class="play-sub">a noodle meditation</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- Dialectic of the Ramen Video Renderer --
+    window.Renderers['dialectic-ramen-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Palette --
+        var BG = '#1a0e08';
+        var BROTH_COLOR = '#d4922a';
+        var BROTH_DARK = '#8b5e1a';
+        var BOWL_RIM = '#2a1a10';
+        var BOWL_LACQUER = '#1a0e08';
+        var NEON_PINK = '#ff6b9d';
+        var NEON_BLUE = '#4ecdc4';
+        var NEON_YELLOW = '#ffe66d';
+        var STEAM_COLOR = '#fff8f0';
+        var EGG_YOLK = '#f5a623';
+        var EGG_WHITE = '#fff5e6';
+        var CHASHU_COLOR = '#c0392b';
+        var CHASHU_FAT = '#e8b4a0';
+        var NORI_COLOR = '#1a2e1a';
+        var NARUTO_PINK = '#ffb3c6';
+        var NARUTO_WHITE = '#fff5f5';
+        var GREEN_ONION = '#7cb342';
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var sectionMood = 'steam';
+        var lastSeqIndex = -1;
+        var sectionProgress = 0;
+
+        // Bowl geometry
+        var bowlCX, bowlCY, bowlRX, bowlRY;
+
+        // Steam particles
+        var steamParticles = [];
+        var MAX_STEAM = 120;
+
+        // Noodle state
+        var noodleStrands = [];
+        var noodleSwirlAngle = 0;
+        var noodleSwirlSpeed = 0;
+
+        // Chopstick state
+        var chopstickAngle = 0;
+        var chopstickTarget = 0;
+        var chopstickDip = 0;
+        var chopstickTapPulse = 0;
+
+        // Toppings
+        var toppings = [];
+        var toppingsFallen = 0;
+
+        // Neon reflections
+        var neonSigns = [];
+        var neonFlicker = 0;
+
+        // Broth pour
+        var brothLevel = 0;
+        var brothTarget = 0;
+
+        // Splash particles
+        var splashParticles = [];
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // -- Helpers --
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return [r, g, b];
+        }
+
+        // -- Section mapping --
+        // Sequence: 0-3 intro (Steam Rising, Neon Flicker), 4-7 First Bowl,
+        // 8-13 Conversation, 14-16 Bridge, 17-23 Return, 24-27 climax, 28-30 Outro
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'steam';       // empty bowl, steam rising
+            if (seqIndex <= 3) return 'neon';         // neon flicker, bowl appears
+            if (seqIndex <= 7) return 'broth';        // broth pour + noodle drop
+            if (seqIndex <= 13) return 'toppings';    // conversation = adding toppings
+            if (seqIndex <= 16) return 'bridge';      // bridge = contemplation, stirring
+            if (seqIndex <= 23) return 'slurp';       // return = eating, satisfaction
+            if (seqIndex <= 27) return 'climax';      // full intensity
+            return 'outro';                           // outro = empty bowl, neon off
+        }
+
+        // -- Steam particles --
+        function createSteamParticle() {
+            var angle = rand(-0.4, 0.4);
+            return {
+                x: bowlCX + rand(-bowlRX * 0.6, bowlRX * 0.6),
+                y: bowlCY - bowlRY * 0.2,
+                vx: Math.sin(angle) * rand(10, 40),
+                vy: -rand(30, 90),
+                life: 1.0,
+                decay: rand(0.15, 0.5),
+                size: rand(3, 12),
+                wobbleSpeed: rand(1.5, 4),
+                wobbleAmp: rand(8, 25),
+                phase: rand(0, Math.PI * 2)
+            };
+        }
+
+        function updateSteam(dt, energy) {
+            var spawnRate = 2 + energy * 12;
+            var spawnCount = Math.floor(spawnRate * dt * 10);
+            for (var s = 0; s < spawnCount && steamParticles.length < MAX_STEAM; s++) {
+                steamParticles.push(createSteamParticle());
+            }
+            for (var i = steamParticles.length - 1; i >= 0; i--) {
+                var p = steamParticles[i];
+                p.x += p.vx * dt + Math.sin(p.phase + p.life * p.wobbleSpeed) * p.wobbleAmp * dt;
+                p.y += p.vy * dt;
+                p.life -= p.decay * dt;
+                p.size += dt * 3;
+                if (p.life <= 0) steamParticles.splice(i, 1);
+            }
+        }
+
+        function drawSteam(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < steamParticles.length; i++) {
+                var p = steamParticles[i];
+                var alpha = p.life * (0.15 + energy * 0.2);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = STEAM_COLOR;
+                ctx.shadowColor = STEAM_COLOR;
+                ctx.shadowBlur = p.size * 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Noodle strands --
+        function initNoodles() {
+            noodleStrands = [];
+            for (var i = 0; i < 14; i++) {
+                var angle = (i / 14) * Math.PI * 2;
+                noodleStrands.push({
+                    angle: angle,
+                    radiusMult: rand(0.2, 0.85),
+                    length: rand(0.4, 0.9),
+                    width: rand(1.5, 3.5),
+                    curviness: rand(0.3, 1.2),
+                    phase: rand(0, Math.PI * 2)
+                });
+            }
+        }
+
+        function drawNoodles(ctx, energy) {
+            if (brothLevel < 0.1) return;
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, brothLevel);
+            var swirlOff = noodleSwirlAngle;
+
+            for (var i = 0; i < noodleStrands.length; i++) {
+                var n = noodleStrands[i];
+                var a = n.angle + swirlOff;
+                var r = n.radiusMult;
+                var cx = bowlCX + Math.cos(a) * bowlRX * r * 0.7;
+                var cy = bowlCY + Math.sin(a) * bowlRY * r * 0.5;
+                var endA = a + n.curviness + Math.sin(n.phase + swirlOff * 2) * 0.4;
+                var len = n.length * bowlRX * 0.5;
+                var ex = cx + Math.cos(endA) * len;
+                var ey = cy + Math.sin(endA) * len * 0.4;
+                var cpx = cx + Math.cos(a + 0.5) * len * 0.6;
+                var cpy = cy + Math.sin(a + 0.5) * len * 0.3;
+
+                ctx.strokeStyle = '#f0d9a0';
+                ctx.lineWidth = n.width;
+                ctx.lineCap = 'round';
+                ctx.shadowColor = 'rgba(240,217,160,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // -- Toppings --
+        function initToppings() {
+            toppings = [
+                { type: 'egg', x: 0.25, y: -0.15, targetX: 0.25, targetY: -0.15, fallen: false, fallDelay: 0 },
+                { type: 'egg', x: -0.25, y: -0.1, targetX: -0.25, targetY: -0.1, fallen: false, fallDelay: 1 },
+                { type: 'chashu', x: 0.0, y: -0.3, targetX: 0.0, targetY: -0.3, fallen: false, fallDelay: 2 },
+                { type: 'chashu', x: 0.35, y: 0.1, targetX: 0.35, targetY: 0.1, fallen: false, fallDelay: 3 },
+                { type: 'nori', x: -0.4, y: 0.0, targetX: -0.4, targetY: 0.0, fallen: false, fallDelay: 4 },
+                { type: 'nori', x: 0.4, y: -0.05, targetX: 0.4, targetY: -0.05, fallen: false, fallDelay: 5 },
+                { type: 'naruto', x: 0.1, y: 0.15, targetX: 0.1, targetY: 0.15, fallen: false, fallDelay: 6 },
+                { type: 'greenonion', x: -0.15, y: 0.2, targetX: -0.15, targetY: 0.2, fallen: false, fallDelay: 7 },
+                { type: 'greenonion', x: 0.2, y: -0.25, targetX: 0.2, targetY: -0.25, fallen: false, fallDelay: 8 },
+                { type: 'greenonion', x: -0.3, y: -0.2, targetX: -0.3, targetY: -0.2, fallen: false, fallDelay: 9 }
+            ];
+            toppingsFallen = 0;
+        }
+
+        function drawTopping(ctx, t, cx, cy, rx, ry) {
+            var tx = cx + t.x * rx;
+            var ty = cy + t.y * ry * 0.5;
+            var scale = Math.min(rx, ry) * 0.001;
+            var sz = Math.max(8, rx * 0.12);
+
+            ctx.save();
+            ctx.translate(tx, ty);
+
+            if (t.type === 'egg') {
+                // Halved egg - oval white with yellow center
+                ctx.fillStyle = EGG_WHITE;
+                ctx.shadowColor = 'rgba(245,166,35,0.3)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, sz * 0.9, sz * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = EGG_YOLK;
+                ctx.shadowColor = 'rgba(245,166,35,0.5)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(0, 0, sz * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (t.type === 'chashu') {
+                // Rolled pork slice
+                ctx.fillStyle = CHASHU_COLOR;
+                ctx.shadowColor = 'rgba(192,57,43,0.3)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, sz * 1.0, sz * 0.65, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                // Fat marbling
+                ctx.fillStyle = CHASHU_FAT;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.ellipse(sz * 0.15, -sz * 0.1, sz * 0.3, sz * 0.15, -0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            } else if (t.type === 'nori') {
+                // Dark seaweed rectangle
+                ctx.fillStyle = NORI_COLOR;
+                ctx.shadowColor = 'rgba(26,46,26,0.4)';
+                ctx.shadowBlur = 4;
+                ctx.save();
+                ctx.rotate(0.2);
+                ctx.fillRect(-sz * 0.5, -sz * 0.8, sz * 1.0, sz * 1.5);
+                ctx.restore();
+            } else if (t.type === 'naruto') {
+                // Pink and white spiral fish cake
+                ctx.fillStyle = NARUTO_WHITE;
+                ctx.shadowColor = 'rgba(255,179,198,0.4)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(0, 0, sz * 0.55, 0, Math.PI * 2);
+                ctx.fill();
+                // Pink spiral
+                ctx.strokeStyle = NARUTO_PINK;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (var a = 0; a < Math.PI * 4; a += 0.15) {
+                    var sr = a / (Math.PI * 4) * sz * 0.4;
+                    var sx = Math.cos(a) * sr;
+                    var sy = Math.sin(a) * sr;
+                    if (a === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+            } else if (t.type === 'greenonion') {
+                // Small green circles (sliced scallion)
+                ctx.fillStyle = GREEN_ONION;
+                ctx.shadowColor = 'rgba(124,179,66,0.4)';
+                ctx.shadowBlur = 4;
+                for (var gi = 0; gi < 3; gi++) {
+                    ctx.beginPath();
+                    ctx.arc(gi * sz * 0.3 - sz * 0.3, gi * sz * 0.1 - sz * 0.1, sz * 0.18, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawToppings(ctx) {
+            if (brothLevel < 0.3) return;
+            ctx.save();
+            for (var i = 0; i < toppings.length; i++) {
+                var t = toppings[i];
+                if (!t.fallen) continue;
+                ctx.globalAlpha = Math.min(1, (toppingsFallen - t.fallDelay) * 0.5);
+                if (ctx.globalAlpha <= 0) continue;
+                drawTopping(ctx, t, bowlCX, bowlCY, bowlRX, bowlRY);
+            }
+            ctx.restore();
+        }
+
+        // -- Bowl --
+        function drawBowl(ctx, energy) {
+            ctx.save();
+
+            // Bowl shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(bowlCX, bowlCY + bowlRY * 0.15, bowlRX * 1.08, bowlRY * 0.65, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dark lacquer bowl exterior
+            ctx.fillStyle = BOWL_LACQUER;
+            ctx.shadowColor = 'rgba(212,146,42,0.15)';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.ellipse(bowlCX, bowlCY, bowlRX * 1.05, bowlRY * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Broth surface
+            if (brothLevel > 0) {
+                var brothAlpha = Math.min(1, brothLevel);
+                // Broth gradient
+                var grad = ctx.createRadialGradient(bowlCX, bowlCY - bowlRY * 0.05, 0, bowlCX, bowlCY, bowlRX * 0.9);
+                grad.addColorStop(0, BROTH_COLOR);
+                grad.addColorStop(0.7, BROTH_DARK);
+                grad.addColorStop(1, BOWL_RIM);
+                ctx.globalAlpha = brothAlpha;
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.ellipse(bowlCX, bowlCY, bowlRX * 0.95, bowlRY * 0.52, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Oil droplets on broth surface
+                ctx.globalAlpha = brothAlpha * 0.4;
+                ctx.fillStyle = '#e8b84a';
+                for (var od = 0; od < 8; od++) {
+                    var oa = (od / 8) * Math.PI * 2 + noodleSwirlAngle * 0.3;
+                    var or2 = rand(0.2, 0.6) * bowlRX * 0.7;
+                    var ox = bowlCX + Math.cos(oa) * or2;
+                    var oy = bowlCY + Math.sin(oa) * or2 * 0.45;
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, 2 + energy * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            // Bowl rim
+            ctx.strokeStyle = BOWL_RIM;
+            ctx.lineWidth = Math.max(3, bowlRX * 0.03);
+            ctx.shadowColor = 'rgba(212,146,42,0.3)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.ellipse(bowlCX, bowlCY, bowlRX, bowlRY * 0.55, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Rim highlight
+            ctx.strokeStyle = 'rgba(212,146,42,0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(bowlCX, bowlCY - 1, bowlRX * 0.98, bowlRY * 0.53, 0, Math.PI * 1.1, Math.PI * 1.9);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // -- Neon reflections on broth --
+        function initNeonSigns() {
+            neonSigns = [
+                { text: '\u30E9\u30FC\u30E1\u30F3', x: -0.3, y: -0.15, color: NEON_PINK, flicker: 0 },
+                { text: '\u5473', x: 0.25, y: -0.1, color: NEON_BLUE, flicker: 0 },
+                { text: 'OPEN', x: 0.0, y: 0.18, color: NEON_YELLOW, flicker: 0 }
+            ];
+        }
+
+        function drawNeonReflections(ctx, energy) {
+            if (brothLevel < 0.4) return;
+            ctx.save();
+            var reflAlpha = 0.12 + energy * 0.18 + beatPulse * 0.1;
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (var i = 0; i < neonSigns.length; i++) {
+                var sign = neonSigns[i];
+                var flick = Math.sin(neonFlicker * (2 + i) + i * 1.5);
+                if (flick < -0.7) continue; // flicker off
+
+                var sx = bowlCX + sign.x * bowlRX * 1.2;
+                var sy = bowlCY + sign.y * bowlRY * 0.4;
+                var rgb = hexToRgb(sign.color);
+
+                // Distorted reflection glow
+                ctx.globalAlpha = reflAlpha * Math.min(1, brothLevel) * (0.7 + flick * 0.3);
+                ctx.shadowColor = sign.color;
+                ctx.shadowBlur = 15 + energy * 10;
+                ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (reflAlpha * 0.6) + ')';
+
+                // Wobbly reflection shape
+                ctx.beginPath();
+                var wob = Math.sin(neonFlicker * 3 + i) * 5;
+                ctx.ellipse(sx + wob, sy, 15 + energy * 15, 6 + energy * 4, 0.1 * Math.sin(neonFlicker + i), 0, Math.PI * 2);
+                ctx.fill();
+
+                // Text reflection (wavy)
+                ctx.font = '700 ' + Math.max(10, bowlRX * 0.08) + 'px "Noto Serif JP", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.globalAlpha = reflAlpha * 0.5 * Math.min(1, brothLevel);
+                ctx.fillStyle = sign.color;
+                ctx.fillText(sign.text, sx + wob * 0.5, sy);
+            }
+
+            ctx.restore();
+        }
+
+        // -- Chopsticks --
+        function drawChopsticks(ctx, energy) {
+            if (sectionMood === 'steam' || sectionMood === 'neon') return;
+            var dip = chopstickDip;
+            var angle = chopstickAngle;
+            var tapOff = chopstickTapPulse * 5;
+
+            var baseX = bowlCX + bowlRX * 0.3;
+            var baseY = bowlCY - bowlRY * 0.8 - H * 0.15;
+            var tipY = bowlCY - bowlRY * 0.1 + dip * bowlRY * 0.3;
+            var stickLen = Math.sqrt(Math.pow(baseX - bowlCX, 2) + Math.pow(baseY - tipY, 2));
+
+            ctx.save();
+            ctx.lineCap = 'round';
+
+            // Two chopsticks with slight separation
+            for (var s = 0; s < 2; s++) {
+                var sep = (s === 0 ? -1 : 1) * (4 + tapOff);
+                var rot = angle + s * 0.04;
+
+                ctx.save();
+                ctx.translate(baseX, baseY);
+                ctx.rotate(rot);
+
+                // Chopstick body
+                var grad = ctx.createLinearGradient(sep, 0, sep, stickLen);
+                grad.addColorStop(0, '#8b6b4a');
+                grad.addColorStop(0.3, '#6b4a2a');
+                grad.addColorStop(1, '#4a2a10');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 3.5 - s * 0.5;
+                ctx.shadowColor = 'rgba(139,107,74,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                ctx.moveTo(sep, 0);
+                ctx.lineTo(sep * 0.3, stickLen);
+                ctx.stroke();
+
+                // Lacquer tip
+                ctx.strokeStyle = '#2a1a10';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sep * 0.35, stickLen * 0.85);
+                ctx.lineTo(sep * 0.3, stickLen);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // -- Splash particles --
+        function spawnSplash(count) {
+            for (var i = 0; i < count; i++) {
+                var angle = rand(0, Math.PI * 2);
+                var speed = rand(40, 150);
+                splashParticles.push({
+                    x: bowlCX + rand(-bowlRX * 0.3, bowlRX * 0.3),
+                    y: bowlCY + rand(-bowlRY * 0.1, bowlRY * 0.1),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - rand(30, 80),
+                    life: 1.0,
+                    decay: rand(1.0, 3.0),
+                    size: rand(1.5, 4),
+                    color: Math.random() > 0.5 ? BROTH_COLOR : '#f0d9a0'
+                });
+            }
+        }
+
+        function updateSplash(dt) {
+            for (var i = splashParticles.length - 1; i >= 0; i--) {
+                var p = splashParticles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 200 * dt; // gravity
+                p.life -= p.decay * dt;
+                if (p.life <= 0) splashParticles.splice(i, 1);
+            }
+        }
+
+        function drawSplash(ctx) {
+            ctx.save();
+            for (var i = 0; i < splashParticles.length; i++) {
+                var p = splashParticles[i];
+                ctx.globalAlpha = p.life * 0.8;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Background (ramen shop counter / warm ambient) --
+        function drawBackground(ctx, energy) {
+            // Warm dark gradient
+            var grad = ctx.createRadialGradient(W * 0.5, H * 0.35, W * 0.1, W * 0.5, H * 0.5, W * 0.9);
+            grad.addColorStop(0, '#2a1a10');
+            grad.addColorStop(0.5, '#1a0e08');
+            grad.addColorStop(1, '#0d0705');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Counter surface (subtle)
+            var counterY = H * 0.72;
+            ctx.fillStyle = '#0f0a06';
+            ctx.fillRect(0, counterY, W, H - counterY);
+
+            // Counter edge
+            ctx.strokeStyle = 'rgba(212,146,42,0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, counterY);
+            ctx.lineTo(W, counterY);
+            ctx.stroke();
+
+            // Ambient neon glow from above
+            if (sectionMood !== 'steam') {
+                var neonGlow = 0.03 + energy * 0.06 + beatPulse * 0.03;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+
+                // Pink neon from left
+                var g1 = ctx.createRadialGradient(W * 0.15, H * 0.1, 0, W * 0.15, H * 0.1, W * 0.5);
+                g1.addColorStop(0, 'rgba(255,107,157,' + neonGlow + ')');
+                g1.addColorStop(1, 'rgba(255,107,157,0)');
+                ctx.fillStyle = g1;
+                ctx.fillRect(0, 0, W, H);
+
+                // Blue neon from right
+                var g2 = ctx.createRadialGradient(W * 0.85, H * 0.1, 0, W * 0.85, H * 0.1, W * 0.5);
+                g2.addColorStop(0, 'rgba(78,205,196,' + neonGlow * 0.7 + ')');
+                g2.addColorStop(1, 'rgba(78,205,196,0)');
+                ctx.fillStyle = g2;
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.restore();
+            }
+        }
+
+        // -- Title --
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.font = '900 ' + fontSize + 'px "Noto Serif JP", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var y = H * 0.12;
+
+            // Glow layer
+            ctx.globalAlpha = titleAlpha * 0.6;
+            ctx.shadowColor = '#f5a623';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = '#f5a623';
+            ctx.fillText('Dialectic of the Ramen', W * 0.5, y);
+
+            // Main text
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#fff8f0';
+            ctx.fillText('Dialectic of the Ramen', W * 0.5, y);
+
+            ctx.restore();
+        }
+
+        // -- Flash overlay --
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff8f0';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // -- Init --
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+
+            bowlCX = W * 0.5;
+            bowlCY = H * 0.48;
+            bowlRX = Math.min(W, H) * 0.32;
+            bowlRY = bowlRX * 0.7;
+
+            steamParticles = [];
+            splashParticles = [];
+            initNoodles();
+            initToppings();
+            initNeonSigns();
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            noodleSwirlAngle = 0;
+            noodleSwirlSpeed = 0;
+            chopstickAngle = 0.35;
+            chopstickTarget = 0.35;
+            chopstickDip = 0;
+            chopstickTapPulse = 0;
+            brothLevel = 0;
+            brothTarget = 0;
+            neonFlicker = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            sectionMood = 'steam';
+            lastSeqIndex = -1;
+            sectionProgress = 0;
+            toppingsFallen = 0;
+        }
+
+        // -- Resize --
+        function resize(width, height) {
+            W = width; H = height;
+            bowlCX = W * 0.5;
+            bowlCY = H * 0.48;
+            bowlRX = Math.min(W, H) * 0.32;
+            bowlRY = bowlRX * 0.7;
+        }
+
+        // -- Render --
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: dim bowl, gentle steam
+                drawBackground(ctx, 0);
+                drawBowl(ctx, 0);
+                updateSteam(dt * 0.3, 0.1);
+                drawSteam(ctx, 0.1);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // -- Section transitions --
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+                sectionProgress = 0;
+
+                // Section-specific triggers
+                if (newSection === 'broth') {
+                    brothTarget = 1;
+                    flashAlpha = 0.1;
+                } else if (newSection === 'toppings') {
+                    // Start dropping toppings
+                } else if (newSection === 'bridge') {
+                    chopstickTarget = 0.2;
+                } else if (newSection === 'slurp') {
+                    flashAlpha = 0.12;
+                    chopstickTarget = 0.4;
+                } else if (newSection === 'climax') {
+                    flashAlpha = 0.2;
+                } else if (newSection === 'outro') {
+                    brothTarget = 0.05;
+                }
+            }
+            sectionProgress += dt;
+
+            // -- Beat pulse --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Chopstick tap on beat
+                chopstickTapPulse = 0.5 + energy * 0.5;
+
+                // Splash on energetic beats during eating sections
+                if ((sectionMood === 'slurp' || sectionMood === 'climax') && energy > 0.4) {
+                    spawnSplash(3 + Math.floor(energy * 5));
+                }
+
+                // Steam puff on beat
+                for (var sp = 0; sp < 2 + energy * 4; sp++) {
+                    if (steamParticles.length < MAX_STEAM) {
+                        var p = createSteamParticle();
+                        p.vy *= 1.5;
+                        p.size *= 1.3;
+                        steamParticles.push(p);
+                    }
+                }
+
+                // Drop toppings during toppings section
+                if (sectionMood === 'toppings' || sectionMood === 'slurp' || sectionMood === 'climax') {
+                    for (var ti = 0; ti < toppings.length; ti++) {
+                        if (!toppings[ti].fallen && toppings[ti].fallDelay <= toppingsFallen) {
+                            toppings[ti].fallen = true;
+                            spawnSplash(4);
+                            flashAlpha = Math.max(flashAlpha, 0.06);
+                        }
+                    }
+                    toppingsFallen += 0.5;
+                }
+
+                // Neon flicker on beat
+                if (energy > 0.5 && (sectionMood === 'slurp' || sectionMood === 'climax')) {
+                    flashAlpha = Math.max(flashAlpha, 0.05 + energy * 0.08);
+                }
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            chopstickTapPulse *= Math.exp(-10 * dt);
+
+            lastBeat = beat;
+
+            // -- Continuous updates --
+            brothLevel = lerpExp(brothLevel, brothTarget, 1.5, dt);
+            noodleSwirlSpeed = lerpExp(noodleSwirlSpeed, energy * 1.5 + beatPulse * 2, 4, dt);
+            noodleSwirlAngle += noodleSwirlSpeed * dt;
+            chopstickAngle = lerpExp(chopstickAngle, chopstickTarget + Math.sin(noodleSwirlAngle * 0.7) * 0.05, 3, dt);
+            chopstickDip = lerpExp(chopstickDip,
+                (sectionMood === 'bridge' || sectionMood === 'slurp' || sectionMood === 'climax') ? 0.6 + energy * 0.3 : 0.1,
+                3, dt);
+            neonFlicker += dt * (2 + energy * 3);
+
+            // Title during climax
+            titleTarget = (sectionMood === 'climax') ? 1 : (sectionMood === 'slurp' && sectionProgress < 3) ? 0.6 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            updateSteam(dt, energy);
+            updateSplash(dt);
+
+            // -- Draw scene (back to front) --
+
+            // 1. Background
+            drawBackground(ctx, energy);
+
+            // 2. Title
+            drawTitle(ctx);
+
+            // 3. Bowl + broth
+            drawBowl(ctx, energy);
+
+            // 4. Neon reflections on broth
+            drawNeonReflections(ctx, energy);
+
+            // 5. Noodles
+            drawNoodles(ctx, energy);
+
+            // 6. Toppings
+            drawToppings(ctx);
+
+            // 7. Chopsticks
+            drawChopsticks(ctx, energy);
+
+            // 8. Steam
+            drawSteam(ctx, energy);
+
+            // 9. Splash
+            drawSplash(ctx);
+
+            // 10. Flash
+            drawFlash(ctx);
+
+            // Outro fade to dark
+            if (sectionMood === 'outro') {
+                var outroAlpha = Math.min(0.8, sectionProgress * 0.1);
+                ctx.save();
+                ctx.globalAlpha = outroAlpha;
+                ctx.fillStyle = '#0d0705';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Dialectic of the Ramen Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('dialectic-ramen-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/dialectic-of-the-ramen.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

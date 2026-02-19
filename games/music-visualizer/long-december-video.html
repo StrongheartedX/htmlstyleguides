@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Long December — Winter Cityscape Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0b1220;
+            color: #fff;
+            font-family: 'Cormorant Garamond', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(11,18,32,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: #c8daf0;
+            text-shadow: 0 0 30px rgba(200,218,240,0.4), 0 0 60px rgba(180,200,230,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(200,218,240,0.45);
+            font-style: italic;
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #c8daf0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #c8daf0;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(200,218,240,0.3); }
+            50% { box-shadow: 0 0 0 20px rgba(200,218,240,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            font-family: sans-serif;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">A Long December</div>
+        <div class="play-sub">a winter cityscape music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- Long December Video Renderer --
+    window.Renderers['long-december-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Colors --
+        var SKY_TOP = '#050a14';
+        var SKY_BOT = '#0f1a2e';
+        var SNOW_WHITE = '#e8eef6';
+        var WARM_AMBER = '#f0a830';
+        var WARM_AMBER2 = '#e88820';
+        var COLD_BLUE = '#3a5a8a';
+        var COLD_STEEL = '#5a7090';
+        var GROUND_DARK = '#0a0f1a';
+        var LAMP_GLOW = '#f5c860';
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'intro'; // intro, verse, chorus, interlude, bridge, finalchorus, outro
+
+        // Scene progression: 0=early evening, 1=deep night, 2=blizzard, 3=clearing, 4=dawn
+        var scenePhase = 0;
+        var scenePhaseTarget = 0;
+
+        // Snowflakes
+        var snowflakes = [];
+        var MAX_SNOW = 400;
+
+        // Buildings
+        var buildings = [];
+        var NUM_BUILDINGS = 18;
+
+        // Trees
+        var trees = [];
+        var NUM_TREES = 6;
+
+        // Street lamps
+        var lamps = [];
+        var NUM_LAMPS = 4;
+
+        // Walking figure
+        var figureX = 0;
+        var figureSpeed = 0;
+        var figureTargetSpeed = 0;
+        var figureLegPhase = 0;
+        var figureVisible = false;
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Wind
+        var windStrength = 0;
+        var windTarget = 0;
+
+        // Dawn gradient
+        var dawnProgress = 0;
+
+        // Footstep particles
+        var footstepParticles = [];
+
+        // Window flicker state
+        var windowFlickers = [];
+
+        // -- Helpers --
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+        function hexToRgb(hex) {
+            return {
+                r: parseInt(hex.slice(1, 3), 16),
+                g: parseInt(hex.slice(3, 5), 16),
+                b: parseInt(hex.slice(5, 7), 16)
+            };
+        }
+
+        // -- Snow system --
+        function initSnow() {
+            snowflakes = [];
+            for (var i = 0; i < MAX_SNOW; i++) {
+                snowflakes.push(createSnowflake(true));
+            }
+        }
+
+        function createSnowflake(randomY) {
+            return {
+                x: Math.random() * W,
+                y: randomY ? Math.random() * H : -Math.random() * 40,
+                size: rand(1, 4.5),
+                speedY: rand(15, 60),
+                drift: rand(-0.5, 0.5),
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleSpeed: rand(0.5, 2.5),
+                alpha: rand(0.2, 0.8)
+            };
+        }
+
+        function updateSnow(dt, energy) {
+            var density = Math.min(1, 0.3 + energy * 0.7);
+            var activeCount = Math.floor(MAX_SNOW * density);
+            var wind = windStrength * 80;
+
+            for (var i = 0; i < snowflakes.length; i++) {
+                var s = snowflakes[i];
+                if (i >= activeCount) { s.alpha = Math.max(0, s.alpha - dt * 2); continue; }
+                s.alpha = Math.min(s.alpha + dt * 2, rand(0.2, 0.8));
+
+                s.wobblePhase += s.wobbleSpeed * dt;
+                var wobble = Math.sin(s.wobblePhase) * 15 * s.size * 0.3;
+
+                s.y += s.speedY * dt * (1 + energy * 0.8);
+                s.x += (s.drift + wind + wobble) * dt;
+
+                if (s.y > H + 10) {
+                    s.y = -rand(5, 30);
+                    s.x = Math.random() * W;
+                }
+                if (s.x < -20) s.x = W + 20;
+                if (s.x > W + 20) s.x = -20;
+            }
+        }
+
+        function drawSnow(ctx) {
+            ctx.save();
+            for (var i = 0; i < snowflakes.length; i++) {
+                var s = snowflakes[i];
+                if (s.alpha < 0.01) continue;
+                ctx.globalAlpha = s.alpha;
+                ctx.fillStyle = SNOW_WHITE;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Buildings --
+        function initBuildings() {
+            buildings = [];
+            windowFlickers = [];
+            for (var i = 0; i < NUM_BUILDINGS; i++) {
+                var bw = rand(W * 0.06, W * 0.12);
+                var bh = rand(H * 0.15, H * 0.45);
+                var bx = (i / NUM_BUILDINGS) * W * 0.95 + rand(-W * 0.02, W * 0.02);
+                var depth = rand(0, 1); // 0=near, 1=far
+                var windowRows = Math.floor(bh / 28);
+                var windowCols = Math.floor(bw / 22);
+                var windows = [];
+                for (var wy = 0; wy < windowRows; wy++) {
+                    for (var wx = 0; wx < windowCols; wx++) {
+                        var lit = Math.random() > 0.4;
+                        windows.push({
+                            row: wy, col: wx, lit: lit,
+                            flickerPhase: Math.random() * Math.PI * 2,
+                            flickerSpeed: rand(0.3, 3),
+                            warmth: rand(0.6, 1)
+                        });
+                        windowFlickers.push({ bIdx: i, wIdx: windows.length - 1, timer: 0, interval: rand(2, 12) });
+                    }
+                }
+                buildings.push({
+                    x: bx, w: bw, h: bh, depth: depth,
+                    windows: windows, windowRows: windowRows, windowCols: windowCols,
+                    roofSnow: rand(3, 8),
+                    color: 'rgb(' + Math.floor(rand(15, 35)) + ',' + Math.floor(rand(18, 40)) + ',' + Math.floor(rand(30, 55)) + ')'
+                });
+            }
+            buildings.sort(function(a, b) { return b.depth - a.depth; });
+        }
+
+        function drawBuildings(ctx, groundY, energy) {
+            for (var i = 0; i < buildings.length; i++) {
+                var b = buildings[i];
+                var bBot = groundY;
+                var bTop = bBot - b.h;
+
+                // Building body
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, bTop, b.w, b.h);
+
+                // Snow on roof
+                ctx.fillStyle = 'rgba(220,230,245,' + (0.5 + scenePhase * 0.1) + ')';
+                ctx.beginPath();
+                ctx.moveTo(b.x - 2, bTop);
+                ctx.quadraticCurveTo(b.x + b.w * 0.5, bTop - b.roofSnow, b.x + b.w + 2, bTop);
+                ctx.lineTo(b.x + b.w + 2, bTop + 2);
+                ctx.lineTo(b.x - 2, bTop + 2);
+                ctx.closePath();
+                ctx.fill();
+
+                // Windows
+                if (b.windowCols > 0 && b.windowRows > 0) {
+                    var ww = 8, wh = 10;
+                    var padX = (b.w - b.windowCols * (ww + 6)) * 0.5 + 3;
+                    var padY = 12;
+                    for (var wi = 0; wi < b.windows.length; wi++) {
+                        var win = b.windows[wi];
+                        if (!win.lit) continue;
+                        var wx = b.x + padX + win.col * (ww + 6);
+                        var wy = bTop + padY + win.row * (wh + 8);
+                        if (wy > bBot - 10) continue;
+
+                        var flicker = 0.7 + 0.3 * Math.sin(win.flickerPhase);
+                        var warmAlpha = flicker * win.warmth * (0.6 + beatPulse * 0.15);
+
+                        // Window glow halo
+                        ctx.save();
+                        ctx.globalAlpha = warmAlpha * 0.3;
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = WARM_AMBER;
+                        ctx.fillStyle = WARM_AMBER;
+                        ctx.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+                        ctx.restore();
+
+                        // Window rect
+                        ctx.fillStyle = 'rgba(240,168,48,' + warmAlpha + ')';
+                        ctx.fillRect(wx, wy, ww, wh);
+
+                        // Cross frame
+                        ctx.strokeStyle = b.color;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(wx + ww * 0.5, wy);
+                        ctx.lineTo(wx + ww * 0.5, wy + wh);
+                        ctx.moveTo(wx, wy + wh * 0.5);
+                        ctx.lineTo(wx + ww, wy + wh * 0.5);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function updateWindowFlickers(dt) {
+            for (var i = 0; i < windowFlickers.length; i++) {
+                var wf = windowFlickers[i];
+                var b = buildings[wf.bIdx];
+                if (!b) continue;
+                var win = b.windows[wf.wIdx];
+                if (!win) continue;
+                win.flickerPhase += win.flickerSpeed * dt;
+                wf.timer += dt;
+                if (wf.timer > wf.interval) {
+                    wf.timer = 0;
+                    wf.interval = rand(2, 12);
+                    // Occasionally toggle window
+                    if (Math.random() > 0.7) win.lit = !win.lit;
+                }
+            }
+        }
+
+        // -- Bare trees --
+        function initTrees() {
+            trees = [];
+            for (var i = 0; i < NUM_TREES; i++) {
+                trees.push({
+                    x: rand(W * 0.05, W * 0.95),
+                    height: rand(H * 0.1, H * 0.25),
+                    branches: Math.floor(rand(3, 7)),
+                    spread: rand(0.3, 0.7),
+                    sway: 0
+                });
+            }
+        }
+
+        function drawTree(ctx, tree, groundY) {
+            var tx = tree.x;
+            var tBot = groundY;
+            var tTop = tBot - tree.height;
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(40,45,55,0.7)';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+
+            // Trunk
+            ctx.beginPath();
+            ctx.moveTo(tx, tBot);
+            ctx.lineTo(tx + tree.sway * 3, tTop);
+            ctx.stroke();
+
+            // Branches
+            for (var bi = 0; bi < tree.branches; bi++) {
+                var t = (bi + 1) / (tree.branches + 1);
+                var by = lerp(tBot, tTop, t);
+                var bLen = tree.height * tree.spread * (1 - t * 0.5) * 0.5;
+                var side = bi % 2 === 0 ? 1 : -1;
+                var angle = -0.3 - t * 0.4;
+
+                ctx.lineWidth = 2 - t;
+                ctx.beginPath();
+                ctx.moveTo(tx + tree.sway * 3 * t, by);
+                var endX = tx + tree.sway * 3 * t + side * Math.cos(angle) * bLen;
+                var endY = by + Math.sin(angle) * bLen;
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Sub-branches
+                if (bLen > 15) {
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(endX * 0.7 + (tx + tree.sway * 3 * t) * 0.3, endY * 0.7 + by * 0.3);
+                    ctx.lineTo(endX + side * rand(5, 15), endY - rand(5, 15));
+                    ctx.stroke();
+                }
+            }
+
+            // Snow on branches
+            ctx.fillStyle = 'rgba(220,230,245,0.4)';
+            for (var si = 0; si < tree.branches; si++) {
+                var st = (si + 1) / (tree.branches + 1);
+                var sy = lerp(tBot, tTop, st);
+                var sx = tx + tree.sway * 3 * st;
+                ctx.beginPath();
+                ctx.ellipse(sx, sy - 2, rand(3, 8), rand(1, 3), 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // -- Street lamps --
+        function initLamps() {
+            lamps = [];
+            for (var i = 0; i < NUM_LAMPS; i++) {
+                lamps.push({
+                    x: W * 0.1 + (i / (NUM_LAMPS - 1)) * W * 0.8,
+                    height: H * 0.18,
+                    glowPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function drawLamp(ctx, lamp, groundY, energy) {
+            var lx = lamp.x;
+            var lBot = groundY;
+            var lTop = lBot - lamp.height;
+
+            // Post
+            ctx.strokeStyle = 'rgba(60,65,80,0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(lx, lBot);
+            ctx.lineTo(lx, lTop);
+            ctx.stroke();
+
+            // Lamp head
+            ctx.fillStyle = 'rgba(80,85,95,0.8)';
+            ctx.fillRect(lx - 6, lTop - 4, 12, 8);
+
+            // Light glow halo
+            lamp.glowPhase += 0.02;
+            var flicker = 0.8 + 0.2 * Math.sin(lamp.glowPhase) + beatPulse * 0.1;
+            var glowR = 50 + energy * 20;
+
+            var grad = ctx.createRadialGradient(lx, lTop, 3, lx, lTop, glowR);
+            grad.addColorStop(0, 'rgba(245,200,96,' + (flicker * 0.6) + ')');
+            grad.addColorStop(0.3, 'rgba(245,200,96,' + (flicker * 0.2) + ')');
+            grad.addColorStop(1, 'rgba(245,200,96,0)');
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = grad;
+            ctx.fillRect(lx - glowR, lTop - glowR, glowR * 2, glowR * 2);
+            ctx.restore();
+
+            // Cone of light on ground
+            var coneGrad = ctx.createLinearGradient(lx, lTop, lx, lBot + 10);
+            coneGrad.addColorStop(0, 'rgba(245,200,96,' + (flicker * 0.1) + ')');
+            coneGrad.addColorStop(1, 'rgba(245,200,96,0)');
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = coneGrad;
+            ctx.beginPath();
+            ctx.moveTo(lx - 4, lTop);
+            ctx.lineTo(lx + 4, lTop);
+            ctx.lineTo(lx + 35, lBot + 10);
+            ctx.lineTo(lx - 35, lBot + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Snow on lamp
+            ctx.fillStyle = 'rgba(220,230,245,0.5)';
+            ctx.beginPath();
+            ctx.ellipse(lx, lTop - 4, 8, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // -- Walking figure --
+        function drawFigure(ctx, groundY) {
+            if (!figureVisible) return;
+            var fx = figureX;
+            var fy = groundY;
+            var fh = H * 0.08;
+
+            // Silhouette color
+            ctx.save();
+            ctx.fillStyle = 'rgba(15,20,30,0.9)';
+            ctx.strokeStyle = 'rgba(15,20,30,0.9)';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+
+            var legSwing = Math.sin(figureLegPhase) * 8;
+            var armSwing = Math.sin(figureLegPhase + Math.PI) * 6;
+            var bodyBob = Math.abs(Math.sin(figureLegPhase * 2)) * 2;
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(fx, fy - fh + bodyBob, fh * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.85 + bodyBob);
+            ctx.lineTo(fx, fy - fh * 0.4 + bodyBob);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.4 + bodyBob);
+            ctx.lineTo(fx + legSwing, fy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.4 + bodyBob);
+            ctx.lineTo(fx - legSwing, fy);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.75 + bodyBob);
+            ctx.lineTo(fx + armSwing, fy - fh * 0.5 + bodyBob);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.75 + bodyBob);
+            ctx.lineTo(fx - armSwing, fy - fh * 0.5 + bodyBob);
+            ctx.stroke();
+
+            // Scarf trailing
+            ctx.strokeStyle = 'rgba(140,50,50,0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - fh * 0.8 + bodyBob);
+            ctx.quadraticCurveTo(fx - 10 - windStrength * 15, fy - fh * 0.7 + bodyBob, fx - 18 - windStrength * 25, fy - fh * 0.65 + bodyBob);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // -- Footstep particles --
+        function addFootstep(x, y) {
+            for (var i = 0; i < 3; i++) {
+                footstepParticles.push({
+                    x: x + rand(-3, 3), y: y,
+                    vx: rand(-8, 8), vy: rand(-15, -5),
+                    life: 1, decay: rand(1, 2.5),
+                    size: rand(1, 2.5)
+                });
+            }
+        }
+
+        function updateFootstepParticles(dt) {
+            for (var i = footstepParticles.length - 1; i >= 0; i--) {
+                var p = footstepParticles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 20 * dt; // gravity
+                p.life -= p.decay * dt;
+                if (p.life <= 0) footstepParticles.splice(i, 1);
+            }
+        }
+
+        function drawFootstepParticles(ctx) {
+            ctx.save();
+            ctx.fillStyle = SNOW_WHITE;
+            for (var i = 0; i < footstepParticles.length; i++) {
+                var p = footstepParticles[i];
+                ctx.globalAlpha = p.life * 0.6;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // -- Sky --
+        function drawSky(ctx) {
+            // Base sky gradient - shifts with scene phase
+            var topR, topG, topB, botR, botG, botB;
+
+            if (dawnProgress > 0.01) {
+                // Dawn: warm horizon
+                topR = lerp(5, 30, dawnProgress);
+                topG = lerp(10, 20, dawnProgress);
+                topB = lerp(20, 45, dawnProgress);
+                botR = lerp(15, 120, dawnProgress);
+                botG = lerp(26, 70, dawnProgress);
+                botB = lerp(46, 80, dawnProgress);
+            } else {
+                topR = 5; topG = 10; topB = 20;
+                botR = 15; botG = 26; botB = 46;
+            }
+
+            var grad = ctx.createLinearGradient(0, 0, 0, H * 0.75);
+            grad.addColorStop(0, 'rgb(' + Math.floor(topR) + ',' + Math.floor(topG) + ',' + Math.floor(topB) + ')');
+            grad.addColorStop(1, 'rgb(' + Math.floor(botR) + ',' + Math.floor(botG) + ',' + Math.floor(botB) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Dawn glow at horizon
+            if (dawnProgress > 0.05) {
+                var hGrad = ctx.createRadialGradient(W * 0.5, H * 0.7, 0, W * 0.5, H * 0.7, W * 0.5);
+                hGrad.addColorStop(0, 'rgba(200,130,60,' + (dawnProgress * 0.25) + ')');
+                hGrad.addColorStop(0.5, 'rgba(180,100,50,' + (dawnProgress * 0.1) + ')');
+                hGrad.addColorStop(1, 'rgba(180,100,50,0)');
+                ctx.fillStyle = hGrad;
+                ctx.fillRect(0, H * 0.3, W, H * 0.5);
+            }
+        }
+
+        // -- Ground --
+        function drawGround(ctx, groundY) {
+            // Snow-covered ground
+            var grad = ctx.createLinearGradient(0, groundY, 0, H);
+            grad.addColorStop(0, 'rgba(180,195,215,' + (0.25 + dawnProgress * 0.15) + ')');
+            grad.addColorStop(0.3, 'rgba(100,115,140,0.15)');
+            grad.addColorStop(1, GROUND_DARK);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Snow surface line
+            ctx.strokeStyle = 'rgba(200,210,225,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            for (var x = 0; x < W; x += 20) {
+                ctx.lineTo(x, groundY + Math.sin(x * 0.02) * 2);
+            }
+            ctx.stroke();
+
+            // Footprints (subtle dots)
+            if (figureVisible) {
+                ctx.fillStyle = 'rgba(100,110,130,0.15)';
+                var startX = Math.max(0, figureX - W * 0.3);
+                for (var fi = startX; fi < figureX - 10; fi += 18) {
+                    ctx.beginPath();
+                    ctx.ellipse(fi, groundY + 2, 3, 1.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // -- Title --
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.font = '600 ' + fontSize + 'px "Cormorant Garamond", serif';
+
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowColor = 'rgba(200,218,240,0.5)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#c8daf0';
+            ctx.fillText('A Long December', W * 0.5, H * 0.15);
+
+            // Subtitle
+            var subSize = Math.max(11, Math.min(W * 0.018, 22));
+            ctx.font = 'italic 400 ' + subSize + 'px "Cormorant Garamond", serif';
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.shadowBlur = 15;
+            ctx.fillText('and there\'s reason to believe', W * 0.5, H * 0.15 + fontSize * 0.9);
+
+            ctx.restore();
+        }
+
+        // -- Fog/atmosphere overlay --
+        function drawAtmosphere(ctx, energy) {
+            // Blizzard overlay
+            if (scenePhase > 1.5) {
+                var blizzardAlpha = Math.min(0.25, (scenePhase - 1.5) * 0.3);
+                ctx.save();
+                ctx.fillStyle = 'rgba(180,195,215,' + blizzardAlpha + ')';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // Low fog
+            ctx.save();
+            var fogGrad = ctx.createLinearGradient(0, H * 0.65, 0, H * 0.85);
+            fogGrad.addColorStop(0, 'rgba(150,165,190,0)');
+            fogGrad.addColorStop(0.5, 'rgba(150,165,190,' + (0.04 + energy * 0.04) + ')');
+            fogGrad.addColorStop(1, 'rgba(150,165,190,0)');
+            ctx.fillStyle = fogGrad;
+            ctx.fillRect(0, H * 0.65, W, H * 0.2);
+            ctx.restore();
+        }
+
+        // -- Section mapping --
+        // 31 sequence entries mapped to visual scenes
+        function mapSection(seqIdx) {
+            if (seqIdx <= 1) return 'intro';
+            if (seqIdx <= 5) return 'verse';
+            if (seqIdx <= 8) return 'chorus';
+            if (seqIdx <= 9) return 'interlude';
+            if (seqIdx <= 13) return 'verse';
+            if (seqIdx <= 17) return 'chorus';
+            if (seqIdx <= 20) return 'bridge';
+            if (seqIdx <= 26) return 'finalchorus';
+            return 'outro';
+        }
+
+        function mapScenePhase(seqIdx) {
+            // 0=early evening, 1=deep night, 2=blizzard, 3=clearing, 4=dawn
+            if (seqIdx <= 1) return 0;      // intro: early evening
+            if (seqIdx <= 5) return 0.5;    // verse 1: deepening
+            if (seqIdx <= 8) return 1;      // chorus 1: deep night
+            if (seqIdx <= 9) return 1.2;    // interlude: still deep
+            if (seqIdx <= 13) return 1.5;   // verse 2: getting colder
+            if (seqIdx <= 17) return 2;     // chorus 2: blizzard
+            if (seqIdx <= 20) return 2.5;   // bridge: peak blizzard/clearing
+            if (seqIdx <= 23) return 3;     // final chorus start: clearing sky
+            if (seqIdx <= 26) return 3.5;   // final chorus peak: dawn breaking
+            return 4;                        // outro: dawn/new year hope
+        }
+
+        // -- Init --
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+
+            initSnow();
+            initBuildings();
+            initTrees();
+            initLamps();
+
+            figureX = -50;
+            figureSpeed = 0;
+            figureTargetSpeed = 30;
+            figureLegPhase = 0;
+            figureVisible = false;
+
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'intro';
+            scenePhase = 0;
+            scenePhaseTarget = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            windStrength = 0;
+            windTarget = 0;
+            dawnProgress = 0;
+            footstepParticles = [];
+        }
+
+        // -- Resize --
+        function resize(width, height) {
+            W = width; H = height;
+            initBuildings();
+            initTrees();
+            initLamps();
+        }
+
+        // -- Main render --
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+            var groundY = H * 0.78;
+
+            // -- Idle state --
+            if (!cursor) {
+                drawSky(ctx);
+                drawBuildings(ctx, groundY, 0);
+                for (var ti = 0; ti < trees.length; ti++) drawTree(ctx, trees[ti], groundY);
+                for (var li = 0; li < lamps.length; li++) drawLamp(ctx, lamps[li], groundY, 0);
+                drawGround(ctx, groundY);
+                drawSnow(ctx);
+                updateSnow(dt, 0.2);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // -- Section transitions --
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = mapSection(seqIdx);
+                scenePhaseTarget = mapScenePhase(seqIdx);
+                lastSeqIndex = seqIdx;
+
+                // Wind changes per section
+                if (sectionMood === 'bridge' || sectionMood === 'chorus') {
+                    windTarget = rand(0.4, 0.8);
+                } else if (sectionMood === 'finalchorus') {
+                    windTarget = rand(0.2, 0.5);
+                } else if (sectionMood === 'outro') {
+                    windTarget = rand(0.05, 0.15);
+                } else {
+                    windTarget = rand(0.05, 0.3);
+                }
+
+                // Figure appears in verse
+                if (sectionMood === 'verse' && !figureVisible) {
+                    figureVisible = true;
+                    figureX = -20;
+                }
+            }
+
+            // Smooth scene phase transition
+            scenePhase = lerpExp(scenePhase, scenePhaseTarget, 1.5, dt);
+            windStrength = lerpExp(windStrength, windTarget, 2, dt);
+            dawnProgress = Math.max(0, (scenePhase - 3) / 1.0);
+
+            // -- Beat pulse --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Footstep on beat
+                if (figureVisible && figureSpeed > 5) {
+                    addFootstep(figureX, groundY);
+                }
+
+                // Window flicker gust on strong beats
+                if (energy > 0.5) {
+                    for (var wfi = 0; wfi < Math.min(5, windowFlickers.length); wfi++) {
+                        var rIdx = Math.floor(Math.random() * windowFlickers.length);
+                        var wfObj = windowFlickers[rIdx];
+                        if (wfObj && buildings[wfObj.bIdx]) {
+                            var win = buildings[wfObj.bIdx].windows[wfObj.wIdx];
+                            if (win) win.flickerPhase += Math.PI * 0.5;
+                        }
+                    }
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-6 * dt);
+
+            // -- Title logic --
+            titleTarget = (sectionMood === 'chorus' || sectionMood === 'finalchorus') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // -- Update figure --
+            if (figureVisible) {
+                var speedMult = 1;
+                if (sectionMood === 'chorus' || sectionMood === 'finalchorus') speedMult = 0.7;
+                if (sectionMood === 'bridge') speedMult = 0.4;
+                if (sectionMood === 'outro') speedMult = 0.3;
+                if (sectionMood === 'interlude') speedMult = 0.5;
+
+                figureTargetSpeed = 25 * speedMult;
+                figureSpeed = lerpExp(figureSpeed, figureTargetSpeed, 3, dt);
+                figureX += figureSpeed * dt;
+                figureLegPhase += figureSpeed * dt * 0.3;
+
+                // Wrap around screen
+                if (figureX > W + 40) {
+                    figureX = -40;
+                }
+
+                // In outro, figure walks to center and slows
+                if (sectionMood === 'outro' && figureX > W * 0.5) {
+                    figureTargetSpeed = 0;
+                }
+            }
+
+            // -- Update systems --
+            updateSnow(dt, energy);
+            updateWindowFlickers(dt);
+            updateFootstepParticles(dt);
+
+            // Update tree sway with wind
+            for (var tsi = 0; tsi < trees.length; tsi++) {
+                trees[tsi].sway = lerpExp(trees[tsi].sway, windStrength * (2 + Math.sin(cursor.elapsed * 0.5 + tsi) * 1.5), 2, dt);
+            }
+
+            // -- Draw scene (back to front) --
+
+            // 1. Sky
+            drawSky(ctx);
+
+            // 2. Far buildings (depth > 0.5)
+            ctx.save();
+            for (var bi = 0; bi < buildings.length; bi++) {
+                if (buildings[bi].depth > 0.5) {
+                    // Draw with slight transparency for depth
+                    ctx.globalAlpha = 0.6;
+                    drawBuildings(ctx, groundY, energy);
+                    break;
+                }
+            }
+            ctx.restore();
+
+            // 2b. All buildings
+            drawBuildings(ctx, groundY, energy);
+
+            // 3. Trees
+            for (var ti2 = 0; ti2 < trees.length; ti2++) {
+                drawTree(ctx, trees[ti2], groundY);
+            }
+
+            // 4. Street lamps
+            for (var li2 = 0; li2 < lamps.length; li2++) {
+                drawLamp(ctx, lamps[li2], groundY, energy);
+            }
+
+            // 5. Ground
+            drawGround(ctx, groundY);
+
+            // 6. Walking figure
+            drawFigure(ctx, groundY);
+
+            // 7. Footstep particles
+            drawFootstepParticles(ctx);
+
+            // 8. Snow (foreground layer)
+            drawSnow(ctx);
+
+            // 9. Atmosphere/fog
+            drawAtmosphere(ctx, energy);
+
+            // 10. Title
+            drawTitle(ctx);
+
+            // 11. Vignette
+            var vigGrad = ctx.createRadialGradient(W * 0.5, H * 0.5, W * 0.25, W * 0.5, H * 0.5, W * 0.75);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        return {
+            name: 'Long December Winter Cityscape',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('long-december-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/long-december.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

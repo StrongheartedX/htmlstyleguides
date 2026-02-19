@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghosts of the Arcade — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #05050a;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(5,5,10,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(14px, 3.5vw, 36px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #00e5ff;
+            text-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 60px rgba(0,229,255,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(8px, 1.5vw, 14px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5ff;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,255,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 10px;
+            font-family: 'Press Start 2P', monospace;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Ghosts of the Arcade</div>
+        <div class="play-sub">an abandoned arcade music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Ghosts of the Arcade Video Renderer ──────────────────────────
+    window.Renderers['ghosts-arcade-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+        var BG = '#05050a';
+
+        // ── Color palette ──
+        var CYAN    = '#00e5ff';
+        var MAGENTA = '#ff00ff';
+        var GREEN   = '#39ff14';
+        var BLUE    = '#4488ff';
+        var AMBER   = '#ffaa00';
+        var RED     = '#ff2244';
+        var CABINET_COLORS = [CYAN, MAGENTA, GREEN, BLUE, AMBER];
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var time = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'empty';
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+        var scanlineOffset = 0;
+
+        // Cabinets
+        var cabinets = [];
+        var NUM_CABINETS = 7;
+
+        // Ghosts (pac-man style)
+        var ghosts = [];
+        var NUM_GHOSTS = 5;
+        var GHOST_COLORS = [RED, CYAN, MAGENTA, AMBER, '#ff8888'];
+
+        // Space invader silhouettes
+        var invaders = [];
+        var NUM_INVADERS = 12;
+
+        // Pixel fragments floating
+        var pixelFragments = [];
+        var NUM_FRAGMENTS = 60;
+
+        // Screen static particles
+        var staticNoise = [];
+        var NUM_STATIC = 200;
+
+        // CRT screen content state per cabinet
+        var screenStates = [];
+
+        // Coin flash positions
+        var coinFlashes = [];
+
+        // ── Pixel art patterns (5x5 grids) ──
+        var INVADER_PATTERN = [
+            [0,1,0,1,0],
+            [0,1,1,1,0],
+            [1,1,0,1,1],
+            [1,1,1,1,1],
+            [1,0,1,0,1]
+        ];
+        var GHOST_PATTERN = [
+            [0,1,1,1,0],
+            [1,1,1,1,1],
+            [1,0,1,0,1],
+            [1,1,1,1,1],
+            [1,0,1,0,1]
+        ];
+        var SHIP_PATTERN = [
+            [0,0,1,0,0],
+            [0,1,1,1,0],
+            [1,1,1,1,1],
+            [0,0,1,0,0],
+            [0,0,0,0,0]
+        ];
+        var HEART_PATTERN = [
+            [0,1,0,1,0],
+            [1,1,1,1,1],
+            [1,1,1,1,1],
+            [0,1,1,1,0],
+            [0,0,1,0,0]
+        ];
+        var PIXEL_PATTERNS = [INVADER_PATTERN, GHOST_PATTERN, SHIP_PATTERN, HEART_PATTERN];
+
+        // ── Section mapping based on song structure ──
+        // seq 0-1: Empty Arcade, seq 2-5: Attract Mode, seq 6-9: Platformer
+        // seq 10: Static Interrupt, seq 11-14: Racing/Puzzle
+        // seq 15-18: Fighter, seq 19-22: Fighter full
+        // seq 23-30: Convergence (peak), seq 31-32: Closing Time
+        // seq 33-38: Power Down
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'empty';
+            if (seqIndex <= 5) return 'attract';
+            if (seqIndex <= 9) return 'platformer';
+            if (seqIndex <= 10) return 'static';
+            if (seqIndex <= 14) return 'racing';
+            if (seqIndex <= 18) return 'puzzle';
+            if (seqIndex <= 22) return 'fighter';
+            if (seqIndex <= 26) return 'convergence';
+            if (seqIndex <= 30) return 'peak';
+            if (seqIndex <= 32) return 'closing';
+            return 'powerdown';
+        }
+
+        // ── Init cabinets ──
+        function initCabinets() {
+            cabinets = [];
+            var spacing = W / (NUM_CABINETS + 1);
+            for (var i = 0; i < NUM_CABINETS; i++) {
+                cabinets.push({
+                    x: spacing * (i + 1),
+                    y: H * 0.35,
+                    w: W * 0.08,
+                    h: H * 0.45,
+                    screenOn: false,
+                    screenBrightness: 0,
+                    screenColor: CABINET_COLORS[i % CABINET_COLORS.length],
+                    flickerTimer: 0,
+                    flickerOn: false,
+                    gameType: i % 4,  // 0=invaders, 1=pacman, 2=racer, 3=fighter
+                    screenPhase: Math.random() * Math.PI * 2,
+                    edgeGlow: 0
+                });
+            }
+        }
+
+        function initScreenStates() {
+            screenStates = [];
+            for (var i = 0; i < NUM_CABINETS; i++) {
+                screenStates.push({
+                    dots: [],       // moving dots on screen
+                    score: 0,
+                    level: 1,
+                    glitchAmount: 0
+                });
+                // Generate some screen dots
+                for (var d = 0; d < 8; d++) {
+                    screenStates[i].dots.push({
+                        x: Math.random(),
+                        y: Math.random(),
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        size: 2 + Math.random() * 3
+                    });
+                }
+            }
+        }
+
+        // ── Init ghosts ──
+        function initGhosts() {
+            ghosts = [];
+            for (var i = 0; i < NUM_GHOSTS; i++) {
+                ghosts.push({
+                    x: Math.random() * W,
+                    y: H * 0.3 + Math.random() * H * 0.4,
+                    vx: (Math.random() - 0.5) * 60,
+                    vy: (Math.random() - 0.5) * 20,
+                    size: 20 + Math.random() * 20,
+                    color: GHOST_COLORS[i % GHOST_COLORS.length],
+                    alpha: 0,
+                    targetAlpha: 0,
+                    wobble: Math.random() * Math.PI * 2,
+                    trail: [],
+                    active: false
+                });
+            }
+        }
+
+        // ── Init invaders ──
+        function initInvaders() {
+            invaders = [];
+            for (var i = 0; i < NUM_INVADERS; i++) {
+                var col = i % 6;
+                var row = Math.floor(i / 6);
+                invaders.push({
+                    baseX: W * 0.2 + col * W * 0.1,
+                    baseY: H * 0.08 + row * H * 0.08,
+                    x: W * 0.2 + col * W * 0.1,
+                    y: H * 0.08 + row * H * 0.08,
+                    size: 16,
+                    alpha: 0,
+                    phase: Math.random() * Math.PI * 2,
+                    alive: true
+                });
+            }
+        }
+
+        // ── Init pixel fragments ──
+        function initFragments() {
+            pixelFragments = [];
+            for (var i = 0; i < NUM_FRAGMENTS; i++) {
+                pixelFragments.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 30,
+                    vy: -10 - Math.random() * 40,
+                    size: 2 + Math.random() * 4,
+                    color: CABINET_COLORS[Math.floor(Math.random() * CABINET_COLORS.length)],
+                    alpha: 0,
+                    life: 0.5 + Math.random() * 2,
+                    age: Math.random() * 2
+                });
+            }
+        }
+
+        // ── Init static noise ──
+        function initStatic() {
+            staticNoise = [];
+            for (var i = 0; i < NUM_STATIC; i++) {
+                staticNoise.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    size: 1 + Math.random() * 3,
+                    alpha: Math.random() * 0.3,
+                    speed: 50 + Math.random() * 200
+                });
+            }
+        }
+
+        // ── Draw pixel art pattern ──
+        function drawPixelPattern(ctx, pattern, cx, cy, pixSize, color, alpha) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color;
+            var rows = pattern.length;
+            var cols = pattern[0].length;
+            var ox = cx - (cols * pixSize) / 2;
+            var oy = cy - (rows * pixSize) / 2;
+            for (var r = 0; r < rows; r++) {
+                for (var c = 0; c < cols; c++) {
+                    if (pattern[r][c]) {
+                        ctx.fillRect(ox + c * pixSize, oy + r * pixSize, pixSize - 1, pixSize - 1);
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Draw a Pac-Man ghost shape ──
+        function drawGhost(ctx, g) {
+            if (g.alpha < 0.01) return;
+            var s = g.size;
+            var wobbleX = Math.sin(g.wobble) * 3;
+
+            ctx.save();
+            ctx.globalAlpha = g.alpha;
+            ctx.shadowColor = g.color;
+            ctx.shadowBlur = 15 + g.alpha * 20;
+
+            // Ghost body
+            ctx.fillStyle = g.color;
+            ctx.beginPath();
+            ctx.arc(g.x + wobbleX, g.y - s * 0.3, s * 0.5, Math.PI, 0);
+            ctx.lineTo(g.x + wobbleX + s * 0.5, g.y + s * 0.2);
+            // Wavy bottom
+            var waveSegs = 3;
+            var waveW = s / waveSegs;
+            for (var i = 0; i < waveSegs; i++) {
+                var wx = g.x + wobbleX + s * 0.5 - (i + 1) * waveW;
+                var peakY = g.y + s * 0.2 + ((i % 2 === 0) ? s * 0.15 : 0);
+                ctx.lineTo(wx + waveW * 0.5, peakY);
+                ctx.lineTo(wx, g.y + s * 0.2);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = g.alpha * 0.9;
+            ctx.beginPath();
+            ctx.arc(g.x + wobbleX - s * 0.15, g.y - s * 0.35, s * 0.12, 0, Math.PI * 2);
+            ctx.arc(g.x + wobbleX + s * 0.15, g.y - s * 0.35, s * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#112';
+            ctx.beginPath();
+            ctx.arc(g.x + wobbleX - s * 0.12, g.y - s * 0.35, s * 0.06, 0, Math.PI * 2);
+            ctx.arc(g.x + wobbleX + s * 0.18, g.y - s * 0.35, s * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ghost trail (afterimage)
+            if (g.trail.length > 1) {
+                ctx.globalAlpha = g.alpha * 0.15;
+                ctx.fillStyle = g.color;
+                for (var ti = 0; ti < g.trail.length; ti++) {
+                    var tp = g.trail[ti];
+                    var ta = (1 - ti / g.trail.length) * 0.3;
+                    ctx.globalAlpha = g.alpha * ta;
+                    ctx.beginPath();
+                    ctx.arc(tp.x, tp.y - s * 0.1, s * 0.3 * (1 - ti / g.trail.length), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw arcade cabinet ──
+        function drawCabinet(ctx, cab, screenState, energy) {
+            var x = cab.x - cab.w / 2;
+            var y = cab.y;
+            var w = cab.w;
+            var h = cab.h;
+
+            ctx.save();
+
+            // Cabinet body (dark silhouette)
+            ctx.fillStyle = '#0a0a14';
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+
+            // Main body shape
+            ctx.beginPath();
+            ctx.moveTo(x + 2, y);
+            ctx.lineTo(x + w - 2, y);
+            ctx.lineTo(x + w, y + h * 0.15);
+            ctx.lineTo(x + w + 2, y + h);
+            ctx.lineTo(x - 2, y + h);
+            ctx.lineTo(x, y + h * 0.15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Edge lighting (neon glow on cabinet edges)
+            var edgeAlpha = 0.1 + cab.edgeGlow * 0.4 + energy * 0.2;
+            ctx.strokeStyle = cab.screenColor;
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = cab.screenColor;
+            ctx.shadowBlur = 8 + cab.edgeGlow * 12;
+            ctx.globalAlpha = edgeAlpha;
+
+            // Left edge
+            ctx.beginPath();
+            ctx.moveTo(x, y + h * 0.15);
+            ctx.lineTo(x - 2, y + h);
+            ctx.stroke();
+            // Right edge
+            ctx.beginPath();
+            ctx.moveTo(x + w, y + h * 0.15);
+            ctx.lineTo(x + w + 2, y + h);
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+
+            // Screen area
+            var sx = x + w * 0.12;
+            var sy = y + h * 0.05;
+            var sw = w * 0.76;
+            var sh = h * 0.35;
+
+            if (cab.screenOn || cab.flickerOn) {
+                var brightness = cab.screenBrightness * (cab.flickerOn ? (Math.random() > 0.3 ? 1 : 0.2) : 1);
+
+                // Screen glow background
+                ctx.fillStyle = cab.screenColor;
+                ctx.globalAlpha = brightness * 0.15;
+                ctx.shadowColor = cab.screenColor;
+                ctx.shadowBlur = 30;
+                ctx.fillRect(sx - 4, sy - 4, sw + 8, sh + 8);
+
+                // Screen surface
+                ctx.globalAlpha = brightness * 0.08;
+                ctx.fillRect(sx, sy, sw, sh);
+
+                ctx.shadowBlur = 0;
+
+                // Draw game content on screen
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(sx, sy, sw, sh);
+                ctx.clip();
+
+                drawScreenContent(ctx, cab, screenState, sx, sy, sw, sh, brightness, energy);
+
+                ctx.restore();
+
+                // CRT phosphor scanlines on screen
+                ctx.globalAlpha = brightness * 0.3;
+                for (var sl = 0; sl < sh; sl += 3) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(sx, sy + sl, sw, 1);
+                }
+
+                // Screen reflection
+                ctx.globalAlpha = brightness * 0.05;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(sx + sw * 0.1, sy + 2, sw * 0.3, sh * 0.1);
+            } else {
+                // Dark screen
+                ctx.fillStyle = '#020208';
+                ctx.globalAlpha = 1;
+                ctx.fillRect(sx, sy, sw, sh);
+            }
+
+            // Joystick area (small detail)
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#1a1a2a';
+            ctx.fillRect(x + w * 0.2, y + h * 0.5, w * 0.6, h * 0.1);
+
+            ctx.restore();
+        }
+
+        // ── Draw game content on a cabinet screen ──
+        function drawScreenContent(ctx, cab, state, sx, sy, sw, sh, brightness, energy) {
+            ctx.globalAlpha = brightness * 0.8;
+            var col = cab.screenColor;
+            ctx.fillStyle = col;
+
+            // Update dots
+            for (var d = 0; d < state.dots.length; d++) {
+                var dot = state.dots[d];
+                dot.x += dot.vx * 0.005;
+                dot.y += dot.vy * 0.005;
+                if (dot.x < 0 || dot.x > 1) dot.vx *= -1;
+                if (dot.y < 0 || dot.y > 1) dot.vy *= -1;
+                dot.x = Math.max(0, Math.min(1, dot.x));
+                dot.y = Math.max(0, Math.min(1, dot.y));
+            }
+
+            switch (cab.gameType) {
+                case 0: // Invaders
+                    for (var d0 = 0; d0 < state.dots.length; d0++) {
+                        var dd = state.dots[d0];
+                        drawPixelPattern(ctx, INVADER_PATTERN, sx + dd.x * sw, sy + dd.y * sh * 0.6, dd.size * 0.6, col, brightness * 0.7);
+                    }
+                    // Player ship at bottom
+                    drawPixelPattern(ctx, SHIP_PATTERN, sx + sw * 0.5, sy + sh * 0.85, 3, col, brightness * 0.5);
+                    break;
+                case 1: // Pac-Man style
+                    // Dots in a line
+                    for (var p = 0; p < 8; p++) {
+                        ctx.beginPath();
+                        ctx.arc(sx + sw * 0.1 + p * sw * 0.1, sy + sh * 0.5, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // Pac-man
+                    var pacX = sx + ((time * 30) % sw);
+                    ctx.beginPath();
+                    var mouthOpen = Math.abs(Math.sin(time * 8)) * 0.4;
+                    ctx.arc(pacX, sy + sh * 0.5, 5, mouthOpen, Math.PI * 2 - mouthOpen);
+                    ctx.lineTo(pacX, sy + sh * 0.5);
+                    ctx.fill();
+                    break;
+                case 2: // Racing
+                    // Road lines
+                    ctx.strokeStyle = col;
+                    ctx.lineWidth = 1;
+                    for (var rl = 0; rl < 5; rl++) {
+                        var ry = sy + (rl / 5) * sh;
+                        var roff = ((time * 40 + rl * 10) % 20) - 10;
+                        ctx.globalAlpha = brightness * 0.4;
+                        ctx.beginPath();
+                        ctx.moveTo(sx + sw * 0.5 + roff - 2, ry);
+                        ctx.lineTo(sx + sw * 0.5 + roff + 2, ry + sh * 0.15);
+                        ctx.stroke();
+                    }
+                    // Car
+                    ctx.fillStyle = col;
+                    ctx.globalAlpha = brightness * 0.7;
+                    ctx.fillRect(sx + sw * 0.45, sy + sh * 0.7, sw * 0.1, sh * 0.15);
+                    break;
+                case 3: // Fighter
+                    // Two fighters
+                    ctx.fillStyle = col;
+                    ctx.globalAlpha = brightness * 0.6;
+                    // Fighter 1
+                    ctx.fillRect(sx + sw * 0.2, sy + sh * 0.4, 4, 10);
+                    ctx.fillRect(sx + sw * 0.2 - 3, sy + sh * 0.45, 10, 3);
+                    // Fighter 2
+                    ctx.fillRect(sx + sw * 0.7, sy + sh * 0.4, 4, 10);
+                    ctx.fillRect(sx + sw * 0.7 - 3, sy + sh * 0.45, 10, 3);
+                    // Health bars
+                    ctx.globalAlpha = brightness * 0.4;
+                    ctx.fillRect(sx + 2, sy + 3, sw * 0.35, 3);
+                    ctx.fillRect(sx + sw * 0.6, sy + 3, sw * 0.35, 3);
+                    break;
+            }
+
+            // Glitch effect
+            if (state.glitchAmount > 0.01) {
+                ctx.globalAlpha = state.glitchAmount * 0.5;
+                ctx.fillStyle = '#fff';
+                for (var g = 0; g < 3; g++) {
+                    var gy = sy + Math.random() * sh;
+                    ctx.fillRect(sx, gy, sw, 1 + Math.random() * 3);
+                }
+            }
+        }
+
+        // ── Draw scanlines across entire screen ──
+        function drawScanlines(ctx, intensity) {
+            if (intensity < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = intensity * 0.12;
+            ctx.fillStyle = '#000';
+            for (var i = 0; i < H; i += 3) {
+                ctx.fillRect(0, i + scanlineOffset, W, 1);
+            }
+            // Occasional horizontal glitch bar
+            if (Math.random() < intensity * 0.05) {
+                ctx.globalAlpha = intensity * 0.15;
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                var barY = Math.random() * H;
+                ctx.fillRect(0, barY, W, 2 + Math.random() * 6);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw floor (dark arcade carpet with neon reflections) ──
+        function drawFloor(ctx, energy) {
+            var floorY = H * 0.8;
+            ctx.save();
+
+            // Dark carpet
+            ctx.fillStyle = '#030308';
+            ctx.fillRect(0, floorY, W, H - floorY);
+
+            // Neon edge line
+            ctx.strokeStyle = CYAN;
+            ctx.lineWidth = 1;
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 6 + energy * 8;
+            ctx.globalAlpha = 0.3 + energy * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(W, floorY);
+            ctx.stroke();
+
+            // Carpet pattern (subtle diamond grid)
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(40,0,60,0.15)';
+            ctx.lineWidth = 0.5;
+            ctx.globalAlpha = 0.5;
+            var gridSize = 20;
+            for (var gx = 0; gx < W; gx += gridSize) {
+                for (var gy = floorY; gy < H; gy += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx + gridSize / 2, gy);
+                    ctx.lineTo(gx + gridSize, gy + gridSize / 2);
+                    ctx.lineTo(gx + gridSize / 2, gy + gridSize);
+                    ctx.lineTo(gx, gy + gridSize / 2);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+
+            // Reflections from cabinet screens on floor
+            for (var i = 0; i < cabinets.length; i++) {
+                var cab = cabinets[i];
+                if (!cab.screenOn && !cab.flickerOn) continue;
+                var refAlpha = cab.screenBrightness * 0.06 * energy;
+                if (refAlpha < 0.005) continue;
+                var grad = ctx.createRadialGradient(cab.x, floorY, 0, cab.x, floorY, cab.w * 2);
+                grad.addColorStop(0, cab.screenColor);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.globalAlpha = refAlpha;
+                ctx.fillStyle = grad;
+                ctx.fillRect(cab.x - cab.w * 2, floorY, cab.w * 4, H - floorY);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw static noise ──
+        function drawStatic(ctx, intensity) {
+            if (intensity < 0.01) return;
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            for (var i = 0; i < staticNoise.length; i++) {
+                var s = staticNoise[i];
+                ctx.globalAlpha = s.alpha * intensity;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw pixel fragments ──
+        function drawFragments(ctx) {
+            ctx.save();
+            for (var i = 0; i < pixelFragments.length; i++) {
+                var f = pixelFragments[i];
+                if (f.alpha < 0.01) continue;
+                ctx.globalAlpha = f.alpha;
+                ctx.fillStyle = f.color;
+                ctx.shadowColor = f.color;
+                ctx.shadowBlur = 4;
+                ctx.fillRect(f.x, f.y, f.size, f.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.max(10, Math.min(W * 0.028, 32));
+            ctx.font = fontSize + 'px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var text = 'GHOSTS OF THE ARCADE';
+            var y = H * 0.12;
+
+            // Glitch offset
+            var glitchX = (Math.random() - 0.5) * titleAlpha * 3;
+            var glitchY = (Math.random() - 0.5) * titleAlpha * 2;
+
+            // CRT color separation
+            ctx.globalAlpha = titleAlpha * 0.3;
+            ctx.fillStyle = RED;
+            ctx.fillText(text, W / 2 + glitchX - 2, y + glitchY);
+            ctx.fillStyle = CYAN;
+            ctx.fillText(text, W / 2 + glitchX + 2, y + glitchY);
+
+            // Main text
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 20 + beatPulse * 15;
+            ctx.fillStyle = '#fff';
+            ctx.fillText(text, W / 2 + glitchX, y + glitchY);
+
+            ctx.restore();
+        }
+
+        // ── Draw coin insert flash ──
+        function drawCoinFlashes(ctx) {
+            ctx.save();
+            for (var i = coinFlashes.length - 1; i >= 0; i--) {
+                var cf = coinFlashes[i];
+                cf.life -= 0.05;
+                if (cf.life <= 0) {
+                    coinFlashes.splice(i, 1);
+                    continue;
+                }
+                ctx.globalAlpha = cf.life * 0.6;
+                ctx.fillStyle = AMBER;
+                ctx.shadowColor = AMBER;
+                ctx.shadowBlur = 20;
+
+                // Coin shape (small circle)
+                ctx.beginPath();
+                ctx.arc(cf.x, cf.y, 4 + (1 - cf.life) * 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Expanding ring
+                ctx.strokeStyle = AMBER;
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = cf.life * 0.3;
+                ctx.beginPath();
+                ctx.arc(cf.x, cf.y, (1 - cf.life) * 30, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw CRT vignette ──
+        function drawVignette(ctx) {
+            ctx.save();
+            var grad = ctx.createRadialGradient(W / 2, H / 2, W * 0.25, W / 2, H / 2, W * 0.8);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Lerp helper ──
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        function expDecay(val, target, speed, dt) {
+            return val + (target - val) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            time = 0;
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'empty';
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            scanlineOffset = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            coinFlashes = [];
+
+            initCabinets();
+            initScreenStates();
+            initGhosts();
+            initInvaders();
+            initFragments();
+            initStatic();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            initCabinets();
+            initScreenStates();
+            initInvaders();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+            time += dt;
+            scanlineOffset = (scanlineOffset + dt * 30) % 3;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: dark arcade, no screens
+                drawFloor(ctx, 0);
+                for (var ci = 0; ci < cabinets.length; ci++) {
+                    drawCabinet(ctx, cabinets[ci], screenStates[ci], 0);
+                }
+                drawScanlines(ctx, 0.3);
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+
+                // On section change: flash and trigger coin insert visual
+                if (lastSeqIndex >= 0) {
+                    flashAlpha = 0.08 + energy * 0.1;
+                    // Coin flash on a random cabinet
+                    var cabIdx = Math.floor(Math.random() * cabinets.length);
+                    coinFlashes.push({
+                        x: cabinets[cabIdx].x,
+                        y: cabinets[cabIdx].y + cabinets[cabIdx].h * 0.55,
+                        life: 1
+                    });
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Cabinet flicker on beat
+                var flickerCab = Math.floor(Math.random() * cabinets.length);
+                cabinets[flickerCab].flickerTimer = 0.1 + Math.random() * 0.15;
+
+                // Coin flash on strong beats
+                if (energy > 0.6 && Math.random() > 0.5) {
+                    var ci2 = Math.floor(Math.random() * cabinets.length);
+                    coinFlashes.push({
+                        x: cabinets[ci2].x,
+                        y: cabinets[ci2].y + cabinets[ci2].h * 0.55,
+                        life: 1
+                    });
+                }
+
+                // Ghost movement burst on beat
+                for (var gi = 0; gi < ghosts.length; gi++) {
+                    if (!ghosts[gi].active) continue;
+                    ghosts[gi].vx += (Math.random() - 0.5) * 40 * energy;
+                    ghosts[gi].vy += (Math.random() - 0.5) * 20 * energy;
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-6 * dt);
+
+            // ── Section-specific state updates ──
+
+            // Intro fade
+            if (sectionMood === 'empty') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.4);
+            } else {
+                introFadeIn = 1;
+            }
+
+            // Power down fade
+            if (sectionMood === 'powerdown') {
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.08);
+            } else {
+                outroFadeOut = 1;
+            }
+
+            // Cabinet screen states based on section
+            var screenActivity = 0;
+            var ghostActivity = 0;
+            var invaderActivity = 0;
+            var staticIntensity = 0.2;
+            var fragmentActivity = 0;
+            titleTarget = 0;
+
+            switch (sectionMood) {
+                case 'empty':
+                    screenActivity = 0;
+                    ghostActivity = 0;
+                    staticIntensity = 0.05;
+                    break;
+                case 'attract':
+                    screenActivity = 0.3 + energy * 0.3;
+                    ghostActivity = 0.1;
+                    staticIntensity = 0.15;
+                    titleTarget = 0.6;
+                    break;
+                case 'platformer':
+                    screenActivity = 0.6 + energy * 0.3;
+                    ghostActivity = 0.3 + energy * 0.2;
+                    invaderActivity = 0.2;
+                    staticIntensity = 0.1;
+                    titleTarget = 0.8;
+                    break;
+                case 'static':
+                    screenActivity = 0.3;
+                    ghostActivity = 0.1;
+                    staticIntensity = 0.7 + energy * 0.3;
+                    fragmentActivity = 0.5;
+                    break;
+                case 'racing':
+                    screenActivity = 0.7 + energy * 0.3;
+                    ghostActivity = 0.5 + energy * 0.3;
+                    invaderActivity = 0.4;
+                    staticIntensity = 0.1;
+                    titleTarget = 0.4;
+                    break;
+                case 'puzzle':
+                    screenActivity = 0.8;
+                    ghostActivity = 0.4;
+                    invaderActivity = 0.3;
+                    staticIntensity = 0.08;
+                    fragmentActivity = 0.2;
+                    break;
+                case 'fighter':
+                    screenActivity = 0.9;
+                    ghostActivity = 0.7 + energy * 0.3;
+                    invaderActivity = 0.6;
+                    staticIntensity = 0.15;
+                    fragmentActivity = 0.4;
+                    titleTarget = 0.5;
+                    break;
+                case 'convergence':
+                    screenActivity = 1;
+                    ghostActivity = 0.8 + energy * 0.2;
+                    invaderActivity = 0.8;
+                    staticIntensity = 0.2;
+                    fragmentActivity = 0.6;
+                    titleTarget = 1;
+                    break;
+                case 'peak':
+                    screenActivity = 1;
+                    ghostActivity = 1;
+                    invaderActivity = 1;
+                    staticIntensity = 0.25 + beatPulse * 0.3;
+                    fragmentActivity = 1;
+                    titleTarget = 1;
+                    // Power surge flashes
+                    if (energy > 0.5) flashAlpha = Math.max(flashAlpha, 0.05 + beatPulse * 0.1);
+                    break;
+                case 'closing':
+                    screenActivity = 0.4 - energy * 0.2;
+                    ghostActivity = 0.3;
+                    invaderActivity = 0.1;
+                    staticIntensity = 0.3;
+                    fragmentActivity = 0.1;
+                    break;
+                case 'powerdown':
+                    screenActivity = Math.max(0, 0.3 * outroFadeOut);
+                    ghostActivity = 0.1 * outroFadeOut;
+                    staticIntensity = 0.5 * outroFadeOut;
+                    fragmentActivity = 0;
+                    break;
+            }
+
+            // ── Title alpha ──
+            titleAlpha = expDecay(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update cabinets ──
+            for (var ci3 = 0; ci3 < cabinets.length; ci3++) {
+                var cab = cabinets[ci3];
+
+                // Turn screens on progressively
+                var threshold = ci3 / cabinets.length;
+                cab.screenOn = screenActivity > threshold;
+
+                // Brightness
+                var targetBright = cab.screenOn ? (0.3 + energy * 0.5) * outroFadeOut : 0;
+                cab.screenBrightness = expDecay(cab.screenBrightness, targetBright, 5, dt);
+
+                // Flicker timer
+                if (cab.flickerTimer > 0) {
+                    cab.flickerTimer -= dt;
+                    cab.flickerOn = true;
+                } else {
+                    cab.flickerOn = false;
+                }
+
+                // Edge glow pulses with beat
+                cab.edgeGlow = expDecay(cab.edgeGlow, beatPulse * energy + (cab.screenOn ? 0.1 : 0), 6, dt);
+
+                // Screen phase
+                cab.screenPhase += dt * 2;
+
+                // Screen state glitch
+                screenStates[ci3].glitchAmount = sectionMood === 'static' ? 0.5 + Math.random() * 0.5 :
+                    sectionMood === 'peak' ? beatPulse * 0.4 : 0;
+            }
+
+            // ── Update ghosts ──
+            for (var gi2 = 0; gi2 < ghosts.length; gi2++) {
+                var g = ghosts[gi2];
+                var gThreshold = gi2 / ghosts.length;
+                g.active = ghostActivity > gThreshold;
+                g.targetAlpha = g.active ? (0.2 + energy * 0.5) * outroFadeOut : 0;
+                g.alpha = expDecay(g.alpha, g.targetAlpha, 3, dt);
+
+                if (g.active) {
+                    g.wobble += dt * 3;
+
+                    // Drift between cabinets
+                    g.x += g.vx * dt;
+                    g.y += g.vy * dt;
+
+                    // Gentle drift toward center and cabinets
+                    g.vx += (W / 2 - g.x) * 0.1 * dt;
+                    g.vy += (H * 0.5 - g.y) * 0.05 * dt;
+
+                    // Damping
+                    g.vx *= Math.exp(-0.5 * dt);
+                    g.vy *= Math.exp(-0.5 * dt);
+
+                    // Bounce off edges
+                    if (g.x < 20) { g.x = 20; g.vx = Math.abs(g.vx); }
+                    if (g.x > W - 20) { g.x = W - 20; g.vx = -Math.abs(g.vx); }
+                    if (g.y < 20) { g.y = 20; g.vy = Math.abs(g.vy); }
+                    if (g.y > H * 0.75) { g.y = H * 0.75; g.vy = -Math.abs(g.vy); }
+
+                    // Trail
+                    g.trail.unshift({ x: g.x, y: g.y });
+                    if (g.trail.length > 8) g.trail.pop();
+                }
+            }
+
+            // ── Update invaders ──
+            var invaderDrift = Math.sin(time * 0.8) * W * 0.05;
+            for (var ii = 0; ii < invaders.length; ii++) {
+                var inv = invaders[ii];
+                var iThreshold = ii / invaders.length;
+                var targetA = invaderActivity > iThreshold ? (0.15 + energy * 0.3) * outroFadeOut : 0;
+                inv.alpha = expDecay(inv.alpha, targetA, 3, dt);
+                inv.x = inv.baseX + invaderDrift + Math.sin(inv.phase + time * 2) * 5;
+                inv.y = inv.baseY + Math.sin(inv.phase + time * 1.5) * 3;
+            }
+
+            // ── Update pixel fragments ──
+            for (var fi = 0; fi < pixelFragments.length; fi++) {
+                var f = pixelFragments[fi];
+                var fTarget = fragmentActivity > 0.01 ? fragmentActivity * 0.4 * outroFadeOut : 0;
+                f.alpha = expDecay(f.alpha, fTarget, 2, dt);
+
+                f.x += f.vx * dt;
+                f.y += f.vy * dt;
+                f.age += dt;
+
+                // Reset when off screen
+                if (f.y < -10 || f.y > H + 10 || f.x < -10 || f.x > W + 10 || f.age > f.life) {
+                    f.x = Math.random() * W;
+                    f.y = H * 0.3 + Math.random() * H * 0.5;
+                    f.vx = (Math.random() - 0.5) * 30;
+                    f.vy = -10 - Math.random() * 40;
+                    f.age = 0;
+                    f.life = 0.5 + Math.random() * 2;
+                }
+            }
+
+            // ── Update static noise ──
+            for (var si = 0; si < staticNoise.length; si++) {
+                var sn = staticNoise[si];
+                sn.y += sn.speed * dt;
+                if (sn.y > H) {
+                    sn.y = -5;
+                    sn.x = Math.random() * W;
+                }
+                sn.alpha = Math.random() * 0.3;
+            }
+
+            // ══════ DRAW SCENE (back to front) ══════
+
+            // 1. Ambient glow from cabinets on ceiling/walls
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var ai = 0; ai < cabinets.length; ai++) {
+                var ac = cabinets[ai];
+                if (!ac.screenOn) continue;
+                var glowAlpha = ac.screenBrightness * 0.02;
+                if (glowAlpha < 0.002) continue;
+                var ambGrad = ctx.createRadialGradient(ac.x, ac.y, 0, ac.x, ac.y, H * 0.4);
+                ambGrad.addColorStop(0, ac.screenColor);
+                ambGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.globalAlpha = glowAlpha;
+                ctx.fillStyle = ambGrad;
+                ctx.fillRect(ac.x - H * 0.4, 0, H * 0.8, H);
+            }
+            ctx.restore();
+
+            // 2. Invader silhouettes in the background
+            for (var di = 0; di < invaders.length; di++) {
+                var inv2 = invaders[di];
+                if (inv2.alpha < 0.01) continue;
+                drawPixelPattern(ctx, INVADER_PATTERN, inv2.x, inv2.y, inv2.size * 0.5, CYAN, inv2.alpha * 0.5);
+            }
+
+            // 3. Floor
+            drawFloor(ctx, energy);
+
+            // 4. Cabinets
+            for (var dc = 0; dc < cabinets.length; dc++) {
+                drawCabinet(ctx, cabinets[dc], screenStates[dc], energy);
+            }
+
+            // 5. Ghosts drifting between cabinets
+            for (var dg = 0; dg < ghosts.length; dg++) {
+                drawGhost(ctx, ghosts[dg]);
+            }
+
+            // 6. Pixel fragments
+            drawFragments(ctx);
+
+            // 7. Coin flashes
+            drawCoinFlashes(ctx);
+
+            // 8. Title
+            drawTitle(ctx);
+
+            // 9. Static noise overlay
+            drawStatic(ctx, staticIntensity * outroFadeOut);
+
+            // 10. CRT scanlines
+            drawScanlines(ctx, (0.3 + energy * 0.2) * outroFadeOut);
+
+            // 11. Vignette
+            drawVignette(ctx);
+
+            // 12. Flash
+            drawFlash(ctx);
+
+            // 13. Power down blackout
+            if (sectionMood === 'powerdown' && outroFadeOut < 0.1) {
+                ctx.save();
+                ctx.globalAlpha = 1 - outroFadeOut * 10;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+
+                // Single dot in center (CRT power-off effect)
+                if (outroFadeOut > 0.01) {
+                    ctx.globalAlpha = outroFadeOut * 10;
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = '#fff';
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.arc(W / 2, H / 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Ghosts of the Arcade Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('ghosts-arcade-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/ghosts-of-the-arcade.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

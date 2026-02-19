@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Cathedral Requiem — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #06001a;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(6,0,26,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(18px, 4vw, 44px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #00e5ff;
+            text-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 60px rgba(0,229,255,0.3), 0 0 120px rgba(180,0,255,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.2em;
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5ff;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,255,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: monospace;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Cyber-Cathedral Requiem</div>
+        <div class="play-sub">a digital gothic experience</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Cyber-Cathedral Requiem Video Renderer ────────────────────────
+    window.Renderers['cyber-cathedral-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Colors ──
+        var BG = '#06001a';
+        var CYAN = '#00e5ff';
+        var MAGENTA = '#ff00d4';
+        var ELECTRIC_BLUE = '#4444ff';
+        var PURPLE_DEEP = '#2a0060';
+        var NEON_GLOW = [CYAN, MAGENTA, '#8800ff', ELECTRIC_BLUE, '#00ff88'];
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var sectionMood = 'intro';
+        var lastSeqIndex = -1;
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+        var globalTime = 0;
+
+        // ── Cathedral geometry ──
+        var cathedral = {
+            vanishX: 0, vanishY: 0,
+            naveWidth: 0, naveHeight: 0,
+            depth: 0
+        };
+
+        // ── Particles (digital rain inside cathedral) ──
+        var particles = [];
+        var MAX_PARTICLES = 200;
+
+        // ── Stained glass fragments ──
+        var glassFragments = [];
+
+        // ── Data streams (light beams through windows) ──
+        var dataStreams = [];
+
+        // ── Flying buttress state ──
+        var buttressGlow = 0;
+
+        // ── Rose window ──
+        var roseAngle = 0;
+        var roseGlow = 0;
+
+        // ── Title ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Scene progression ──
+        // 0: exterior approach, 1: entering nave, 2: holographic choir,
+        // 3: digital ascension, 4: system shutdown
+        var scenePhase = 0;
+        var sceneTransition = 0;
+        var cameraZ = 0; // 0 = far outside, 1 = deep inside
+
+        // ── Section mapping based on song structure ──
+        // seq 0-1: Intro (exterior approach)
+        // seq 2-5: Verse (entering nave)
+        // seq 6-9: Chorus (holographic choir)
+        // seq 10-11: Bridge (digital ascension / glitch prayer)
+        // seq 12-13: Verse return
+        // seq 14-17: Chorus
+        // seq 18-19: Bridge return
+        // seq 20-21: Final chorus
+        // seq 22-23: Outro (system shutdown)
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'intro';
+            if (seqIndex <= 5) return 'verse';
+            if (seqIndex <= 9) return 'chorus';
+            if (seqIndex <= 11) return 'bridge';
+            if (seqIndex <= 13) return 'verse';
+            if (seqIndex <= 17) return 'chorus';
+            if (seqIndex <= 19) return 'bridge';
+            if (seqIndex <= 21) return 'chorus';
+            return 'outro';
+        }
+
+        function mapScene(section) {
+            switch (section) {
+                case 'intro': return 0;
+                case 'verse': return 1;
+                case 'chorus': return 2;
+                case 'bridge': return 3;
+                case 'outro': return 4;
+                default: return 1;
+            }
+        }
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1, 3), 16);
+            var g = parseInt(hex.slice(3, 5), 16);
+            var b = parseInt(hex.slice(5, 7), 16);
+            return [r, g, b];
+        }
+        function rgba(hex, a) {
+            var c = hexToRgb(hex);
+            return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+        }
+
+        // ── Initialize particles ──
+        function initParticles() {
+            particles = [];
+            for (var i = 0; i < MAX_PARTICLES; i++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function createParticle() {
+            return {
+                x: Math.random() * W,
+                y: Math.random() * H,
+                vx: (Math.random() - 0.5) * 20,
+                vy: -20 - Math.random() * 80,
+                size: 1 + Math.random() * 2.5,
+                alpha: 0.1 + Math.random() * 0.6,
+                color: NEON_GLOW[Math.floor(Math.random() * NEON_GLOW.length)],
+                life: Math.random()
+            };
+        }
+
+        // ── Initialize stained glass ──
+        function initGlass() {
+            glassFragments = [];
+            for (var i = 0; i < 30; i++) {
+                glassFragments.push({
+                    angle: (Math.PI * 2 / 30) * i,
+                    radius: 0.15 + Math.random() * 0.15,
+                    color: NEON_GLOW[Math.floor(Math.random() * NEON_GLOW.length)],
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    width: 0.04 + Math.random() * 0.06
+                });
+            }
+        }
+
+        // ── Initialize data streams ──
+        function initDataStreams() {
+            dataStreams = [];
+            for (var i = 0; i < 12; i++) {
+                dataStreams.push({
+                    x: Math.random() * W,
+                    speed: 40 + Math.random() * 120,
+                    length: 30 + Math.random() * 100,
+                    chars: [],
+                    charTimer: 0,
+                    color: i % 2 === 0 ? CYAN : MAGENTA,
+                    alpha: 0.2 + Math.random() * 0.5
+                });
+                // Pre-populate chars
+                for (var j = 0; j < 15; j++) {
+                    dataStreams[i].chars.push({
+                        y: Math.random() * H,
+                        ch: String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96)),
+                        alpha: Math.random()
+                    });
+                }
+            }
+        }
+
+        // ── Draw wireframe cathedral structure ──
+        function drawCathedral(ctx, energy, beat) {
+            var vx = cathedral.vanishX;
+            var vy = cathedral.vanishY;
+            var nw = cathedral.naveWidth;
+            var nh = cathedral.naveHeight;
+            var cz = Math.min(1, cameraZ);
+
+            var neonAlpha = 0.3 + energy * 0.5 + beatPulse * 0.2;
+            var glowSize = 4 + energy * 12 + beatPulse * 8;
+
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Nave walls - perspective lines converging to vanish point
+            var wallSpread = nw * (1 + (1 - cz) * 0.5);
+            var floorY = vy + nh * 0.6;
+            var ceilY = vy - nh * 0.6;
+
+            // Left wall
+            ctx.strokeStyle = rgba(CYAN, neonAlpha * 0.6);
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = glowSize;
+
+            // Pointed arch columns along both walls
+            var numColumns = 6;
+            for (var i = 0; i < numColumns; i++) {
+                var t = (i + 1) / (numColumns + 1);
+                var perspective = Math.pow(t, 0.7);
+
+                var colLeftX = vx - wallSpread * (1 - perspective * 0.8);
+                var colRightX = vx + wallSpread * (1 - perspective * 0.8);
+                var colFloorY = lerp(floorY, vy, perspective * 0.3);
+                var colCeilY = lerp(ceilY, vy, perspective * 0.3);
+                var colWidth = (1 - perspective) * nw * 0.03;
+
+                // Column color alternates
+                var colColor = i % 2 === 0 ? CYAN : ELECTRIC_BLUE;
+                ctx.strokeStyle = rgba(colColor, neonAlpha * (1 - perspective * 0.5));
+                ctx.shadowColor = colColor;
+                ctx.shadowBlur = glowSize * (1 - perspective * 0.5);
+                ctx.lineWidth = Math.max(0.5, 2 * (1 - perspective));
+
+                // Left column
+                ctx.beginPath();
+                ctx.moveTo(colLeftX, colFloorY);
+                ctx.lineTo(colLeftX, colCeilY);
+                ctx.stroke();
+
+                // Right column
+                ctx.beginPath();
+                ctx.moveTo(colRightX, colFloorY);
+                ctx.lineTo(colRightX, colCeilY);
+                ctx.stroke();
+
+                // Pointed arch between columns (gothic arch)
+                var archPeakY = colCeilY - (colFloorY - colCeilY) * 0.15;
+                var archMidX = vx;
+                ctx.strokeStyle = rgba(MAGENTA, neonAlpha * 0.4 * (1 - perspective * 0.6));
+                ctx.shadowColor = MAGENTA;
+                ctx.beginPath();
+                ctx.moveTo(colLeftX, colCeilY);
+                ctx.quadraticCurveTo(
+                    lerp(colLeftX, archMidX, 0.5), archPeakY,
+                    archMidX, archPeakY - (colFloorY - colCeilY) * 0.08
+                );
+                ctx.quadraticCurveTo(
+                    lerp(archMidX, colRightX, 0.5), archPeakY,
+                    colRightX, colCeilY
+                );
+                ctx.stroke();
+
+                // Horizontal ribs connecting columns
+                if (i > 0) {
+                    var prevT = i / (numColumns + 1);
+                    var prevPersp = Math.pow(prevT, 0.7);
+                    var prevLeftX = vx - wallSpread * (1 - prevPersp * 0.8);
+                    var prevRightX = vx + wallSpread * (1 - prevPersp * 0.8);
+                    var prevCeilY = lerp(ceilY, vy, prevPersp * 0.3);
+
+                    ctx.strokeStyle = rgba(ELECTRIC_BLUE, neonAlpha * 0.25 * (1 - perspective * 0.5));
+                    ctx.shadowColor = ELECTRIC_BLUE;
+                    ctx.lineWidth = Math.max(0.3, 1.2 * (1 - perspective));
+
+                    // Ceiling rib left
+                    ctx.beginPath();
+                    ctx.moveTo(prevLeftX, prevCeilY);
+                    ctx.lineTo(colLeftX, colCeilY);
+                    ctx.stroke();
+
+                    // Ceiling rib right
+                    ctx.beginPath();
+                    ctx.moveTo(prevRightX, prevCeilY);
+                    ctx.lineTo(colRightX, colCeilY);
+                    ctx.stroke();
+                }
+            }
+
+            // ── Flying buttresses (exterior visible when camera is far) ──
+            if (cz < 0.7) {
+                var buttAlpha = (1 - cz / 0.7) * neonAlpha * 0.5 * (0.6 + buttressGlow * 0.4);
+                var numButt = 4;
+                for (var bi = 0; bi < numButt; bi++) {
+                    var bt = (bi + 0.5) / numButt;
+                    var bPersp = Math.pow(bt, 0.7);
+                    var bLeftX = vx - wallSpread * (1 - bPersp * 0.8);
+                    var bRightX = vx + wallSpread * (1 - bPersp * 0.8);
+                    var bMidY = lerp(ceilY, vy, bPersp * 0.3) + (floorY - ceilY) * 0.2;
+                    var bExtend = wallSpread * 0.35 * (1 - bPersp);
+
+                    ctx.strokeStyle = rgba(MAGENTA, buttAlpha * (1 - bPersp * 0.5));
+                    ctx.shadowColor = MAGENTA;
+                    ctx.shadowBlur = glowSize * 0.7;
+                    ctx.lineWidth = Math.max(0.5, 1.8 * (1 - bPersp));
+
+                    // Left buttress - arched support
+                    ctx.beginPath();
+                    ctx.moveTo(bLeftX, bMidY);
+                    ctx.quadraticCurveTo(
+                        bLeftX - bExtend * 0.5, bMidY - bExtend * 0.3,
+                        bLeftX - bExtend, bMidY + bExtend * 0.6
+                    );
+                    ctx.stroke();
+
+                    // Right buttress
+                    ctx.beginPath();
+                    ctx.moveTo(bRightX, bMidY);
+                    ctx.quadraticCurveTo(
+                        bRightX + bExtend * 0.5, bMidY - bExtend * 0.3,
+                        bRightX + bExtend, bMidY + bExtend * 0.6
+                    );
+                    ctx.stroke();
+                }
+            }
+
+            // ── Floor tiles (perspective grid) ──
+            var floorAlpha = neonAlpha * 0.2;
+            ctx.strokeStyle = rgba(PURPLE_DEEP, floorAlpha + energy * 0.15);
+            ctx.shadowColor = PURPLE_DEEP;
+            ctx.shadowBlur = 3;
+            ctx.lineWidth = 0.5;
+
+            var numFloorLines = 12;
+            for (var fi = 0; fi < numFloorLines; fi++) {
+                var ft = fi / numFloorLines;
+                var fp = Math.pow(ft, 0.6);
+                var fLeftX = vx - wallSpread * (1 - fp * 0.8);
+                var fRightX = vx + wallSpread * (1 - fp * 0.8);
+                var fY = lerp(floorY, vy, fp * 0.3);
+                ctx.beginPath();
+                ctx.moveTo(fLeftX, fY);
+                ctx.lineTo(fRightX, fY);
+                ctx.stroke();
+            }
+
+            // Converging floor lines
+            for (var fv = 0; fv < 8; fv++) {
+                var fvt = fv / 7;
+                var startX = lerp(vx - wallSpread, vx + wallSpread, fvt);
+                ctx.beginPath();
+                ctx.moveTo(startX, floorY);
+                ctx.lineTo(vx, vy);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw rose window (centered at vanishing point) ──
+        function drawRoseWindow(ctx, energy) {
+            var cx = cathedral.vanishX;
+            var cy = cathedral.vanishY - cathedral.naveHeight * 0.15;
+            var maxR = Math.min(W, H) * 0.12;
+            var r = maxR * (0.6 + cameraZ * 0.4);
+            var glow = 0.3 + energy * 0.5 + beatPulse * 0.3 + roseGlow * 0.2;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(roseAngle);
+
+            // Outer ring
+            ctx.strokeStyle = rgba(CYAN, glow * 0.7);
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 15 + energy * 20;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner rings
+            ctx.strokeStyle = rgba(MAGENTA, glow * 0.5);
+            ctx.shadowColor = MAGENTA;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = rgba(ELECTRIC_BLUE, glow * 0.6);
+            ctx.shadowColor = ELECTRIC_BLUE;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Stained glass petals
+            var numPetals = 12;
+            for (var i = 0; i < numPetals; i++) {
+                var angle = (Math.PI * 2 / numPetals) * i;
+                var pColor = NEON_GLOW[i % NEON_GLOW.length];
+                var pAlpha = glow * (0.15 + 0.15 * Math.sin(globalTime * 2 + i * 0.8));
+
+                ctx.fillStyle = rgba(pColor, pAlpha);
+                ctx.shadowColor = pColor;
+                ctx.shadowBlur = 8;
+
+                // Petal shape
+                ctx.beginPath();
+                var innerR = r * 0.38;
+                var outerR = r * 0.62;
+                var petalW = Math.PI / numPetals * 0.7;
+                ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+                ctx.quadraticCurveTo(
+                    Math.cos(angle - petalW) * (innerR + outerR) * 0.55,
+                    Math.sin(angle - petalW) * (innerR + outerR) * 0.55,
+                    Math.cos(angle) * outerR,
+                    Math.sin(angle) * outerR
+                );
+                ctx.quadraticCurveTo(
+                    Math.cos(angle + petalW) * (innerR + outerR) * 0.55,
+                    Math.sin(angle + petalW) * (innerR + outerR) * 0.55,
+                    Math.cos(angle) * innerR,
+                    Math.sin(angle) * innerR
+                );
+                ctx.fill();
+
+                // Radial spokes
+                ctx.strokeStyle = rgba(pColor, glow * 0.3);
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                ctx.stroke();
+            }
+
+            // Center glow
+            var centerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.3);
+            centerGrad.addColorStop(0, rgba('#ffffff', glow * 0.3));
+            centerGrad.addColorStop(0.5, rgba(CYAN, glow * 0.15));
+            centerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = centerGrad;
+            ctx.fillRect(-r * 0.3, -r * 0.3, r * 0.6, r * 0.6);
+
+            ctx.restore();
+        }
+
+        // ── Draw data streams (digital rain) ──
+        function drawDataStreams(ctx, energy, dt) {
+            var speedMult = 0.5 + energy * 2;
+            ctx.save();
+            ctx.font = '12px monospace';
+
+            for (var i = 0; i < dataStreams.length; i++) {
+                var stream = dataStreams[i];
+                var sAlpha = stream.alpha * (0.3 + energy * 0.7) * introFadeIn * outroFadeOut;
+                if (sAlpha < 0.01) continue;
+
+                for (var j = 0; j < stream.chars.length; j++) {
+                    var ch = stream.chars[j];
+                    ch.y += stream.speed * speedMult * dt;
+
+                    if (ch.y > H + 20) {
+                        ch.y = -20;
+                        ch.ch = String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96));
+                        ch.alpha = 0.3 + Math.random() * 0.7;
+                    }
+
+                    var charAlpha = sAlpha * ch.alpha * (1 - (ch.y / H) * 0.5);
+                    ctx.fillStyle = rgba(stream.color, charAlpha);
+                    ctx.shadowColor = stream.color;
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(ch.ch, stream.x, ch.y);
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Draw digital particles inside cathedral ──
+        function drawParticles(ctx, energy, dt) {
+            var speedMult = 0.5 + energy * 2 + beatPulse;
+
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.x += p.vx * dt * speedMult;
+                p.y += p.vy * dt * speedMult;
+                p.life -= dt * 0.15;
+
+                if (p.life <= 0 || p.y < -20 || p.x < -20 || p.x > W + 20) {
+                    particles[i] = createParticle();
+                    particles[i].y = H + 10;
+                    continue;
+                }
+
+                var alpha = p.alpha * p.life * introFadeIn * outroFadeOut;
+                if (alpha < 0.01) continue;
+
+                ctx.fillStyle = rgba(p.color, alpha);
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = p.size * 2;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+        }
+
+        // ── Draw light beams through windows ──
+        function drawLightBeams(ctx, energy) {
+            if (cameraZ < 0.2) return;
+
+            var vx = cathedral.vanishX;
+            var vy = cathedral.vanishY;
+            var nw = cathedral.naveWidth;
+            var beamAlpha = (0.03 + energy * 0.08) * Math.min(1, (cameraZ - 0.2) / 0.3);
+            beamAlpha *= introFadeIn * outroFadeOut;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Beams from left windows
+            var numBeams = 4;
+            for (var i = 0; i < numBeams; i++) {
+                var t = (i + 0.5) / numBeams;
+                var persp = Math.pow(t, 0.7);
+                var sourceX = vx - nw * (1 - persp * 0.8) * 0.5;
+                var sourceY = lerp(vy - cathedral.naveHeight * 0.3, vy, persp * 0.3);
+                var beamColor = NEON_GLOW[i % NEON_GLOW.length];
+                var rgb = hexToRgb(beamColor);
+
+                var grad = ctx.createLinearGradient(sourceX, sourceY, sourceX + nw * 0.6, sourceY + cathedral.naveHeight * 0.5);
+                grad.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + beamAlpha + ')');
+                grad.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(sourceX, sourceY - 8);
+                ctx.lineTo(sourceX, sourceY + 8);
+                ctx.lineTo(sourceX + nw * 0.6, sourceY + cathedral.naveHeight * 0.5 + 40);
+                ctx.lineTo(sourceX + nw * 0.6, sourceY + cathedral.naveHeight * 0.5 - 20);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw holographic choir (chorus scene) ──
+        function drawChoirHolograms(ctx, energy, beat) {
+            if (scenePhase !== 2) return;
+
+            var vx = cathedral.vanishX;
+            var vy = cathedral.vanishY;
+            var numFigures = 7;
+            var choirWidth = cathedral.naveWidth * 0.5;
+            var choirY = vy + cathedral.naveHeight * 0.15;
+            var figureHeight = Math.min(W, H) * 0.08;
+            var choirAlpha = sceneTransition * (0.4 + energy * 0.4 + beatPulse * 0.2);
+
+            ctx.save();
+
+            for (var i = 0; i < numFigures; i++) {
+                var t = (i + 0.5) / numFigures;
+                var fx = vx - choirWidth * 0.5 + choirWidth * t;
+                var fy = choirY + Math.sin(globalTime * 1.5 + i * 0.9) * 5;
+                var fColor = i % 2 === 0 ? CYAN : MAGENTA;
+                var fAlpha = choirAlpha * (0.5 + 0.5 * Math.sin(globalTime * 2 + i * 1.2));
+
+                // Simple holographic figure silhouette
+                ctx.strokeStyle = rgba(fColor, fAlpha);
+                ctx.shadowColor = fColor;
+                ctx.shadowBlur = 10 + energy * 10;
+                ctx.lineWidth = 1.5;
+
+                var fh = figureHeight * (0.8 + Math.sin(i * 1.5) * 0.2);
+                var headR = fh * 0.1;
+
+                // Head
+                ctx.beginPath();
+                ctx.arc(fx, fy - fh * 0.85, headR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Body
+                ctx.beginPath();
+                ctx.moveTo(fx, fy - fh * 0.75);
+                ctx.lineTo(fx, fy - fh * 0.3);
+                ctx.stroke();
+
+                // Robe (triangle)
+                ctx.beginPath();
+                ctx.moveTo(fx, fy - fh * 0.3);
+                ctx.lineTo(fx - fh * 0.15, fy);
+                ctx.lineTo(fx + fh * 0.15, fy);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Arms raised (singing)
+                var armAngle = -Math.PI * 0.3 + Math.sin(globalTime * 3 + i) * 0.2;
+                ctx.beginPath();
+                ctx.moveTo(fx, fy - fh * 0.6);
+                ctx.lineTo(fx - fh * 0.2, fy - fh * 0.6 + Math.sin(armAngle) * fh * 0.2);
+                ctx.moveTo(fx, fy - fh * 0.6);
+                ctx.lineTo(fx + fh * 0.2, fy - fh * 0.6 + Math.sin(-armAngle) * fh * 0.2);
+                ctx.stroke();
+
+                // Holographic scanlines
+                ctx.globalAlpha = fAlpha * 0.3;
+                for (var sl = 0; sl < 5; sl++) {
+                    var slY = fy - fh + (fh / 5) * sl + (globalTime * 20 % (fh / 5));
+                    ctx.strokeStyle = rgba(fColor, fAlpha * 0.2);
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(fx - fh * 0.2, slY);
+                    ctx.lineTo(fx + fh * 0.2, slY);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw bass reverb ripples ──
+        function drawReverbRipples(ctx, energy) {
+            if (beatPulse < 0.05) return;
+
+            var vx = cathedral.vanishX;
+            var vy = cathedral.vanishY + cathedral.naveHeight * 0.3;
+            var maxR = Math.min(W, H) * 0.4;
+            var numRipples = 3;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (var i = 0; i < numRipples; i++) {
+                var rPhase = (1 - beatPulse) + i * 0.15;
+                if (rPhase > 1) continue;
+                var rr = maxR * rPhase;
+                var rAlpha = (1 - rPhase) * beatPulse * 0.15 * energy;
+
+                ctx.strokeStyle = rgba(PURPLE_DEEP, rAlpha);
+                ctx.shadowColor = MAGENTA;
+                ctx.shadowBlur = 8;
+                ctx.lineWidth = 2 * (1 - rPhase);
+                ctx.beginPath();
+                ctx.ellipse(vx, vy, rr, rr * 0.3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw glitch effect (bridge sections) ──
+        function drawGlitch(ctx, energy) {
+            if (sectionMood !== 'bridge') return;
+
+            ctx.save();
+            var glitchIntensity = energy * sceneTransition;
+            var numSlices = Math.floor(3 + glitchIntensity * 8);
+
+            for (var i = 0; i < numSlices; i++) {
+                if (Math.random() > 0.3) continue;
+                var sliceY = Math.random() * H;
+                var sliceH = 2 + Math.random() * 15;
+                var offsetX = (Math.random() - 0.5) * 30 * glitchIntensity;
+
+                ctx.drawImage(ctx.canvas, 0, sliceY, W, sliceH, offsetX, sliceY, W, sliceH);
+            }
+
+            // Random color blocks
+            if (Math.random() < glitchIntensity * 0.3) {
+                var blockColor = NEON_GLOW[Math.floor(Math.random() * NEON_GLOW.length)];
+                ctx.fillStyle = rgba(blockColor, 0.1 + Math.random() * 0.15);
+                var bx = Math.random() * W;
+                var by = Math.random() * H;
+                ctx.fillRect(bx, by, Math.random() * 100, 2 + Math.random() * 4);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Ambient fog / atmosphere ──
+        function drawAtmosphere(ctx, energy) {
+            ctx.save();
+
+            // Deep purple vignette
+            var vigGrad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.7);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, rgba('#06001a', 0.6));
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Ambient colored fog near floor
+            var fogY = cathedral.vanishY + cathedral.naveHeight * 0.3;
+            var fogGrad = ctx.createLinearGradient(0, fogY, 0, fogY + cathedral.naveHeight * 0.4);
+            var fogAlpha = 0.03 + energy * 0.06;
+            fogGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            fogGrad.addColorStop(0.5, rgba(PURPLE_DEEP, fogAlpha));
+            fogGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = fogGrad;
+            ctx.fillRect(0, fogY, W, cathedral.naveHeight * 0.4);
+
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var fontSize = Math.max(14, Math.min(W * 0.032, 40));
+            var y = H * 0.12;
+
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '900 ' + fontSize + 'px "Cinzel", serif';
+
+            // Glow layers
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 40;
+            ctx.globalAlpha = titleAlpha * 0.6;
+            ctx.fillStyle = CYAN;
+            ctx.fillText('CYBER-CATHEDRAL REQUIEM', W / 2, y);
+
+            ctx.shadowColor = MAGENTA;
+            ctx.shadowBlur = 60;
+            ctx.globalAlpha = titleAlpha * 0.3;
+            ctx.fillStyle = MAGENTA;
+            ctx.fillText('CYBER-CATHEDRAL REQUIEM', W / 2, y);
+
+            // Main text
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = CYAN;
+            ctx.globalAlpha = titleAlpha;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('CYBER-CATHEDRAL REQUIEM', W / 2, y);
+
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Outro shutdown effect ──
+        function drawShutdown(ctx) {
+            if (sectionMood !== 'outro') return;
+
+            var shutdownProgress = 1 - outroFadeOut;
+            if (shutdownProgress < 0.01) return;
+
+            ctx.save();
+
+            // CRT shutdown: horizontal line collapse
+            if (shutdownProgress > 0.5) {
+                var lineProgress = (shutdownProgress - 0.5) * 2;
+                var lineH = H * (1 - lineProgress);
+                ctx.fillStyle = '#06001a';
+                ctx.fillRect(0, 0, W, (H - lineH) / 2);
+                ctx.fillRect(0, (H + lineH) / 2, W, (H - lineH) / 2);
+            }
+
+            // Scanline noise
+            if (shutdownProgress > 0.3) {
+                ctx.globalAlpha = (shutdownProgress - 0.3) * 0.3;
+                for (var i = 0; i < 20; i++) {
+                    var ny = Math.random() * H;
+                    ctx.fillStyle = Math.random() > 0.5 ? rgba(CYAN, 0.1) : rgba(MAGENTA, 0.1);
+                    ctx.fillRect(0, ny, W, 1);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ── Init ──
+        // ══════════════════════════════════════════════════════════════
+        function init(ctx, width, height, anal) {
+            W = width;
+            H = height;
+            analysis = anal;
+
+            cathedral.vanishX = W * 0.5;
+            cathedral.vanishY = H * 0.4;
+            cathedral.naveWidth = W * 0.7;
+            cathedral.naveHeight = H * 0.7;
+            cathedral.depth = Math.min(W, H);
+
+            initParticles();
+            initGlass();
+            initDataStreams();
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            sectionMood = 'intro';
+            lastSeqIndex = -1;
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            globalTime = 0;
+            cameraZ = 0;
+            scenePhase = 0;
+            sceneTransition = 0;
+            roseAngle = 0;
+            roseGlow = 0;
+            buttressGlow = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width;
+            H = height;
+            cathedral.vanishX = W * 0.5;
+            cathedral.vanishY = H * 0.4;
+            cathedral.naveWidth = W * 0.7;
+            cathedral.naveHeight = H * 0.7;
+            cathedral.depth = Math.min(W, H);
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ── Main Render ──
+        // ══════════════════════════════════════════════════════════════
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state: dim cathedral, slowly rotating rose
+                roseAngle += dt * 0.1;
+                cameraZ = lerpExp(cameraZ, 0.3, 1, dt);
+                drawCathedral(ctx, 0.1, 0);
+                drawRoseWindow(ctx, 0.1);
+                drawAtmosphere(ctx, 0);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+
+                // Flash on section changes
+                if (oldSection !== newSection) {
+                    flashAlpha = 0.15 + energy * 0.15;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Scene phase & camera ──
+            var targetScene = mapScene(sectionMood);
+            scenePhase = targetScene;
+
+            var targetCameraZ;
+            switch (sectionMood) {
+                case 'intro': targetCameraZ = 0.1 + (cursor.elapsed || 0) * 0.02; break;
+                case 'verse': targetCameraZ = 0.5; break;
+                case 'chorus': targetCameraZ = 0.85; break;
+                case 'bridge': targetCameraZ = 0.7; break;
+                case 'outro': targetCameraZ = 1.0; break;
+                default: targetCameraZ = 0.5;
+            }
+            targetCameraZ = Math.min(1, targetCameraZ);
+            cameraZ = lerpExp(cameraZ, targetCameraZ, 1.5, dt);
+            sceneTransition = lerpExp(sceneTransition, 1, 3, dt);
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                buttressGlow = 1;
+
+                if (sectionMood === 'chorus' && energy > 0.4) {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.08);
+                }
+            }
+            lastBeat = beat;
+
+            beatPulse *= Math.exp(-8 * dt);
+            buttressGlow *= Math.exp(-4 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Rose window rotation (beat-synced) ──
+            roseAngle += dt * (0.1 + energy * 0.3 + beatPulse * 0.5);
+            roseGlow = lerpExp(roseGlow, energy, 3, dt);
+
+            // ── Intro fade ──
+            if (sectionMood === 'intro') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.25);
+            } else {
+                introFadeIn = 1;
+            }
+
+            // ── Outro fade ──
+            if (sectionMood === 'outro') {
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.12);
+            } else {
+                outroFadeOut = 1;
+            }
+
+            // ── Title visibility ──
+            titleTarget = (sectionMood === 'chorus') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 4, dt);
+
+            // ══ Draw scene (back to front) ══
+
+            // 1. Data streams (background layer, behind cathedral)
+            drawDataStreams(ctx, energy, dt);
+
+            // 2. Cathedral wireframe structure
+            drawCathedral(ctx, energy, beat);
+
+            // 3. Light beams through windows
+            drawLightBeams(ctx, energy);
+
+            // 4. Rose window
+            drawRoseWindow(ctx, energy);
+
+            // 5. Holographic choir (chorus only)
+            drawChoirHolograms(ctx, energy, beat);
+
+            // 6. Digital particles
+            ctx.save();
+            ctx.shadowBlur = 0;
+            drawParticles(ctx, energy, dt);
+            ctx.restore();
+
+            // 7. Bass reverb ripples
+            drawReverbRipples(ctx, energy);
+
+            // 8. Atmosphere & fog
+            drawAtmosphere(ctx, energy);
+
+            // 9. Glitch (bridge only)
+            drawGlitch(ctx, energy);
+
+            // 10. Title
+            drawTitle(ctx);
+
+            // 11. Flash
+            drawFlash(ctx);
+
+            // 12. Outro shutdown
+            drawShutdown(ctx);
+        }
+
+        return {
+            name: 'Cyber-Cathedral Requiem Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('cyber-cathedral-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/cyber-cathedral-requiem.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

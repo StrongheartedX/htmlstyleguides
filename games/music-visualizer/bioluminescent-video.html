@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioluminescent — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020408;
+            color: #fff;
+            font-family: 'Quicksand', sans-serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(2,4,8,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #00e5c8;
+            text-shadow: 0 0 30px rgba(0,229,200,0.6), 0 0 60px rgba(0,229,200,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5c8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5c8;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,200,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,200,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Bioluminescent</div>
+        <div class="play-sub">glowing organisms in the deep ocean</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- Bioluminescent Video Renderer --
+    window.Renderers['bioluminescent-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Palette --
+        var BIOME_PALETTES = {
+            coral:   ['#00e5c8','#00b8d4','#26c6da','#80deea','#e0f7fa','#ff80ab'],
+            open:    ['#0091ea','#00b0ff','#40c4ff','#80d8ff','#00e5ff','#18ffff'],
+            trench:  ['#1a237e','#283593','#3949ab','#7c4dff','#b388ff','#ea80fc'],
+            vents:   ['#ff6d00','#ff9100','#ffab00','#ffd600','#ff3d00','#dd2c00']
+        };
+        var BIOME_NAMES = ['coral','open','trench','vents'];
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var sectionMood = 'darkness';
+        var currentBiome = 'coral';
+        var biomeIndex = 0;
+        var lastSeqIndex = -1;
+        var globalTime = 0;
+
+        // Organisms
+        var jellyfish = [];
+        var plankton = [];
+        var mycelium = [];
+        var caustics = [];
+        var deepFish = [];
+        var ventParticles = [];
+
+        // Bloom overlay
+        var bloomAlpha = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // -- Lerp --
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // -- Color helpers --
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return [r, g, b];
+        }
+
+        function rgbaStr(hex, alpha) {
+            var c = hexToRgb(hex);
+            return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + alpha + ')';
+        }
+
+        function palette(idx) {
+            var pal = BIOME_PALETTES[currentBiome];
+            return pal[idx % pal.length];
+        }
+
+        // -- Jellyfish --
+        function createJellyfish() {
+            return {
+                x: Math.random() * W,
+                y: Math.random() * H,
+                size: 20 + Math.random() * 40,
+                phase: Math.random() * Math.PI * 2,
+                driftX: (Math.random() - 0.5) * 20,
+                driftY: -10 - Math.random() * 30,
+                pulse: 0,
+                tentaclePhase: Math.random() * Math.PI * 2,
+                colorIdx: Math.floor(Math.random() * 6),
+                alpha: 0.3 + Math.random() * 0.5
+            };
+        }
+
+        function drawJellyfish(ctx, j, energy) {
+            var col = palette(j.colorIdx);
+            var rgb = hexToRgb(col);
+            var glowIntensity = 0.3 + energy * 0.5 + j.pulse * 0.3;
+            var bodyAlpha = j.alpha * glowIntensity;
+
+            ctx.save();
+            ctx.translate(j.x, j.y);
+
+            // Glow
+            ctx.shadowBlur = 20 + energy * 30;
+            ctx.shadowColor = col;
+
+            // Bell
+            var bellH = j.size * 0.6;
+            var bellW = j.size;
+            var squish = 1 + Math.sin(j.phase) * 0.15;
+
+            ctx.fillStyle = rgbaStr(col, bodyAlpha * 0.4);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, bellW * squish * 0.5, bellH / squish, 0, Math.PI, 0);
+            ctx.fill();
+
+            // Inner glow
+            ctx.fillStyle = rgbaStr(col, bodyAlpha * 0.7);
+            ctx.beginPath();
+            ctx.ellipse(0, -bellH * 0.15, bellW * squish * 0.25, bellH * 0.3 / squish, 0, Math.PI, 0);
+            ctx.fill();
+
+            // Tentacles
+            ctx.strokeStyle = rgbaStr(col, bodyAlpha * 0.5);
+            ctx.lineWidth = 1.5;
+            var numTentacles = 5;
+            for (var t = 0; t < numTentacles; t++) {
+                var tx = (t / (numTentacles - 1) - 0.5) * bellW * squish * 0.7;
+                var tentLen = j.size * (0.8 + Math.sin(j.tentaclePhase + t * 0.7) * 0.3);
+                ctx.beginPath();
+                ctx.moveTo(tx, 0);
+                var cx1 = tx + Math.sin(j.tentaclePhase + t) * 10;
+                var cy1 = tentLen * 0.4;
+                var cx2 = tx + Math.sin(j.tentaclePhase + t + 1) * 15;
+                var cy2 = tentLen * 0.7;
+                ctx.bezierCurveTo(cx1, cy1, cx2, cy2, tx + Math.sin(j.tentaclePhase + t * 0.5) * 8, tentLen);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // -- Plankton cloud --
+        function createPlanktonParticle() {
+            return {
+                x: Math.random() * W,
+                y: Math.random() * H,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15,
+                size: 1 + Math.random() * 3,
+                alpha: 0.2 + Math.random() * 0.6,
+                colorIdx: Math.floor(Math.random() * 6),
+                life: 0.5 + Math.random() * 0.5,
+                pulsePhase: Math.random() * Math.PI * 2
+            };
+        }
+
+        // -- Mycelium network --
+        var myceliumNodes = [];
+        var myceliumEdges = [];
+        var myceliumGrowTimer = 0;
+
+        function initMycelium() {
+            myceliumNodes = [];
+            myceliumEdges = [];
+            // Seed nodes
+            for (var i = 0; i < 8; i++) {
+                myceliumNodes.push({
+                    x: Math.random() * W,
+                    y: H * 0.6 + Math.random() * H * 0.35,
+                    glow: 0.3 + Math.random() * 0.4,
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    colorIdx: Math.floor(Math.random() * 6)
+                });
+            }
+        }
+
+        function growMycelium() {
+            if (myceliumNodes.length > 60) return;
+            // Pick a random existing node and branch from it
+            var parent = myceliumNodes[Math.floor(Math.random() * myceliumNodes.length)];
+            var angle = Math.random() * Math.PI * 2;
+            var dist = 30 + Math.random() * 80;
+            var child = {
+                x: Math.max(0, Math.min(W, parent.x + Math.cos(angle) * dist)),
+                y: Math.max(H * 0.4, Math.min(H, parent.y + Math.sin(angle) * dist)),
+                glow: 0,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorIdx: parent.colorIdx
+            };
+            myceliumNodes.push(child);
+            myceliumEdges.push({
+                from: myceliumNodes.indexOf(parent),
+                to: myceliumNodes.length - 1,
+                glow: 0,
+                growProgress: 0
+            });
+        }
+
+        function drawMycelium(ctx, energy, dt) {
+            // Grow edges
+            for (var e = 0; e < myceliumEdges.length; e++) {
+                var edge = myceliumEdges[e];
+                edge.growProgress = Math.min(1, edge.growProgress + dt * 2);
+                edge.glow = lerpExp(edge.glow, 0.3 + energy * 0.5, 3, dt);
+
+                var from = myceliumNodes[edge.from];
+                var to = myceliumNodes[edge.to];
+                if (!from || !to) continue;
+
+                var col = palette(from.colorIdx);
+                var ex = lerp(from.x, to.x, edge.growProgress);
+                var ey = lerp(from.y, to.y, edge.growProgress);
+
+                ctx.save();
+                ctx.strokeStyle = rgbaStr(col, edge.glow * 0.6);
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = col;
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(ex, ey);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Draw nodes
+            for (var n = 0; n < myceliumNodes.length; n++) {
+                var node = myceliumNodes[n];
+                node.glow = lerpExp(node.glow, 0.4 + energy * 0.4 + Math.sin(node.pulsePhase + globalTime * 2) * 0.2, 4, dt);
+                node.pulsePhase += dt;
+
+                var ncol = palette(node.colorIdx);
+                var nodeSize = 2 + node.glow * 3;
+
+                ctx.save();
+                ctx.fillStyle = rgbaStr(ncol, node.glow);
+                ctx.shadowBlur = 10 + energy * 15;
+                ctx.shadowColor = ncol;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // -- Caustic light patterns --
+        function drawCaustics(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var intensity = 0.02 + energy * 0.06;
+            var numLines = 12;
+            for (var i = 0; i < numLines; i++) {
+                var phase = globalTime * 0.3 + i * 1.3;
+                var x1 = W * (0.5 + Math.sin(phase) * 0.4);
+                var y1 = 0;
+                var x2 = W * (0.5 + Math.sin(phase + 2) * 0.5);
+                var y2 = H;
+                var cx = W * (0.5 + Math.cos(phase * 0.7) * 0.3);
+                var cy = H * 0.5;
+
+                var col = palette(i % 6);
+                ctx.strokeStyle = rgbaStr(col, intensity);
+                ctx.lineWidth = 2 + energy * 3;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.quadraticCurveTo(cx, cy, x2, y2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // -- Deep sea fish (anglerfish silhouettes with glowing lure) --
+        function createDeepFish() {
+            return {
+                x: -60,
+                y: H * 0.3 + Math.random() * H * 0.4,
+                speed: 15 + Math.random() * 25,
+                size: 15 + Math.random() * 25,
+                dir: Math.random() > 0.5 ? 1 : -1,
+                lurePhase: Math.random() * Math.PI * 2,
+                colorIdx: Math.floor(Math.random() * 6)
+            };
+        }
+
+        function drawDeepFish(ctx, fish, energy) {
+            var col = palette(fish.colorIdx);
+            ctx.save();
+            ctx.translate(fish.x, fish.y);
+            ctx.scale(fish.dir, 1);
+
+            // Body silhouette
+            ctx.fillStyle = 'rgba(5,8,15,0.7)';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.size, fish.size * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tail
+            ctx.beginPath();
+            ctx.moveTo(-fish.size * 0.8, 0);
+            ctx.lineTo(-fish.size * 1.3, -fish.size * 0.4);
+            ctx.lineTo(-fish.size * 1.3, fish.size * 0.4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Glowing lure
+            var lureX = fish.size * 0.7;
+            var lureY = -fish.size * 0.6 + Math.sin(fish.lurePhase) * 5;
+            var lureGlow = 0.5 + energy * 0.4 + Math.sin(fish.lurePhase * 3) * 0.2;
+
+            ctx.fillStyle = rgbaStr(col, lureGlow);
+            ctx.shadowBlur = 15 + energy * 20;
+            ctx.shadowColor = col;
+            ctx.beginPath();
+            ctx.arc(lureX, lureY, 3 + energy * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Lure stalk
+            ctx.strokeStyle = rgbaStr(col, lureGlow * 0.5);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(fish.size * 0.4, -fish.size * 0.3);
+            ctx.quadraticCurveTo(fish.size * 0.6, -fish.size * 0.5, lureX, lureY);
+            ctx.stroke();
+
+            // Eye
+            ctx.fillStyle = rgbaStr(col, 0.8);
+            ctx.shadowBlur = 5;
+            ctx.beginPath();
+            ctx.arc(fish.size * 0.3, -fish.size * 0.1, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // -- Hydrothermal vent particles --
+        function createVentParticle(x) {
+            return {
+                x: x + (Math.random() - 0.5) * 30,
+                y: H,
+                vy: -40 - Math.random() * 80,
+                vx: (Math.random() - 0.5) * 20,
+                size: 2 + Math.random() * 4,
+                life: 1,
+                colorIdx: Math.floor(Math.random() * 6)
+            };
+        }
+
+        // -- Section mapping --
+        // Sequence: 0-1: Pure Darkness, 2: Dripping Silence, 3: First Light,
+        // 4-5: Call and Response, 6-9: Cavern Heartbeat, 10-11: Organisms Awaken,
+        // 12-13: Shimmering Clusters, 14-15: Organisms+Shimmering,
+        // 16-21: Deep Chamber + Massive Glow, 22-24: Receding Glow,
+        // 25-26: Last Flicker, 27-28: Darkness Returns
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'darkness';
+            if (seqIndex <= 2) return 'dripping';
+            if (seqIndex <= 3) return 'firstlight';
+            if (seqIndex <= 5) return 'callresponse';
+            if (seqIndex <= 9) return 'heartbeat';
+            if (seqIndex <= 11) return 'awaken';
+            if (seqIndex <= 15) return 'shimmer';
+            if (seqIndex <= 21) return 'deep';
+            if (seqIndex <= 24) return 'receding';
+            if (seqIndex <= 26) return 'lastflicker';
+            return 'darknessreturn';
+        }
+
+        function mapBiome(seqIndex) {
+            if (seqIndex <= 5) return 'coral';
+            if (seqIndex <= 11) return 'open';
+            if (seqIndex <= 15) return 'trench';
+            if (seqIndex <= 21) return 'vents';
+            if (seqIndex <= 24) return 'trench';
+            return 'coral';
+        }
+
+        // -- Water ripple background --
+        function drawOceanBg(ctx, energy) {
+            // Deep gradient
+            var bgColors = {
+                coral:  ['#020810','#03122a'],
+                open:   ['#010a15','#021a30'],
+                trench: ['#010208','#050515'],
+                vents:  ['#080404','#150808']
+            };
+            var bg = bgColors[currentBiome];
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, bg[0]);
+            grad.addColorStop(1, bg[1]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Subtle horizontal light bands
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < 5; i++) {
+                var bandY = H * (0.1 + i * 0.2) + Math.sin(globalTime * 0.5 + i) * 20;
+                var bandAlpha = 0.01 + energy * 0.015;
+                var col = palette(i);
+                var bgrad = ctx.createLinearGradient(0, bandY - 30, 0, bandY + 30);
+                bgrad.addColorStop(0, 'rgba(0,0,0,0)');
+                bgrad.addColorStop(0.5, rgbaStr(col, bandAlpha));
+                bgrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = bgrad;
+                ctx.fillRect(0, bandY - 30, W, 60);
+            }
+            ctx.restore();
+        }
+
+        // -- Title --
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 ' + fontSize + 'px "Quicksand", sans-serif';
+            ctx.letterSpacing = '0.15em';
+
+            var text = 'BIOLUMINESCENT';
+            var y = H * 0.12;
+
+            // Glow layers
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.shadowColor = '#00e5c8';
+            ctx.shadowBlur = 60;
+            ctx.fillStyle = '#00e5c8';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#e0f7fa';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.restore();
+        }
+
+        // -- Bloom pulse overlay --
+        function drawBloom(ctx) {
+            if (bloomAlpha < 0.005) return;
+            ctx.save();
+            var col = palette(0);
+            var grad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+            grad.addColorStop(0, rgbaStr(col, bloomAlpha * 0.3));
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // -- Init --
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            globalTime = 0;
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'darkness';
+            currentBiome = 'coral';
+            biomeIndex = 0;
+            bloomAlpha = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+
+            // Init organisms
+            jellyfish = [];
+            for (var i = 0; i < 12; i++) jellyfish.push(createJellyfish());
+
+            plankton = [];
+            for (var j = 0; j < 120; j++) plankton.push(createPlanktonParticle());
+
+            deepFish = [];
+            for (var k = 0; k < 4; k++) {
+                var f = createDeepFish();
+                f.x = Math.random() * W;
+                deepFish.push(f);
+            }
+
+            ventParticles = [];
+            initMycelium();
+        }
+
+        // -- Resize --
+        function resize(width, height) {
+            W = width; H = height;
+            initMycelium();
+        }
+
+        // -- Main render --
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // Idle state
+            if (!cursor) {
+                drawOceanBg(ctx, 0);
+                // Draw a couple idle jellyfish
+                for (var ij = 0; ij < 3; ij++) {
+                    var jf = jellyfish[ij];
+                    jf.phase += dt * 1.5;
+                    jf.tentaclePhase += dt * 0.8;
+                    jf.y += jf.driftY * dt * 0.3;
+                    jf.x += Math.sin(jf.phase * 0.5) * 10 * dt;
+                    if (jf.y < -jf.size * 2) { jf.y = H + jf.size; jf.x = Math.random() * W; }
+                    drawJellyfish(ctx, jf, 0.2);
+                }
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // -- Section transitions --
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = mapSection(seqIdx);
+                currentBiome = mapBiome(seqIdx);
+                lastSeqIndex = seqIdx;
+
+                // Grow mycelium on section changes
+                for (var mg = 0; mg < 3; mg++) growMycelium();
+
+                // Spawn new fish at biome changes
+                if (sectionMood === 'awaken' || sectionMood === 'deep') {
+                    var nf = createDeepFish();
+                    nf.x = nf.dir > 0 ? -60 : W + 60;
+                    deepFish.push(nf);
+                    if (deepFish.length > 8) deepFish.shift();
+                }
+            }
+
+            // -- Beat pulse --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Bloom on strong beats
+                if (energy > 0.4) {
+                    bloomAlpha = 0.15 + energy * 0.2;
+                }
+
+                // Jellyfish pulse on beat
+                for (var jp = 0; jp < jellyfish.length; jp++) {
+                    jellyfish[jp].pulse = 0.5 + energy * 0.5;
+                }
+
+                // Spawn plankton burst
+                if (energy > 0.3) {
+                    var burstCount = Math.floor(energy * 8);
+                    for (var bp = 0; bp < burstCount; bp++) {
+                        if (plankton.length < 200) plankton.push(createPlanktonParticle());
+                    }
+                }
+
+                // Vent particles on high energy in vents biome
+                if (currentBiome === 'vents' && energy > 0.3) {
+                    var ventX1 = W * 0.3;
+                    var ventX2 = W * 0.7;
+                    for (var vp = 0; vp < 5; vp++) {
+                        ventParticles.push(createVentParticle(ventX1));
+                        ventParticles.push(createVentParticle(ventX2));
+                    }
+                }
+
+                // Grow mycelium on beats
+                if (sectionMood !== 'darkness' && sectionMood !== 'darknessreturn') {
+                    myceliumGrowTimer++;
+                    if (myceliumGrowTimer % 2 === 0) growMycelium();
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-6 * dt);
+            bloomAlpha *= Math.exp(-4 * dt);
+
+            // -- Title --
+            titleTarget = (sectionMood === 'deep' || sectionMood === 'shimmer') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // -- Organism activity scaling --
+            var activity = 0;
+            if (sectionMood === 'darkness' || sectionMood === 'darknessreturn') activity = 0.05;
+            else if (sectionMood === 'dripping') activity = 0.15;
+            else if (sectionMood === 'firstlight') activity = 0.3;
+            else if (sectionMood === 'callresponse') activity = 0.5;
+            else if (sectionMood === 'heartbeat') activity = 0.65;
+            else if (sectionMood === 'awaken') activity = 0.8;
+            else if (sectionMood === 'shimmer') activity = 0.9;
+            else if (sectionMood === 'deep') activity = 1.0;
+            else if (sectionMood === 'receding') activity = 0.5;
+            else if (sectionMood === 'lastflicker') activity = 0.2;
+
+            // -- Update jellyfish --
+            for (var uj = 0; uj < jellyfish.length; uj++) {
+                var jelly = jellyfish[uj];
+                jelly.phase += dt * (1.2 + energy * 1.5);
+                jelly.tentaclePhase += dt * (0.6 + energy);
+                jelly.pulse *= Math.exp(-3 * dt);
+                jelly.x += (jelly.driftX + Math.sin(jelly.phase * 0.3 + uj) * 15) * dt;
+                jelly.y += (jelly.driftY * (0.5 + activity * 0.5)) * dt;
+                // Wrap
+                if (jelly.y < -jelly.size * 3) {
+                    jelly.y = H + jelly.size * 2;
+                    jelly.x = Math.random() * W;
+                    jelly.colorIdx = Math.floor(Math.random() * 6);
+                }
+                if (jelly.x < -jelly.size * 2) jelly.x = W + jelly.size;
+                if (jelly.x > W + jelly.size * 2) jelly.x = -jelly.size;
+            }
+
+            // -- Update plankton --
+            for (var up = plankton.length - 1; up >= 0; up--) {
+                var pk = plankton[up];
+                pk.x += pk.vx * dt;
+                pk.y += pk.vy * dt;
+                pk.pulsePhase += dt * 3;
+                pk.life -= dt * 0.15;
+                // Drift
+                pk.vx += (Math.random() - 0.5) * 30 * dt;
+                pk.vy += (Math.random() - 0.5) * 30 * dt;
+                pk.vx *= 0.99;
+                pk.vy *= 0.99;
+                // Wrap or remove
+                if (pk.life <= 0 || pk.x < -20 || pk.x > W + 20 || pk.y < -20 || pk.y > H + 20) {
+                    if (plankton.length > 60) {
+                        plankton.splice(up, 1);
+                    } else {
+                        plankton[up] = createPlanktonParticle();
+                    }
+                }
+            }
+
+            // -- Update deep fish --
+            for (var uf = 0; uf < deepFish.length; uf++) {
+                var fish = deepFish[uf];
+                fish.x += fish.speed * fish.dir * dt;
+                fish.y += Math.sin(globalTime + uf) * 10 * dt;
+                fish.lurePhase += dt * 2;
+                // Wrap
+                if (fish.dir > 0 && fish.x > W + 80) { fish.x = -70; fish.y = H * 0.2 + Math.random() * H * 0.5; }
+                if (fish.dir < 0 && fish.x < -80) { fish.x = W + 70; fish.y = H * 0.2 + Math.random() * H * 0.5; }
+            }
+
+            // -- Update vent particles --
+            for (var uv = ventParticles.length - 1; uv >= 0; uv--) {
+                var vp2 = ventParticles[uv];
+                vp2.x += vp2.vx * dt;
+                vp2.y += vp2.vy * dt;
+                vp2.vy *= 0.995;
+                vp2.vx += (Math.random() - 0.5) * 40 * dt;
+                vp2.life -= dt * 0.4;
+                if (vp2.life <= 0) {
+                    ventParticles.splice(uv, 1);
+                }
+            }
+
+            // ========== DRAW ==========
+
+            // 1. Ocean background
+            drawOceanBg(ctx, energy);
+
+            // 2. Caustic light patterns
+            if (activity > 0.1) {
+                drawCaustics(ctx, energy * activity);
+            }
+
+            // 3. Mycelium network (bottom layer)
+            if (activity > 0.2) {
+                drawMycelium(ctx, energy * activity, dt);
+            }
+
+            // 4. Plankton (behind jellyfish)
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var dp = 0; dp < plankton.length; dp++) {
+                var p = plankton[dp];
+                var pAlpha = p.alpha * p.life * activity;
+                var pGlow = 0.5 + Math.sin(p.pulsePhase) * 0.3 + beatPulse * 0.3;
+                var pcol = palette(p.colorIdx);
+                ctx.fillStyle = rgbaStr(pcol, pAlpha * pGlow);
+                ctx.shadowBlur = 4 + energy * 6;
+                ctx.shadowColor = pcol;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (0.8 + pGlow * 0.4), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 5. Deep fish
+            if (activity > 0.3) {
+                for (var df = 0; df < deepFish.length; df++) {
+                    drawDeepFish(ctx, deepFish[df], energy);
+                }
+            }
+
+            // 6. Jellyfish
+            var numActiveJelly = Math.floor(2 + activity * 10);
+            for (var dj = 0; dj < Math.min(numActiveJelly, jellyfish.length); dj++) {
+                drawJellyfish(ctx, jellyfish[dj], energy * activity);
+            }
+
+            // 7. Vent particles (foreground, vents biome)
+            if (ventParticles.length > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                for (var dvp = 0; dvp < ventParticles.length; dvp++) {
+                    var vpart = ventParticles[dvp];
+                    var vcol = palette(vpart.colorIdx);
+                    ctx.fillStyle = rgbaStr(vcol, vpart.life * 0.7);
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = vcol;
+                    ctx.beginPath();
+                    ctx.arc(vpart.x, vpart.y, vpart.size * vpart.life, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // 8. Bloom overlay
+            drawBloom(ctx);
+
+            // 9. Title
+            drawTitle(ctx);
+
+            // 10. Darkness fade for intro/outro
+            if (sectionMood === 'darkness' || sectionMood === 'darknessreturn') {
+                var fadeAlpha = sectionMood === 'darkness' ?
+                    Math.max(0, 0.7 - cursor.elapsed * 0.1) :
+                    Math.min(0.85, (seqIdx - 26) * 0.15 + energy * 0.1);
+                ctx.save();
+                ctx.fillStyle = 'rgba(2,4,8,' + fadeAlpha + ')';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Bioluminescent Deep Ocean',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('bioluminescent-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/bioluminescent.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

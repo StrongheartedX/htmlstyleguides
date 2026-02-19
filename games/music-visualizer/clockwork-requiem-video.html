@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clockwork Requiem — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0804;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,8,4,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #d4a044;
+            text-shadow: 0 0 30px rgba(212,160,68,0.6), 0 0 60px rgba(212,160,68,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #d4a044;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #d4a044;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212,160,68,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(212,160,68,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Clockwork Requiem</div>
+        <div class="play-sub">a mechanical music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Clockwork Requiem Video Renderer ──────────────────────────────
+    window.Renderers['clockwork-requiem-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+        var rpb = 4;
+
+        // ── Colors ──
+        var BG = '#0a0804';
+        var BRASS = '#d4a044';
+        var COPPER = '#b87333';
+        var GOLD = '#ffd700';
+        var DARK_STEEL = '#3a3a4a';
+        var WARM_WHITE = '#fff8e7';
+        var PATINA = '#5a8a6a';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var globalTime = 0;
+        var lastSeqIndex = -1;
+
+        // Section state
+        var sectionMood = 'silence';
+        var sectionProgress = 0; // 0-1 within current section
+        var degradation = 0;     // 0-1 how much the clockwork has degraded
+        var degradationTarget = 0;
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Gears ──
+        var gears = [];
+        var pendulum = { angle: 0, vel: 0, length: 0, damping: 1 };
+        var mainspring = { coils: 8, tension: 1, unwindProgress: 0 };
+
+        // ── Particles ──
+        var sparks = [];
+        var oilDrops = [];
+        var dustMotes = [];
+
+        // ── Gear definition ──
+        function createGear(x, y, radius, teeth, speed, channel, depth) {
+            return {
+                x: x, y: y,
+                radius: radius,
+                teeth: teeth,
+                speed: speed,        // base rotation speed (rad/s)
+                angle: Math.random() * Math.PI * 2,
+                channel: channel,    // 0-3, which music channel drives this
+                depth: depth || 0,   // 0=front, 1=mid, 2=back
+                wobble: 0,           // degradation wobble
+                stuck: false,        // gear seized
+                stuckAt: 0,
+                meshX: 0, meshY: 0   // where this gear meshes with another
+            };
+        }
+
+        // ── Spark particle ──
+        function emitSpark(x, y) {
+            if (sparks.length > 120) return;
+            var angle = Math.random() * Math.PI * 2;
+            var speed = 30 + Math.random() * 120;
+            sparks.push({
+                x: x, y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 40,
+                life: 0.3 + Math.random() * 0.5,
+                maxLife: 0.3 + Math.random() * 0.5,
+                size: 1 + Math.random() * 2.5
+            });
+        }
+
+        // ── Oil drip ──
+        function emitOilDrop(x, y) {
+            if (oilDrops.length > 40) return;
+            oilDrops.push({
+                x: x, y: y,
+                vy: 10 + Math.random() * 30,
+                life: 1.5 + Math.random() * 2,
+                maxLife: 1.5 + Math.random() * 2,
+                size: 2 + Math.random() * 3
+            });
+        }
+
+        // ── Dust mote ──
+        function emitDust(x, y) {
+            if (dustMotes.length > 60) return;
+            dustMotes.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 15,
+                vy: -5 - Math.random() * 15,
+                life: 2 + Math.random() * 3,
+                maxLife: 2 + Math.random() * 3,
+                size: 1 + Math.random() * 2
+            });
+        }
+
+        // ── Build gear layout ──
+        function buildGears() {
+            gears = [];
+            var cx = W * 0.5;
+            var cy = H * 0.45;
+            var baseR = Math.min(W, H) * 0.06;
+
+            // Main drive gear (center) - driven by bass
+            gears.push(createGear(cx, cy, baseR * 2, 24, 0.5, 2, 0));
+
+            // Lead melody gear (upper-right) - larger, prominent
+            gears.push(createGear(cx + baseR * 3.6, cy - baseR * 1.2, baseR * 1.5, 18, -0.7, 0, 0));
+
+            // Harmony gear (upper-left)
+            gears.push(createGear(cx - baseR * 3.2, cy - baseR * 1.5, baseR * 1.3, 16, 0.6, 1, 0));
+
+            // Percussion gear (lower, fast and small)
+            gears.push(createGear(cx + baseR * 1.2, cy + baseR * 3.2, baseR * 0.9, 12, -1.2, 3, 0));
+
+            // Secondary/decorative gears
+            gears.push(createGear(cx - baseR * 1.5, cy + baseR * 2.8, baseR * 1.1, 14, 0.8, 2, 1));
+            gears.push(createGear(cx + baseR * 4.5, cy + baseR * 1.5, baseR * 0.7, 10, -1.5, 0, 1));
+            gears.push(createGear(cx - baseR * 4.8, cy + baseR * 0.5, baseR * 1.0, 12, 0.9, 1, 1));
+
+            // Tiny background gears
+            gears.push(createGear(cx + baseR * 2.5, cy - baseR * 3.5, baseR * 0.5, 8, 1.8, 3, 2));
+            gears.push(createGear(cx - baseR * 2.0, cy - baseR * 3.2, baseR * 0.6, 10, -1.4, 0, 2));
+            gears.push(createGear(cx + baseR * 5.5, cy - baseR * 2.5, baseR * 0.4, 8, 2.0, 3, 2));
+            gears.push(createGear(cx - baseR * 5.2, cy - baseR * 1.8, baseR * 0.55, 9, -1.6, 1, 2));
+
+            // Extra interlocking gears for complexity
+            gears.push(createGear(cx - baseR * 0.2, cy - baseR * 3.0, baseR * 0.8, 11, 1.1, 2, 1));
+            gears.push(createGear(cx + baseR * 3.0, cy + baseR * 3.5, baseR * 0.65, 9, -1.3, 3, 1));
+
+            // Compute mesh points (where teeth interlock)
+            for (var i = 0; i < gears.length; i++) {
+                var g = gears[i];
+                // Find closest neighbor
+                var bestDist = Infinity;
+                for (var j = 0; j < gears.length; j++) {
+                    if (i === j) continue;
+                    var dx = gears[j].x - g.x;
+                    var dy = gears[j].y - g.y;
+                    var d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < bestDist) {
+                        bestDist = d;
+                        var frac = g.radius / (g.radius + gears[j].radius);
+                        g.meshX = g.x + dx * frac;
+                        g.meshY = g.y + dy * frac;
+                    }
+                }
+            }
+
+            // Pendulum setup
+            pendulum.length = H * 0.3;
+        }
+
+        // ── Draw a single gear ──
+        function drawGear(ctx, g, energy, beat) {
+            var r = g.radius;
+            var teeth = g.teeth;
+            var toothH = r * 0.15;
+            var toothW = (2 * Math.PI * r) / (teeth * 2.5);
+
+            // Depth-based styling
+            var alpha, strokeW, fillAlpha;
+            if (g.depth === 2) {
+                alpha = 0.25; strokeW = 1; fillAlpha = 0.08;
+            } else if (g.depth === 1) {
+                alpha = 0.5; strokeW = 1.5; fillAlpha = 0.12;
+            } else {
+                alpha = 0.9; strokeW = 2; fillAlpha = 0.18;
+            }
+
+            // Color based on channel
+            var colors = [GOLD, PATINA, COPPER, BRASS];
+            var color = colors[g.channel % 4];
+
+            // Wobble from degradation
+            var wobX = g.wobble * Math.sin(globalTime * 13 + g.x) * 2;
+            var wobY = g.wobble * Math.cos(globalTime * 11 + g.y) * 2;
+
+            ctx.save();
+            ctx.translate(g.x + wobX, g.y + wobY);
+            ctx.rotate(g.angle);
+
+            // Gear body fill
+            ctx.globalAlpha = alpha * fillAlpha;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Gear teeth
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = strokeW;
+            ctx.beginPath();
+            for (var i = 0; i < teeth; i++) {
+                var a1 = (i / teeth) * Math.PI * 2;
+                var a2 = ((i + 0.35) / teeth) * Math.PI * 2;
+                var a3 = ((i + 0.65) / teeth) * Math.PI * 2;
+                var a4 = ((i + 1) / teeth) * Math.PI * 2;
+
+                var innerR = r - toothH * 0.3;
+                var outerR = r + toothH;
+
+                if (i === 0) {
+                    ctx.moveTo(Math.cos(a1) * innerR, Math.sin(a1) * innerR);
+                }
+                ctx.lineTo(Math.cos(a2) * outerR, Math.sin(a2) * outerR);
+                ctx.lineTo(Math.cos(a3) * outerR, Math.sin(a3) * outerR);
+                ctx.lineTo(Math.cos(a4) * innerR, Math.sin(a4) * innerR);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Inner hub
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Spokes
+            var spokeCount = Math.max(3, Math.floor(teeth / 4));
+            for (var s = 0; s < spokeCount; s++) {
+                var sa = (s / spokeCount) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(sa) * r * 0.25, Math.sin(sa) * r * 0.25);
+                ctx.lineTo(Math.cos(sa) * r * 0.8, Math.sin(sa) * r * 0.8);
+                ctx.stroke();
+            }
+
+            // Center axle dot
+            ctx.fillStyle = color;
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Beat glow on front gears
+            if (g.depth === 0 && beatPulse > 0.1) {
+                ctx.globalAlpha = beatPulse * 0.3 * alpha;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw pendulum ──
+        function drawPendulum(ctx, energy) {
+            var px = W * 0.5;
+            var py = H * 0.08;
+            var len = pendulum.length;
+            var angle = pendulum.angle;
+
+            var bobX = px + Math.sin(angle) * len;
+            var bobY = py + Math.cos(angle) * len;
+            var bobR = Math.min(W, H) * 0.025;
+
+            ctx.save();
+
+            // Rod
+            ctx.strokeStyle = BRASS;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(bobX, bobY);
+            ctx.stroke();
+
+            // Bob
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = 0.8;
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 10 + beatPulse * 15;
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, bobR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pivot
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = COPPER;
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw mainspring ──
+        function drawMainspring(ctx, energy) {
+            var cx = W * 0.12;
+            var cy = H * 0.5;
+            var maxR = Math.min(W, H) * 0.08;
+            var coils = mainspring.coils;
+            var tension = mainspring.tension;
+            var unwind = mainspring.unwindProgress;
+
+            ctx.save();
+            ctx.strokeStyle = COPPER;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.6;
+
+            ctx.beginPath();
+            var totalSteps = coils * 40;
+            for (var i = 0; i <= totalSteps; i++) {
+                var t = i / totalSteps;
+                var coilT = t * coils * Math.PI * 2;
+                // Radius shrinks from outer to inner, loosens with unwind
+                var r = maxR * (1 - t * 0.7) * (1 - unwind * 0.4);
+                // Spacing increases as spring unwinds
+                var spacing = 1 + unwind * 0.5;
+                var x = cx + Math.cos(coilT * spacing) * r;
+                var y = cy + Math.sin(coilT * spacing) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Center arbor
+            ctx.fillStyle = BRASS;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw escapement mechanism ──
+        function drawEscapement(ctx, beat, energy) {
+            var cx = W * 0.88;
+            var cy = H * 0.4;
+            var size = Math.min(W, H) * 0.05;
+
+            // Escapement wheel
+            var wheelAngle = globalTime * 1.5 * (1 - degradation * 0.7);
+            var palletAngle = Math.sin(globalTime * 3 * (1 - degradation * 0.5)) * 0.3;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Escape wheel (star shape)
+            ctx.strokeStyle = BRASS;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            var escTeeth = 15;
+            for (var i = 0; i < escTeeth; i++) {
+                var a = wheelAngle + (i / escTeeth) * Math.PI * 2;
+                var ir = size * 0.6;
+                var or = size;
+                ctx.moveTo(Math.cos(a) * ir, Math.sin(a) * ir);
+                ctx.lineTo(Math.cos(a) * or, Math.sin(a) * or);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Pallet fork
+            ctx.rotate(palletAngle);
+            ctx.strokeStyle = GOLD;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.8, -size * 0.3);
+            ctx.lineTo(0, size * 0.1);
+            ctx.lineTo(size * 0.8, -size * 0.3);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Draw casing / frame ──
+        function drawCasing(ctx) {
+            var margin = Math.min(W, H) * 0.03;
+            var cornerR = 15;
+
+            ctx.save();
+            ctx.strokeStyle = DARK_STEEL;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.4;
+
+            // Outer frame
+            ctx.beginPath();
+            ctx.moveTo(margin + cornerR, margin);
+            ctx.lineTo(W - margin - cornerR, margin);
+            ctx.arcTo(W - margin, margin, W - margin, margin + cornerR, cornerR);
+            ctx.lineTo(W - margin, H - margin - cornerR);
+            ctx.arcTo(W - margin, H - margin, W - margin - cornerR, H - margin, cornerR);
+            ctx.lineTo(margin + cornerR, H - margin);
+            ctx.arcTo(margin, H - margin, margin, H - margin - cornerR, cornerR);
+            ctx.lineTo(margin, margin + cornerR);
+            ctx.arcTo(margin, margin, margin + cornerR, margin, cornerR);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Corner screws
+            var screwR = 4;
+            var screwOff = margin + 15;
+            var screwPositions = [
+                [screwOff, screwOff],
+                [W - screwOff, screwOff],
+                [screwOff, H - screwOff],
+                [W - screwOff, H - screwOff]
+            ];
+            ctx.fillStyle = DARK_STEEL;
+            ctx.globalAlpha = 0.5;
+            for (var i = 0; i < screwPositions.length; i++) {
+                var sx = screwPositions[i][0];
+                var sy = screwPositions[i][1];
+                ctx.beginPath();
+                ctx.arc(sx, sy, screwR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                // Screw slot
+                ctx.beginPath();
+                ctx.moveTo(sx - screwR * 0.6, sy);
+                ctx.lineTo(sx + screwR * 0.6, sy);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw sparks ──
+        function drawSparks(ctx) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = sparks.length - 1; i >= 0; i--) {
+                var s = sparks[i];
+                var lifeRatio = s.life / s.maxLife;
+                ctx.globalAlpha = lifeRatio * 0.9;
+                ctx.fillStyle = lifeRatio > 0.5 ? WARM_WHITE : GOLD;
+                ctx.shadowColor = GOLD;
+                ctx.shadowBlur = 8;
+                ctx.fillRect(s.x - s.size * 0.5, s.y - s.size * 0.5, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw oil drops ──
+        function drawOilDrops(ctx) {
+            ctx.save();
+            for (var i = oilDrops.length - 1; i >= 0; i--) {
+                var d = oilDrops[i];
+                var lifeRatio = d.life / d.maxLife;
+                ctx.globalAlpha = lifeRatio * 0.4;
+                ctx.fillStyle = '#1a1408';
+                ctx.beginPath();
+                ctx.ellipse(d.x, d.y, d.size * 0.6, d.size, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw dust motes ──
+        function drawDustMotes(ctx) {
+            ctx.save();
+            for (var i = dustMotes.length - 1; i >= 0; i--) {
+                var m = dustMotes[i];
+                var lifeRatio = m.life / m.maxLife;
+                ctx.globalAlpha = lifeRatio * 0.3;
+                ctx.fillStyle = WARM_WHITE;
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var baseFontSize = Math.max(14, Math.min(W * 0.035, 44));
+            var y = H * 0.92;
+
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 ' + baseFontSize + 'px "Cinzel", serif';
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = GOLD;
+            ctx.fillText('CLOCKWORK REQUIEM', W * 0.5, y);
+
+            // Second glow pass
+            ctx.globalAlpha = titleAlpha * 0.4;
+            ctx.shadowBlur = 60;
+            ctx.fillText('CLOCKWORK REQUIEM', W * 0.5, y);
+            ctx.restore();
+        }
+
+        // ── Draw ambient light ──
+        function drawAmbientLight(ctx, energy) {
+            // Warm radial glow from center
+            var cx = W * 0.5;
+            var cy = H * 0.45;
+            var maxR = Math.max(W, H) * 0.6;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+            var alpha = 0.03 + energy * 0.04 + beatPulse * 0.02;
+            grad.addColorStop(0, 'rgba(212,160,68,' + alpha + ')');
+            grad.addColorStop(0.4, 'rgba(184,115,51,' + (alpha * 0.5) + ')');
+            grad.addColorStop(1, 'rgba(10,8,4,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Draw vignette ──
+        function drawVignette(ctx, intensity) {
+            var cx = W * 0.5;
+            var cy = H * 0.5;
+            var outerR = Math.max(W, H) * 0.7;
+
+            ctx.save();
+            var grad = ctx.createRadialGradient(cx, cy, outerR * 0.4, cx, cy, outerR);
+            grad.addColorStop(0, 'rgba(10,8,4,0)');
+            grad.addColorStop(1, 'rgba(10,8,4,' + (0.6 + intensity * 0.3) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Section mapping from sequence index ──
+        // seq: 0-3 = tick-tock/intro, 4-7 = mechanical motif,
+        // 8-11 = motif+harmony, 12-15 = becoming human,
+        // 16-19 = remembering, 20 = bridge, 21-24 = song revealed,
+        // 25-31 = climax, 32-35 = spring unwinding,
+        // 36-37 = winding down, 38 = last notes, 39 = final tick, 40 = silence
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'silence';
+            if (seqIndex <= 3) return 'firstGear';
+            if (seqIndex <= 7) return 'mechanical';
+            if (seqIndex <= 11) return 'harmonyJoins';
+            if (seqIndex <= 15) return 'becomingHuman';
+            if (seqIndex <= 19) return 'remembering';
+            if (seqIndex <= 20) return 'bridge';
+            if (seqIndex <= 24) return 'songRevealed';
+            if (seqIndex <= 31) return 'climax';
+            if (seqIndex <= 35) return 'springUnwinding';
+            if (seqIndex <= 36) return 'windingDown';
+            if (seqIndex <= 37) return 'lastNotes';
+            if (seqIndex <= 38) return 'finalTick';
+            return 'silence';
+        }
+
+        function getDegradationTarget(section) {
+            switch (section) {
+                case 'silence': return 0;
+                case 'firstGear': return 0;
+                case 'mechanical': return 0;
+                case 'harmonyJoins': return 0;
+                case 'becomingHuman': return 0.05;
+                case 'remembering': return 0.1;
+                case 'bridge': return 0.15;
+                case 'songRevealed': return 0.05;
+                case 'climax': return 0;
+                case 'springUnwinding': return 0.35;
+                case 'windingDown': return 0.6;
+                case 'lastNotes': return 0.8;
+                case 'finalTick': return 0.95;
+                default: return 0;
+            }
+        }
+
+        // ── Update particles ──
+        function updateParticles(dt) {
+            // Sparks
+            for (var i = sparks.length - 1; i >= 0; i--) {
+                var s = sparks[i];
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.vy += 200 * dt; // gravity
+                s.life -= dt;
+                if (s.life <= 0) sparks.splice(i, 1);
+            }
+            // Oil drops
+            for (var j = oilDrops.length - 1; j >= 0; j--) {
+                var d = oilDrops[j];
+                d.y += d.vy * dt;
+                d.life -= dt;
+                if (d.life <= 0) oilDrops.splice(j, 1);
+            }
+            // Dust
+            for (var k = dustMotes.length - 1; k >= 0; k--) {
+                var m = dustMotes[k];
+                m.x += m.vx * dt;
+                m.y += m.vy * dt;
+                m.vx *= 0.99;
+                m.life -= dt;
+                if (m.life <= 0) dustMotes.splice(k, 1);
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            if (anal) rpb = anal.rpb || 4;
+
+            buildGears();
+            sparks = [];
+            oilDrops = [];
+            dustMotes = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            globalTime = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'silence';
+            degradation = 0;
+            degradationTarget = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            mainspring.tension = 1;
+            mainspring.unwindProgress = 0;
+            pendulum.angle = 0;
+            pendulum.vel = 0;
+            pendulum.damping = 1;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            buildGears();
+        }
+
+        // ── Lerp ──
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = Math.min(frameData.dt || 1/60, 0.1);
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // ── Background ──
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: draw static mechanism
+                drawCasing(ctx);
+                drawAmbientLight(ctx, 0);
+                for (var ig = 0; ig < gears.length; ig++) {
+                    drawGear(ctx, gears[ig], 0, 0);
+                }
+                drawPendulum(ctx, 0);
+                drawMainspring(ctx, 0);
+                drawEscapement(ctx, 0, 0);
+                drawVignette(ctx, 0.3);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                degradationTarget = getDegradationTarget(newSection);
+                lastSeqIndex = seqIdx;
+            }
+
+            // Smooth degradation
+            degradation = lerpSmooth(degradation, degradationTarget, 0.5, dt);
+
+            // ── Beat detection ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Emit sparks at gear mesh points on beats
+                if (sectionMood !== 'silence' && sectionMood !== 'finalTick') {
+                    var sparkCount = Math.floor(1 + energy * 4);
+                    for (var si = 0; si < Math.min(sparkCount, gears.length); si++) {
+                        var sg = gears[si];
+                        if (sg.depth === 0 && Math.random() < 0.6 + energy * 0.4) {
+                            emitSpark(sg.meshX, sg.meshY);
+                        }
+                    }
+                }
+
+                // Oil drips increase with degradation
+                if (degradation > 0.2 && Math.random() < degradation * 0.5) {
+                    var oilGear = gears[Math.floor(Math.random() * gears.length)];
+                    emitOilDrop(oilGear.x + (Math.random() - 0.5) * oilGear.radius, oilGear.y + oilGear.radius * 0.5);
+                }
+
+                // Dust during quiet/sparse sections
+                if (energy < 0.4 || degradation > 0.3) {
+                    emitDust(Math.random() * W, Math.random() * H);
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+
+            // ── Title visibility ──
+            // Show title during intro, bridge, and final sections
+            if (sectionMood === 'firstGear' || sectionMood === 'bridge' ||
+                sectionMood === 'windingDown' || sectionMood === 'lastNotes' || sectionMood === 'finalTick') {
+                titleTarget = 1;
+            } else {
+                titleTarget = 0;
+            }
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update pendulum ──
+            // Simple pendulum physics, damped by degradation
+            var pendulumDrive = 0;
+            if (sectionMood !== 'silence') {
+                pendulumDrive = 0.15 * (1 - degradation * 0.8);
+            }
+            // Drive on beats
+            var beatFrac = (cursor.totalFracRow % rpb) / rpb;
+            var pendTarget = Math.sin(beatFrac * Math.PI * 2) * pendulumDrive;
+            var gravity = 9.8 / pendulum.length;
+            pendulum.vel += (-gravity * Math.sin(pendulum.angle) + (pendTarget - pendulum.angle) * 5) * dt;
+            pendulum.vel *= Math.exp(-1.5 * dt * (1 + degradation * 3));
+            pendulum.angle += pendulum.vel * dt;
+
+            // ── Update mainspring ──
+            // Unwind progress tracks degradation
+            mainspring.unwindProgress = lerpSmooth(mainspring.unwindProgress, degradation, 0.3, dt);
+            mainspring.tension = 1 - mainspring.unwindProgress * 0.7;
+
+            // ── Gear activation based on section ──
+            var activeGearCount;
+            switch (sectionMood) {
+                case 'silence': activeGearCount = 0; break;
+                case 'firstGear': activeGearCount = 2; break;
+                case 'mechanical': activeGearCount = 5; break;
+                case 'harmonyJoins': activeGearCount = 8; break;
+                case 'becomingHuman': activeGearCount = gears.length; break;
+                case 'remembering': activeGearCount = gears.length; break;
+                case 'bridge': activeGearCount = gears.length; break;
+                case 'songRevealed': activeGearCount = gears.length; break;
+                case 'climax': activeGearCount = gears.length; break;
+                case 'springUnwinding': activeGearCount = gears.length; break;
+                case 'windingDown': activeGearCount = Math.max(4, Math.floor(gears.length * (1 - degradation))); break;
+                case 'lastNotes': activeGearCount = 3; break;
+                case 'finalTick': activeGearCount = 1; break;
+                default: activeGearCount = gears.length;
+            }
+
+            // ── Update gears ──
+            var channelEnergy = [0, 0, 0, 0];
+            var notes = frameData.currentNotes;
+            if (notes) {
+                for (var cn = 0; cn < 4; cn++) {
+                    if (notes[cn]) channelEnergy[cn] = (notes[cn].vol || 1) * 0.8 + 0.2;
+                }
+            }
+
+            for (var gi = 0; gi < gears.length; gi++) {
+                var g = gears[gi];
+                var isActive = gi < activeGearCount;
+
+                if (isActive) {
+                    // Rotation speed influenced by channel energy and degradation
+                    var chE = channelEnergy[g.channel] || 0;
+                    var speedMult = (0.3 + energy * 0.7 + chE * 0.5) * (1 - degradation * 0.6);
+
+                    // During climax, everything spins faster
+                    if (sectionMood === 'climax') speedMult *= 1.5;
+
+                    // Beat sync: gear teeth clicking (snap rotation on beats)
+                    var beatSnap = beatPulse * 0.15 * (1 - degradation * 0.5);
+
+                    if (!g.stuck) {
+                        g.angle += g.speed * speedMult * dt + beatSnap * Math.sign(g.speed);
+                    }
+
+                    // Wobble increases with degradation
+                    g.wobble = lerpSmooth(g.wobble, degradation * 3, 2, dt);
+
+                    // Gear seizure during final sections
+                    if (degradation > 0.7 && !g.stuck && Math.random() < degradation * 0.001) {
+                        g.stuck = true;
+                        g.stuckAt = g.angle;
+                        // Big spark burst when gear seizes
+                        for (var sp = 0; sp < 8; sp++) emitSpark(g.x, g.y);
+                    }
+
+                    if (g.stuck) {
+                        g.angle = g.stuckAt + Math.sin(globalTime * 20) * 0.02 * (1 - degradation);
+                    }
+                }
+            }
+
+            // ── Update particles ──
+            updateParticles(dt);
+
+            // ── Draw scene ──
+
+            // 1. Ambient light
+            drawAmbientLight(ctx, energy);
+
+            // 2. Casing
+            drawCasing(ctx);
+
+            // 3. Back gears (depth 2)
+            for (var d2 = 0; d2 < gears.length; d2++) {
+                if (gears[d2].depth === 2 && d2 < activeGearCount) drawGear(ctx, gears[d2], energy, beat);
+            }
+
+            // 4. Oil drops (behind mid gears)
+            drawOilDrops(ctx);
+
+            // 5. Mid gears (depth 1)
+            for (var d1 = 0; d1 < gears.length; d1++) {
+                if (gears[d1].depth === 1 && d1 < activeGearCount) drawGear(ctx, gears[d1], energy, beat);
+            }
+
+            // 6. Mainspring
+            drawMainspring(ctx, energy);
+
+            // 7. Escapement
+            drawEscapement(ctx, beat, energy);
+
+            // 8. Front gears (depth 0)
+            for (var d0 = 0; d0 < gears.length; d0++) {
+                if (gears[d0].depth === 0 && d0 < activeGearCount) drawGear(ctx, gears[d0], energy, beat);
+            }
+
+            // 9. Pendulum
+            drawPendulum(ctx, energy);
+
+            // 10. Sparks (on top, additive)
+            drawSparks(ctx);
+
+            // 11. Dust motes
+            drawDustMotes(ctx);
+
+            // 12. Title
+            drawTitle(ctx);
+
+            // 13. Vignette (darker as mechanism dies)
+            drawVignette(ctx, degradation * 0.5);
+
+            // 14. Final fade to black
+            if (sectionMood === 'finalTick' || sectionMood === 'silence' && lastSeqIndex > 30) {
+                var fadeAlpha = Math.min(1, degradation * 0.8);
+                ctx.fillStyle = 'rgba(10,8,4,' + fadeAlpha + ')';
+                ctx.fillRect(0, 0, W, H);
+            }
+        }
+
+        return {
+            name: 'Clockwork Requiem',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('clockwork-requiem-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/clockwork-requiem.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

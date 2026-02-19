@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abyssal Waltz — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020810;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(2,8,16,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #00e5cc;
+            text-shadow: 0 0 30px rgba(0,229,204,0.6), 0 0 60px rgba(0,229,204,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 40px;
+            font-family: sans-serif;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5cc;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,204,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,204,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: sans-serif;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Abyssal Waltz</div>
+        <div class="play-sub">a bioluminescent deep-sea descent</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Abyssal Waltz Video Renderer ──────────────────────────────────
+    window.Renderers['abyssal-waltz-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysisData = null;
+
+        // ── Colors ──
+        var DEEP_BG = '#020810';
+        var PALETTE = {
+            teal:     { r: 0,   g: 229, b: 204 },
+            cyan:     { r: 0,   g: 180, b: 255 },
+            violet:   { r: 120, g: 80,  b: 255 },
+            pink:     { r: 255, g: 100, b: 200 },
+            green:    { r: 0,   g: 255, b: 130 },
+            amber:    { r: 255, g: 200, b: 50  },
+            white:    { r: 200, g: 220, b: 255 }
+        };
+        var PAL_KEYS = Object.keys(PALETTE);
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var time = 0;
+        var sectionName = 'void';
+        var lastSeqIndex = -1;
+        var depthLevel = 0;       // 0=surface, 1=twilight, 2=abyss, 3=hadal
+        var targetDepth = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var flashAlpha = 0;
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+
+        // ── Particles (bioluminescent plankton) ──
+        var particles = [];
+        var MAX_PARTICLES = 200;
+
+        // ── Jellyfish ──
+        var jellyfish = [];
+        var MAX_JELLY = 8;
+
+        // ── Anglerfish ──
+        var anglerfish = [];
+        var MAX_ANGLER = 3;
+
+        // ── Sonar rings ──
+        var sonarRings = [];
+
+        // ── Waltz orbiters (paired dancers) ──
+        var waltzPairs = [];
+        var MAX_PAIRS = 6;
+
+        // ── Depth fog color ──
+        function getDepthColor(depth) {
+            // 0=midnight blue, 1=deep blue, 2=near-black blue, 3=pure black
+            var colors = [
+                { r: 5, g: 15, b: 40 },
+                { r: 3, g: 10, b: 25 },
+                { r: 2, g: 6, b: 14 },
+                { r: 1, g: 2, b: 6 }
+            ];
+            var idx = Math.min(3, Math.floor(depth));
+            var frac = depth - idx;
+            var next = Math.min(3, idx + 1);
+            return {
+                r: colors[idx].r + (colors[next].r - colors[idx].r) * frac,
+                g: colors[idx].g + (colors[next].g - colors[idx].g) * frac,
+                b: colors[idx].b + (colors[next].b - colors[idx].b) * frac
+            };
+        }
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rgb(c, a) { return 'rgba(' + Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b) + ',' + a + ')'; }
+        function randRange(lo, hi) { return lo + Math.random() * (hi - lo); }
+
+        // ── Particle system ──
+        function createParticle() {
+            var pal = PALETTE[PAL_KEYS[Math.floor(Math.random() * PAL_KEYS.length)]];
+            return {
+                x: Math.random() * W,
+                y: Math.random() * H,
+                vx: (Math.random() - 0.5) * 15,
+                vy: -5 - Math.random() * 20,
+                size: 1 + Math.random() * 3,
+                color: pal,
+                alpha: 0.1 + Math.random() * 0.6,
+                life: 1,
+                decay: 0.05 + Math.random() * 0.15,
+                pulsePhase: Math.random() * Math.PI * 2,
+                pulseSpeed: 1 + Math.random() * 3,
+                drift: Math.random() * Math.PI * 2
+            };
+        }
+
+        function updateParticles(dt, energy) {
+            for (var i = particles.length - 1; i >= 0; i--) {
+                var p = particles[i];
+                p.drift += dt * 0.5;
+                p.x += (p.vx + Math.sin(p.drift) * 8) * dt;
+                p.y += p.vy * dt;
+                p.pulsePhase += p.pulseSpeed * dt;
+                p.life -= p.decay * dt;
+                if (p.life <= 0 || p.y < -20 || p.x < -20 || p.x > W + 20) {
+                    particles.splice(i, 1);
+                }
+            }
+            // Spawn new based on energy
+            var spawnRate = 2 + energy * 15;
+            var toSpawn = Math.floor(spawnRate * dt * 60);
+            for (var s = 0; s < toSpawn && particles.length < MAX_PARTICLES; s++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function drawParticles(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                var pulse = 0.5 + 0.5 * Math.sin(p.pulsePhase);
+                var a = p.alpha * p.life * (0.3 + energy * 0.7) * pulse;
+                if (a < 0.01) continue;
+                var sz = p.size * (1 + beatPulse * 0.5);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color, a);
+                ctx.shadowColor = rgb(p.color, a * 0.8);
+                ctx.shadowBlur = sz * 4;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Jellyfish ──
+        function createJellyfish() {
+            var pal = PALETTE[PAL_KEYS[Math.floor(Math.random() * 4)]]; // teal/cyan/violet/pink
+            return {
+                x: Math.random() * W,
+                y: H * 0.3 + Math.random() * H * 0.5,
+                baseY: 0,
+                size: 20 + Math.random() * 40,
+                color: pal,
+                phase: Math.random() * Math.PI * 2,
+                pulseSpeed: 0.8 + Math.random() * 1.5,
+                driftX: (Math.random() - 0.5) * 30,
+                tentacles: 4 + Math.floor(Math.random() * 5),
+                tentacleLen: 0.8 + Math.random() * 1.2,
+                alpha: 0
+            };
+        }
+
+        function updateJellyfish(dt, energy, beat) {
+            for (var i = 0; i < jellyfish.length; i++) {
+                var j = jellyfish[i];
+                j.phase += j.pulseSpeed * dt;
+                j.x += j.driftX * dt;
+                // Gentle waltz bob: 3-beat feel
+                var waltzBob = Math.sin(time * Math.PI * 2 / 3) * 10;
+                j.y = j.baseY + waltzBob + Math.sin(j.phase) * 15;
+                // Wrap
+                if (j.x < -j.size * 2) j.x = W + j.size * 2;
+                if (j.x > W + j.size * 2) j.x = -j.size * 2;
+                // Fade in based on section
+                var targetAlpha = (sectionName === 'void') ? 0 :
+                                  (sectionName === 'stirring') ? 0.4 :
+                                  (sectionName === 'waltz') ? 0.8 :
+                                  (sectionName === 'climax') ? 1.0 :
+                                  (sectionName === 'return') ? 0.6 : 0.2;
+                j.alpha = lerpExp(j.alpha, targetAlpha, 2, dt);
+            }
+        }
+
+        function drawJellyfish(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < jellyfish.length; i++) {
+                var j = jellyfish[i];
+                if (j.alpha < 0.02) continue;
+                var pulseOpen = 0.5 + 0.5 * Math.sin(j.phase);
+                var sz = j.size * (0.8 + pulseOpen * 0.4);
+                var glowIntensity = 0.3 + energy * 0.7 + beatPulse * 0.3;
+
+                // Bell (dome)
+                ctx.beginPath();
+                ctx.ellipse(j.x, j.y, sz, sz * (0.5 + pulseOpen * 0.2), 0, Math.PI, 0);
+                var bellGrad = ctx.createRadialGradient(j.x, j.y - sz * 0.2, 0, j.x, j.y, sz);
+                bellGrad.addColorStop(0, rgb(j.color, j.alpha * glowIntensity * 0.6));
+                bellGrad.addColorStop(0.6, rgb(j.color, j.alpha * glowIntensity * 0.3));
+                bellGrad.addColorStop(1, rgb(j.color, 0));
+                ctx.fillStyle = bellGrad;
+                ctx.fill();
+
+                // Bell outline glow
+                ctx.strokeStyle = rgb(j.color, j.alpha * glowIntensity * 0.8);
+                ctx.lineWidth = 1.5;
+                ctx.shadowColor = rgb(j.color, j.alpha * 0.6);
+                ctx.shadowBlur = 12;
+                ctx.stroke();
+
+                // Tentacles
+                ctx.lineWidth = 1;
+                for (var t = 0; t < j.tentacles; t++) {
+                    var frac = t / (j.tentacles - 1);
+                    var tx = j.x + (frac - 0.5) * sz * 1.6;
+                    var tLen = sz * j.tentacleLen * (0.6 + pulseOpen * 0.4);
+                    var waveOff = Math.sin(j.phase + t * 1.2) * sz * 0.3;
+
+                    ctx.beginPath();
+                    ctx.moveTo(tx, j.y);
+                    ctx.quadraticCurveTo(
+                        tx + waveOff, j.y + tLen * 0.5,
+                        tx + waveOff * 0.5, j.y + tLen
+                    );
+                    ctx.strokeStyle = rgb(j.color, j.alpha * glowIntensity * 0.4);
+                    ctx.stroke();
+                }
+
+                // Inner glow dot
+                ctx.beginPath();
+                ctx.arc(j.x, j.y - sz * 0.15, sz * 0.15, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(PALETTE.white, j.alpha * glowIntensity * 0.5);
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = rgb(j.color, j.alpha * 0.8);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Anglerfish ──
+        function createAnglerfish() {
+            return {
+                x: -100,
+                y: H * 0.5 + Math.random() * H * 0.3,
+                vx: 10 + Math.random() * 20,
+                size: 30 + Math.random() * 25,
+                alpha: 0,
+                lurePhase: Math.random() * Math.PI * 2,
+                jawPhase: Math.random() * Math.PI * 2,
+                direction: Math.random() > 0.5 ? 1 : -1
+            };
+        }
+
+        function updateAnglerfish(dt, energy) {
+            for (var i = 0; i < anglerfish.length; i++) {
+                var a = anglerfish[i];
+                a.x += a.vx * a.direction * dt;
+                a.lurePhase += 3 * dt;
+                a.jawPhase += 2 * dt;
+                // Sine wave movement
+                a.y += Math.sin(time * 0.5 + i) * 0.5;
+                // Only visible in deep sections
+                var targetAlpha = (sectionName === 'climax' || sectionName === 'waltz') ? 0.8 : 0;
+                a.alpha = lerpExp(a.alpha, targetAlpha, 1.5, dt);
+                // Wrap
+                if (a.direction > 0 && a.x > W + 200) { a.x = -200; a.y = H * 0.4 + Math.random() * H * 0.4; }
+                if (a.direction < 0 && a.x < -200) { a.x = W + 200; a.y = H * 0.4 + Math.random() * H * 0.4; }
+            }
+        }
+
+        function drawAnglerfish(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < anglerfish.length; i++) {
+                var a = anglerfish[i];
+                if (a.alpha < 0.02) continue;
+                var sz = a.size;
+                var dir = a.direction;
+                var glow = 0.5 + energy * 0.5 + beatPulse * 0.3;
+
+                ctx.save();
+                ctx.translate(a.x, a.y);
+                ctx.scale(dir, 1);
+
+                // Body silhouette
+                ctx.beginPath();
+                ctx.ellipse(0, 0, sz, sz * 0.6, 0, 0, Math.PI * 2);
+                ctx.fillStyle = rgb({ r: 10, g: 15, b: 30 }, a.alpha * 0.9);
+                ctx.fill();
+
+                // Eye
+                ctx.beginPath();
+                ctx.arc(sz * 0.3, -sz * 0.15, sz * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(PALETTE.amber, a.alpha * glow);
+                ctx.shadowColor = rgb(PALETTE.amber, a.alpha * 0.8);
+                ctx.shadowBlur = 10;
+                ctx.fill();
+
+                // Jaw
+                var jawOpen = 0.1 + 0.15 * Math.abs(Math.sin(a.jawPhase));
+                ctx.beginPath();
+                ctx.moveTo(sz * 0.8, 0);
+                ctx.lineTo(sz * 1.2, -sz * jawOpen);
+                ctx.lineTo(sz * 1.2, sz * jawOpen);
+                ctx.closePath();
+                ctx.fillStyle = rgb({ r: 5, g: 8, b: 20 }, a.alpha * 0.8);
+                ctx.fill();
+                // Teeth
+                ctx.strokeStyle = rgb(PALETTE.white, a.alpha * 0.3);
+                ctx.lineWidth = 1;
+                for (var t = 0; t < 4; t++) {
+                    var tx = sz * 0.85 + t * sz * 0.08;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, -sz * jawOpen * 0.3);
+                    ctx.lineTo(tx + sz * 0.02, sz * jawOpen * 0.1);
+                    ctx.stroke();
+                }
+
+                // Lure (bioluminescent antenna)
+                var lureGlow = 0.5 + 0.5 * Math.sin(a.lurePhase);
+                var lureX = sz * 0.1;
+                var lureY = -sz * 0.6;
+                var lureEndX = lureX + Math.sin(a.lurePhase * 0.7) * sz * 0.3;
+                var lureEndY = lureY - sz * 0.5;
+
+                ctx.beginPath();
+                ctx.moveTo(sz * 0.2, -sz * 0.4);
+                ctx.quadraticCurveTo(lureX, lureY - sz * 0.2, lureEndX, lureEndY);
+                ctx.strokeStyle = rgb(PALETTE.teal, a.alpha * 0.4);
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
+
+                // Lure bulb
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath();
+                ctx.arc(lureEndX, lureEndY, sz * 0.12 * (0.8 + lureGlow * 0.4), 0, Math.PI * 2);
+                var lureGrad = ctx.createRadialGradient(lureEndX, lureEndY, 0, lureEndX, lureEndY, sz * 0.3);
+                lureGrad.addColorStop(0, rgb(PALETTE.teal, a.alpha * glow * lureGlow));
+                lureGrad.addColorStop(1, rgb(PALETTE.teal, 0));
+                ctx.fillStyle = lureGrad;
+                ctx.shadowColor = rgb(PALETTE.teal, a.alpha * 0.8);
+                ctx.shadowBlur = 20;
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        // ── Sonar Rings ──
+        function spawnSonarRing(x, y, color) {
+            sonarRings.push({
+                x: x || W * 0.5,
+                y: y || H * 0.4,
+                radius: 0,
+                maxRadius: Math.max(W, H) * 0.8,
+                speed: 150 + Math.random() * 100,
+                alpha: 0.6,
+                color: color || PALETTE.teal,
+                width: 1.5
+            });
+        }
+
+        function updateSonarRings(dt) {
+            for (var i = sonarRings.length - 1; i >= 0; i--) {
+                var r = sonarRings[i];
+                r.radius += r.speed * dt;
+                r.alpha *= Math.exp(-1.2 * dt);
+                if (r.alpha < 0.01 || r.radius > r.maxRadius) {
+                    sonarRings.splice(i, 1);
+                }
+            }
+        }
+
+        function drawSonarRings(ctx) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < sonarRings.length; i++) {
+                var r = sonarRings[i];
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = rgb(r.color, r.alpha);
+                ctx.lineWidth = r.width;
+                ctx.shadowColor = rgb(r.color, r.alpha * 0.5);
+                ctx.shadowBlur = 8;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Waltz Pair Orbiters ──
+        function createWaltzPair() {
+            return {
+                cx: W * 0.15 + Math.random() * W * 0.7,
+                cy: H * 0.2 + Math.random() * H * 0.5,
+                orbitRadius: 20 + Math.random() * 50,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.8 + Math.random() * 1.2,
+                size1: 3 + Math.random() * 4,
+                size2: 2 + Math.random() * 3,
+                color1: PALETTE[PAL_KEYS[Math.floor(Math.random() * PAL_KEYS.length)]],
+                color2: PALETTE[PAL_KEYS[Math.floor(Math.random() * PAL_KEYS.length)]],
+                alpha: 0,
+                trail: []
+            };
+        }
+
+        function updateWaltzPairs(dt, energy) {
+            for (var i = 0; i < waltzPairs.length; i++) {
+                var p = waltzPairs[i];
+                // Waltz time: speed varies in 3-beat pattern
+                var waltzAccent = 1 + 0.3 * Math.sin(time * Math.PI * 2 * 76 / 180);
+                p.angle += p.speed * waltzAccent * dt;
+
+                var targetAlpha = (sectionName === 'protowaltz' || sectionName === 'waltz' || sectionName === 'climax') ?
+                    (0.4 + energy * 0.6) : 0;
+                p.alpha = lerpExp(p.alpha, targetAlpha, 2, dt);
+
+                // Trail
+                var x1 = p.cx + Math.cos(p.angle) * p.orbitRadius;
+                var y1 = p.cy + Math.sin(p.angle) * p.orbitRadius;
+                p.trail.push({ x: x1, y: y1, a: p.alpha });
+                if (p.trail.length > 20) p.trail.shift();
+            }
+        }
+
+        function drawWaltzPairs(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < waltzPairs.length; i++) {
+                var p = waltzPairs[i];
+                if (p.alpha < 0.02) continue;
+
+                var x1 = p.cx + Math.cos(p.angle) * p.orbitRadius;
+                var y1 = p.cy + Math.sin(p.angle) * p.orbitRadius;
+                var x2 = p.cx + Math.cos(p.angle + Math.PI) * p.orbitRadius;
+                var y2 = p.cy + Math.sin(p.angle + Math.PI) * p.orbitRadius;
+
+                // Trail
+                for (var t = 0; t < p.trail.length; t++) {
+                    var tr = p.trail[t];
+                    var ta = tr.a * (t / p.trail.length) * 0.3;
+                    ctx.beginPath();
+                    ctx.arc(tr.x, tr.y, p.size1 * 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = rgb(p.color1, ta);
+                    ctx.fill();
+                }
+
+                // Connection line
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = rgb(PALETTE.white, p.alpha * 0.15);
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+                // Orbs
+                var glowMult = 1 + beatPulse * 0.5;
+                ctx.beginPath();
+                ctx.arc(x1, y1, p.size1 * glowMult, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color1, p.alpha * 0.8);
+                ctx.shadowColor = rgb(p.color1, p.alpha * 0.6);
+                ctx.shadowBlur = p.size1 * 4;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(x2, y2, p.size2 * glowMult, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color2, p.alpha * 0.8);
+                ctx.shadowColor = rgb(p.color2, p.alpha * 0.6);
+                ctx.shadowBlur = p.size2 * 4;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Depth zones / horizon fog ──
+        function drawDepthFog(ctx) {
+            var dc = getDepthColor(depthLevel);
+            // Top fade (surface light or none)
+            var surfaceLight = Math.max(0, 1 - depthLevel * 0.4);
+            if (surfaceLight > 0.01) {
+                var topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.3);
+                topGrad.addColorStop(0, 'rgba(' + Math.round(20 + surfaceLight * 30) + ',' +
+                    Math.round(30 + surfaceLight * 50) + ',' +
+                    Math.round(60 + surfaceLight * 80) + ',' + (surfaceLight * 0.15) + ')');
+                topGrad.addColorStop(1, 'rgba(' + Math.round(dc.r) + ',' + Math.round(dc.g) + ',' + Math.round(dc.b) + ',0)');
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(0, 0, W, H * 0.3);
+            }
+
+            // Bottom abyss gradient
+            var botGrad = ctx.createLinearGradient(0, H * 0.7, 0, H);
+            botGrad.addColorStop(0, 'rgba(' + Math.round(dc.r) + ',' + Math.round(dc.g) + ',' + Math.round(dc.b) + ',0)');
+            botGrad.addColorStop(1, 'rgba(' + Math.round(dc.r * 0.5) + ',' + Math.round(dc.g * 0.5) + ',' + Math.round(dc.b * 0.5) + ',0.4)');
+            ctx.fillStyle = botGrad;
+            ctx.fillRect(0, H * 0.7, W, H * 0.3);
+        }
+
+        // ── Falling marine snow ──
+        var snow = [];
+        function initSnow() {
+            snow = [];
+            for (var i = 0; i < 60; i++) {
+                snow.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    speed: 5 + Math.random() * 15,
+                    size: 0.5 + Math.random() * 1.5,
+                    drift: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function updateSnow(dt) {
+            for (var i = 0; i < snow.length; i++) {
+                var s = snow[i];
+                s.y += s.speed * dt;
+                s.drift += dt * 0.3;
+                s.x += Math.sin(s.drift) * 3 * dt;
+                if (s.y > H + 10) { s.y = -10; s.x = Math.random() * W; }
+            }
+        }
+
+        function drawSnow(ctx) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(200,220,255,0.15)';
+            for (var i = 0; i < snow.length; i++) {
+                var s = snow[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Title rendering ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.045, 52));
+            ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.globalAlpha = titleAlpha;
+
+            var text = 'ABYSSAL WALTZ';
+            var y = H * 0.15;
+
+            // Glow layers
+            ctx.shadowColor = 'rgba(0,229,204,0.8)';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = 'rgba(0,229,204,' + (titleAlpha * 0.9) + ')';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.shadowColor = 'rgba(0,180,255,0.5)';
+            ctx.shadowBlur = 60;
+            ctx.fillStyle = 'rgba(200,240,255,' + (titleAlpha * 0.7) + ')';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.restore();
+        }
+
+        // ── Flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = 'rgba(0,229,204,0.3)';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Section mapping ──
+        // Sequence has 31 entries (indices 0-30)
+        // 0-1: Void (single ping, silence)
+        // 2-4: Void (ping+drone, echo, answer)
+        // 5-6: Rhythmic pings, whale stirs
+        // 7: Whale bass emerges
+        // 8-9: Proto-waltz
+        // 10-15: Waltz themes (the heart)
+        // 16-23: Climax (bioluminescent, peak, descent, repeat)
+        // 24-27: Return/sonar+waltz harmony
+        // 28-30: Fade (sonar thinning, final ping, silence)
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'void';
+            if (seqIndex <= 4) return 'stirring';
+            if (seqIndex <= 7) return 'emerging';
+            if (seqIndex <= 9) return 'protowaltz';
+            if (seqIndex <= 15) return 'waltz';
+            if (seqIndex <= 23) return 'climax';
+            if (seqIndex <= 27) return 'return';
+            return 'fade';
+        }
+
+        function mapDepth(section) {
+            switch (section) {
+                case 'void': return 0;
+                case 'stirring': return 0.5;
+                case 'emerging': return 1;
+                case 'protowaltz': return 1.5;
+                case 'waltz': return 2;
+                case 'climax': return 3;
+                case 'return': return 2;
+                case 'fade': return 0.5;
+                default: return 0;
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysisData = anal;
+
+            particles = [];
+            sonarRings = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            time = 0;
+            sectionName = 'void';
+            lastSeqIndex = -1;
+            depthLevel = 0;
+            targetDepth = 0;
+            titleAlpha = 0;
+            flashAlpha = 0;
+            introFadeIn = 0;
+            outroFadeOut = 1;
+
+            jellyfish = [];
+            for (var j = 0; j < MAX_JELLY; j++) jellyfish.push(createJellyfish());
+            // Set baseY after creation
+            for (var jb = 0; jb < jellyfish.length; jb++) jellyfish[jb].baseY = jellyfish[jb].y;
+
+            anglerfish = [];
+            for (var a = 0; a < MAX_ANGLER; a++) {
+                var af = createAnglerfish();
+                af.x = Math.random() * W;
+                anglerfish.push(af);
+            }
+
+            waltzPairs = [];
+            for (var wp = 0; wp < MAX_PAIRS; wp++) waltzPairs.push(createWaltzPair());
+
+            initSnow();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            // Reposition jellyfish
+            for (var j = 0; j < jellyfish.length; j++) {
+                jellyfish[j].baseY = H * 0.3 + Math.random() * H * 0.5;
+            }
+            // Reposition waltz pairs
+            for (var w = 0; w < waltzPairs.length; w++) {
+                waltzPairs[w].cx = W * 0.15 + Math.random() * W * 0.7;
+                waltzPairs[w].cy = H * 0.2 + Math.random() * H * 0.5;
+            }
+        }
+
+        // ── Render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+            time += dt;
+
+            // Background
+            var dc = getDepthColor(depthLevel);
+            ctx.fillStyle = 'rgb(' + Math.round(dc.r) + ',' + Math.round(dc.g) + ',' + Math.round(dc.b) + ')';
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: gentle scene
+                updateSnow(dt);
+                drawSnow(ctx);
+                drawDepthFog(ctx);
+                // A few idle particles
+                if (particles.length < 20 && Math.random() < 0.05) particles.push(createParticle());
+                updateParticles(dt, 0.1);
+                drawParticles(ctx, 0.1);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysisData ? (analysisData.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            if (seqIdx !== lastSeqIndex) {
+                var newSection = mapSection(seqIdx);
+                var oldSection = sectionName;
+                sectionName = newSection;
+                targetDepth = mapDepth(newSection);
+
+                // Flash on big transitions
+                if (newSection === 'climax' && oldSection !== 'climax') {
+                    flashAlpha = 0.3;
+                }
+                if (newSection === 'waltz' && oldSection === 'protowaltz') {
+                    flashAlpha = 0.15;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // Smooth depth transition
+            depthLevel = lerpExp(depthLevel, targetDepth, 0.8, dt);
+
+            // ── Intro fade ──
+            if (sectionName === 'void') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.4);
+            } else {
+                introFadeIn = 1;
+            }
+
+            // ── Outro fade ──
+            if (sectionName === 'fade') {
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.12);
+            } else {
+                outroFadeOut = 1;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Sonar rings on beats in certain sections
+                if (sectionName === 'void' || sectionName === 'stirring' || sectionName === 'return' || sectionName === 'fade') {
+                    spawnSonarRing(
+                        W * 0.3 + Math.random() * W * 0.4,
+                        H * 0.3 + Math.random() * H * 0.3,
+                        energy > 0.4 ? PALETTE.teal : PALETTE.cyan
+                    );
+                }
+
+                // Extra sonar on climax peaks
+                if (sectionName === 'climax' && energy > 0.6) {
+                    spawnSonarRing(W * 0.5, H * 0.5, PALETTE.violet);
+                    if (energy > 0.8) {
+                        flashAlpha = Math.max(flashAlpha, 0.08);
+                    }
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-6 * dt);
+            flashAlpha *= Math.exp(-4 * dt);
+
+            // ── Title ──
+            titleTarget = (sectionName === 'waltz' || sectionName === 'climax') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update everything ──
+            updateSnow(dt);
+            updateParticles(dt, energy);
+            updateJellyfish(dt, energy, beat);
+            updateAnglerfish(dt, energy);
+            updateWaltzPairs(dt, energy);
+            updateSonarRings(dt);
+
+            // ── Draw layers (back to front) ──
+
+            // 1. Depth fog / light shafts
+            drawDepthFog(ctx);
+
+            // 2. Marine snow
+            drawSnow(ctx);
+
+            // 3. Sonar rings
+            drawSonarRings(ctx);
+
+            // 4. Waltz pair orbiters
+            drawWaltzPairs(ctx, energy);
+
+            // 5. Jellyfish
+            drawJellyfish(ctx, energy);
+
+            // 6. Anglerfish
+            drawAnglerfish(ctx, energy);
+
+            // 7. Bioluminescent particles
+            drawParticles(ctx, energy);
+
+            // 8. Central ambient glow (energy-reactive)
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var glowR = Math.max(W, H) * (0.15 + energy * 0.15);
+            var centralGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, glowR);
+            var glowColor = sectionName === 'climax' ? PALETTE.violet :
+                           sectionName === 'waltz' ? PALETTE.teal :
+                           PALETTE.cyan;
+            centralGrad.addColorStop(0, rgb(glowColor, (0.02 + energy * 0.04 + beatPulse * 0.03) * outroFadeOut));
+            centralGrad.addColorStop(1, rgb(glowColor, 0));
+            ctx.fillStyle = centralGrad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+
+            // 9. Title
+            drawTitle(ctx);
+
+            // 10. Flash
+            drawFlash(ctx);
+
+            // 11. Vignette
+            ctx.save();
+            var vigR = Math.max(W, H) * 0.7;
+            var vig = ctx.createRadialGradient(W / 2, H / 2, vigR * 0.3, W / 2, H / 2, vigR);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, 'rgba(0,0,0,' + (0.4 + depthLevel * 0.15) + ')');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        return {
+            name: 'Abyssal Waltz Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('abyssal-waltz-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/abyssal-waltz.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

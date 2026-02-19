@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caravan of the Sirocco — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #1a0e06;
+            color: #fff;
+            font-family: 'Amiri', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(26,14,6,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: #e8a840;
+            text-shadow: 0 0 30px rgba(232,168,64,0.6), 0 0 60px rgba(232,168,64,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #e8a840;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #e8a840;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(232,168,64,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(232,168,64,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Caravan of the Sirocco</div>
+        <div class="play-sub">a desert journey music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Caravan of the Sirocco Video Renderer ──────────────────────────
+    window.Renderers['caravan-sirocco-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Color Palette ──
+        var SKY_TOP_NIGHT = '#0d0a1a';
+        var SKY_BOT_NIGHT = '#1a1040';
+        var SKY_TOP_DAWN = '#2d1b4e';
+        var SKY_BOT_DAWN = '#c45a20';
+        var SKY_TOP_DAY = '#1a3060';
+        var SKY_BOT_DAY = '#d4903a';
+        var SKY_TOP_STORM = '#1a1008';
+        var SKY_BOT_STORM = '#6b4420';
+        var SKY_TOP_CLEAR = '#162850';
+        var SKY_BOT_CLEAR = '#e8a840';
+
+        var SAND_LIGHT = '#d4a050';
+        var SAND_MID = '#b8843a';
+        var SAND_DARK = '#8a6030';
+        var SAND_SHADOW = '#5a3a1a';
+
+        var SILHOUETTE = '#1a0e06';
+        var LANTERN_COLOR = '#ffcc44';
+        var STAR_COLOR = '#ffe8a0';
+
+        // ── Scene State ──
+        var scene = 'dawn'; // dawn, midday, sandstorm, oasis, night, clear
+        var sceneBlend = 0;
+        var lastSeqIndex = -1;
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var elapsed = 0;
+        var introFade = 0;
+        var outroFade = 1;
+
+        // ── Parallax Dunes ──
+        var duneLayers = [];
+        var DUNE_LAYER_COUNT = 5;
+
+        // ── Sand Particles ──
+        var sandParticles = [];
+        var SAND_COUNT = 200;
+
+        // ── Stars ──
+        var stars = [];
+        var STAR_COUNT = 120;
+
+        // ── Caravan ──
+        var caravans = [];
+        var CARAVAN_COUNT = 5;
+        var camelBob = 0;
+        var camelBobTarget = 0;
+
+        // ── Lanterns ──
+        var lanternSwing = 0;
+        var lanternSwingTarget = 0;
+
+        // ── Heat shimmer ──
+        var shimmerPhase = 0;
+
+        // ── Title ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Section Mapping ──
+        // seq 0-3: intro (dawn departure)
+        // seq 4-11: theme A (midday travel)
+        // seq 12-17: oud solo (midday heat)
+        // seq 18-23: storm approach
+        // seq 24-31: full storm (sandstorm)
+        // seq 32-37: breaking through
+        // seq 38-47: clear skies (oasis/triumph)
+        // seq 48-50: outro (night travel)
+        function mapScene(seqIdx) {
+            if (seqIdx <= 3) return 'dawn';
+            if (seqIdx <= 11) return 'midday';
+            if (seqIdx <= 17) return 'heat';
+            if (seqIdx <= 23) return 'stormapproach';
+            if (seqIdx <= 31) return 'sandstorm';
+            if (seqIdx <= 37) return 'breaking';
+            if (seqIdx <= 47) return 'clear';
+            return 'night';
+        }
+
+        // ── Lerp helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpColor(c1, c2, t) {
+            var r1 = parseInt(c1.slice(1,3),16), g1 = parseInt(c1.slice(3,5),16), b1 = parseInt(c1.slice(5,7),16);
+            var r2 = parseInt(c2.slice(1,3),16), g2 = parseInt(c2.slice(3,5),16), b2 = parseInt(c2.slice(5,7),16);
+            var r = Math.round(lerp(r1,r2,t)), g = Math.round(lerp(g1,g2,t)), b = Math.round(lerp(b1,b2,t));
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+        function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+        // ── Sky colors per scene ──
+        function getSkyColors(sc, blend) {
+            var tops = { dawn: SKY_TOP_DAWN, midday: SKY_TOP_DAY, heat: SKY_TOP_DAY, stormapproach: SKY_TOP_STORM, sandstorm: SKY_TOP_STORM, breaking: SKY_TOP_STORM, clear: SKY_TOP_CLEAR, night: SKY_TOP_NIGHT };
+            var bots = { dawn: SKY_BOT_DAWN, midday: SKY_BOT_DAY, heat: SKY_BOT_DAY, stormapproach: SKY_BOT_STORM, sandstorm: SKY_BOT_STORM, breaking: SKY_BOT_STORM, clear: SKY_BOT_CLEAR, night: SKY_BOT_NIGHT };
+            return { top: tops[sc] || SKY_TOP_NIGHT, bot: bots[sc] || SKY_BOT_NIGHT };
+        }
+
+        // ── Init ──
+        function init(ctx, w, h, ana) {
+            W = w; H = h;
+            analysis = ana;
+            initDunes();
+            initSand();
+            initStars();
+            initCaravan();
+        }
+
+        function resize(w, h) {
+            W = w; H = h;
+            initDunes();
+            initStars();
+        }
+
+        function initDunes() {
+            duneLayers = [];
+            for (var i = 0; i < DUNE_LAYER_COUNT; i++) {
+                var t = i / (DUNE_LAYER_COUNT - 1);
+                var yBase = H * (0.45 + t * 0.25);
+                var amp = H * (0.03 + t * 0.05);
+                var freq = 0.001 + t * 0.0005;
+                var speed = 5 + (DUNE_LAYER_COUNT - 1 - i) * 12;
+                var offset = Math.random() * 10000;
+                var darkness = t;
+                duneLayers.push({ yBase: yBase, amp: amp, freq: freq, speed: speed, offset: offset, darkness: darkness });
+            }
+        }
+
+        function initSand() {
+            sandParticles = [];
+            for (var i = 0; i < SAND_COUNT; i++) {
+                sandParticles.push({
+                    x: Math.random() * (W + 200) - 100,
+                    y: Math.random() * H,
+                    vx: 30 + Math.random() * 80,
+                    vy: -5 + Math.random() * 10,
+                    size: 0.5 + Math.random() * 2,
+                    alpha: 0.1 + Math.random() * 0.4,
+                    wave: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (var i = 0; i < STAR_COUNT; i++) {
+                stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H * 0.5,
+                    size: 0.3 + Math.random() * 1.8,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: 0.5 + Math.random() * 2
+                });
+            }
+        }
+
+        function initCaravan() {
+            caravans = [];
+            var spacing = W / (CARAVAN_COUNT + 1);
+            for (var i = 0; i < CARAVAN_COUNT; i++) {
+                caravans.push({
+                    xOffset: spacing * (i + 1),
+                    scale: 0.7 + Math.random() * 0.3,
+                    phase: i * 0.4,
+                    hasRider: i === 0 || i === 2 || i === 4,
+                    hasLantern: i === 0 || i === CARAVAN_COUNT - 1,
+                    bobPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // ── Draw Sky ──
+        function drawSky(ctx, sc, energy) {
+            var colors = getSkyColors(sc, 0);
+            var grad = ctx.createLinearGradient(0, 0, 0, H * 0.7);
+            grad.addColorStop(0, colors.top);
+            grad.addColorStop(1, colors.bot);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Sun/moon based on scene
+            if (sc === 'dawn' || sc === 'midday' || sc === 'heat' || sc === 'clear') {
+                drawSun(ctx, sc, energy);
+            }
+            if (sc === 'night') {
+                drawMoon(ctx);
+            }
+        }
+
+        function drawSun(ctx, sc, energy) {
+            ctx.save();
+            var sunY, sunSize, sunAlpha;
+            if (sc === 'dawn') {
+                sunY = H * 0.48;
+                sunSize = H * 0.08;
+                sunAlpha = 0.7;
+            } else if (sc === 'clear') {
+                sunY = H * 0.2;
+                sunSize = H * 0.06;
+                sunAlpha = 0.9;
+            } else {
+                sunY = H * 0.15;
+                sunSize = H * 0.07;
+                sunAlpha = 0.8;
+            }
+            var sunX = W * 0.75;
+            // Glow
+            var glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunSize * 4);
+            glow.addColorStop(0, 'rgba(255,200,80,' + (sunAlpha * 0.3) + ')');
+            glow.addColorStop(0.3, 'rgba(255,160,40,' + (sunAlpha * 0.1) + ')');
+            glow.addColorStop(1, 'rgba(255,120,20,0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, W, H);
+            // Disc
+            ctx.globalAlpha = sunAlpha;
+            ctx.fillStyle = '#ffe080';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawMoon(ctx) {
+            ctx.save();
+            var mx = W * 0.8, my = H * 0.12, mr = H * 0.04;
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = '#e8e0d0';
+            ctx.beginPath();
+            ctx.arc(mx, my, mr, 0, Math.PI * 2);
+            ctx.fill();
+            // Crescent shadow
+            ctx.fillStyle = SKY_TOP_NIGHT;
+            ctx.beginPath();
+            ctx.arc(mx + mr * 0.4, my - mr * 0.1, mr * 0.85, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Draw Stars ──
+        function drawStars(ctx, sc, dt) {
+            if (sc !== 'night' && sc !== 'dawn') return;
+            var alpha = sc === 'night' ? 0.9 : 0.4;
+            ctx.save();
+            ctx.fillStyle = STAR_COLOR;
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                s.twinkle += s.speed * dt;
+                var a = alpha * (0.3 + 0.7 * Math.abs(Math.sin(s.twinkle)));
+                ctx.globalAlpha = a;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw Dunes ──
+        function drawDunes(ctx, sc, dt, energy, windIntensity) {
+            for (var i = 0; i < duneLayers.length; i++) {
+                var d = duneLayers[i];
+                d.offset += d.speed * dt * (0.3 + windIntensity * 0.7);
+
+                var t = d.darkness;
+                var baseColor;
+                if (sc === 'sandstorm' || sc === 'stormapproach' || sc === 'breaking') {
+                    baseColor = lerpColor(SAND_MID, SAND_SHADOW, t * 0.8);
+                } else if (sc === 'night') {
+                    baseColor = lerpColor('#2a1a0a', '#100800', t);
+                } else if (sc === 'dawn') {
+                    baseColor = lerpColor(SAND_LIGHT, SAND_DARK, t * 0.7);
+                } else {
+                    baseColor = lerpColor(SAND_LIGHT, SAND_DARK, t);
+                }
+
+                ctx.fillStyle = baseColor;
+                ctx.beginPath();
+                ctx.moveTo(0, H);
+
+                for (var x = 0; x <= W; x += 4) {
+                    var duneY = d.yBase + Math.sin((x + d.offset) * d.freq) * d.amp
+                              + Math.sin((x + d.offset * 0.7) * d.freq * 2.3) * d.amp * 0.4;
+                    ctx.lineTo(x, duneY);
+                }
+
+                ctx.lineTo(W, H);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // ── Heat shimmer ──
+        function drawHeatShimmer(ctx, sc, dt) {
+            if (sc !== 'midday' && sc !== 'heat') return;
+            shimmerPhase += dt * 3;
+            ctx.save();
+            ctx.globalAlpha = 0.06;
+            ctx.fillStyle = '#ffe0a0';
+            var y = H * 0.52;
+            for (var x = 0; x < W; x += 8) {
+                var offset = Math.sin(shimmerPhase + x * 0.02) * 6;
+                ctx.fillRect(x, y + offset, 6, 3);
+            }
+            ctx.restore();
+        }
+
+        // ── Sand Particles (Sirocco wind) ──
+        function drawSandParticles(ctx, dt, windIntensity, energy) {
+            ctx.save();
+            var windMul = 0.2 + windIntensity * 3;
+            var densityMul = clamp(windIntensity, 0.1, 1);
+            var visCount = Math.floor(SAND_COUNT * densityMul);
+
+            for (var i = 0; i < visCount; i++) {
+                var p = sandParticles[i];
+                p.wave += dt * 3;
+                p.x += p.vx * windMul * dt;
+                p.y += (p.vy + Math.sin(p.wave) * 8) * dt;
+
+                if (p.x > W + 50) { p.x = -20; p.y = Math.random() * H; }
+                if (p.y < -10) p.y = H + 10;
+                if (p.y > H + 10) p.y = -10;
+
+                var alpha = p.alpha * densityMul * (0.5 + energy * 0.5);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = (sc === 'sandstorm' || sc === 'stormapproach') ? '#c89850' : '#e8c080';
+                ctx.fillRect(p.x, p.y, p.size, p.size * 0.6);
+            }
+            ctx.restore();
+        }
+
+        // ── Camel Silhouette ──
+        function drawCamel(ctx, x, y, scale, bob, hasRider, hasLantern, lanternAngle, sc) {
+            ctx.save();
+            ctx.translate(x, y + bob);
+            var s = scale * H * 0.001;
+            var cs = s * 60; // base camel size
+
+            // Determine silhouette color
+            var sil = SILHOUETTE;
+            if (sc === 'night') sil = '#080408';
+            else if (sc === 'sandstorm') sil = '#2a1a08';
+            ctx.fillStyle = sil;
+            ctx.strokeStyle = sil;
+            ctx.lineWidth = cs * 0.08;
+            ctx.lineCap = 'round';
+
+            // Body (oval)
+            ctx.beginPath();
+            ctx.ellipse(0, -cs * 0.5, cs * 0.55, cs * 0.25, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hump
+            ctx.beginPath();
+            ctx.ellipse(-cs * 0.05, -cs * 0.78, cs * 0.2, cs * 0.15, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Neck
+            ctx.beginPath();
+            ctx.moveTo(cs * 0.35, -cs * 0.6);
+            ctx.quadraticCurveTo(cs * 0.5, -cs * 1.1, cs * 0.42, -cs * 1.3);
+            ctx.lineWidth = cs * 0.12;
+            ctx.stroke();
+
+            // Head
+            ctx.beginPath();
+            ctx.ellipse(cs * 0.45, -cs * 1.38, cs * 0.12, cs * 0.08, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Legs (4 legs with walking motion)
+            var legPhase = bob * 0.15;
+            var legs = [
+                { x: -cs * 0.3, front: false },
+                { x: -cs * 0.15, front: false },
+                { x: cs * 0.2, front: true },
+                { x: cs * 0.35, front: true }
+            ];
+            ctx.lineWidth = cs * 0.06;
+            for (var li = 0; li < legs.length; li++) {
+                var leg = legs[li];
+                var lx = leg.x;
+                var swing = Math.sin(legPhase + li * 1.2) * cs * 0.08;
+                ctx.beginPath();
+                ctx.moveTo(lx, -cs * 0.3);
+                ctx.lineTo(lx + swing * 0.5, -cs * 0.05);
+                ctx.lineTo(lx + swing, cs * 0.15);
+                ctx.stroke();
+            }
+
+            // Tail
+            ctx.lineWidth = cs * 0.04;
+            ctx.beginPath();
+            ctx.moveTo(-cs * 0.55, -cs * 0.45);
+            ctx.quadraticCurveTo(-cs * 0.7, -cs * 0.3, -cs * 0.65, -cs * 0.15);
+            ctx.stroke();
+
+            // Rider
+            if (hasRider) {
+                drawRider(ctx, cs, sil, sc);
+            }
+
+            // Lantern
+            if (hasLantern) {
+                drawLantern(ctx, cs, lanternAngle, sc);
+            }
+
+            ctx.restore();
+        }
+
+        function drawRider(ctx, cs, sil, sc) {
+            ctx.fillStyle = sil;
+            ctx.strokeStyle = sil;
+
+            // Torso sitting on hump
+            ctx.lineWidth = cs * 0.08;
+            ctx.beginPath();
+            ctx.moveTo(-cs * 0.05, -cs * 0.78);
+            ctx.lineTo(-cs * 0.05, -cs * 1.15);
+            ctx.stroke();
+
+            // Head (with turban/hood)
+            ctx.beginPath();
+            ctx.arc(-cs * 0.05, -cs * 1.28, cs * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            // Turban wrap
+            ctx.beginPath();
+            ctx.ellipse(-cs * 0.05, -cs * 1.32, cs * 0.12, cs * 0.06, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arms holding reins
+            ctx.lineWidth = cs * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(-cs * 0.05, -cs * 1.05);
+            ctx.quadraticCurveTo(cs * 0.15, -cs * 0.95, cs * 0.35, -cs * 1.1);
+            ctx.stroke();
+
+            // Robe/cloak flowing
+            ctx.lineWidth = cs * 0.03;
+            ctx.beginPath();
+            ctx.moveTo(-cs * 0.05, -cs * 1.1);
+            ctx.quadraticCurveTo(-cs * 0.25, -cs * 0.9, -cs * 0.35, -cs * 0.65);
+            ctx.stroke();
+        }
+
+        function drawLantern(ctx, cs, angle, sc) {
+            ctx.save();
+            // Lantern hangs from a pole on the camel
+            var poleX = cs * 0.0;
+            var poleTopY = -cs * 0.95;
+            ctx.translate(poleX, poleTopY);
+            ctx.rotate(angle * 0.15);
+
+            // Pole
+            ctx.strokeStyle = SILHOUETTE;
+            ctx.lineWidth = cs * 0.03;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, cs * 0.25);
+            ctx.stroke();
+
+            // Lantern body
+            var ly = cs * 0.28;
+            var lr = cs * 0.06;
+            ctx.fillStyle = LANTERN_COLOR;
+            ctx.globalAlpha = 0.9;
+            ctx.beginPath();
+            ctx.arc(0, ly, lr, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Lantern glow
+            var glow = ctx.createRadialGradient(0, ly, 0, 0, ly, lr * 6);
+            glow.addColorStop(0, 'rgba(255,204,68,0.3)');
+            glow.addColorStop(0.5, 'rgba(255,160,40,0.1)');
+            glow.addColorStop(1, 'rgba(255,120,20,0)');
+            ctx.globalAlpha = (sc === 'night' || sc === 'dawn') ? 0.8 : 0.3;
+            ctx.fillStyle = glow;
+            ctx.fillRect(-lr * 6, ly - lr * 6, lr * 12, lr * 12);
+
+            ctx.restore();
+        }
+
+        // ── Draw Caravan ──
+        function drawCaravan(ctx, sc, dt, energy, beat) {
+            var duneRef = duneLayers[DUNE_LAYER_COUNT - 2];
+            var baseY = duneRef ? duneRef.yBase - H * 0.06 : H * 0.6;
+
+            for (var i = 0; i < caravans.length; i++) {
+                var c = caravans[i];
+                var duneWave = 0;
+                if (duneRef) {
+                    duneWave = Math.sin((c.xOffset + duneRef.offset) * duneRef.freq) * duneRef.amp
+                             + Math.sin((c.xOffset + duneRef.offset * 0.7) * duneRef.freq * 2.3) * duneRef.amp * 0.4;
+                }
+                var y = baseY + duneWave;
+
+                // Beat-synced bob
+                var bob = Math.sin(camelBob + c.bobPhase) * 3 * (0.5 + energy * 0.5);
+
+                drawCamel(ctx, c.xOffset, y, c.scale, bob, c.hasRider, c.hasLantern, lanternSwing, sc);
+            }
+        }
+
+        // ── Storm overlay ──
+        function drawStormOverlay(ctx, sc, energy) {
+            if (sc !== 'sandstorm' && sc !== 'stormapproach' && sc !== 'breaking') return;
+            ctx.save();
+            var intensity = sc === 'sandstorm' ? 0.25 + energy * 0.15 : (sc === 'breaking' ? 0.1 + energy * 0.1 : 0.05 + energy * 0.1);
+            ctx.globalAlpha = intensity;
+            ctx.fillStyle = '#a07830';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = titleAlpha * outroFade;
+            ctx.fillStyle = '#e8a840';
+            ctx.font = 'bold ' + Math.round(H * 0.06) + 'px Amiri, serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(232,168,64,0.5)';
+            ctx.shadowBlur = 20;
+            ctx.fillText('CARAVAN OF THE SIROCCO', W / 2, H * 0.15);
+            ctx.restore();
+        }
+
+        // ── Flash ──
+        var flashAlpha = 0;
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#ffe8c0';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Wind intensity per scene ──
+        function getWindIntensity(sc, energy) {
+            switch (sc) {
+                case 'dawn': return 0.1 + energy * 0.1;
+                case 'midday': return 0.15 + energy * 0.15;
+                case 'heat': return 0.2 + energy * 0.2;
+                case 'stormapproach': return 0.4 + energy * 0.4;
+                case 'sandstorm': return 0.8 + energy * 0.2;
+                case 'breaking': return 0.5 + energy * 0.3;
+                case 'clear': return 0.1 + energy * 0.1;
+                case 'night': return 0.05 + energy * 0.05;
+                default: return 0.1;
+            }
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            if (!cursor) {
+                // Idle state
+                drawSky(ctx, 'dawn', 0);
+                drawDunes(ctx, 'dawn', 0, 0, 0.05);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            elapsed = cursor.elapsed;
+
+            // ── Scene transitions ──
+            var newScene = mapScene(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldScene = scene;
+                scene = newScene;
+
+                // Flash on major transitions
+                if (scene === 'sandstorm' && oldScene !== 'sandstorm') {
+                    flashAlpha = 0.3;
+                }
+                if (scene === 'clear' && oldScene !== 'clear') {
+                    flashAlpha = 0.25;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Intro/Outro fades ──
+            if (scene === 'dawn') {
+                introFade = Math.min(1, introFade + dt * 0.25);
+            } else {
+                introFade = 1;
+            }
+            if (scene === 'night') {
+                outroFade = Math.max(0, outroFade - dt * 0.12);
+            } else {
+                outroFade = 1;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                camelBobTarget += Math.PI * 0.5;
+                lanternSwingTarget = (Math.random() - 0.5) * 2;
+
+                // Flash on strong beats in storm
+                if ((scene === 'sandstorm' || scene === 'breaking') && energy > 0.6) {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.08);
+                }
+                lastBeat = beat;
+            }
+            beatPulse *= Math.exp(-6 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Smooth animations ──
+            camelBob += (camelBobTarget - camelBob) * (1 - Math.exp(-4 * dt));
+            lanternSwing += (lanternSwingTarget - lanternSwing) * (1 - Math.exp(-3 * dt));
+
+            // ── Title ──
+            titleTarget = (scene === 'dawn' && elapsed > 1 && elapsed < 8) ? 1 :
+                          (scene === 'clear') ? 0.7 : 0;
+            titleAlpha += (titleTarget - titleAlpha) * (1 - Math.exp(-3 * dt));
+
+            var wind = getWindIntensity(scene, energy);
+
+            // ── Draw scene layers (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx, scene, energy);
+
+            // 2. Stars
+            drawStars(ctx, scene, dt);
+
+            // 3. Title (behind dunes)
+            drawTitle(ctx);
+
+            // 4. Back dunes (layers 0-2)
+            for (var di = 0; di < Math.min(3, duneLayers.length); di++) {
+                drawSingleDuneLayer(ctx, di, scene, dt, wind);
+            }
+
+            // 5. Heat shimmer
+            drawHeatShimmer(ctx, scene, dt);
+
+            // 6. Caravan silhouettes
+            drawCaravan(ctx, scene, dt, energy, beat);
+
+            // 7. Front dunes (layers 3+)
+            for (var dj = 3; dj < duneLayers.length; dj++) {
+                drawSingleDuneLayer(ctx, dj, scene, dt, wind);
+            }
+
+            // 8. Sand particles (wind)
+            drawSandParticles(ctx, dt, wind, energy);
+
+            // 9. Storm overlay
+            drawStormOverlay(ctx, scene, energy);
+
+            // 10. Flash
+            drawFlash(ctx);
+
+            // 11. Fade overlays
+            if (introFade < 1) {
+                ctx.save();
+                ctx.globalAlpha = 1 - introFade;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+            if (outroFade < 1) {
+                ctx.save();
+                ctx.globalAlpha = 1 - outroFade;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        // ── Draw a single dune layer ──
+        function drawSingleDuneLayer(ctx, idx, sc, dt, windIntensity) {
+            var d = duneLayers[idx];
+            if (!d) return;
+            d.offset += d.speed * dt * (0.3 + windIntensity * 0.7);
+
+            var t = d.darkness;
+            var baseColor;
+            if (sc === 'sandstorm' || sc === 'stormapproach' || sc === 'breaking') {
+                baseColor = lerpColor(SAND_MID, SAND_SHADOW, t * 0.8);
+            } else if (sc === 'night') {
+                baseColor = lerpColor('#2a1a0a', '#100800', t);
+            } else if (sc === 'dawn') {
+                baseColor = lerpColor(SAND_LIGHT, SAND_DARK, t * 0.7);
+            } else {
+                baseColor = lerpColor(SAND_LIGHT, SAND_DARK, t);
+            }
+
+            ctx.fillStyle = baseColor;
+            ctx.beginPath();
+            ctx.moveTo(0, H);
+            for (var x = 0; x <= W; x += 4) {
+                var duneY = d.yBase + Math.sin((x + d.offset) * d.freq) * d.amp
+                          + Math.sin((x + d.offset * 0.7) * d.freq * 2.3) * d.amp * 0.4;
+                ctx.lineTo(x, duneY);
+            }
+            ctx.lineTo(W, H);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        return {
+            name: 'Caravan of the Sirocco Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('caravan-sirocco-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/caravan-of-the-sirocco.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

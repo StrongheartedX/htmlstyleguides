@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cradle of the Colossus — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0c0a08;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(12,10,8,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(18px, 4.5vw, 44px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #d4a04a;
+            text-shadow: 0 0 30px rgba(212,160,74,0.5), 0 0 60px rgba(212,160,74,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+            letter-spacing: 0.05em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #d4a04a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #d4a04a;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212,160,74,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(212,160,74,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Cradle of the Colossus</div>
+        <div class="play-sub">an ancient awakening</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Cradle of the Colossus Video Renderer ──────────────────────────
+    window.Renderers['cradle-colossus-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Colors ──
+        var SKY_TOP = '#0c0a08';
+        var SKY_BOT = '#1a1510';
+        var STONE_DARK = '#3a3530';
+        var STONE_MID = '#5a5045';
+        var STONE_LIGHT = '#7a7060';
+        var MOSS_GREEN = '#2a3a20';
+        var RUNE_AMBER = '#d4a04a';
+        var RUNE_BLUE = '#4a8acd';
+        var EYE_GLOW = '#ffb830';
+        var DUST_COLOR = '#8a7a60';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var tremor = 0;
+        var tremorTarget = 0;
+        var runeGlow = 0;
+        var eyeOpen = 0;
+        var eyeOpenTarget = 0;
+        var colossusRise = 0;
+        var colossusRiseTarget = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var flashAlpha = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'stillness';
+        var introFade = 0;
+        var outroFade = 1;
+        var crackProgress = 0;
+        var crackTarget = 0;
+        var dustIntensity = 0;
+
+        // ── Particles ──
+        var dustParticles = [];
+        var runeParticles = [];
+        var rockDebris = [];
+        var stars = [];
+
+        // ── Mountain/landscape seed ──
+        var mountainSeed = [];
+        var cracks = [];
+        var runes = [];
+        var tinyFigures = [];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function seededRand(seed) {
+            var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+            return x - Math.floor(x);
+        }
+        function hexToRgb(hex) {
+            return {
+                r: parseInt(hex.slice(1,3), 16),
+                g: parseInt(hex.slice(3,5), 16),
+                b: parseInt(hex.slice(5,7), 16)
+            };
+        }
+
+        // ── Generate landscape features ──
+        function generateLandscape() {
+            // Background mountain ridge
+            mountainSeed = [];
+            for (var i = 0; i <= 40; i++) {
+                mountainSeed.push(seededRand(i * 7.3 + 42));
+            }
+
+            // Cracks on the colossus
+            cracks = [];
+            for (var c = 0; c < 18; c++) {
+                var cx = seededRand(c * 13.7) * 0.6 + 0.2;
+                var cy = seededRand(c * 19.3) * 0.5 + 0.15;
+                var segments = [];
+                var sx = cx, sy = cy;
+                var numSeg = 3 + Math.floor(seededRand(c * 31.1) * 5);
+                for (var s = 0; s < numSeg; s++) {
+                    var dx = (seededRand(c * 11 + s * 7) - 0.5) * 0.06;
+                    var dy = seededRand(c * 23 + s * 13) * 0.04 + 0.01;
+                    sx += dx;
+                    sy += dy;
+                    segments.push({ x: sx, y: sy });
+                }
+                cracks.push({ start: { x: cx, y: cy }, segments: segments });
+            }
+
+            // Rune positions on the colossus body
+            runes = [];
+            var runePatterns = [
+                // Head/crown runes
+                { x: 0.48, y: 0.12, size: 0.025, type: 'circle' },
+                { x: 0.52, y: 0.12, size: 0.025, type: 'circle' },
+                { x: 0.50, y: 0.08, size: 0.03, type: 'diamond' },
+                // Chest runes
+                { x: 0.45, y: 0.30, size: 0.035, type: 'spiral' },
+                { x: 0.55, y: 0.30, size: 0.035, type: 'spiral' },
+                { x: 0.50, y: 0.35, size: 0.04, type: 'diamond' },
+                // Arm runes
+                { x: 0.35, y: 0.28, size: 0.02, type: 'line' },
+                { x: 0.33, y: 0.32, size: 0.02, type: 'line' },
+                { x: 0.65, y: 0.28, size: 0.02, type: 'line' },
+                { x: 0.67, y: 0.32, size: 0.02, type: 'line' },
+                // Belt/waist runes
+                { x: 0.42, y: 0.45, size: 0.02, type: 'circle' },
+                { x: 0.46, y: 0.45, size: 0.02, type: 'circle' },
+                { x: 0.50, y: 0.45, size: 0.025, type: 'diamond' },
+                { x: 0.54, y: 0.45, size: 0.02, type: 'circle' },
+                { x: 0.58, y: 0.45, size: 0.02, type: 'circle' },
+            ];
+            for (var ri = 0; ri < runePatterns.length; ri++) {
+                runes.push(runePatterns[ri]);
+            }
+
+            // Tiny figures at the base
+            tinyFigures = [];
+            for (var f = 0; f < 8; f++) {
+                tinyFigures.push({
+                    x: 0.3 + seededRand(f * 17 + 5) * 0.4,
+                    phase: seededRand(f * 31) * Math.PI * 2,
+                    speed: 0.5 + seededRand(f * 43) * 1.5
+                });
+            }
+
+            // Stars
+            stars = [];
+            for (var si = 0; si < 120; si++) {
+                stars.push({
+                    x: seededRand(si * 7.1 + 3) * W,
+                    y: seededRand(si * 13.3 + 7) * H * 0.4,
+                    size: 0.5 + seededRand(si * 19.7) * 1.5,
+                    twinkle: seededRand(si * 23.1) * Math.PI * 2,
+                    twinkleSpeed: 1 + seededRand(si * 29.3) * 3
+                });
+            }
+        }
+
+        function initDust() {
+            dustParticles = [];
+            for (var i = 0; i < 60; i++) {
+                dustParticles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: Math.random() * 30 + 10,
+                    size: 1 + Math.random() * 3,
+                    alpha: 0.1 + Math.random() * 0.4,
+                    life: Math.random()
+                });
+            }
+        }
+
+        function initRuneParticles() {
+            runeParticles = [];
+            for (var i = 0; i < 40; i++) {
+                runeParticles.push({
+                    x: 0, y: 0,
+                    vx: 0, vy: 0,
+                    life: 0,
+                    maxLife: 0.5 + Math.random() * 1.5,
+                    size: 1 + Math.random() * 2,
+                    isAmber: Math.random() > 0.4
+                });
+            }
+        }
+
+        function initRockDebris() {
+            rockDebris = [];
+            for (var i = 0; i < 25; i++) {
+                rockDebris.push({
+                    x: 0, y: 0,
+                    vx: 0, vy: 0,
+                    size: 2 + Math.random() * 6,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 5,
+                    life: 0,
+                    active: false
+                });
+            }
+        }
+
+        // ── Section mapping ──
+        // Sequence: 36 entries (0-35)
+        // Patterns: 0=Silence, 1-2=MusicBox Intro, 3-6=Lullaby, 7-8=Ornament, 9-10=Shadow Stir,
+        //           11-12=Colossus Revealed, 13=Retreat, 14-15=Lullaby C, 16=Ghost Bells,
+        //           17-18=Lullaby D, 19=Shadow Echo, 20-22=Fading/Final, 23-24=Lullaby A2
+        function mapSection(seqIndex) {
+            // Seq 0-3: Music Box intros only -> stillness (landscape at rest)
+            if (seqIndex <= 3) return 'stillness';
+            // Seq 4-9: Lullaby A full -> cradle (gentle, first signs of life)
+            if (seqIndex <= 9) return 'cradle';
+            // Seq 10-11: Ornament Tinkle/Settle -> tremors (earth beginning to stir)
+            if (seqIndex <= 11) return 'tremors';
+            // Seq 12-15: Lullaby A2 + B variants -> cradle2 (calm returns briefly)
+            if (seqIndex <= 15) return 'cradle2';
+            // Seq 16-17: Lullaby C -> eyes_open (first glimpse of awareness)
+            if (seqIndex <= 17) return 'eyes_open';
+            // Seq 18-19: Shadow Stir -> shadow (darkness stirs within)
+            if (seqIndex <= 19) return 'shadow';
+            // Seq 20-23: Colossus Revealed A/B x2 -> rising (the colossus rises!)
+            if (seqIndex <= 23) return 'rising';
+            // Seq 24: Retreat to Lullaby -> retreat (settling back)
+            if (seqIndex <= 24) return 'retreat';
+            // Seq 25-28: Lullaby A + C return -> cradle3 (gentle after-tremor)
+            if (seqIndex <= 28) return 'cradle3';
+            // Seq 29-31: Shadow Echo + Lullaby D -> winding (winding down)
+            if (seqIndex <= 31) return 'winding';
+            // Seq 32-35: Ghost Bells + Fading + Final Breath -> sleep (return to sleep)
+            return 'sleep';
+        }
+
+        // ── Draw sky ──
+        function drawSky(ctx, time) {
+            var grad = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+            // Shift sky color based on section
+            var skyR = 12, skyG = 10, skyB = 8;
+            if (sectionMood === 'rising' || sectionMood === 'shadow') {
+                skyR = lerp(12, 20, runeGlow);
+                skyG = lerp(10, 8, runeGlow);
+                skyB = lerp(8, 5, runeGlow);
+            }
+            grad.addColorStop(0, 'rgb(' + Math.floor(skyR) + ',' + Math.floor(skyG) + ',' + Math.floor(skyB) + ')');
+            grad.addColorStop(1, SKY_BOT);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ── Draw stars ──
+        function drawStars(ctx, time) {
+            var starAlpha = 1;
+            if (sectionMood === 'rising') starAlpha = Math.max(0.2, 1 - runeGlow * 0.8);
+            ctx.save();
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                var twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.twinkle + time * s.twinkleSpeed));
+                ctx.globalAlpha = twinkle * starAlpha * introFade * outroFade;
+                ctx.fillStyle = '#ffe8c0';
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw distant mountains ──
+        function drawMountains(ctx) {
+            ctx.save();
+            // Far range
+            ctx.fillStyle = '#1a1612';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.55);
+            for (var i = 0; i <= 40; i++) {
+                var x = (i / 40) * W;
+                var h = mountainSeed[i] * H * 0.12 + H * 0.02;
+                ctx.lineTo(x, H * 0.55 - h);
+            }
+            ctx.lineTo(W, H * 0.55);
+            ctx.closePath();
+            ctx.fill();
+
+            // Near range
+            ctx.fillStyle = '#131010';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.60);
+            for (var j = 0; j <= 40; j++) {
+                var x2 = (j / 40) * W;
+                var h2 = mountainSeed[40 - j] * H * 0.08 + H * 0.01;
+                ctx.lineTo(x2, H * 0.60 - h2);
+            }
+            ctx.lineTo(W, H * 0.60);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Draw the colossus ──
+        function drawColossus(ctx, time, energy) {
+            var baseY = H * 0.85; // feet at 85% height
+            var colH = H * 0.75;  // colossus is 75% of screen tall
+            var colW = W * 0.35;  // width
+            var cx = W * 0.5;     // centered
+
+            // Tremor offset
+            var tx = tremor * (Math.sin(time * 25) * 3 + Math.sin(time * 37) * 2);
+            var ty = tremor * (Math.cos(time * 30) * 2);
+
+            // Rising offset
+            var riseOff = colossusRise * H * 0.05;
+
+            ctx.save();
+            ctx.translate(tx, ty - riseOff);
+
+            // ── Body silhouette (massive humanoid shape) ──
+            var headY = baseY - colH;
+            var shoulderY = baseY - colH * 0.78;
+            var waistY = baseY - colH * 0.40;
+            var headR = colW * 0.18;
+
+            // Legs
+            ctx.fillStyle = STONE_DARK;
+            ctx.beginPath();
+            // Left leg
+            ctx.moveTo(cx - colW * 0.15, waistY);
+            ctx.lineTo(cx - colW * 0.25, baseY);
+            ctx.lineTo(cx - colW * 0.05, baseY);
+            ctx.lineTo(cx - colW * 0.02, waistY);
+            ctx.closePath();
+            ctx.fill();
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(cx + colW * 0.02, waistY);
+            ctx.lineTo(cx + colW * 0.05, baseY);
+            ctx.lineTo(cx + colW * 0.25, baseY);
+            ctx.lineTo(cx + colW * 0.15, waistY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Torso
+            ctx.fillStyle = STONE_MID;
+            ctx.beginPath();
+            ctx.moveTo(cx - colW * 0.45, shoulderY);
+            ctx.quadraticCurveTo(cx - colW * 0.35, waistY * 0.95, cx - colW * 0.15, waistY);
+            ctx.lineTo(cx + colW * 0.15, waistY);
+            ctx.quadraticCurveTo(cx + colW * 0.35, waistY * 0.95, cx + colW * 0.45, shoulderY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Arms (hanging at sides, slightly forward based on rise)
+            var armAngle = colossusRise * 0.15;
+            ctx.fillStyle = STONE_DARK;
+            // Left arm
+            ctx.beginPath();
+            ctx.moveTo(cx - colW * 0.45, shoulderY);
+            ctx.lineTo(cx - colW * 0.55 - armAngle * colW, shoulderY + colH * 0.35);
+            ctx.lineTo(cx - colW * 0.48 - armAngle * colW * 0.8, shoulderY + colH * 0.38);
+            ctx.lineTo(cx - colW * 0.35, shoulderY + colH * 0.05);
+            ctx.closePath();
+            ctx.fill();
+            // Right arm
+            ctx.beginPath();
+            ctx.moveTo(cx + colW * 0.45, shoulderY);
+            ctx.lineTo(cx + colW * 0.55 + armAngle * colW, shoulderY + colH * 0.35);
+            ctx.lineTo(cx + colW * 0.48 + armAngle * colW * 0.8, shoulderY + colH * 0.38);
+            ctx.lineTo(cx + colW * 0.35, shoulderY + colH * 0.05);
+            ctx.closePath();
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = STONE_LIGHT;
+            ctx.beginPath();
+            ctx.arc(cx, headY + headR, headR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crown/horns
+            ctx.fillStyle = STONE_MID;
+            ctx.beginPath();
+            ctx.moveTo(cx - headR * 0.8, headY);
+            ctx.lineTo(cx - headR * 1.1, headY - headR * 0.7);
+            ctx.lineTo(cx - headR * 0.5, headY + headR * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + headR * 0.8, headY);
+            ctx.lineTo(cx + headR * 1.1, headY - headR * 0.7);
+            ctx.lineTo(cx + headR * 0.5, headY + headR * 0.3);
+            ctx.closePath();
+            ctx.fill();
+
+            // Moss patches
+            ctx.fillStyle = MOSS_GREEN;
+            ctx.globalAlpha = 0.3;
+            var mossPatches = [
+                { x: cx - colW * 0.3, y: shoulderY + colH * 0.1, w: colW * 0.15, h: colH * 0.06 },
+                { x: cx + colW * 0.15, y: shoulderY + colH * 0.15, w: colW * 0.12, h: colH * 0.04 },
+                { x: cx - colW * 0.1, y: waistY - colH * 0.05, w: colW * 0.2, h: colH * 0.03 },
+            ];
+            for (var mi = 0; mi < mossPatches.length; mi++) {
+                var mp = mossPatches[mi];
+                ctx.fillRect(mp.x, mp.y, mp.w, mp.h);
+            }
+            ctx.globalAlpha = 1;
+
+            // ── Cracks ──
+            if (crackProgress > 0) {
+                ctx.strokeStyle = 'rgba(30,25,20,' + (0.5 + crackProgress * 0.5) + ')';
+                ctx.lineWidth = 1 + crackProgress * 2;
+                for (var ci = 0; ci < cracks.length; ci++) {
+                    var crack = cracks[ci];
+                    var numSegsToShow = Math.floor(crack.segments.length * crackProgress);
+                    if (numSegsToShow < 1) continue;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + (crack.start.x - 0.5) * colW * 2, baseY - crack.start.y * colH);
+                    for (var si = 0; si < numSegsToShow; si++) {
+                        var seg = crack.segments[si];
+                        ctx.lineTo(cx + (seg.x - 0.5) * colW * 2, baseY - seg.y * colH);
+                    }
+                    ctx.stroke();
+                }
+
+                // Glow from within cracks
+                if (runeGlow > 0.1) {
+                    ctx.strokeStyle = 'rgba(212,160,74,' + (runeGlow * 0.4 * crackProgress) + ')';
+                    ctx.lineWidth = 3 + runeGlow * 4;
+                    ctx.shadowColor = RUNE_AMBER;
+                    ctx.shadowBlur = 10 + runeGlow * 20;
+                    for (var ci2 = 0; ci2 < cracks.length; ci2++) {
+                        var crack2 = cracks[ci2];
+                        var numSegs2 = Math.floor(crack2.segments.length * crackProgress);
+                        if (numSegs2 < 1) continue;
+                        ctx.beginPath();
+                        ctx.moveTo(cx + (crack2.start.x - 0.5) * colW * 2, baseY - crack2.start.y * colH);
+                        for (var si2 = 0; si2 < numSegs2; si2++) {
+                            var seg2 = crack2.segments[si2];
+                            ctx.lineTo(cx + (seg2.x - 0.5) * colW * 2, baseY - seg2.y * colH);
+                        }
+                        ctx.stroke();
+                    }
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // ── Runes ──
+            if (runeGlow > 0.05) {
+                var pulseGlow = runeGlow * (0.7 + 0.3 * Math.sin(time * 3 + beatPulse * 4));
+                for (var ri = 0; ri < runes.length; ri++) {
+                    var rune = runes[ri];
+                    var rx = cx + (rune.x - 0.5) * colW * 2;
+                    var ry = baseY - rune.y * colH;
+                    var rs = rune.size * colH;
+
+                    var isBlue = ri % 3 === 0;
+                    var color = isBlue ? RUNE_BLUE : RUNE_AMBER;
+                    var rgb = hexToRgb(color);
+
+                    ctx.save();
+                    ctx.globalAlpha = pulseGlow;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5 + pulseGlow;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 8 + pulseGlow * 15;
+
+                    if (rune.type === 'circle') {
+                        ctx.beginPath();
+                        ctx.arc(rx, ry, rs, 0, Math.PI * 2);
+                        ctx.stroke();
+                        // Inner dot
+                        ctx.fillStyle = color;
+                        ctx.globalAlpha = pulseGlow * 0.6;
+                        ctx.beginPath();
+                        ctx.arc(rx, ry, rs * 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (rune.type === 'diamond') {
+                        ctx.beginPath();
+                        ctx.moveTo(rx, ry - rs);
+                        ctx.lineTo(rx + rs * 0.7, ry);
+                        ctx.lineTo(rx, ry + rs);
+                        ctx.lineTo(rx - rs * 0.7, ry);
+                        ctx.closePath();
+                        ctx.stroke();
+                    } else if (rune.type === 'spiral') {
+                        ctx.beginPath();
+                        for (var sa = 0; sa < Math.PI * 4; sa += 0.2) {
+                            var sr = sa / (Math.PI * 4) * rs;
+                            ctx.lineTo(rx + Math.cos(sa) * sr, ry + Math.sin(sa) * sr);
+                        }
+                        ctx.stroke();
+                    } else { // line
+                        ctx.beginPath();
+                        ctx.moveTo(rx - rs, ry);
+                        ctx.lineTo(rx + rs, ry);
+                        ctx.moveTo(rx, ry - rs * 0.5);
+                        ctx.lineTo(rx, ry + rs * 0.5);
+                        ctx.stroke();
+                    }
+
+                    ctx.restore();
+                }
+            }
+
+            // ── Eyes ──
+            if (eyeOpen > 0.02) {
+                var eyeW = headR * 0.35;
+                var eyeH = eyeW * 0.4 * eyeOpen;
+                var leftEyeX = cx - headR * 0.35;
+                var rightEyeX = cx + headR * 0.35;
+                var eyeY = headY + headR * 0.9;
+
+                // Eye glow aura
+                ctx.save();
+                ctx.globalAlpha = eyeOpen * 0.6;
+                ctx.shadowColor = EYE_GLOW;
+                ctx.shadowBlur = 20 + eyeOpen * 40;
+                ctx.fillStyle = EYE_GLOW;
+
+                // Left eye
+                ctx.beginPath();
+                ctx.ellipse(leftEyeX, eyeY, eyeW, eyeH, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Right eye
+                ctx.beginPath();
+                ctx.ellipse(rightEyeX, eyeY, eyeW, eyeH, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bright center
+                ctx.globalAlpha = eyeOpen * 0.9;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.ellipse(leftEyeX, eyeY, eyeW * 0.3, eyeH * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(rightEyeX, eyeY, eyeW * 0.3, eyeH * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            ctx.restore(); // end tremor translate
+        }
+
+        // ── Draw ground / base ──
+        function drawGround(ctx, energy) {
+            var groundY = H * 0.85;
+            ctx.save();
+
+            // Ground gradient
+            var grad = ctx.createLinearGradient(0, groundY, 0, H);
+            grad.addColorStop(0, '#1a1510');
+            grad.addColorStop(0.3, '#0f0d0a');
+            grad.addColorStop(1, '#080705');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Rubble / rocks at base
+            ctx.fillStyle = STONE_DARK;
+            for (var i = 0; i < 30; i++) {
+                var rx = seededRand(i * 11 + 3) * W;
+                var ry = groundY + seededRand(i * 17 + 7) * (H - groundY) * 0.4;
+                var rs = 2 + seededRand(i * 23 + 11) * 8;
+                ctx.fillRect(rx - rs * 0.5, ry - rs * 0.3, rs, rs * 0.6);
+            }
+
+            // Ground line
+            ctx.strokeStyle = 'rgba(90,80,69,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(W, groundY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Draw tiny figures at base ──
+        function drawTinyFigures(ctx, time, energy) {
+            if (introFade < 0.3) return;
+            var groundY = H * 0.85;
+            var figH = H * 0.02; // tiny!
+
+            ctx.save();
+            ctx.strokeStyle = '#c0b090';
+            ctx.lineWidth = 1;
+
+            for (var i = 0; i < tinyFigures.length; i++) {
+                var fig = tinyFigures[i];
+                var fx = fig.x * W;
+                var fy = groundY;
+
+                // Subtle swaying
+                var sway = Math.sin(time * fig.speed + fig.phase) * 1.5;
+                var armRaise = 0;
+
+                // React to colossus events
+                if (sectionMood === 'rising' || sectionMood === 'shadow') {
+                    armRaise = energy * 0.5; // arms up in awe
+                }
+                if (tremor > 0.3) {
+                    sway += tremor * (Math.sin(time * 15 + fig.phase) * 3); // stumbling
+                }
+
+                var alpha = introFade * outroFade * (0.5 + energy * 0.3);
+                ctx.globalAlpha = alpha;
+
+                // Stick figure (very simple at this scale)
+                var hx = fx + sway;
+                var headY = fy - figH;
+                var bodyY = fy - figH * 0.5;
+
+                // Body
+                ctx.beginPath();
+                ctx.moveTo(hx, headY + figH * 0.15);
+                ctx.lineTo(hx, bodyY);
+                ctx.stroke();
+
+                // Head
+                ctx.beginPath();
+                ctx.arc(hx, headY, figH * 0.12, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(hx, bodyY);
+                ctx.lineTo(hx - figH * 0.15, fy);
+                ctx.moveTo(hx, bodyY);
+                ctx.lineTo(hx + figH * 0.15, fy);
+                ctx.stroke();
+
+                // Arms
+                var armY = headY + figH * 0.3;
+                var armOut = figH * 0.2;
+                var armUp = armRaise * figH * 0.3;
+                ctx.beginPath();
+                ctx.moveTo(hx - armOut, armY + armOut * 0.3 - armUp);
+                ctx.lineTo(hx, armY);
+                ctx.lineTo(hx + armOut, armY + armOut * 0.3 - armUp);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw dust particles ──
+        function updateAndDrawDust(ctx, dt, energy) {
+            var intensity = dustIntensity * introFade * outroFade;
+            if (intensity < 0.01) return;
+
+            ctx.save();
+            ctx.fillStyle = DUST_COLOR;
+            for (var i = 0; i < dustParticles.length; i++) {
+                var p = dustParticles[i];
+
+                // Move
+                p.x += p.vx * dt * (1 + energy * 2);
+                p.y += p.vy * dt * intensity * 3;
+
+                // Tremor-driven horizontal push
+                p.vx += tremor * (Math.random() - 0.5) * 100 * dt;
+
+                // Reset if off screen
+                if (p.y > H + 10 || p.x < -10 || p.x > W + 10) {
+                    p.x = W * 0.3 + Math.random() * W * 0.4; // Near colossus
+                    p.y = H * 0.2 + Math.random() * H * 0.5;
+                    p.vx = (Math.random() - 0.5) * 30;
+                    p.vy = Math.random() * 20 + 5;
+                }
+
+                ctx.globalAlpha = p.alpha * intensity;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw rune particles (float upward from runes) ──
+        function updateAndDrawRuneParticles(ctx, dt, time) {
+            if (runeGlow < 0.1) return;
+
+            ctx.save();
+            var baseY = H * 0.85;
+            var colH = H * 0.75;
+            var colW = W * 0.35;
+            var cxPos = W * 0.5;
+
+            for (var i = 0; i < runeParticles.length; i++) {
+                var p = runeParticles[i];
+                p.life += dt;
+
+                if (p.life >= p.maxLife) {
+                    // Respawn at a random rune
+                    var rune = runes[Math.floor(Math.random() * runes.length)];
+                    p.x = cxPos + (rune.x - 0.5) * colW * 2;
+                    p.y = baseY - rune.y * colH;
+                    p.vx = (Math.random() - 0.5) * 15;
+                    p.vy = -20 - Math.random() * 40;
+                    p.life = 0;
+                    p.maxLife = 0.5 + Math.random() * 1.5;
+                }
+
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                var lifeRatio = p.life / p.maxLife;
+                var alpha = runeGlow * (1 - lifeRatio) * 0.7;
+
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.isAmber ? RUNE_AMBER : RUNE_BLUE;
+                ctx.shadowColor = p.isAmber ? RUNE_AMBER : RUNE_BLUE;
+                ctx.shadowBlur = 6;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw rock debris (falls during tremors) ──
+        function updateAndDrawRocks(ctx, dt) {
+            if (tremor < 0.1) return;
+
+            ctx.save();
+            ctx.fillStyle = STONE_DARK;
+            for (var i = 0; i < rockDebris.length; i++) {
+                var r = rockDebris[i];
+
+                if (!r.active && Math.random() < tremor * 0.1) {
+                    // Spawn from colossus body
+                    r.x = W * 0.35 + Math.random() * W * 0.3;
+                    r.y = H * 0.2 + Math.random() * H * 0.4;
+                    r.vx = (Math.random() - 0.5) * 50;
+                    r.vy = Math.random() * 20;
+                    r.active = true;
+                    r.life = 0;
+                }
+
+                if (r.active) {
+                    r.life += dt;
+                    r.x += r.vx * dt;
+                    r.vy += 200 * dt; // gravity
+                    r.y += r.vy * dt;
+                    r.rotation += r.rotSpeed * dt;
+
+                    if (r.y > H * 0.88) {
+                        r.active = false;
+                    }
+
+                    ctx.save();
+                    ctx.globalAlpha = 0.7;
+                    ctx.translate(r.x, r.y);
+                    ctx.rotate(r.rotation);
+                    ctx.fillRect(-r.size * 0.5, -r.size * 0.5, r.size, r.size);
+                    ctx.restore();
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Title text ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var fontSize = Math.max(14, Math.min(W * 0.035, 42));
+            ctx.font = '900 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var y = H * 0.12;
+            var text = 'CRADLE OF THE COLOSSUS';
+
+            // Glow behind
+            ctx.globalAlpha = titleAlpha * 0.4;
+            ctx.shadowColor = RUNE_AMBER;
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = RUNE_AMBER;
+            ctx.fillText(text, W * 0.5, y);
+
+            // Main text
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ffe8c0';
+            ctx.fillText(text, W * 0.5, y);
+
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = RUNE_AMBER;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Fog layer ──
+        function drawFog(ctx, time) {
+            ctx.save();
+            var fogAlpha = 0.03 + dustIntensity * 0.05;
+            if (sectionMood === 'sleep') fogAlpha += 0.04;
+
+            ctx.globalAlpha = fogAlpha * introFade * outroFade;
+            ctx.fillStyle = '#2a2520';
+
+            // Simple layered fog bands
+            for (var i = 0; i < 3; i++) {
+                var fy = H * 0.55 + i * H * 0.12;
+                var fh = H * 0.08;
+                var drift = Math.sin(time * 0.2 + i * 1.5) * W * 0.05;
+
+                ctx.beginPath();
+                ctx.ellipse(W * 0.5 + drift, fy, W * 0.6, fh, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+
+            generateLandscape();
+            initDust();
+            initRuneParticles();
+            initRockDebris();
+
+            // Reset state
+            lastBeat = -1;
+            beatPulse = 0;
+            tremor = 0;
+            tremorTarget = 0;
+            runeGlow = 0;
+            eyeOpen = 0;
+            eyeOpenTarget = 0;
+            colossusRise = 0;
+            colossusRiseTarget = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            flashAlpha = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'stillness';
+            introFade = 0;
+            outroFade = 1;
+            crackProgress = 0;
+            crackTarget = 0;
+            dustIntensity = 0;
+
+            // Regenerate stars with actual dimensions
+            stars = [];
+            for (var si = 0; si < 120; si++) {
+                stars.push({
+                    x: seededRand(si * 7.1 + 3) * W,
+                    y: seededRand(si * 13.3 + 7) * H * 0.45,
+                    size: 0.5 + seededRand(si * 19.7) * 1.5,
+                    twinkle: seededRand(si * 23.1) * Math.PI * 2,
+                    twinkleSpeed: 1 + seededRand(si * 29.3) * 3
+                });
+            }
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            stars = [];
+            for (var si = 0; si < 120; si++) {
+                stars.push({
+                    x: seededRand(si * 7.1 + 3) * W,
+                    y: seededRand(si * 13.3 + 7) * H * 0.45,
+                    size: 0.5 + seededRand(si * 19.7) * 1.5,
+                    twinkle: seededRand(si * 23.1) * Math.PI * 2,
+                    twinkleSpeed: 1 + seededRand(si * 29.3) * 3
+                });
+            }
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+            var time = cursor ? cursor.elapsed : 0;
+
+            // Background
+            drawSky(ctx, time);
+
+            if (!cursor) {
+                // Idle state: dim still scene
+                drawStars(ctx, 0);
+                drawMountains(ctx);
+                introFade = 0.5;
+                drawColossus(ctx, 0, 0);
+                drawGround(ctx, 0);
+                drawFog(ctx, 0);
+                introFade = 0;
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+
+                // Flash on dramatic transitions
+                if (newSection === 'rising') {
+                    flashAlpha = 0.3;
+                } else if (newSection === 'shadow') {
+                    flashAlpha = 0.15;
+                }
+            }
+
+            // ── Update targets based on section ──
+            switch (sectionMood) {
+                case 'stillness':
+                    introFade = Math.min(1, introFade + dt * 0.4);
+                    tremorTarget = 0;
+                    eyeOpenTarget = 0;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0, 3, dt);
+                    break;
+
+                case 'cradle':
+                    introFade = 1;
+                    tremorTarget = 0;
+                    eyeOpenTarget = 0;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.1;
+                    titleTarget = 1;
+                    dustIntensity = lerpExp(dustIntensity, 0.1, 2, dt);
+                    break;
+
+                case 'tremors':
+                    tremorTarget = 0.3 + energy * 0.3;
+                    eyeOpenTarget = 0;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.3;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0.5, 3, dt);
+                    break;
+
+                case 'cradle2':
+                    tremorTarget = 0.05;
+                    eyeOpenTarget = 0;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.35;
+                    titleTarget = 1;
+                    dustIntensity = lerpExp(dustIntensity, 0.15, 2, dt);
+                    break;
+
+                case 'eyes_open':
+                    tremorTarget = 0.1;
+                    eyeOpenTarget = 0.4 + energy * 0.3;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.45;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0.2, 2, dt);
+                    break;
+
+                case 'shadow':
+                    tremorTarget = 0.4 + energy * 0.4;
+                    eyeOpenTarget = 0.7;
+                    colossusRiseTarget = 0.1;
+                    crackTarget = 0.65;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0.7, 3, dt);
+                    break;
+
+                case 'rising':
+                    tremorTarget = 0.6 + energy * 0.4;
+                    eyeOpenTarget = 1;
+                    colossusRiseTarget = 0.5 + energy * 0.5;
+                    crackTarget = 1;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 1, 4, dt);
+                    break;
+
+                case 'retreat':
+                    tremorTarget = 0.15;
+                    eyeOpenTarget = 0.3;
+                    colossusRiseTarget = 0.2;
+                    crackTarget = 0.8;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0.3, 3, dt);
+                    break;
+
+                case 'cradle3':
+                    tremorTarget = 0;
+                    eyeOpenTarget = 0.1;
+                    colossusRiseTarget = 0.05;
+                    crackTarget = 0.6;
+                    titleTarget = 1;
+                    dustIntensity = lerpExp(dustIntensity, 0.1, 2, dt);
+                    break;
+
+                case 'winding':
+                    tremorTarget = 0;
+                    eyeOpenTarget = 0.05;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.4;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0.05, 2, dt);
+                    outroFade = Math.max(0.3, outroFade - dt * 0.05);
+                    break;
+
+                case 'sleep':
+                    tremorTarget = 0;
+                    eyeOpenTarget = 0;
+                    colossusRiseTarget = 0;
+                    crackTarget = 0.2;
+                    titleTarget = 0;
+                    dustIntensity = lerpExp(dustIntensity, 0, 2, dt);
+                    outroFade = Math.max(0, outroFade - dt * 0.15);
+                    break;
+            }
+
+            // ── Lerp all state ──
+            tremor = lerpExp(tremor, tremorTarget, 5, dt);
+            eyeOpen = lerpExp(eyeOpen, eyeOpenTarget, 3, dt);
+            colossusRise = lerpExp(colossusRise, colossusRiseTarget, 2, dt);
+            crackProgress = lerpExp(crackProgress, crackTarget, 2, dt);
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // Rune glow driven by energy + section
+            var runeTarget = 0;
+            if (sectionMood === 'tremors') runeTarget = energy * 0.4;
+            else if (sectionMood === 'eyes_open') runeTarget = 0.3 + energy * 0.3;
+            else if (sectionMood === 'shadow') runeTarget = 0.5 + energy * 0.4;
+            else if (sectionMood === 'rising') runeTarget = 0.7 + energy * 0.3;
+            else if (sectionMood === 'retreat') runeTarget = 0.3;
+            else if (sectionMood === 'cradle3') runeTarget = 0.1;
+            runeGlow = lerpExp(runeGlow, runeTarget, 4, dt);
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Beat-sync tremor burst
+                if (sectionMood === 'rising' || sectionMood === 'shadow') {
+                    tremor = Math.min(1, tremor + 0.15);
+                }
+                if (sectionMood === 'tremors') {
+                    tremor = Math.min(0.7, tremor + 0.1);
+                }
+
+                // Heartbeat rune pulse
+                if (runeGlow > 0.2) {
+                    runeGlow = Math.min(1, runeGlow + 0.1);
+                }
+            }
+            lastBeat = beat;
+
+            beatPulse *= Math.exp(-6 * dt);
+            flashAlpha *= Math.exp(-4 * dt);
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Stars
+            drawStars(ctx, time);
+
+            // 2. Mountains
+            drawMountains(ctx);
+
+            // 3. Fog behind colossus
+            drawFog(ctx, time);
+
+            // 4. The colossus
+            ctx.save();
+            ctx.globalAlpha = introFade * outroFade;
+            drawColossus(ctx, time, energy);
+            ctx.restore();
+
+            // 5. Rune particles floating up
+            updateAndDrawRuneParticles(ctx, dt, time);
+
+            // 6. Rock debris
+            updateAndDrawRocks(ctx, dt);
+
+            // 7. Ground
+            drawGround(ctx, energy);
+
+            // 8. Tiny figures
+            drawTinyFigures(ctx, time, energy);
+
+            // 9. Dust
+            updateAndDrawDust(ctx, dt, energy);
+
+            // 10. Title
+            drawTitle(ctx);
+
+            // 11. Flash
+            drawFlash(ctx);
+
+            // 12. Vignette
+            ctx.save();
+            var vigGrad = ctx.createRadialGradient(W * 0.5, H * 0.5, W * 0.2, W * 0.5, H * 0.5, W * 0.7);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        return {
+            name: 'Cradle of the Colossus',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('cradle-colossus-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/cradle-of-the-colossus.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

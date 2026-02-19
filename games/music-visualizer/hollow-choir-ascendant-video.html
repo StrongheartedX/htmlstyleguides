@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hollow Choir Ascendant — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020208;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(2,2,8,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(18px, 4vw, 44px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c8deff;
+            text-shadow: 0 0 30px rgba(160,200,255,0.5), 0 0 60px rgba(160,200,255,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(200,220,255,0.45);
+            margin-bottom: 40px;
+            letter-spacing: 0.15em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 2px solid rgba(200,220,255,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 16px 0 16px 28px;
+            border-color: transparent transparent transparent rgba(200,220,255,0.7);
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(160,200,255,0.3); }
+            50% { box-shadow: 0 0 0 24px rgba(160,200,255,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.3);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: sans-serif;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.7); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Hollow Choir Ascendant</div>
+        <div class="play-sub">an ethereal ascension</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Hollow Choir Ascendant Video Renderer ──────────────────────────
+    window.Renderers['hollow-choir-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG = '#020208';
+        var VOID_GRAD_TOP = 'rgba(2,2,8,1)';
+        var VOID_GRAD_BOT = 'rgba(8,12,30,1)';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var globalTime = 0;
+        var sectionMood = 'stillness';
+        var lastSeqIndex = -1;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var flashAlpha = 0;
+        var ascensionSpeed = 0;
+        var dissolveProgress = 0;
+
+        // ── Choir Figures ──
+        var figures = [];
+        var MAX_FIGURES = 24;
+        var ripples = [];
+        var MAX_RIPPLES = 60;
+        var particles = [];
+        var MAX_PARTICLES = 120;
+        var stars = [];
+        var NUM_STARS = 200;
+
+        // ── Figure definition ──
+        function createFigure(x, y, scale, hue, delay) {
+            return {
+                x: x,
+                y: y,
+                baseY: y,
+                scale: scale,
+                hue: hue,           // 200-240 range (icy blues) or 40-50 (gold)
+                riseSpeed: 15 + Math.random() * 25,
+                swayPhase: Math.random() * Math.PI * 2,
+                swayAmp: 8 + Math.random() * 12,
+                breathPhase: Math.random() * Math.PI * 2,
+                hollowPulse: 0,
+                alpha: 0,
+                targetAlpha: 0,
+                mouthOpen: 0,
+                mouthTarget: 0,
+                glowIntensity: 0,
+                delay: delay,
+                born: 0,
+                active: false
+            };
+        }
+
+        // ── Ripple definition ──
+        function createRipple(x, y, hue) {
+            return {
+                x: x,
+                y: y,
+                radius: 0,
+                maxRadius: 60 + Math.random() * 80,
+                speed: 40 + Math.random() * 30,
+                alpha: 0.4 + Math.random() * 0.3,
+                hue: hue,
+                active: true
+            };
+        }
+
+        // ── Particle definition ──
+        function createParticle(x, y) {
+            return {
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 20,
+                vy: -20 - Math.random() * 40,
+                size: 1 + Math.random() * 2.5,
+                alpha: 0.3 + Math.random() * 0.5,
+                life: 1,
+                decay: 0.2 + Math.random() * 0.4,
+                hue: 200 + Math.random() * 40
+            };
+        }
+
+        // ── Section mapping ──
+        // Sequence: 0-1 Stillness, 2-3 Awakening, 4-9 Theme (single->joining),
+        // 10-14 Drive/Threshold (full choir), 15-20 Climax (crescendo/apotheosis),
+        // 21-22 Collapse, 23-28 Resolution (transcendence), 29 Silence (dissolution)
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'stillness';
+            if (seqIndex <= 3) return 'awakening';
+            if (seqIndex <= 9) return 'theme';
+            if (seqIndex <= 14) return 'choir';
+            if (seqIndex <= 20) return 'apotheosis';
+            if (seqIndex <= 22) return 'collapse';
+            if (seqIndex <= 28) return 'transcendence';
+            return 'dissolution';
+        }
+
+        // ── Figure count per section ──
+        function targetFigureCount(section, energy) {
+            switch (section) {
+                case 'stillness': return 1;
+                case 'awakening': return 3;
+                case 'theme': return 6 + Math.floor(energy * 4);
+                case 'choir': return 12 + Math.floor(energy * 6);
+                case 'apotheosis': return MAX_FIGURES;
+                case 'collapse': return 8;
+                case 'transcendence': return 14 + Math.floor(energy * 6);
+                case 'dissolution': return Math.max(0, MAX_FIGURES - Math.floor(dissolveProgress * MAX_FIGURES));
+                default: return 4;
+            }
+        }
+
+        // ── Color helpers ──
+        function hsla(h, s, l, a) {
+            return 'hsla(' + h + ',' + s + '%,' + l + '%,' + a + ')';
+        }
+
+        function lerpVal(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function expDecay(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Draw a single ghostly figure ──
+        function drawFigure(ctx, fig, energy) {
+            if (!fig.active || fig.alpha < 0.01) return;
+
+            var s = fig.scale;
+            var headR = 12 * s;
+            var bodyH = 50 * s;
+            var shoulderW = 18 * s;
+            var armLen = 30 * s;
+            var legLen = 35 * s;
+            var hollowR = 8 * s;
+
+            var x = fig.x;
+            var y = fig.y;
+            var a = fig.alpha;
+            var breath = Math.sin(fig.breathPhase) * 3 * s;
+
+            // Glow behind figure
+            var glowR = (40 + fig.glowIntensity * 40) * s;
+            var glowGrad = ctx.createRadialGradient(x, y - bodyH * 0.3, 0, x, y - bodyH * 0.3, glowR);
+            glowGrad.addColorStop(0, hsla(fig.hue, 60, 80, a * 0.15 * (0.5 + fig.glowIntensity * 0.5)));
+            glowGrad.addColorStop(0.5, hsla(fig.hue, 50, 70, a * 0.05));
+            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(x - glowR, y - bodyH * 0.3 - glowR, glowR * 2, glowR * 2);
+
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Figure outline color
+            var outlineL = 70 + fig.glowIntensity * 20;
+            var outlineA = 0.6 + fig.glowIntensity * 0.3;
+            ctx.strokeStyle = hsla(fig.hue, 40, outlineL, outlineA);
+            ctx.lineWidth = 1.5 * s;
+            ctx.shadowColor = hsla(fig.hue, 60, 80, 0.4);
+            ctx.shadowBlur = 8 + fig.glowIntensity * 12;
+
+            // Head
+            var headY = y - bodyH - headR + breath;
+            ctx.beginPath();
+            ctx.arc(x, headY, headR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Hollow center in head
+            var hollowGrad = ctx.createRadialGradient(x, headY, 0, x, headY, hollowR + fig.hollowPulse * 4 * s);
+            hollowGrad.addColorStop(0, hsla(fig.hue, 60, 90, 0.3 + fig.hollowPulse * 0.4));
+            hollowGrad.addColorStop(0.6, hsla(fig.hue, 40, 70, 0.1));
+            hollowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = hollowGrad;
+            ctx.fill();
+
+            // Mouth (opens on beats)
+            if (fig.mouthOpen > 0.05) {
+                var mouthY = headY + headR * 0.35;
+                var mouthW = headR * 0.4 * fig.mouthOpen;
+                var mouthH = headR * 0.25 * fig.mouthOpen;
+                ctx.beginPath();
+                ctx.ellipse(x, mouthY, mouthW, mouthH, 0, 0, Math.PI * 2);
+                ctx.fillStyle = hsla(fig.hue, 50, 85, 0.3 * fig.mouthOpen);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Neck
+            var neckTop = headY + headR;
+            var neckBot = y - bodyH + breath;
+            ctx.beginPath();
+            ctx.moveTo(x, neckTop);
+            ctx.lineTo(x, neckBot);
+            ctx.stroke();
+
+            // Torso - hollow center silhouette
+            var torsoTop = neckBot;
+            var torsoBot = y - legLen + breath * 0.5;
+            var torsoMid = (torsoTop + torsoBot) * 0.5;
+
+            // Left torso outline
+            ctx.beginPath();
+            ctx.moveTo(x - shoulderW, torsoTop);
+            ctx.quadraticCurveTo(x - shoulderW * 0.6, torsoMid, x - shoulderW * 0.5, torsoBot);
+            ctx.stroke();
+
+            // Right torso outline
+            ctx.beginPath();
+            ctx.moveTo(x + shoulderW, torsoTop);
+            ctx.quadraticCurveTo(x + shoulderW * 0.6, torsoMid, x + shoulderW * 0.5, torsoBot);
+            ctx.stroke();
+
+            // Shoulders
+            ctx.beginPath();
+            ctx.moveTo(x - shoulderW, torsoTop);
+            ctx.lineTo(x + shoulderW, torsoTop);
+            ctx.stroke();
+
+            // Inner glow (hollow body)
+            var bodyGlow = ctx.createRadialGradient(x, torsoMid, 0, x, torsoMid, shoulderW);
+            bodyGlow.addColorStop(0, hsla(fig.hue, 50, 85, 0.12 + fig.glowIntensity * 0.15));
+            bodyGlow.addColorStop(0.7, hsla(fig.hue, 40, 70, 0.03));
+            bodyGlow.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = bodyGlow;
+            ctx.beginPath();
+            ctx.moveTo(x - shoulderW, torsoTop);
+            ctx.quadraticCurveTo(x - shoulderW * 0.6, torsoMid, x - shoulderW * 0.5, torsoBot);
+            ctx.lineTo(x + shoulderW * 0.5, torsoBot);
+            ctx.quadraticCurveTo(x + shoulderW * 0.6, torsoMid, x + shoulderW, torsoTop);
+            ctx.closePath();
+            ctx.fill();
+
+            // Arms - raised higher during apotheosis
+            var armRaise = sectionMood === 'apotheosis' ? 0.7 : sectionMood === 'choir' ? 0.3 : 0.1;
+            armRaise += fig.hollowPulse * 0.3;
+            var armAngle = Math.PI * 0.5 - armRaise * Math.PI * 0.6;
+            var sway = Math.sin(fig.swayPhase * 0.7) * 0.15;
+
+            // Left arm
+            var lax = x - shoulderW + Math.cos(Math.PI + armAngle + sway) * armLen;
+            var lay = torsoTop + Math.sin(Math.PI + armAngle + sway) * armLen;
+            ctx.beginPath();
+            ctx.moveTo(x - shoulderW, torsoTop);
+            ctx.lineTo(lax, lay);
+            ctx.stroke();
+
+            // Right arm
+            var rax = x + shoulderW + Math.cos(-armAngle - sway) * armLen;
+            var ray = torsoTop + Math.sin(-armAngle - sway) * armLen;
+            ctx.beginPath();
+            ctx.moveTo(x + shoulderW, torsoTop);
+            ctx.lineTo(rax, ray);
+            ctx.stroke();
+
+            // Legs
+            var legSpread = shoulderW * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x - shoulderW * 0.5, torsoBot);
+            ctx.lineTo(x - legSpread, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + shoulderW * 0.5, torsoBot);
+            ctx.lineTo(x + legSpread, y);
+            ctx.stroke();
+
+            // Trailing wisps below (ghostly tail)
+            ctx.globalAlpha = a * 0.2;
+            ctx.strokeStyle = hsla(fig.hue, 30, 70, 0.2);
+            ctx.lineWidth = 1 * s;
+            for (var w = 0; w < 3; w++) {
+                var wispX = x + (w - 1) * legSpread;
+                var wispLen = 15 + Math.sin(globalTime * 2 + w) * 8;
+                ctx.beginPath();
+                ctx.moveTo(wispX, y);
+                ctx.quadraticCurveTo(wispX + Math.sin(globalTime * 3 + w * 2) * 8, y + wispLen * 0.6, wispX + Math.sin(globalTime * 2 + w) * 12, y + wispLen * s);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw ripple (sound wave from mouth) ──
+        function drawRipple(ctx, rip) {
+            if (!rip.active || rip.alpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = rip.alpha;
+            ctx.strokeStyle = hsla(rip.hue, 40, 75, rip.alpha);
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = hsla(rip.hue, 50, 80, 0.3);
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ── Draw particle ──
+        function drawParticle(ctx, p) {
+            if (p.life <= 0) return;
+            ctx.save();
+            ctx.globalAlpha = p.alpha * p.life;
+            ctx.fillStyle = hsla(p.hue, 40, 80, 1);
+            ctx.shadowColor = hsla(p.hue, 50, 85, 0.5);
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Spawn figures for current section ──
+        function ensureFigures(targetCount) {
+            // Activate/deactivate figures
+            for (var i = 0; i < MAX_FIGURES; i++) {
+                if (i < targetCount) {
+                    if (!figures[i]) {
+                        var col = i % 3;
+                        var row = Math.floor(i / 3);
+                        var fx = W * 0.2 + (W * 0.6) * ((col + 0.5 * (row % 2)) / 3);
+                        fx += (Math.random() - 0.5) * W * 0.08;
+                        var fy = H * 0.9 - row * H * 0.06;
+                        var sc = 0.7 + Math.random() * 0.5;
+                        var hue = Math.random() > 0.8 ? (40 + Math.random() * 10) : (200 + Math.random() * 40);
+                        figures[i] = createFigure(fx, fy, sc, hue, i * 0.3);
+                    }
+                    figures[i].targetAlpha = 0.4 + Math.random() * 0.4;
+                    figures[i].active = true;
+                } else if (figures[i]) {
+                    figures[i].targetAlpha = 0;
+                }
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            figures = [];
+            ripples = [];
+            particles = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            globalTime = 0;
+            sectionMood = 'stillness';
+            lastSeqIndex = -1;
+            titleAlpha = 0;
+            flashAlpha = 0;
+            ascensionSpeed = 0;
+            dissolveProgress = 0;
+
+            // Background stars
+            stars = [];
+            for (var i = 0; i < NUM_STARS; i++) {
+                stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    size: 0.5 + Math.random() * 1.5,
+                    twinklePhase: Math.random() * Math.PI * 2,
+                    twinkleSpeed: 0.5 + Math.random() * 2
+                });
+            }
+
+            // Pre-create all figure slots
+            for (var f = 0; f < MAX_FIGURES; f++) {
+                var col = f % 4;
+                var row = Math.floor(f / 4);
+                var fx = W * 0.15 + (W * 0.7) * ((col + 0.5 * (row % 2)) / 4);
+                fx += (Math.random() - 0.5) * W * 0.06;
+                var fy = H * 0.85 - row * H * 0.05 + (Math.random() - 0.5) * H * 0.03;
+                var sc = 0.6 + Math.random() * 0.5;
+                var hue = Math.random() > 0.82 ? (40 + Math.random() * 10) : (205 + Math.random() * 35);
+                figures.push(createFigure(fx, fy, sc, hue, f * 0.2));
+            }
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            var scaleX = width / (W || width);
+            var scaleY = height / (H || height);
+            W = width; H = height;
+
+            for (var i = 0; i < figures.length; i++) {
+                figures[i].x *= scaleX;
+                figures[i].y *= scaleY;
+                figures[i].baseY *= scaleY;
+            }
+            for (var j = 0; j < stars.length; j++) {
+                stars[j].x = Math.random() * W;
+                stars[j].y = Math.random() * H;
+            }
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = Math.min(frameData.dt || 1/60, 0.1);
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // ── Background void ──
+            var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+            bgGrad.addColorStop(0, VOID_GRAD_TOP);
+            bgGrad.addColorStop(1, VOID_GRAD_BOT);
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Stars ──
+            ctx.save();
+            for (var si = 0; si < stars.length; si++) {
+                var star = stars[si];
+                var twinkle = 0.3 + 0.7 * Math.abs(Math.sin(globalTime * star.twinkleSpeed + star.twinklePhase));
+                ctx.globalAlpha = twinkle * 0.4;
+                ctx.fillStyle = '#c8deff';
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            if (!cursor) {
+                // Idle: draw a single dim figure in center
+                var idleFig = figures[0];
+                if (idleFig) {
+                    idleFig.active = true;
+                    idleFig.alpha = 0.15;
+                    idleFig.x = W * 0.5;
+                    idleFig.y = H * 0.65;
+                    idleFig.breathPhase += dt * 1.5;
+                    idleFig.glowIntensity = 0.1 + Math.sin(globalTime) * 0.05;
+                    drawFigure(ctx, idleFig, 0);
+                }
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            var currentNotes = frameData.currentNotes || [];
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+
+                // Flash on big section changes
+                if (newSection === 'apotheosis' || newSection === 'choir') {
+                    flashAlpha = 0.2;
+                }
+                if (newSection === 'collapse') {
+                    flashAlpha = 0.3;
+                }
+            }
+
+            // ── Figure management ──
+            var targetCount = targetFigureCount(sectionMood, energy);
+            ensureFigures(targetCount);
+
+            // ── Ascension speed based on section ──
+            var targetAscSpeed = 0;
+            switch (sectionMood) {
+                case 'stillness': targetAscSpeed = 2; break;
+                case 'awakening': targetAscSpeed = 8; break;
+                case 'theme': targetAscSpeed = 15; break;
+                case 'choir': targetAscSpeed = 25 + energy * 15; break;
+                case 'apotheosis': targetAscSpeed = 50 + energy * 30; break;
+                case 'collapse': targetAscSpeed = -10; break;
+                case 'transcendence': targetAscSpeed = 20 + energy * 20; break;
+                case 'dissolution': targetAscSpeed = 5; break;
+            }
+            ascensionSpeed = expDecay(ascensionSpeed, targetAscSpeed, 2, dt);
+
+            // ── Dissolution progress ──
+            if (sectionMood === 'dissolution') {
+                dissolveProgress = Math.min(1, dissolveProgress + dt * 0.12);
+            } else {
+                dissolveProgress = 0;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Open mouths on cantus notes
+                var cantusNote = currentNotes[0];
+                if (cantusNote && cantusNote.midi > 0) {
+                    // Emit ripples from singing figures
+                    var singCount = Math.min(targetCount, 3 + Math.floor(energy * 5));
+                    for (var ri = 0; ri < singCount && ripples.length < MAX_RIPPLES; ri++) {
+                        var singFig = figures[ri % figures.length];
+                        if (singFig && singFig.active) {
+                            var bodyH = 50 * singFig.scale;
+                            var headY = singFig.y - bodyH - 12 * singFig.scale;
+                            ripples.push(createRipple(singFig.x, headY, singFig.hue));
+                            singFig.mouthTarget = 0.5 + energy * 0.5;
+                        }
+                    }
+                }
+
+                // Pulse figures on beat
+                for (var pi = 0; pi < figures.length; pi++) {
+                    if (figures[pi].active) {
+                        figures[pi].hollowPulse = 0.5 + energy * 0.5;
+                        figures[pi].glowIntensity = Math.min(1, figures[pi].glowIntensity + 0.3 + energy * 0.4);
+                    }
+                }
+
+                // Emit ascending particles on strong beats
+                if (energy > 0.3) {
+                    var pCount = Math.floor(energy * 8);
+                    for (var pc = 0; pc < pCount && particles.length < MAX_PARTICLES; pc++) {
+                        var pFig = figures[Math.floor(Math.random() * Math.min(targetCount, figures.length))];
+                        if (pFig && pFig.active) {
+                            particles.push(createParticle(pFig.x + (Math.random() - 0.5) * 30, pFig.y - 20));
+                        }
+                    }
+                }
+
+                // Flash on high energy moments
+                if (sectionMood === 'apotheosis' && energy > 0.6) {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.12);
+                }
+            }
+
+            beatPulse *= Math.exp(-6 * dt);
+            flashAlpha *= Math.exp(-4 * dt);
+            lastBeat = beat;
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'apotheosis' || sectionMood === 'transcendence') ? 1 : 0;
+            titleAlpha = expDecay(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update figures ──
+            for (var fi = 0; fi < figures.length; fi++) {
+                var fig = figures[fi];
+                if (!fig.active && fig.alpha < 0.01) continue;
+
+                // Fade in/out
+                fig.alpha = expDecay(fig.alpha, fig.targetAlpha, 2, dt);
+                if (fig.alpha < 0.005) {
+                    fig.active = false;
+                    continue;
+                }
+
+                // Ascend
+                fig.y -= ascensionSpeed * dt * (0.5 + fig.scale * 0.5);
+
+                // Wrap around when risen off screen
+                if (fig.y < -80) {
+                    fig.y = H + 40 + Math.random() * 60;
+                    fig.x = W * 0.1 + Math.random() * W * 0.8;
+                }
+
+                // Sway
+                fig.swayPhase += dt * (1.5 + energy * 0.5);
+                fig.x += Math.sin(fig.swayPhase) * fig.swayAmp * dt;
+
+                // Keep in bounds
+                fig.x = Math.max(W * 0.05, Math.min(W * 0.95, fig.x));
+
+                // Breathing
+                fig.breathPhase += dt * (1.8 + energy * 0.5);
+
+                // Hollow pulse decay
+                fig.hollowPulse *= Math.exp(-4 * dt);
+
+                // Glow intensity decay
+                fig.glowIntensity = expDecay(fig.glowIntensity, energy * 0.3, 3, dt);
+
+                // Mouth close
+                fig.mouthOpen = expDecay(fig.mouthOpen, fig.mouthTarget, 8, dt);
+                fig.mouthTarget *= Math.exp(-3 * dt);
+
+                // Dissolution scatter
+                if (sectionMood === 'dissolution') {
+                    fig.alpha *= (1 - dissolveProgress * 0.02);
+                    fig.x += (Math.random() - 0.5) * dissolveProgress * 3;
+                }
+            }
+
+            // ── Update ripples ──
+            for (var rri = ripples.length - 1; rri >= 0; rri--) {
+                var rip = ripples[rri];
+                rip.radius += rip.speed * dt;
+                rip.alpha *= Math.exp(-2 * dt);
+                if (rip.radius > rip.maxRadius || rip.alpha < 0.01) {
+                    ripples.splice(rri, 1);
+                }
+            }
+
+            // ── Update particles ──
+            for (var ppi = particles.length - 1; ppi >= 0; ppi--) {
+                var part = particles[ppi];
+                part.x += part.vx * dt;
+                part.y += part.vy * dt;
+                part.vy -= 10 * dt; // slight upward acceleration
+                part.life -= part.decay * dt;
+                if (part.life <= 0 || part.y < -20) {
+                    particles.splice(ppi, 1);
+                }
+            }
+
+            // ── Vertical light shafts (ethereal atmosphere) ──
+            if (sectionMood !== 'stillness') {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var shaftCount = sectionMood === 'apotheosis' ? 8 : sectionMood === 'choir' ? 5 : 3;
+                for (var shi = 0; shi < shaftCount; shi++) {
+                    var shaftX = W * (0.1 + (shi / shaftCount) * 0.8) + Math.sin(globalTime * 0.3 + shi * 1.7) * W * 0.05;
+                    var shaftW = 30 + energy * 40;
+                    var shaftAlpha = (0.02 + energy * 0.04) * (sectionMood === 'dissolution' ? (1 - dissolveProgress) : 1);
+
+                    var shaftGrad = ctx.createLinearGradient(shaftX, 0, shaftX, H);
+                    shaftGrad.addColorStop(0, hsla(210, 40, 80, shaftAlpha));
+                    shaftGrad.addColorStop(0.5, hsla(220, 30, 70, shaftAlpha * 0.5));
+                    shaftGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+                    ctx.fillStyle = shaftGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(shaftX - shaftW * 0.3, 0);
+                    ctx.lineTo(shaftX + shaftW * 0.3, 0);
+                    ctx.lineTo(shaftX + shaftW, H);
+                    ctx.lineTo(shaftX - shaftW, H);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // ── Draw ripples (behind figures) ──
+            for (var dri = 0; dri < ripples.length; dri++) {
+                drawRipple(ctx, ripples[dri]);
+            }
+
+            // ── Draw figures (back to front, sorted by y) ──
+            var drawOrder = [];
+            for (var doi = 0; doi < figures.length; doi++) {
+                if (figures[doi].active || figures[doi].alpha > 0.01) {
+                    drawOrder.push(figures[doi]);
+                }
+            }
+            drawOrder.sort(function(a, b) { return a.y - b.y; });
+
+            for (var dfi = 0; dfi < drawOrder.length; dfi++) {
+                drawFigure(ctx, drawOrder[dfi], energy);
+            }
+
+            // ── Draw particles (in front of figures) ──
+            for (var dpi = 0; dpi < particles.length; dpi++) {
+                drawParticle(ctx, particles[dpi]);
+            }
+
+            // ── Central ascending beam during apotheosis ──
+            if (sectionMood === 'apotheosis') {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var beamW = W * 0.15 * energy;
+                var beamGrad = ctx.createLinearGradient(W * 0.5, H, W * 0.5, 0);
+                beamGrad.addColorStop(0, 'rgba(200,220,255,0)');
+                beamGrad.addColorStop(0.3, hsla(220, 50, 85, 0.04 + beatPulse * 0.06));
+                beamGrad.addColorStop(0.7, hsla(45, 50, 85, 0.03 + beatPulse * 0.04));
+                beamGrad.addColorStop(1, 'rgba(255,240,200,0)');
+                ctx.fillStyle = beamGrad;
+                ctx.beginPath();
+                ctx.moveTo(W * 0.5 - beamW * 0.3, H);
+                ctx.lineTo(W * 0.5 + beamW * 0.3, H);
+                ctx.lineTo(W * 0.5 + beamW, 0);
+                ctx.lineTo(W * 0.5 - beamW, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // ── Title ──
+            if (titleAlpha > 0.01) {
+                ctx.save();
+                var fontSize = Math.max(16, Math.min(W * 0.035, 42));
+                ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                var titleY = H * 0.12;
+                var titleText = 'HOLLOW CHOIR ASCENDANT';
+
+                // Glow layers
+                ctx.globalAlpha = titleAlpha * 0.4;
+                ctx.shadowColor = 'rgba(160,200,255,0.6)';
+                ctx.shadowBlur = 40;
+                ctx.fillStyle = '#c8deff';
+                ctx.fillText(titleText, W * 0.5, titleY);
+
+                ctx.globalAlpha = titleAlpha * 0.8;
+                ctx.shadowColor = 'rgba(200,220,255,0.4)';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(220,235,255,0.9)';
+                ctx.fillText(titleText, W * 0.5, titleY);
+
+                // Subtitle during transcendence
+                if (sectionMood === 'transcendence') {
+                    ctx.globalAlpha = titleAlpha * 0.4;
+                    ctx.font = '400 ' + Math.floor(fontSize * 0.4) + 'px "Cinzel", serif';
+                    ctx.shadowBlur = 10;
+                    ctx.fillStyle = 'rgba(200,215,255,0.5)';
+                    ctx.fillText('ascendit', W * 0.5, titleY + fontSize * 0.9);
+                }
+
+                ctx.restore();
+            }
+
+            // ── Vignette ──
+            var vigGrad = ctx.createRadialGradient(W * 0.5, H * 0.5, W * 0.2, W * 0.5, H * 0.5, W * 0.8);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, 'rgba(2,2,8,0.5)');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Flash overlay ──
+            if (flashAlpha > 0.005) {
+                ctx.save();
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillStyle = '#c8deff';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // ── Beat pulse border glow ──
+            if (beatPulse > 0.05) {
+                ctx.save();
+                ctx.globalAlpha = beatPulse * 0.15;
+                ctx.strokeStyle = hsla(215, 50, 80, 1);
+                ctx.lineWidth = 2;
+                ctx.shadowColor = hsla(215, 60, 85, 0.5);
+                ctx.shadowBlur = 20;
+                ctx.strokeRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Hollow Choir Ascendant Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('hollow-choir-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/hollow-choir-ascendant.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

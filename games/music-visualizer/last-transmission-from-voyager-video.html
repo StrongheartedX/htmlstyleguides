@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Transmission from Voyager — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020208;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(2,2,8,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(16px, 4vw, 40px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c8a84e;
+            text-shadow: 0 0 30px rgba(200,168,78,0.5), 0 0 60px rgba(200,168,78,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #c8a84e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #c8a84e;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,78,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(200,168,78,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Last Transmission from Voyager</div>
+        <div class="play-sub">a deep space music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Last Transmission from Voyager Video Renderer ──────────────
+    window.Renderers['last-transmission-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG = '#020208';
+        var GOLD = '#c8a84e';
+        var GOLD_BRIGHT = '#f0d060';
+        var STAR_WHITE = '#e8e8f0';
+        var EARTH_BLUE = '#4488cc';
+        var ANTENNA_SILVER = '#a0a8b8';
+        var SIGNAL_CYAN = '#44bbdd';
+        var VOID_PURPLE = '#1a1030';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var totalTime = 0;
+        var lastSeqIndex = -1;
+
+        // Section state
+        var scene = 'awakening'; // awakening, telemetry, golden_record, full_signal, first_cracks, degradation, clarity, weakening, deep_fade, final_beeps, silence
+        var signalStrength = 1.0; // 0-1, decreases over song
+        var voyagerX = 0;
+        var voyagerY = 0;
+
+        // Star layers (parallax)
+        var starLayers = [[], [], []]; // far, mid, near
+        var STAR_COUNTS = [200, 120, 60];
+        var STAR_SPEEDS = [0.15, 0.4, 0.9];
+
+        // Golden record
+        var recordAngle = 0;
+        var recordVisible = 0; // fade in/out
+
+        // Signal waves
+        var signalWaves = [];
+        var signalTimer = 0;
+
+        // Voyager antenna pulse
+        var antennaPulse = 0;
+
+        // Earth/Sun shrinking
+        var earthSize = 1.0;
+        var sunSize = 1.0;
+
+        // Section text overlay
+        var sectionText = '';
+        var sectionTextAlpha = 0;
+        var sectionTextTarget = 0;
+
+        // Noise/static overlay for degradation
+        var staticIntensity = 0;
+
+        // Planet flyby state
+        var planetPhase = 0;
+
+        // Heliopause shockwave
+        var shockwaveRadius = 0;
+        var shockwaveAlpha = 0;
+
+        // ── Init stars ──
+        function initStars() {
+            for (var layer = 0; layer < 3; layer++) {
+                starLayers[layer] = [];
+                for (var i = 0; i < STAR_COUNTS[layer]; i++) {
+                    starLayers[layer].push({
+                        x: Math.random() * 2 - 0.5, // normalized -0.5 to 1.5
+                        y: Math.random(),
+                        size: layer === 0 ? 0.5 + Math.random() * 0.8 :
+                              layer === 1 ? 0.8 + Math.random() * 1.2 :
+                              1.2 + Math.random() * 2.0,
+                        brightness: 0.3 + Math.random() * 0.7,
+                        twinklePhase: Math.random() * Math.PI * 2,
+                        twinkleSpeed: 1 + Math.random() * 3
+                    });
+                }
+            }
+        }
+
+        // ── Emit signal wave ──
+        function emitSignal(x, y, strength) {
+            signalWaves.push({
+                x: x,
+                y: y,
+                radius: 0,
+                maxRadius: W * 0.6 * strength,
+                alpha: 0.6 * strength,
+                speed: 80 + 120 * strength
+            });
+        }
+
+        // ── Section mapping from sequence index ──
+        function mapScene(seqIdx) {
+            // Sequence has 36 entries (0-35)
+            // Patterns: 0=Awakening, 1=First Beeps, 2=Signal Acquired
+            // 3-4=Golden Record, 5-8=Full Signal, 9-10=First Cracks
+            // 11-12=Heavy Degradation, 13-14=Clarity Burst
+            // 15-16=Signal Weakening, 17-18=Deep Fade
+            // 19=Final Beeps, 20=Last Beep, 21=Silence
+            if (seqIdx <= 0) return 'awakening';
+            if (seqIdx <= 2) return 'telemetry';
+            if (seqIdx <= 6) return 'golden_record';
+            if (seqIdx <= 14) return 'full_signal';
+            if (seqIdx <= 18) return 'first_cracks';
+            if (seqIdx <= 21) return 'degradation';
+            if (seqIdx <= 23) return 'clarity';
+            if (seqIdx <= 27) return 'weakening';
+            if (seqIdx <= 31) return 'deep_fade';
+            if (seqIdx <= 33) return 'final_beeps';
+            return 'silence';
+        }
+
+        // ── Signal strength from scene ──
+        function targetSignalStrength(sc) {
+            switch(sc) {
+                case 'awakening': return 0.15;
+                case 'telemetry': return 0.4;
+                case 'golden_record': return 0.7;
+                case 'full_signal': return 1.0;
+                case 'first_cracks': return 0.7;
+                case 'degradation': return 0.4;
+                case 'clarity': return 0.9;
+                case 'weakening': return 0.3;
+                case 'deep_fade': return 0.12;
+                case 'final_beeps': return 0.05;
+                case 'silence': return 0.0;
+                default: return 0.5;
+            }
+        }
+
+        // ── Section display text ──
+        function sceneLabel(sc) {
+            switch(sc) {
+                case 'awakening': return 'DEEP SPACE DRONE';
+                case 'telemetry': return 'SIGNAL ACQUIRED';
+                case 'golden_record': return 'THE GOLDEN RECORD';
+                case 'full_signal': return 'FULL SIGNAL';
+                case 'first_cracks': return 'SIGNAL DEGRADING';
+                case 'degradation': return 'BREAKING APART';
+                case 'clarity': return 'LAST FULL POWER';
+                case 'weakening': return 'LOSING POWER';
+                case 'deep_fade': return 'ALMOST GONE';
+                case 'final_beeps': return 'FINAL TRANSMISSION';
+                case 'silence': return '';
+                default: return '';
+            }
+        }
+
+        // ── Lerp ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Draw star field ──
+        function drawStars(ctx, dt, energy) {
+            var density = 0.5 + signalStrength * 0.5 + energy * 0.3;
+
+            for (var layer = 0; layer < 3; layer++) {
+                var stars = starLayers[layer];
+                var speed = STAR_SPEEDS[layer];
+
+                for (var i = 0; i < stars.length; i++) {
+                    var s = stars[i];
+
+                    // Parallax drift: stars move left as Voyager "moves right"
+                    s.x -= speed * dt * 0.02 * (1 + energy * 0.5);
+                    if (s.x < -0.1) {
+                        s.x = 1.1;
+                        s.y = Math.random();
+                    }
+
+                    // Twinkle
+                    s.twinklePhase += s.twinkleSpeed * dt;
+                    var twinkle = 0.5 + 0.5 * Math.sin(s.twinklePhase);
+                    var alpha = s.brightness * twinkle * density;
+
+                    // Beat brightening
+                    alpha += beatPulse * 0.3 * (layer === 2 ? 1 : 0.3);
+
+                    if (alpha < 0.02) continue;
+
+                    var sx = s.x * W;
+                    var sy = s.y * H;
+                    var sz = s.size * (1 + beatPulse * 0.3);
+
+                    ctx.globalAlpha = Math.min(1, alpha);
+                    ctx.fillStyle = STAR_WHITE;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Larger stars get a glow
+                    if (sz > 1.5 && alpha > 0.4) {
+                        ctx.globalAlpha = alpha * 0.15;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, sz * 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ── Draw Voyager spacecraft ──
+        function drawVoyager(ctx, energy) {
+            var cx = voyagerX;
+            var cy = voyagerY;
+            var scale = Math.min(W, H) * 0.0015;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Main body (bus) - rectangular
+            var busW = 40 * scale;
+            var busH = 20 * scale;
+            ctx.fillStyle = ANTENNA_SILVER;
+            ctx.globalAlpha = 0.8;
+            ctx.fillRect(-busW / 2, -busH / 2, busW, busH);
+
+            // Magnetometer boom (long thin line extending right)
+            ctx.strokeStyle = ANTENNA_SILVER;
+            ctx.lineWidth = 1.5 * scale;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(busW / 2, 0);
+            ctx.lineTo(busW / 2 + 50 * scale, -5 * scale);
+            ctx.stroke();
+
+            // RTG power booms (two extending down-left)
+            ctx.lineWidth = 2 * scale;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(-busW / 2, busH / 4);
+            ctx.lineTo(-busW / 2 - 30 * scale, busH / 2 + 15 * scale);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-busW / 2, -busH / 4);
+            ctx.lineTo(-busW / 2 - 25 * scale, -busH / 2 - 12 * scale);
+            ctx.stroke();
+
+            // RTG cylinders
+            ctx.fillStyle = '#888';
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(-busW / 2 - 38 * scale, busH / 2 + 10 * scale, 16 * scale, 8 * scale);
+            ctx.fillRect(-busW / 2 - 33 * scale, -busH / 2 - 18 * scale, 16 * scale, 8 * scale);
+
+            // High-gain antenna dish (the big one, pointing back toward Earth)
+            var dishRadius = 28 * scale;
+            var dishX = 0;
+            var dishY = -busH / 2 - 8 * scale;
+
+            // Dish support strut
+            ctx.strokeStyle = ANTENNA_SILVER;
+            ctx.lineWidth = 2 * scale;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(0, -busH / 2);
+            ctx.lineTo(dishX, dishY - dishRadius * 0.3);
+            ctx.stroke();
+
+            // Dish (arc)
+            ctx.strokeStyle = GOLD;
+            ctx.lineWidth = 2.5 * scale;
+            ctx.globalAlpha = 0.7 + antennaPulse * 0.3;
+            ctx.beginPath();
+            ctx.arc(dishX, dishY, dishRadius, Math.PI * 0.15, Math.PI * 0.85);
+            ctx.stroke();
+
+            // Dish fill
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = 0.12 + antennaPulse * 0.15;
+            ctx.beginPath();
+            ctx.arc(dishX, dishY, dishRadius * 0.9, Math.PI * 0.15, Math.PI * 0.85);
+            ctx.lineTo(dishX, dishY + dishRadius * 0.2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Antenna feed (small protrusion above dish center)
+            ctx.strokeStyle = ANTENNA_SILVER;
+            ctx.lineWidth = 1.5 * scale;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(dishX, dishY);
+            ctx.lineTo(dishX, dishY - dishRadius * 0.6);
+            ctx.stroke();
+
+            // Signal emission point (glow at antenna tip)
+            if (signalStrength > 0.01) {
+                var glowR = (4 + antennaPulse * 8 + energy * 4) * scale;
+                ctx.globalAlpha = signalStrength * (0.3 + antennaPulse * 0.5);
+                ctx.fillStyle = SIGNAL_CYAN;
+                ctx.shadowColor = SIGNAL_CYAN;
+                ctx.shadowBlur = glowR * 3;
+                ctx.beginPath();
+                ctx.arc(dishX, dishY - dishRadius * 0.6, glowR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw Golden Record ──
+        function drawGoldenRecord(ctx, dt) {
+            if (recordVisible < 0.01) return;
+
+            var cx = W * 0.82;
+            var cy = H * 0.35;
+            var r = Math.min(W, H) * 0.08;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(recordAngle);
+            ctx.globalAlpha = recordVisible;
+
+            // Outer disc
+            ctx.fillStyle = GOLD;
+            ctx.shadowColor = GOLD_BRIGHT;
+            ctx.shadowBlur = 20 * recordVisible;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Grooves (concentric rings)
+            ctx.strokeStyle = 'rgba(100,70,20,0.5)';
+            ctx.lineWidth = 0.8;
+            for (var i = 1; i <= 8; i++) {
+                var gr = r * (i / 10);
+                ctx.beginPath();
+                ctx.arc(0, 0, gr, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Center hole
+            ctx.fillStyle = '#1a1408';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Center label area
+            ctx.fillStyle = 'rgba(180,140,40,0.4)';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shine/reflection
+            ctx.globalAlpha = recordVisible * 0.15;
+            var shineGrad = ctx.createLinearGradient(-r, -r, r, r);
+            shineGrad.addColorStop(0, 'rgba(255,255,255,0.4)');
+            shineGrad.addColorStop(0.5, 'rgba(255,255,255,0)');
+            shineGrad.addColorStop(1, 'rgba(255,255,255,0.2)');
+            ctx.fillStyle = shineGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw Earth ──
+        function drawEarth(ctx) {
+            if (earthSize < 0.005) return;
+
+            var ex = W * 0.12;
+            var ey = H * 0.7;
+            var r = Math.max(1, earthSize * Math.min(W, H) * 0.04);
+
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, earthSize * 2);
+
+            // Glow
+            ctx.shadowColor = EARTH_BLUE;
+            ctx.shadowBlur = r * 2;
+            ctx.fillStyle = EARTH_BLUE;
+            ctx.beginPath();
+            ctx.arc(ex, ey, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = Math.min(0.5, earthSize);
+            ctx.fillStyle = '#88bbee';
+            ctx.beginPath();
+            ctx.arc(ex - r * 0.2, ey - r * 0.2, r * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw Sun ──
+        function drawSun(ctx) {
+            if (sunSize < 0.005) return;
+
+            var sx = W * 0.08;
+            var sy = H * 0.55;
+            var r = Math.max(1, sunSize * Math.min(W, H) * 0.025);
+
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, sunSize * 3);
+
+            // Glow
+            ctx.shadowColor = '#ffcc44';
+            ctx.shadowBlur = r * 4;
+            ctx.fillStyle = '#ffdd66';
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // ── Draw signal waves ──
+        function drawSignalWaves(ctx, dt) {
+            for (var i = signalWaves.length - 1; i >= 0; i--) {
+                var w = signalWaves[i];
+                w.radius += w.speed * dt;
+                w.alpha -= dt * 0.4;
+
+                if (w.alpha <= 0 || w.radius > w.maxRadius) {
+                    signalWaves.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.strokeStyle = SIGNAL_CYAN;
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = w.alpha * signalStrength;
+
+                // Arc emanating upward/outward from antenna
+                ctx.beginPath();
+                ctx.arc(w.x, w.y, w.radius, -Math.PI * 0.8, -Math.PI * 0.2);
+                ctx.stroke();
+
+                // Fainter second arc
+                ctx.globalAlpha = w.alpha * signalStrength * 0.3;
+                ctx.beginPath();
+                ctx.arc(w.x, w.y, w.radius * 0.85, -Math.PI * 0.75, -Math.PI * 0.25);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // ── Draw signal strength meter ──
+        function drawSignalMeter(ctx) {
+            var mw = W * 0.15;
+            var mh = 6;
+            var mx = W - mw - 20;
+            var my = H - 30;
+
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+
+            // Label
+            ctx.fillStyle = SIGNAL_CYAN;
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText('SIGNAL', mx - 8, my + 5);
+
+            // Background bar
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.fillRect(mx, my, mw, mh);
+
+            // Active bar
+            var activeW = mw * signalStrength;
+            var barColor = signalStrength > 0.6 ? SIGNAL_CYAN :
+                           signalStrength > 0.3 ? GOLD :
+                           signalStrength > 0.1 ? '#cc6633' : '#cc3333';
+            ctx.fillStyle = barColor;
+            ctx.globalAlpha = 0.5 + antennaPulse * 0.3;
+            ctx.fillRect(mx, my, activeW, mh);
+
+            // Segments
+            ctx.fillStyle = BG;
+            ctx.globalAlpha = 0.8;
+            for (var i = 1; i < 10; i++) {
+                ctx.fillRect(mx + mw * i / 10 - 0.5, my, 1, mh);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw waveform overlay ──
+        function drawWaveform(ctx, energy) {
+            if (signalStrength < 0.01) return;
+
+            var waveW = W * 0.2;
+            var waveH = 30;
+            var wx = W - waveW - 20;
+            var wy = H - 55;
+
+            ctx.save();
+            ctx.strokeStyle = SIGNAL_CYAN;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.25 * signalStrength;
+
+            ctx.beginPath();
+            for (var i = 0; i < waveW; i++) {
+                var t = i / waveW;
+                var amp = signalStrength * waveH * 0.5;
+                // Mix of frequencies for waveform shape
+                var y = wy + Math.sin(t * 20 + totalTime * 8) * amp * energy
+                      + Math.sin(t * 35 + totalTime * 12) * amp * 0.3 * energy
+                      + (Math.random() - 0.5) * staticIntensity * 10;
+                if (i === 0) ctx.moveTo(wx + i, y);
+                else ctx.lineTo(wx + i, y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ── Draw static/noise overlay ──
+        function drawStatic(ctx) {
+            if (staticIntensity < 0.02) return;
+
+            ctx.save();
+            ctx.globalAlpha = staticIntensity * 0.15;
+            ctx.fillStyle = '#fff';
+
+            var count = Math.floor(staticIntensity * 300);
+            for (var i = 0; i < count; i++) {
+                var sx = Math.random() * W;
+                var sy = Math.random() * H;
+                var sw = 1 + Math.random() * 3;
+                ctx.fillRect(sx, sy, sw, 1);
+            }
+
+            // Scan lines
+            ctx.globalAlpha = staticIntensity * 0.08;
+            for (var j = 0; j < H; j += 3) {
+                ctx.fillRect(0, j, W, 1);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw section text ──
+        function drawSectionText(ctx) {
+            if (sectionTextAlpha < 0.01 || !sectionText) return;
+
+            ctx.save();
+            ctx.globalAlpha = sectionTextAlpha * 0.6;
+            ctx.fillStyle = GOLD;
+            ctx.font = '700 ' + Math.max(12, Math.min(W * 0.022, 24)) + 'px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 20;
+            ctx.fillText(sectionText, W / 2, H * 0.08);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // ── Draw deep space nebula glow ──
+        function drawNebulaGlow(ctx, energy) {
+            // Subtle purple/blue ambient glow that shifts with sections
+            var gx = W * 0.5;
+            var gy = H * 0.4;
+            var gr = Math.max(W, H) * 0.5;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = 0.03 + energy * 0.02;
+
+            var grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+            grad.addColorStop(0, 'rgba(30,20,60,0.3)');
+            grad.addColorStop(0.5, 'rgba(15,10,40,0.1)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.restore();
+        }
+
+        // ── Draw heliopause shockwave ──
+        function drawShockwave(ctx) {
+            if (shockwaveAlpha < 0.01) return;
+
+            ctx.save();
+            ctx.strokeStyle = SIGNAL_CYAN;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = shockwaveAlpha;
+
+            var cx = W * 0.3;
+            var cy = H * 0.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, shockwaveRadius, -Math.PI * 0.4, Math.PI * 0.4);
+            ctx.stroke();
+
+            ctx.globalAlpha = shockwaveAlpha * 0.3;
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(cx, cy, shockwaveRadius, -Math.PI * 0.3, Math.PI * 0.3);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Draw distance counter ──
+        function drawDistanceCounter(ctx) {
+            // Show increasing distance in AU based on song progress
+            var progress = totalTime / 180; // approximate total duration
+            var au = (100 + progress * 60).toFixed(1);
+
+            ctx.save();
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = ANTENNA_SILVER;
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(au + ' AU', 20, H - 20);
+            ctx.fillText('FROM SOL', 20, H - 8);
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width;
+            H = height;
+            analysis = anal;
+
+            initStars();
+            signalWaves = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            totalTime = 0;
+            lastSeqIndex = -1;
+            scene = 'awakening';
+            signalStrength = 0.1;
+            recordAngle = 0;
+            recordVisible = 0;
+            antennaPulse = 0;
+            earthSize = 1.0;
+            sunSize = 1.0;
+            sectionText = '';
+            sectionTextAlpha = 0;
+            sectionTextTarget = 0;
+            staticIntensity = 0;
+            shockwaveRadius = 0;
+            shockwaveAlpha = 0;
+            voyagerX = W * 0.45;
+            voyagerY = H * 0.45;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width;
+            H = height;
+            voyagerX = W * 0.45;
+            voyagerY = H * 0.45;
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            totalTime += dt;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state: just stars and dim Voyager
+                drawStars(ctx, dt, 0);
+                drawVoyager(ctx, 0);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newScene = mapScene(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                scene = newScene;
+                sectionText = sceneLabel(scene);
+                sectionTextTarget = 1;
+
+                // Heliopause shockwave on entering full_signal
+                if (scene === 'full_signal' && shockwaveRadius < 10) {
+                    shockwaveRadius = 10;
+                    shockwaveAlpha = 0.8;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                antennaPulse = 1;
+
+                // Emit signal wave from antenna on beat
+                if (signalStrength > 0.03) {
+                    var antY = voyagerY - Math.min(W, H) * 0.0015 * 40;
+                    emitSignal(voyagerX, antY, signalStrength);
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-6 * dt);
+            antennaPulse *= Math.exp(-8 * dt);
+
+            // ── Section-driven state updates ──
+            var targetSig = targetSignalStrength(scene);
+            signalStrength = lerpSmooth(signalStrength, targetSig, 2, dt);
+
+            // Earth/Sun shrink as song progresses
+            var songProgress = cursor.elapsed / (analysis ? analysis.totalDuration : 180);
+            earthSize = Math.max(0, 1 - songProgress * 1.8);
+            sunSize = Math.max(0, 1 - songProgress * 1.5);
+
+            // Golden record visibility
+            var recordTarget = (scene === 'golden_record' || scene === 'full_signal' || scene === 'clarity') ? 1 : 0;
+            recordVisible = lerpSmooth(recordVisible, recordTarget, 3, dt);
+            recordAngle += dt * (0.3 + energy * 0.5 + beatPulse * 0.8);
+
+            // Static intensity for degradation scenes
+            var staticTarget = 0;
+            if (scene === 'first_cracks') staticTarget = 0.2 + energy * 0.2;
+            else if (scene === 'degradation') staticTarget = 0.5 + energy * 0.3;
+            else if (scene === 'weakening') staticTarget = 0.3;
+            else if (scene === 'deep_fade') staticTarget = 0.15;
+            else if (scene === 'final_beeps') staticTarget = 0.05;
+            staticIntensity = lerpSmooth(staticIntensity, staticTarget, 4, dt);
+
+            // Section text fade
+            sectionTextAlpha = lerpSmooth(sectionTextAlpha, sectionTextTarget, 3, dt);
+            if (sectionTextAlpha > 0.9) sectionTextTarget = 0;
+
+            // Shockwave expansion
+            if (shockwaveAlpha > 0.01) {
+                shockwaveRadius += 200 * dt;
+                shockwaveAlpha *= Math.exp(-1.5 * dt);
+            }
+
+            // Voyager subtle drift
+            voyagerX = W * 0.45 + Math.sin(totalTime * 0.1) * W * 0.02;
+            voyagerY = H * 0.45 + Math.cos(totalTime * 0.07) * H * 0.015;
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Nebula glow
+            drawNebulaGlow(ctx, energy);
+
+            // 2. Stars (far layer first)
+            drawStars(ctx, dt, energy);
+
+            // 3. Earth & Sun (shrinking in background)
+            drawEarth(ctx);
+            drawSun(ctx);
+
+            // 4. Heliopause shockwave
+            drawShockwave(ctx);
+
+            // 5. Signal waves (emanating from Voyager)
+            drawSignalWaves(ctx, dt);
+
+            // 6. Voyager spacecraft
+            drawVoyager(ctx, energy);
+
+            // 7. Golden Record
+            drawGoldenRecord(ctx, dt);
+
+            // 8. UI overlays
+            drawWaveform(ctx, energy);
+            drawSignalMeter(ctx);
+            drawDistanceCounter(ctx);
+
+            // 9. Section text
+            drawSectionText(ctx);
+
+            // 10. Static/noise
+            drawStatic(ctx);
+
+            // 11. Final fade to black in silence
+            if (scene === 'silence') {
+                ctx.fillStyle = 'rgba(2,2,8,0.03)';
+                ctx.fillRect(0, 0, W, H);
+            }
+        }
+
+        return {
+            name: 'Last Transmission from Voyager',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('last-transmission-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/last-transmission-from-voyager.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

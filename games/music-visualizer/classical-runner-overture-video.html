@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classical Runner Overture — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #f5f0e1;
+            color: #3a2e1a;
+            font-family: 'Playfair Display', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(245,240,225,0.95);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            color: #3a2e1a;
+            text-shadow: 0 2px 12px rgba(180,150,80,0.3);
+            margin-bottom: 8px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            color: rgba(58,46,26,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #b4963c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #b4963c;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(180,150,60,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(180,150,60,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(58,46,26,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(245,240,225,0.6);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(58,46,26,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Classical Runner Overture</div>
+        <div class="play-sub">a side-scrolling music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Classical Runner Overture Video Renderer ──────────────────────
+    window.Renderers['classical-runner-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var CREAM = '#f5f0e1';
+        var PARCHMENT = '#ede4cc';
+        var SEPIA_DARK = '#3a2e1a';
+        var SEPIA_MID = '#7a6840';
+        var GOLD = '#b4963c';
+        var GOLD_BRIGHT = '#d4b84a';
+        var INK = '#1a150a';
+        var RED_ACCENT = '#8b2020';
+        var STAFF_COLOR = '#9a8a6a';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var scrollX = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'practice';
+        var sectionTransition = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Runner state
+        var runnerX = 0;
+        var runnerY = 0;
+        var runnerGroundY = 0;
+        var runnerVelY = 0;
+        var runnerPhase = 0;   // leg animation phase
+        var runnerJumping = false;
+        var runnerScale = 1;
+        var runnerTrailAlpha = 0;
+
+        // Scene objects
+        var staffLines = [];
+        var floatingNotes = [];
+        var sheetPages = [];
+        var collectFlashes = [];
+        var trebleClefs = [];
+        var platformNotes = [];
+        var bgLayers = [];
+
+        // Scene-specific
+        var curtainY = 0;
+        var curtainTarget = 0;
+        var stageSpotlights = [];
+        var audienceHeads = [];
+        var grandFinaleParticles = [];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return {r:r, g:g, b:b};
+        }
+
+        // ── Section mapping ──
+        // seq 0-1: Boot Overture (practice room)
+        // seq 2-6: Runner Subject/Variant (concert hall entry)
+        // seq 7-8: Runner Drive (flying through sheet music)
+        // seq 9-11: Episode B (concert hall full)
+        // seq 12-13: Reprise runner subject
+        // seq 14-15: Counterpoint Development (dueling staves)
+        // seq 16: Glitch Break (scattered pages)
+        // seq 17-22: Rebuild + mixed (rebuilding momentum)
+        // seq 23-27: Final Climax + Grand Cadence (grand finale stage)
+        // seq 28+: Rebuild + Drive + Episode + Climax cycles
+        // seq 40-44: Outro Glow (curtain call)
+        function mapSection(seqIdx) {
+            if (seqIdx <= 1) return 'practice';
+            if (seqIdx <= 6) return 'concert';
+            if (seqIdx <= 8) return 'sheetmusic';
+            if (seqIdx <= 13) return 'concert';
+            if (seqIdx <= 16) return 'sheetmusic';
+            if (seqIdx <= 22) return 'concert';
+            if (seqIdx <= 27) return 'finale';
+            if (seqIdx <= 35) return 'concert';
+            if (seqIdx <= 39) return 'finale';
+            return 'curtaincall';
+        }
+
+        // ── Draw staff lines ──
+        function drawStaffSet(ctx, y, alpha, width) {
+            ctx.save();
+            ctx.strokeStyle = STAFF_COLOR;
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = 1;
+            var spacing = H * 0.018;
+            for (var i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y + i * spacing);
+                ctx.lineTo(width || W, y + i * spacing);
+                ctx.stroke();
+            }
+            ctx.restore();
+            return spacing;
+        }
+
+        // ── Draw treble clef ──
+        function drawTrebleClef(ctx, x, y, size, alpha, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(size, size);
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = color || SEPIA_MID;
+            ctx.lineWidth = 2 / size;
+            ctx.lineCap = 'round';
+
+            // Simplified treble clef shape
+            ctx.beginPath();
+            ctx.moveTo(0, 20);
+            ctx.bezierCurveTo(-8, 15, -10, 5, -4, -5);
+            ctx.bezierCurveTo(2, -15, 8, -20, 6, -28);
+            ctx.bezierCurveTo(4, -35, -4, -32, -6, -26);
+            ctx.bezierCurveTo(-8, -20, -2, -12, 4, -8);
+            ctx.bezierCurveTo(10, -4, 12, 4, 8, 12);
+            ctx.bezierCurveTo(4, 20, -6, 22, -6, 16);
+            ctx.stroke();
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(0, -35);
+            ctx.lineTo(0, 25);
+            ctx.stroke();
+
+            // Bottom curl
+            ctx.beginPath();
+            ctx.arc(0, 26, 3, 0, Math.PI * 2);
+            ctx.fillStyle = color || SEPIA_MID;
+            ctx.globalAlpha = alpha * 0.7;
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw quarter note ──
+        function drawQuarterNote(ctx, x, y, size, alpha, color, filled) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color || INK;
+            ctx.strokeStyle = color || INK;
+            ctx.lineWidth = 1.5;
+
+            // Note head (ellipse)
+            ctx.beginPath();
+            ctx.ellipse(x, y, size * 0.6, size * 0.45, -0.3, 0, Math.PI * 2);
+            if (filled !== false) {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+
+            // Stem
+            ctx.beginPath();
+            ctx.moveTo(x + size * 0.5, y);
+            ctx.lineTo(x + size * 0.5, y - size * 2.5);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Draw eighth note pair ──
+        function drawEighthNotePair(ctx, x, y, size, alpha, color) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color || INK;
+            ctx.strokeStyle = color || INK;
+            ctx.lineWidth = 1.5;
+
+            var gap = size * 1.8;
+
+            // Two note heads
+            ctx.beginPath();
+            ctx.ellipse(x, y, size * 0.55, size * 0.4, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + gap, y - size * 0.3, size * 0.55, size * 0.4, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stems
+            ctx.beginPath();
+            ctx.moveTo(x + size * 0.45, y);
+            ctx.lineTo(x + size * 0.45, y - size * 2.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + gap + size * 0.45, y - size * 0.3);
+            ctx.lineTo(x + gap + size * 0.45, y - size * 2.8);
+            ctx.stroke();
+
+            // Beam
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x + size * 0.45, y - size * 2.5);
+            ctx.lineTo(x + gap + size * 0.45, y - size * 2.8);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Runner stick figure ──
+        function drawRunner(ctx, x, y, phase, energy, scale, jumping) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            var figH = H * 0.12;
+            var headR = figH * 0.09;
+            var bounce = jumping ? 0 : Math.abs(Math.sin(phase * 2)) * figH * 0.03;
+
+            // Legs
+            var legAngle1 = Math.sin(phase) * 0.6 * (1 + energy * 0.4);
+            var legAngle2 = Math.sin(phase + Math.PI) * 0.6 * (1 + energy * 0.4);
+            var hipY = -figH * 0.4 - bounce;
+            var legLen = figH * 0.22;
+            var shinLen = figH * 0.2;
+
+            ctx.strokeStyle = SEPIA_DARK;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+
+            // Left leg
+            var lKneeX = Math.sin(legAngle1) * legLen;
+            var lKneeY = hipY + Math.cos(legAngle1) * legLen;
+            var lFootX = lKneeX + Math.sin(legAngle1 * 0.5 + 0.3) * shinLen;
+            var lFootY = lKneeY + Math.cos(legAngle1 * 0.3) * shinLen;
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(lKneeX, lKneeY);
+            ctx.lineTo(lFootX, lFootY);
+            ctx.stroke();
+
+            // Right leg
+            var rKneeX = Math.sin(legAngle2) * legLen;
+            var rKneeY = hipY + Math.cos(legAngle2) * legLen;
+            var rFootX = rKneeX + Math.sin(legAngle2 * 0.5 + 0.3) * shinLen;
+            var rFootY = rKneeY + Math.cos(legAngle2 * 0.3) * shinLen;
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(rKneeX, rKneeY);
+            ctx.lineTo(rFootX, rFootY);
+            ctx.stroke();
+
+            // Torso
+            var shoulderY = -figH * 0.7 - bounce;
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(0, shoulderY);
+            ctx.stroke();
+
+            // Arms swinging opposite to legs
+            var armAngle1 = Math.sin(phase + Math.PI) * 0.5 * (1 + energy * 0.3);
+            var armAngle2 = Math.sin(phase) * 0.5 * (1 + energy * 0.3);
+            var armLen = figH * 0.16;
+            var foreLen = figH * 0.14;
+
+            // Left arm
+            var lElbowX = -figH * 0.02 + Math.sin(armAngle1) * armLen;
+            var lElbowY = shoulderY + Math.cos(armAngle1) * armLen;
+            ctx.beginPath();
+            ctx.moveTo(0, shoulderY);
+            ctx.lineTo(lElbowX, lElbowY);
+            ctx.lineTo(lElbowX + Math.sin(armAngle1 + 0.5) * foreLen, lElbowY + Math.cos(armAngle1 + 0.3) * foreLen);
+            ctx.stroke();
+
+            // Right arm
+            var rElbowX = figH * 0.02 + Math.sin(armAngle2) * armLen;
+            var rElbowY = shoulderY + Math.cos(armAngle2) * armLen;
+            ctx.beginPath();
+            ctx.moveTo(0, shoulderY);
+            ctx.lineTo(rElbowX, rElbowY);
+            ctx.lineTo(rElbowX + Math.sin(armAngle2 + 0.5) * foreLen, rElbowY + Math.cos(armAngle2 + 0.3) * foreLen);
+            ctx.stroke();
+
+            // Head
+            var headY = shoulderY - figH * 0.06 - headR - bounce;
+            ctx.beginPath();
+            ctx.arc(0, headY, headR, 0, Math.PI * 2);
+            ctx.strokeStyle = SEPIA_DARK;
+            ctx.stroke();
+            ctx.fillStyle = CREAM;
+            ctx.fill();
+
+            // Conductor's baton in right hand (during finale)
+            if (sectionMood === 'finale') {
+                var batonX = rElbowX + Math.sin(armAngle2 + 0.5) * foreLen;
+                var batonY = rElbowY + Math.cos(armAngle2 + 0.3) * foreLen;
+                var batonAngle = armAngle2 + Math.sin(phase * 3) * 0.4;
+                ctx.strokeStyle = GOLD;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(batonX, batonY);
+                ctx.lineTo(batonX + Math.sin(batonAngle) * figH * 0.15, batonY - Math.cos(batonAngle) * figH * 0.15);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Sheet music page ──
+        function drawSheetPage(ctx, x, y, w, h, rotation, alpha) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.globalAlpha = alpha;
+
+            // Page background
+            ctx.fillStyle = PARCHMENT;
+            ctx.shadowColor = 'rgba(58,46,26,0.2)';
+            ctx.shadowBlur = 8;
+            ctx.fillRect(-w/2, -h/2, w, h);
+            ctx.shadowBlur = 0;
+
+            // Staff lines on page
+            ctx.strokeStyle = STAFF_COLOR;
+            ctx.lineWidth = 0.5;
+            var staffSpacing = h * 0.06;
+            for (var s = 0; s < 3; s++) {
+                var staffY = -h/2 + h * 0.2 + s * h * 0.3;
+                for (var l = 0; l < 5; l++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-w/2 + w*0.08, staffY + l * staffSpacing);
+                    ctx.lineTo(w/2 - w*0.08, staffY + l * staffSpacing);
+                    ctx.stroke();
+                }
+                // Tiny fake notes
+                ctx.fillStyle = INK;
+                for (var n = 0; n < 6; n++) {
+                    var nx = -w/2 + w*0.15 + n * w*0.12;
+                    var ny = staffY + Math.floor(Math.random() * 5) * staffSpacing;
+                    ctx.beginPath();
+                    ctx.ellipse(nx, ny, staffSpacing * 0.4, staffSpacing * 0.3, -0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Practice room background ──
+        function drawPracticeRoom(ctx, energy) {
+            // Warm wood panel walls
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#c8b48a');
+            grad.addColorStop(0.3, '#b89e70');
+            grad.addColorStop(1, '#a08858');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Wood grain lines
+            ctx.strokeStyle = 'rgba(58,46,26,0.08)';
+            ctx.lineWidth = 1;
+            for (var i = 0; i < 30; i++) {
+                var gy = i * H / 30 + Math.sin(i * 0.5) * 3;
+                ctx.beginPath();
+                ctx.moveTo(0, gy);
+                for (var gx = 0; gx < W; gx += 20) {
+                    ctx.lineTo(gx, gy + Math.sin(gx * 0.01 + i) * 2);
+                }
+                ctx.stroke();
+            }
+
+            // Window with warm light
+            var winX = W * 0.7 - scrollX * 0.02 % (W * 0.3);
+            var winW = W * 0.12;
+            var winH = H * 0.25;
+            var winY = H * 0.15;
+            ctx.fillStyle = '#ffeebb';
+            ctx.shadowColor = 'rgba(255,238,187,0.4)';
+            ctx.shadowBlur = 30 + energy * 20;
+            ctx.fillRect(winX, winY, winW, winH);
+            ctx.shadowBlur = 0;
+
+            // Window frame
+            ctx.strokeStyle = SEPIA_MID;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(winX, winY, winW, winH);
+            ctx.beginPath();
+            ctx.moveTo(winX + winW/2, winY);
+            ctx.lineTo(winX + winW/2, winY + winH);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(winX, winY + winH/2);
+            ctx.lineTo(winX + winW, winY + winH/2);
+            ctx.stroke();
+
+            // Music stand silhouette
+            var standX = W * 0.15;
+            ctx.strokeStyle = 'rgba(58,46,26,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(standX, H * 0.8);
+            ctx.lineTo(standX, H * 0.4);
+            ctx.lineTo(standX - W*0.04, H * 0.35);
+            ctx.lineTo(standX + W*0.04, H * 0.35);
+            ctx.lineTo(standX, H * 0.4);
+            ctx.stroke();
+        }
+
+        // ── Concert hall background ──
+        function drawConcertHall(ctx, energy) {
+            // Deep red/gold walls
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#2a1515');
+            grad.addColorStop(0.5, '#3a1a1a');
+            grad.addColorStop(1, '#1a0e0e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Gold trim lines
+            ctx.strokeStyle = 'rgba(180,150,60,0.15)';
+            ctx.lineWidth = 2;
+            for (var i = 0; i < 8; i++) {
+                var trimX = W * (i / 8) - (scrollX * 0.05) % (W / 4);
+                ctx.beginPath();
+                ctx.moveTo(trimX, 0);
+                ctx.lineTo(trimX, H * 0.7);
+                ctx.stroke();
+            }
+
+            // Arch shapes
+            ctx.strokeStyle = 'rgba(180,150,60,0.1)';
+            ctx.lineWidth = 3;
+            for (var a = 0; a < 5; a++) {
+                var archX = W * (a / 5) + W * 0.1 - (scrollX * 0.03) % (W / 3);
+                ctx.beginPath();
+                ctx.arc(archX, H * 0.6, W * 0.08, Math.PI, 0);
+                ctx.stroke();
+            }
+
+            // Chandeliers
+            var numChand = 3;
+            for (var c = 0; c < numChand; c++) {
+                var cx = W * (c + 0.5) / numChand - (scrollX * 0.04) % (W / 2);
+                var cy = H * 0.08;
+                var glow = 0.3 + energy * 0.4 + beatPulse * 0.2;
+
+                // Chain
+                ctx.strokeStyle = 'rgba(180,150,60,0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cx, 0);
+                ctx.lineTo(cx, cy);
+                ctx.stroke();
+
+                // Chandelier body
+                ctx.fillStyle = 'rgba(255,230,150,' + (glow * 0.3) + ')';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 15 + energy * 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Light glow
+                var glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60 + energy * 40);
+                glowGrad.addColorStop(0, 'rgba(255,230,150,' + (glow * 0.2) + ')');
+                glowGrad.addColorStop(1, 'rgba(255,230,150,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(cx - 80, cy - 80, 160, 160);
+            }
+
+            // Stage floor
+            ctx.fillStyle = '#1a0e0e';
+            ctx.fillRect(0, H * 0.75, W, H * 0.25);
+            var floorGrad = ctx.createLinearGradient(0, H * 0.75, 0, H);
+            floorGrad.addColorStop(0, 'rgba(180,150,60,0.08)');
+            floorGrad.addColorStop(1, 'rgba(180,150,60,0)');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, H * 0.75, W, H * 0.25);
+        }
+
+        // ── Flying sheet music scene ──
+        function drawSheetMusicScene(ctx, energy) {
+            // Sky gradient - parchment dream
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#e8dcc0');
+            grad.addColorStop(0.4, '#f5f0e1');
+            grad.addColorStop(1, '#d4c8a8');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Distant clouds of sheet music
+            ctx.globalAlpha = 0.15;
+            for (var c = 0; c < 5; c++) {
+                var cx = (c * W / 3 - scrollX * 0.02) % (W * 1.5) - W * 0.25;
+                var cy = H * 0.2 + Math.sin(c * 1.7) * H * 0.1;
+                ctx.fillStyle = PARCHMENT;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, W * 0.1, H * 0.04, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ── Grand finale stage ──
+        function drawFinaleStage(ctx, energy) {
+            // Deep black with gold
+            ctx.fillStyle = '#0a0808';
+            ctx.fillRect(0, 0, W, H);
+
+            // Dramatic spotlights
+            var numSpots = 5;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < numSpots; i++) {
+                var sx = W * (i + 0.5) / numSpots;
+                var spotPhase = scrollX * 0.001 + i * 1.2;
+                var swayX = Math.sin(spotPhase) * W * 0.05;
+                var brightness = 0.04 + energy * 0.08 + beatPulse * 0.06;
+                var hue = (i * 50 + scrollX * 0.1) % 360;
+
+                var spotGrad = ctx.createLinearGradient(sx + swayX, 0, sx + swayX, H * 0.8);
+                spotGrad.addColorStop(0, 'rgba(255,230,150,' + brightness + ')');
+                spotGrad.addColorStop(1, 'rgba(255,230,150,0)');
+                ctx.fillStyle = spotGrad;
+                ctx.beginPath();
+                ctx.moveTo(sx + swayX - 15, 0);
+                ctx.lineTo(sx + swayX + 15, 0);
+                ctx.lineTo(sx + swayX + W * 0.08, H * 0.8);
+                ctx.lineTo(sx + swayX - W * 0.08, H * 0.8);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Golden stage floor
+            ctx.fillStyle = '#1a1008';
+            ctx.fillRect(0, H * 0.75, W, H * 0.25);
+
+            // Stage edge gold line
+            ctx.strokeStyle = GOLD;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = GOLD;
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.75);
+            ctx.lineTo(W, H * 0.75);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // ── Curtain call scene ──
+        function drawCurtainCall(ctx, energy) {
+            drawConcertHall(ctx, energy * 0.5);
+
+            // Descending curtain
+            curtainY = lerpExp(curtainY, curtainTarget, 1.5, 1/60);
+            if (curtainY > 0.01) {
+                ctx.fillStyle = '#6b1010';
+                ctx.fillRect(0, 0, W, H * curtainY);
+
+                // Curtain folds
+                ctx.strokeStyle = 'rgba(100,10,10,0.5)';
+                ctx.lineWidth = 2;
+                for (var f = 0; f < 12; f++) {
+                    var fx = f * W / 12;
+                    ctx.beginPath();
+                    ctx.moveTo(fx, 0);
+                    ctx.quadraticCurveTo(fx + W/24, H * curtainY * 0.5, fx, H * curtainY);
+                    ctx.stroke();
+                }
+
+                // Gold trim at bottom of curtain
+                ctx.strokeStyle = GOLD;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, H * curtainY);
+                ctx.lineTo(W, H * curtainY);
+                ctx.stroke();
+            }
+        }
+
+        // ── Platform notes (obstacles/collectibles on staff lines) ──
+        function spawnPlatformNotes(energy) {
+            var numNotes = Math.floor(3 + energy * 5);
+            platformNotes = [];
+            for (var i = 0; i < numNotes; i++) {
+                platformNotes.push({
+                    relX: W * 0.3 + Math.random() * W * 1.5,
+                    staffLine: Math.floor(Math.random() * 5),
+                    type: Math.random() > 0.6 ? 'eighth' : 'quarter',
+                    collected: false,
+                    size: 6 + Math.random() * 4,
+                    bobPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // ── Floating notes (decorative) ──
+        function spawnFloatingNotes() {
+            floatingNotes = [];
+            for (var i = 0; i < 25; i++) {
+                floatingNotes.push({
+                    x: Math.random() * W * 2,
+                    y: Math.random() * H,
+                    size: 4 + Math.random() * 8,
+                    speed: 20 + Math.random() * 60,
+                    drift: (Math.random() - 0.5) * 30,
+                    alpha: 0.1 + Math.random() * 0.3,
+                    type: Math.random() > 0.5 ? 'quarter' : 'eighth',
+                    rotation: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+
+        // ── Sheet pages (flying) ──
+        function spawnSheetPages() {
+            sheetPages = [];
+            for (var i = 0; i < 8; i++) {
+                sheetPages.push({
+                    x: Math.random() * W * 2,
+                    y: Math.random() * H * 0.8,
+                    w: 40 + Math.random() * 30,
+                    h: 55 + Math.random() * 25,
+                    rotation: (Math.random() - 0.5) * 0.8,
+                    rotSpeed: (Math.random() - 0.5) * 0.5,
+                    speedX: 30 + Math.random() * 80,
+                    speedY: (Math.random() - 0.5) * 20,
+                    alpha: 0.3 + Math.random() * 0.5
+                });
+            }
+        }
+
+        // ── Treble clefs (decorative) ──
+        function spawnTrebleClefs() {
+            trebleClefs = [];
+            for (var i = 0; i < 6; i++) {
+                trebleClefs.push({
+                    x: Math.random() * W * 2,
+                    y: H * 0.15 + Math.random() * H * 0.5,
+                    size: 0.5 + Math.random() * 1.0,
+                    alpha: 0.08 + Math.random() * 0.15,
+                    speed: 10 + Math.random() * 30,
+                    bobPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // ── Audience heads ──
+        function spawnAudience() {
+            audienceHeads = [];
+            for (var i = 0; i < 35; i++) {
+                audienceHeads.push({
+                    x: Math.random() * W,
+                    y: H * 0.82 + Math.random() * H * 0.18,
+                    size: 8 + Math.random() * 12,
+                    phase: Math.random() * Math.PI * 2,
+                    bobSpeed: 1 + Math.random() * 2
+                });
+            }
+        }
+
+        // ── Grand finale particles ──
+        function spawnFinaleParticles() {
+            grandFinaleParticles = [];
+            for (var i = 0; i < 60; i++) {
+                grandFinaleParticles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 40,
+                    vy: -20 - Math.random() * 80,
+                    size: 1 + Math.random() * 3,
+                    alpha: 0.3 + Math.random() * 0.7,
+                    color: Math.random() > 0.5 ? GOLD : GOLD_BRIGHT,
+                    life: 0.5 + Math.random() * 0.5
+                });
+            }
+        }
+
+        // ── Collection flash ──
+        function addCollectFlash(x, y) {
+            collectFlashes.push({
+                x: x, y: y,
+                alpha: 1,
+                radius: 5,
+                maxRadius: 30 + Math.random() * 20
+            });
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            scrollX = 0;
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'practice';
+            sectionTransition = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+
+            runnerX = W * 0.25;
+            runnerGroundY = H * 0.72;
+            runnerY = runnerGroundY;
+            runnerVelY = 0;
+            runnerPhase = 0;
+            runnerJumping = false;
+            runnerScale = 1;
+            runnerTrailAlpha = 0;
+
+            curtainY = 0;
+            curtainTarget = 0;
+
+            spawnFloatingNotes();
+            spawnSheetPages();
+            spawnTrebleClefs();
+            spawnPlatformNotes(0.3);
+            spawnAudience();
+            spawnFinaleParticles();
+            collectFlashes = [];
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            runnerX = W * 0.25;
+            runnerGroundY = H * 0.72;
+            spawnAudience();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Default idle
+            if (!cursor) {
+                // Parchment background with staff
+                ctx.fillStyle = CREAM;
+                ctx.fillRect(0, 0, W, H);
+                drawStaffSet(ctx, H * 0.4, 0.3, W);
+                drawTrebleClef(ctx, W * 0.1, H * 0.45, 1.5, 0.2, SEPIA_MID);
+
+                // Idle runner
+                drawRunner(ctx, W * 0.25, H * 0.72, 0, 0, 1, false);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+
+                if (newSection !== oldSection) {
+                    sectionTransition = 1;
+                    // Respawn elements for new scene
+                    spawnPlatformNotes(energy);
+                    spawnSheetPages();
+
+                    if (newSection === 'finale') {
+                        spawnFinaleParticles();
+                    }
+                    if (newSection === 'curtaincall') {
+                        curtainTarget = 0.7;
+                    }
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            sectionTransition = Math.max(0, sectionTransition - dt * 2);
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Runner jump on strong beats (every 4th beat) during high energy
+                if (beat % 4 === 0 && energy > 0.4 && !runnerJumping) {
+                    runnerJumping = true;
+                    runnerVelY = -H * 0.008 * (1 + energy * 0.5);
+                }
+
+                // Flash on section changes
+                if (sectionTransition > 0.5) {
+                    flashAlpha = 0.3;
+                }
+
+                // Check note collections
+                for (var pi = 0; pi < platformNotes.length; pi++) {
+                    var pn = platformNotes[pi];
+                    if (pn.collected) continue;
+                    var pnScreenX = pn.relX - (scrollX % (W * 2));
+                    if (Math.abs(pnScreenX - runnerX) < 30 && Math.abs(runnerY - (runnerGroundY - pn.staffLine * H * 0.018)) < 30) {
+                        pn.collected = true;
+                        addCollectFlash(pnScreenX, runnerY);
+                        flashAlpha = Math.max(flashAlpha, 0.08);
+                    }
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Scroll speed driven by energy ──
+            var baseSpeed = 100 + energy * 200;
+            if (sectionMood === 'finale') baseSpeed *= 1.3;
+            if (sectionMood === 'sheetmusic') baseSpeed *= 1.5;
+            if (sectionMood === 'curtaincall') baseSpeed *= 0.3;
+            scrollX += baseSpeed * dt;
+
+            // ── Runner physics ──
+            runnerPhase += dt * (3 + energy * 6); // footstep speed from energy
+
+            if (runnerJumping) {
+                runnerVelY += H * 0.02 * dt; // gravity
+                runnerY += runnerVelY;
+                if (runnerY >= runnerGroundY) {
+                    runnerY = runnerGroundY;
+                    runnerVelY = 0;
+                    runnerJumping = false;
+                }
+            }
+
+            // Runner scale pulse on beat
+            runnerScale = 1 + beatPulse * 0.05;
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'finale' || sectionMood === 'practice') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+
+            // ── Draw scene based on section ──
+
+            // Background
+            if (sectionMood === 'practice') {
+                drawPracticeRoom(ctx, energy);
+            } else if (sectionMood === 'concert') {
+                drawConcertHall(ctx, energy);
+            } else if (sectionMood === 'sheetmusic') {
+                drawSheetMusicScene(ctx, energy);
+            } else if (sectionMood === 'finale') {
+                drawFinaleStage(ctx, energy);
+            } else if (sectionMood === 'curtaincall') {
+                drawCurtainCall(ctx, energy);
+            }
+
+            // ── Scrolling staff lines ──
+            var staffY = H * 0.55;
+            var staffAlpha = sectionMood === 'sheetmusic' ? 0.5 : 0.25;
+            if (sectionMood === 'finale') staffAlpha = 0.15;
+            if (sectionMood === 'curtaincall') staffAlpha = 0.1;
+            var staffSpacing = drawStaffSet(ctx, staffY, staffAlpha, W);
+
+            // ── Treble clefs (parallax background) ──
+            for (var ti = 0; ti < trebleClefs.length; ti++) {
+                var tc = trebleClefs[ti];
+                var tcX = (tc.x - scrollX * tc.speed * 0.01) % (W * 1.5);
+                if (tcX < -50) tcX += W * 1.5;
+                var tcBob = Math.sin(tc.bobPhase + scrollX * 0.003) * 10;
+                drawTrebleClef(ctx, tcX, tc.y + tcBob, tc.size, tc.alpha, SEPIA_MID);
+            }
+
+            // ── Flying sheet pages ──
+            if (sectionMood === 'sheetmusic' || sectionMood === 'finale') {
+                for (var si = 0; si < sheetPages.length; si++) {
+                    var sp = sheetPages[si];
+                    var spX = (sp.x - scrollX * 0.15) % (W * 2);
+                    if (spX < -100) spX += W * 2;
+                    sp.rotation += sp.rotSpeed * dt;
+                    var spY = sp.y + Math.sin(scrollX * 0.005 + si) * 20;
+                    drawSheetPage(ctx, spX, spY, sp.w, sp.h, sp.rotation, sp.alpha);
+                }
+            }
+
+            // ── Platform notes on staff lines ──
+            for (var pni = 0; pni < platformNotes.length; pni++) {
+                var note = platformNotes[pni];
+                if (note.collected) continue;
+                var noteX = note.relX - (scrollX % (W * 2));
+                if (noteX < -50 || noteX > W + 50) continue;
+                var noteY = staffY + note.staffLine * staffSpacing;
+                var bob = Math.sin(note.bobPhase + scrollX * 0.01) * 3;
+                var noteColor = GOLD;
+
+                if (note.type === 'eighth') {
+                    drawEighthNotePair(ctx, noteX, noteY + bob, note.size, 0.7, noteColor);
+                } else {
+                    drawQuarterNote(ctx, noteX, noteY + bob, note.size, 0.7, noteColor, true);
+                }
+            }
+
+            // ── Floating decorative notes ──
+            for (var fi = 0; fi < floatingNotes.length; fi++) {
+                var fn = floatingNotes[fi];
+                fn.x -= fn.speed * dt;
+                fn.y += fn.drift * dt;
+                if (fn.x < -20) { fn.x = W + 20 + Math.random() * W * 0.5; fn.y = Math.random() * H; }
+                if (fn.y < -20 || fn.y > H + 20) { fn.y = Math.random() * H; }
+
+                var fnColor = sectionMood === 'finale' ? GOLD : SEPIA_MID;
+                drawQuarterNote(ctx, fn.x, fn.y, fn.size, fn.alpha, fnColor, fn.type === 'quarter');
+            }
+
+            // ── Audience (concert/finale scenes) ──
+            if (sectionMood === 'concert' || sectionMood === 'finale' || sectionMood === 'curtaincall') {
+                ctx.save();
+                for (var ai = 0; ai < audienceHeads.length; ai++) {
+                    var ah = audienceHeads[ai];
+                    var abob = Math.sin(ah.phase + cursor.elapsed * ah.bobSpeed) * 4 * energy;
+                    var aAlpha = sectionMood === 'curtaincall' ? 0.4 : 0.25;
+                    ctx.globalAlpha = aAlpha;
+                    ctx.fillStyle = '#0a0808';
+                    ctx.beginPath();
+                    ctx.arc(ah.x, ah.y + abob, ah.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Shoulders
+                    ctx.beginPath();
+                    ctx.ellipse(ah.x, ah.y + ah.size * 1.2 + abob, ah.size * 1.5, ah.size * 0.8, 0, 0, Math.PI);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // ── Grand finale gold particles ──
+            if (sectionMood === 'finale') {
+                ctx.save();
+                for (var gi = 0; gi < grandFinaleParticles.length; gi++) {
+                    var gp = grandFinaleParticles[gi];
+                    gp.x += gp.vx * dt;
+                    gp.vy += 15 * dt; // slight gravity
+                    gp.y += gp.vy * dt;
+                    gp.life -= dt * 0.3;
+
+                    if (gp.life <= 0 || gp.y > H + 10) {
+                        gp.x = Math.random() * W;
+                        gp.y = -10;
+                        gp.vy = -20 - Math.random() * 80;
+                        gp.vx = (Math.random() - 0.5) * 40;
+                        gp.life = 0.5 + Math.random() * 0.5;
+                        gp.alpha = 0.3 + Math.random() * 0.7;
+                    }
+
+                    ctx.globalAlpha = gp.alpha * gp.life * (0.5 + energy * 0.5);
+                    ctx.fillStyle = gp.color;
+                    ctx.fillRect(gp.x, gp.y, gp.size, gp.size);
+                }
+                ctx.restore();
+            }
+
+            // ── Runner trail (high energy) ──
+            runnerTrailAlpha = lerpExp(runnerTrailAlpha, energy > 0.6 ? 0.3 : 0, 4, dt);
+            if (runnerTrailAlpha > 0.02) {
+                ctx.save();
+                ctx.globalAlpha = runnerTrailAlpha * 0.5;
+                drawRunner(ctx, runnerX - 20, runnerY + 2, runnerPhase - 0.4, energy, runnerScale * 0.95, runnerJumping);
+                ctx.globalAlpha = runnerTrailAlpha * 0.25;
+                drawRunner(ctx, runnerX - 40, runnerY + 4, runnerPhase - 0.8, energy, runnerScale * 0.9, runnerJumping);
+                ctx.restore();
+            }
+
+            // ── Runner ──
+            drawRunner(ctx, runnerX, runnerY, runnerPhase, energy, runnerScale, runnerJumping);
+
+            // ── Collection flashes ──
+            for (var cf = collectFlashes.length - 1; cf >= 0; cf--) {
+                var flash = collectFlashes[cf];
+                flash.alpha -= dt * 3;
+                flash.radius += dt * 80;
+                if (flash.alpha <= 0) {
+                    collectFlashes.splice(cf, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = flash.alpha;
+                ctx.strokeStyle = GOLD_BRIGHT;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(flash.x, flash.y, flash.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Small star burst
+                for (var star = 0; star < 4; star++) {
+                    var sAngle = star * Math.PI / 2 + flash.radius * 0.05;
+                    ctx.beginPath();
+                    ctx.moveTo(flash.x + Math.cos(sAngle) * flash.radius * 0.5, flash.y + Math.sin(sAngle) * flash.radius * 0.5);
+                    ctx.lineTo(flash.x + Math.cos(sAngle) * flash.radius, flash.y + Math.sin(sAngle) * flash.radius);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // ── Title ──
+            if (titleAlpha > 0.01) {
+                ctx.save();
+                var titleFontSize = Math.max(16, Math.min(W * 0.035, 42));
+                ctx.font = '900 ' + titleFontSize + 'px "Playfair Display", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                var titleY = H * 0.12;
+                var titleText = 'Classical Runner Overture';
+
+                // Shadow
+                ctx.globalAlpha = titleAlpha * 0.3;
+                ctx.fillStyle = SEPIA_DARK;
+                ctx.fillText(titleText, W / 2 + 2, titleY + 2);
+
+                // Main text
+                ctx.globalAlpha = titleAlpha;
+                if (sectionMood === 'finale') {
+                    ctx.fillStyle = GOLD_BRIGHT;
+                    ctx.shadowColor = 'rgba(180,150,60,0.5)';
+                    ctx.shadowBlur = 20;
+                } else {
+                    ctx.fillStyle = SEPIA_DARK;
+                    ctx.shadowColor = 'rgba(180,150,60,0.2)';
+                    ctx.shadowBlur = 10;
+                }
+                ctx.fillText(titleText, W / 2, titleY);
+
+                // Subtitle
+                if (sectionMood === 'practice') {
+                    ctx.font = 'italic 400 ' + (titleFontSize * 0.45) + 'px "EB Garamond", serif';
+                    ctx.globalAlpha = titleAlpha * 0.5;
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = SEPIA_MID;
+                    ctx.fillText('movement I: the practice room', W / 2, titleY + titleFontSize * 0.8);
+                } else if (sectionMood === 'finale') {
+                    ctx.font = 'italic 400 ' + (titleFontSize * 0.45) + 'px "EB Garamond", serif';
+                    ctx.globalAlpha = titleAlpha * 0.6;
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = GOLD;
+                    ctx.fillText('grand finale', W / 2, titleY + titleFontSize * 0.8);
+                }
+
+                ctx.restore();
+            }
+
+            // ── Beat pulse border vignette ──
+            if (beatPulse > 0.05) {
+                ctx.save();
+                var vigGrad = ctx.createRadialGradient(W/2, H/2, W * 0.3, W/2, H/2, W * 0.7);
+                vigGrad.addColorStop(0, 'rgba(180,150,60,0)');
+                vigGrad.addColorStop(1, 'rgba(180,150,60,' + (beatPulse * 0.1) + ')');
+                ctx.fillStyle = vigGrad;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // ── Section transition flash ──
+            if (sectionTransition > 0) {
+                ctx.save();
+                ctx.globalAlpha = sectionTransition * 0.3;
+                ctx.fillStyle = CREAM;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // ── Flash overlay ──
+            if (flashAlpha > 0.01) {
+                ctx.save();
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillStyle = GOLD_BRIGHT;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // ── Parchment vignette (always) ──
+            ctx.save();
+            var parchVig = ctx.createRadialGradient(W/2, H/2, W * 0.25, W/2, H/2, W * 0.75);
+            parchVig.addColorStop(0, 'rgba(0,0,0,0)');
+            parchVig.addColorStop(1, 'rgba(26,21,10,0.15)');
+            ctx.fillStyle = parchVig;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        return {
+            name: 'Classical Runner Overture',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('classical-runner-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/classical-runner-overture.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

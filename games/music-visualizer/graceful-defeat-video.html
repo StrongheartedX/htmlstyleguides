@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graceful Defeat — Chess Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0c0b10;
+            color: #fff;
+            font-family: 'Cormorant Garamond', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(12,11,16,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c9a84c;
+            text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 0 60px rgba(201,168,76,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+            letter-spacing: 0.15em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 2px solid #c9a84c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #c9a84c;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
+            50% { box-shadow: 0 0 0 20px rgba(201,168,76,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.35);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Graceful Defeat</div>
+        <div class="play-sub">a chess endgame in motion</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Graceful Defeat Video Renderer ─────────────────────────────────
+    window.Renderers['graceful-defeat-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG = '#0c0b10';
+        var MARBLE_WHITE = '#e8e0d0';
+        var OBSIDIAN = '#1a1820';
+        var GOLD = '#c9a84c';
+        var GOLD_DIM = '#8a6a2a';
+        var SHADOW_BLUE = '#3a4a6a';
+        var PETAL_COLORS = ['#c9a84c', '#e8e0d0', '#8a6a2a', '#3a4a6a', '#d4a0a0'];
+        var BOARD_LIGHT = '#d4cbb8';
+        var BOARD_DARK = '#4a4352';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'fanfare';
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+
+        // ── Chess Pieces ──
+        // Each piece: { type, side, x, y, targetX, targetY, alive, dissolving, dissolveT, angle, fallAngle, fallSpeed, scale }
+        var pieces = [];
+        var particles = [];
+        var petals = [];
+        var captureFlashes = [];
+        var clockTicks = [];
+        var kingFallProgress = 0;
+        var kingFallTarget = 0;
+
+        // Board geometry
+        var boardX = 0, boardY = 0, boardSize = 0, sqSize = 0;
+        var boardPerspective = 0.6; // vertical squish for perspective
+
+        // Piece shapes (simplified chess silhouettes drawn with canvas)
+        var PIECE_TYPES = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'];
+
+        function createPiece(type, side, col, row) {
+            return {
+                type: type,
+                side: side, // 'white' or 'black'
+                col: col, row: row,
+                x: 0, y: 0,
+                targetX: 0, targetY: 0,
+                alive: true,
+                dissolving: false,
+                dissolveT: 0,
+                angle: 0,
+                fallAngle: 0,
+                fallSpeed: 0,
+                scale: 1,
+                moveT: 1, // interpolation progress 0->1
+                glow: 0
+            };
+        }
+
+        function initPieces() {
+            pieces = [];
+            // White pieces (bottom)
+            pieces.push(createPiece('rook', 'white', 0, 7));
+            pieces.push(createPiece('knight', 'white', 1, 7));
+            pieces.push(createPiece('bishop', 'white', 2, 7));
+            pieces.push(createPiece('queen', 'white', 3, 7));
+            pieces.push(createPiece('king', 'white', 4, 7));
+            pieces.push(createPiece('bishop', 'white', 5, 7));
+            pieces.push(createPiece('knight', 'white', 6, 7));
+            pieces.push(createPiece('rook', 'white', 7, 7));
+            for (var i = 0; i < 8; i++) pieces.push(createPiece('pawn', 'white', i, 6));
+
+            // Black pieces (top)
+            pieces.push(createPiece('rook', 'black', 0, 0));
+            pieces.push(createPiece('knight', 'black', 1, 0));
+            pieces.push(createPiece('bishop', 'black', 2, 0));
+            pieces.push(createPiece('queen', 'black', 3, 0));
+            pieces.push(createPiece('king', 'black', 4, 0));
+            pieces.push(createPiece('bishop', 'black', 5, 0));
+            pieces.push(createPiece('knight', 'black', 6, 0));
+            pieces.push(createPiece('rook', 'black', 7, 0));
+            for (var j = 0; j < 8; j++) pieces.push(createPiece('pawn', 'black', j, 1));
+
+            updatePiecePositions();
+        }
+
+        function updatePiecePositions() {
+            for (var i = 0; i < pieces.length; i++) {
+                var p = pieces[i];
+                var pos = boardToScreen(p.col, p.row);
+                if (p.moveT >= 1) {
+                    p.x = pos.x;
+                    p.y = pos.y;
+                }
+                p.targetX = pos.x;
+                p.targetY = pos.y;
+            }
+        }
+
+        function boardToScreen(col, row) {
+            var x = boardX + (col + 0.5) * sqSize;
+            var y = boardY + (row + 0.5) * sqSize * boardPerspective;
+            return { x: x, y: y };
+        }
+
+        // ── Particle System ──
+        function spawnParticles(x, y, count, color, spread, speed) {
+            for (var i = 0; i < count; i++) {
+                var angle = Math.random() * Math.PI * 2;
+                var sp = speed * (0.3 + Math.random() * 0.7);
+                particles.push({
+                    x: x + (Math.random() - 0.5) * spread,
+                    y: y + (Math.random() - 0.5) * spread,
+                    vx: Math.cos(angle) * sp,
+                    vy: Math.sin(angle) * sp - speed * 0.5,
+                    life: 1,
+                    decay: 0.3 + Math.random() * 0.7,
+                    size: 1 + Math.random() * 3,
+                    color: color
+                });
+            }
+        }
+
+        function spawnPetals(x, y, count) {
+            for (var i = 0; i < count; i++) {
+                var angle = Math.random() * Math.PI * 2;
+                petals.push({
+                    x: x + (Math.random() - 0.5) * 40,
+                    y: y - Math.random() * 20,
+                    vx: Math.cos(angle) * (20 + Math.random() * 40),
+                    vy: -30 - Math.random() * 60,
+                    life: 1,
+                    decay: 0.15 + Math.random() * 0.25,
+                    size: 3 + Math.random() * 6,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 4,
+                    color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)]
+                });
+            }
+        }
+
+        // ── Ambient falling petals ──
+        var ambientPetals = [];
+
+        function initAmbientPetals() {
+            ambientPetals = [];
+            for (var i = 0; i < 30; i++) {
+                ambientPetals.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: -10 + Math.random() * 20,
+                    vy: 15 + Math.random() * 30,
+                    size: 2 + Math.random() * 4,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 2,
+                    sway: Math.random() * Math.PI * 2,
+                    swaySpeed: 0.5 + Math.random(),
+                    alpha: 0.1 + Math.random() * 0.3,
+                    color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)]
+                });
+            }
+        }
+
+        // ── Game Events (pre-scripted for song sections) ──
+        // Maps sequence indices to chess events
+        var gameScript = [];
+        var scriptIndex = 0;
+
+        function buildGameScript() {
+            gameScript = [];
+            // I. Fanfare (seq 0-1): pieces standing proud, opening position
+            // II. March Begins (seq 2-9): opening moves, pawns advance
+            gameScript.push({ seq: 2, action: 'move', side: 'white', type: 'pawn', fromCol: 4, fromRow: 6, toCol: 4, toRow: 4 });
+            gameScript.push({ seq: 3, action: 'move', side: 'black', type: 'pawn', fromCol: 4, fromRow: 1, toCol: 4, toRow: 3 });
+            gameScript.push({ seq: 4, action: 'move', side: 'white', type: 'knight', fromCol: 6, fromRow: 7, toCol: 5, toRow: 5 });
+            gameScript.push({ seq: 5, action: 'move', side: 'black', type: 'knight', fromCol: 1, fromRow: 0, toCol: 2, toRow: 2 });
+            gameScript.push({ seq: 6, action: 'move', side: 'white', type: 'bishop', fromCol: 5, fromRow: 7, toCol: 2, toRow: 4 });
+            gameScript.push({ seq: 7, action: 'move', side: 'black', type: 'pawn', fromCol: 3, fromRow: 1, toCol: 3, toRow: 3 });
+            // II repeat (seq 8-9): more tension
+            gameScript.push({ seq: 8, action: 'move', side: 'white', type: 'pawn', fromCol: 3, fromRow: 6, toCol: 3, toRow: 4 });
+            gameScript.push({ seq: 9, action: 'capture', side: 'black', type: 'pawn', fromCol: 4, fromRow: 3, toCol: 3, toRow: 4, captureType: 'pawn' });
+
+            // III. Gathering Strength (seq 10-15): escalating battles
+            gameScript.push({ seq: 10, action: 'capture', side: 'white', type: 'knight', fromCol: 5, fromRow: 5, toCol: 3, toRow: 4, captureType: 'pawn' });
+            gameScript.push({ seq: 11, action: 'capture', side: 'black', type: 'knight', fromCol: 2, fromRow: 2, toCol: 3, toRow: 4, captureType: 'knight' });
+            gameScript.push({ seq: 12, action: 'capture', side: 'white', type: 'bishop', fromCol: 2, fromRow: 4, toCol: 3, toRow: 3, captureType: 'pawn' });
+            gameScript.push({ seq: 13, action: 'move', side: 'black', type: 'queen', fromCol: 3, fromRow: 0, toCol: 5, toRow: 2 });
+            gameScript.push({ seq: 14, action: 'move', side: 'white', type: 'queen', fromCol: 3, fromRow: 7, toCol: 5, toRow: 5 });
+            gameScript.push({ seq: 15, action: 'capture', side: 'black', type: 'queen', fromCol: 5, fromRow: 2, toCol: 5, toRow: 5, captureType: 'queen' });
+
+            // IV. Vision of Victory (seq 16-19): dramatic sacrifice
+            gameScript.push({ seq: 16, action: 'capture', side: 'white', type: 'bishop', fromCol: 3, fromRow: 3, toCol: 5, toRow: 5, captureType: 'queen' });
+            gameScript.push({ seq: 17, action: 'move', side: 'black', type: 'bishop', fromCol: 2, fromRow: 0, toCol: 5, toRow: 3 });
+            gameScript.push({ seq: 18, action: 'capture', side: 'white', type: 'pawn', fromCol: 5, fromRow: 6, toCol: 5, toRow: 5, captureType: 'none' });
+            gameScript.push({ seq: 19, action: 'capture', side: 'black', type: 'bishop', fromCol: 5, fromRow: 3, toCol: 2, toRow: 6, captureType: 'pawn' });
+
+            // V. Acceptance (seq 20-25): final exchanges, inevitable
+            gameScript.push({ seq: 20, action: 'move', side: 'white', type: 'rook', fromCol: 0, fromRow: 7, toCol: 3, toRow: 7 });
+            gameScript.push({ seq: 21, action: 'move', side: 'black', type: 'rook', fromCol: 0, fromRow: 0, toCol: 3, toRow: 0 });
+            gameScript.push({ seq: 22, action: 'capture', side: 'white', type: 'rook', fromCol: 3, fromRow: 7, toCol: 3, toRow: 4, captureType: 'knight' });
+            gameScript.push({ seq: 23, action: 'move', side: 'black', type: 'rook', fromCol: 3, fromRow: 0, toCol: 3, toRow: 2 });
+            // Repeat/recap
+            gameScript.push({ seq: 26, action: 'move', side: 'white', type: 'king', fromCol: 4, fromRow: 7, toCol: 3, toRow: 7 });
+            gameScript.push({ seq: 27, action: 'move', side: 'black', type: 'rook', fromCol: 3, fromRow: 2, toCol: 4, toRow: 2 });
+            gameScript.push({ seq: 28, action: 'move', side: 'white', type: 'rook', fromCol: 3, fromRow: 4, toCol: 4, toRow: 4 });
+            gameScript.push({ seq: 29, action: 'capture', side: 'black', type: 'rook', fromCol: 4, fromRow: 2, toCol: 4, toRow: 4, captureType: 'rook' });
+            gameScript.push({ seq: 30, action: 'move', side: 'white', type: 'king', fromCol: 3, fromRow: 7, toCol: 3, toRow: 6 });
+
+            // VI. Coda (seq 33-35): checkmate, king falls
+            gameScript.push({ seq: 31, action: 'move', side: 'black', type: 'rook', fromCol: 4, fromRow: 4, toCol: 3, toRow: 4 });
+            gameScript.push({ seq: 33, action: 'king_falls' });
+
+            scriptIndex = 0;
+        }
+
+        function findPiece(side, type, col, row) {
+            for (var i = 0; i < pieces.length; i++) {
+                var p = pieces[i];
+                if (p.side === side && p.type === type && p.col === col && p.row === row && p.alive) {
+                    return p;
+                }
+            }
+            // Fallback: find any alive piece of that type/side
+            for (var j = 0; j < pieces.length; j++) {
+                var q = pieces[j];
+                if (q.side === side && q.type === type && q.alive) {
+                    return q;
+                }
+            }
+            return null;
+        }
+
+        function executeEvent(evt) {
+            if (evt.action === 'move') {
+                var p = findPiece(evt.side, evt.type, evt.fromCol, evt.fromRow);
+                if (p) {
+                    p.col = evt.toCol;
+                    p.row = evt.toRow;
+                    var dest = boardToScreen(evt.toCol, evt.toRow);
+                    p.targetX = dest.x;
+                    p.targetY = dest.y;
+                    p.moveT = 0;
+                    p.glow = 1;
+                }
+            } else if (evt.action === 'capture') {
+                // Remove captured piece
+                var victim = findPieceAt(evt.toCol, evt.toRow, evt.side === 'white' ? 'black' : 'white');
+                if (victim) {
+                    victim.dissolving = true;
+                    victim.dissolveT = 0;
+                    var vpos = boardToScreen(victim.col, victim.row);
+                    spawnParticles(vpos.x, vpos.y, 25, victim.side === 'white' ? MARBLE_WHITE : SHADOW_BLUE, 20, 80);
+                    spawnPetals(vpos.x, vpos.y, 8);
+                    captureFlashes.push({ x: vpos.x, y: vpos.y, t: 1 });
+                }
+                var mover = findPiece(evt.side, evt.type, evt.fromCol, evt.fromRow);
+                if (mover) {
+                    mover.col = evt.toCol;
+                    mover.row = evt.toRow;
+                    var dest2 = boardToScreen(evt.toCol, evt.toRow);
+                    mover.targetX = dest2.x;
+                    mover.targetY = dest2.y;
+                    mover.moveT = 0;
+                    mover.glow = 1;
+                }
+            } else if (evt.action === 'king_falls') {
+                kingFallTarget = 1;
+                // Massive particle burst
+                var whiteKing = findPiece('white', 'king', -1, -1);
+                if (whiteKing) {
+                    var kpos = boardToScreen(whiteKing.col, whiteKing.row);
+                    spawnParticles(kpos.x, kpos.y, 60, GOLD, 30, 120);
+                    spawnPetals(kpos.x, kpos.y, 20);
+                    captureFlashes.push({ x: kpos.x, y: kpos.y, t: 1.5 });
+                }
+            }
+        }
+
+        function findPieceAt(col, row, side) {
+            for (var i = 0; i < pieces.length; i++) {
+                var p = pieces[i];
+                if (p.col === col && p.row === row && p.side === side && p.alive && !p.dissolving) {
+                    return p;
+                }
+            }
+            return null;
+        }
+
+        // ── Section Mapping ──
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'fanfare';
+            if (seqIndex <= 9) return 'march';
+            if (seqIndex <= 15) return 'battle';
+            if (seqIndex <= 19) return 'sacrifice';
+            if (seqIndex <= 25) return 'checkmate';
+            if (seqIndex <= 31) return 'scattering';
+            if (seqIndex <= 32) return 'coda_bow';
+            if (seqIndex <= 34) return 'coda_echo';
+            return 'silence';
+        }
+
+        // ── Draw Chess Piece ──
+        function drawPieceShape(ctx, type, x, y, size, color, alpha, fallAngle) {
+            ctx.save();
+            ctx.translate(x, y);
+            if (fallAngle) ctx.rotate(fallAngle);
+            ctx.globalAlpha = alpha;
+
+            var s = size * 0.4;
+
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color === MARBLE_WHITE ? 'rgba(180,170,150,0.6)' : 'rgba(80,70,90,0.6)';
+            ctx.lineWidth = 1.5;
+
+            if (type === 'king') {
+                // Crown + cross
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.4, 0);
+                ctx.lineTo(-s * 0.5, -s * 0.5);
+                ctx.lineTo(-s * 0.2, -s * 0.35);
+                ctx.lineTo(0, -s * 0.7);
+                ctx.lineTo(s * 0.2, -s * 0.35);
+                ctx.lineTo(s * 0.5, -s * 0.5);
+                ctx.lineTo(s * 0.4, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                // Cross
+                ctx.fillRect(-s * 0.05, -s * 0.95, s * 0.1, s * 0.3);
+                ctx.fillRect(-s * 0.12, -s * 0.82, s * 0.24, s * 0.08);
+                // Base
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.15, s * 0.5, s * 0.12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else if (type === 'queen') {
+                // Crown with points
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.4, 0);
+                ctx.lineTo(-s * 0.5, -s * 0.6);
+                ctx.lineTo(-s * 0.25, -s * 0.3);
+                ctx.lineTo(-s * 0.1, -s * 0.7);
+                ctx.lineTo(0, -s * 0.35);
+                ctx.lineTo(s * 0.1, -s * 0.7);
+                ctx.lineTo(s * 0.25, -s * 0.3);
+                ctx.lineTo(s * 0.5, -s * 0.6);
+                ctx.lineTo(s * 0.4, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                // Ball on top
+                ctx.beginPath();
+                ctx.arc(0, -s * 0.78, s * 0.08, 0, Math.PI * 2);
+                ctx.fill();
+                // Base
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.15, s * 0.45, s * 0.1, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else if (type === 'rook') {
+                // Castle shape
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.35, 0);
+                ctx.lineTo(-s * 0.35, -s * 0.45);
+                ctx.lineTo(-s * 0.4, -s * 0.45);
+                ctx.lineTo(-s * 0.4, -s * 0.6);
+                ctx.lineTo(-s * 0.2, -s * 0.6);
+                ctx.lineTo(-s * 0.2, -s * 0.45);
+                ctx.lineTo(-s * 0.05, -s * 0.45);
+                ctx.lineTo(-s * 0.05, -s * 0.6);
+                ctx.lineTo(s * 0.05, -s * 0.6);
+                ctx.lineTo(s * 0.05, -s * 0.45);
+                ctx.lineTo(s * 0.2, -s * 0.45);
+                ctx.lineTo(s * 0.2, -s * 0.6);
+                ctx.lineTo(s * 0.4, -s * 0.6);
+                ctx.lineTo(s * 0.4, -s * 0.45);
+                ctx.lineTo(s * 0.35, -s * 0.45);
+                ctx.lineTo(s * 0.35, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                // Base
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.12, s * 0.4, s * 0.1, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else if (type === 'bishop') {
+                // Mitre shape
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.3, 0);
+                ctx.quadraticCurveTo(-s * 0.35, -s * 0.3, -s * 0.15, -s * 0.55);
+                ctx.quadraticCurveTo(0, -s * 0.8, s * 0.15, -s * 0.55);
+                ctx.quadraticCurveTo(s * 0.35, -s * 0.3, s * 0.3, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                // Slit
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.06, -s * 0.3);
+                ctx.lineTo(0, -s * 0.55);
+                ctx.lineTo(s * 0.06, -s * 0.3);
+                ctx.strokeStyle = color === MARBLE_WHITE ? '#b0a890' : '#2a2535';
+                ctx.stroke();
+                // Base
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.12, s * 0.35, s * 0.1, 0, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+            } else if (type === 'knight') {
+                // Horse head
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.25, 0);
+                ctx.lineTo(-s * 0.3, -s * 0.2);
+                ctx.quadraticCurveTo(-s * 0.35, -s * 0.5, -s * 0.1, -s * 0.65);
+                ctx.lineTo(s * 0.15, -s * 0.7);
+                ctx.quadraticCurveTo(s * 0.3, -s * 0.55, s * 0.2, -s * 0.35);
+                ctx.lineTo(s * 0.35, -s * 0.25);
+                ctx.quadraticCurveTo(s * 0.35, -s * 0.1, s * 0.25, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                // Eye
+                ctx.beginPath();
+                ctx.arc(s * 0.05, -s * 0.45, s * 0.04, 0, Math.PI * 2);
+                ctx.fillStyle = color === MARBLE_WHITE ? '#444' : '#888';
+                ctx.fill();
+                // Base
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.12, s * 0.35, s * 0.1, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'pawn') {
+                // Simple pawn
+                ctx.beginPath();
+                ctx.arc(0, -s * 0.4, s * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.12, -s * 0.25);
+                ctx.lineTo(-s * 0.25, 0);
+                ctx.lineTo(s * 0.25, 0);
+                ctx.lineTo(s * 0.12, -s * 0.25);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(0, s * 0.1, s * 0.3, s * 0.08, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw Board ──
+        function drawBoard(ctx, energy) {
+            ctx.save();
+
+            // Board shadow
+            var shadowOff = 6;
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(boardX + shadowOff, boardY + shadowOff, sqSize * 8, sqSize * 8 * boardPerspective);
+
+            // Draw squares
+            for (var row = 0; row < 8; row++) {
+                for (var col = 0; col < 8; col++) {
+                    var isLight = (row + col) % 2 === 0;
+                    var sx = boardX + col * sqSize;
+                    var sy = boardY + row * sqSize * boardPerspective;
+                    var sh = sqSize * boardPerspective;
+
+                    ctx.fillStyle = isLight ? BOARD_LIGHT : BOARD_DARK;
+
+                    // Subtle energy pulse on dark squares
+                    if (!isLight && energy > 0.3) {
+                        var pulse = beatPulse * energy * 0.15;
+                        var r2 = parseInt(BOARD_DARK.slice(1,3), 16);
+                        var g2 = parseInt(BOARD_DARK.slice(3,5), 16);
+                        var b2 = parseInt(BOARD_DARK.slice(5,7), 16);
+                        r2 = Math.min(255, r2 + pulse * 40);
+                        g2 = Math.min(255, g2 + pulse * 30);
+                        b2 = Math.min(255, b2 + pulse * 50);
+                        ctx.fillStyle = 'rgb(' + Math.floor(r2) + ',' + Math.floor(g2) + ',' + Math.floor(b2) + ')';
+                    }
+
+                    ctx.fillRect(sx, sy, sqSize, sh);
+                }
+            }
+
+            // Board border (gold trim)
+            ctx.strokeStyle = GOLD_DIM;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boardX - 2, boardY - 2, sqSize * 8 + 4, sqSize * 8 * boardPerspective + 4);
+
+            // Reflective highlight on edge
+            var grad = ctx.createLinearGradient(boardX, boardY, boardX, boardY + sqSize * 8 * boardPerspective);
+            grad.addColorStop(0, 'rgba(255,255,255,0.05)');
+            grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+            grad.addColorStop(1, 'rgba(201,168,76,0.03)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(boardX, boardY, sqSize * 8, sqSize * 8 * boardPerspective);
+
+            ctx.restore();
+        }
+
+        // ── Draw Reflections ──
+        function drawReflections(ctx, energy) {
+            ctx.save();
+            var refY = boardY + sqSize * 8 * boardPerspective;
+            var refH = H - refY;
+            if (refH <= 0) { ctx.restore(); return; }
+
+            // Dark reflective surface
+            var grad = ctx.createLinearGradient(0, refY, 0, refY + refH);
+            grad.addColorStop(0, 'rgba(12,11,16,0.7)');
+            grad.addColorStop(1, 'rgba(12,11,16,1)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, refY, W, refH);
+
+            // Faint gold line at board edge
+            ctx.strokeStyle = 'rgba(201,168,76,' + (0.1 + energy * 0.15 + beatPulse * 0.1) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(boardX, refY);
+            ctx.lineTo(boardX + sqSize * 8, refY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.font = '700 ' + fontSize + 'px "Cormorant Garamond", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = GOLD;
+            ctx.fillText('GRACEFUL DEFEAT', W / 2, H * 0.08);
+
+            // Subtitle during coda
+            if (sectionMood === 'coda_bow' || sectionMood === 'coda_echo' || sectionMood === 'silence') {
+                var subSize = Math.max(11, fontSize * 0.4);
+                ctx.font = '400 ' + subSize + 'px "Cormorant Garamond", serif';
+                ctx.globalAlpha = titleAlpha * 0.6;
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = MARBLE_WHITE;
+                ctx.fillText('the king bows', W / 2, H * 0.08 + fontSize * 0.8);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Clock Tick Visual ──
+        function drawClockTick(ctx) {
+            if (clockTicks.length === 0) return;
+            ctx.save();
+            for (var i = clockTicks.length - 1; i >= 0; i--) {
+                var ct = clockTicks[i];
+                var alpha = ct.t * 0.4;
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = GOLD;
+                ctx.lineWidth = 1.5;
+                var r = 20 + (1 - ct.t) * 30;
+                ctx.beginPath();
+                ctx.arc(ct.x, ct.y, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = GOLD;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Vignette ──
+        function drawVignette(ctx) {
+            ctx.save();
+            var grad = ctx.createRadialGradient(W / 2, H / 2, W * 0.2, W / 2, H / 2, W * 0.8);
+            grad.addColorStop(0, 'rgba(12,11,16,0)');
+            grad.addColorStop(1, 'rgba(12,11,16,0.7)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Spotlight from above ──
+        function drawSpotlight(ctx, energy) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var cx = W / 2;
+            var brightness = 0.03 + energy * 0.06 + beatPulse * 0.04;
+            brightness *= introFadeIn * outroFadeOut;
+
+            var grad = ctx.createRadialGradient(cx, boardY - 50, 0, cx, boardY + sqSize * 4, W * 0.5);
+            grad.addColorStop(0, 'rgba(201,168,76,' + brightness + ')');
+            grad.addColorStop(0.5, 'rgba(201,168,76,' + (brightness * 0.3) + ')');
+            grad.addColorStop(1, 'rgba(201,168,76,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Side spotlights during battle
+            if (sectionMood === 'battle' || sectionMood === 'sacrifice') {
+                var sideB = brightness * 0.5;
+                var grad2 = ctx.createRadialGradient(W * 0.15, 0, 0, W * 0.15, H * 0.5, W * 0.3);
+                grad2.addColorStop(0, 'rgba(58,74,106,' + sideB + ')');
+                grad2.addColorStop(1, 'rgba(58,74,106,0)');
+                ctx.fillStyle = grad2;
+                ctx.fillRect(0, 0, W, H);
+
+                var grad3 = ctx.createRadialGradient(W * 0.85, 0, 0, W * 0.85, H * 0.5, W * 0.3);
+                grad3.addColorStop(0, 'rgba(58,74,106,' + sideB + ')');
+                grad3.addColorStop(1, 'rgba(58,74,106,0)');
+                ctx.fillStyle = grad3;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Lerp helper ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+
+            // Board geometry: centered, with perspective
+            var maxBoardW = W * 0.55;
+            var maxBoardH = H * 0.65;
+            sqSize = Math.min(maxBoardW / 8, maxBoardH / (8 * boardPerspective));
+            boardSize = sqSize * 8;
+            boardX = (W - boardSize) / 2;
+            boardY = H * 0.14;
+
+            initPieces();
+            buildGameScript();
+            initAmbientPetals();
+
+            particles = [];
+            petals = [];
+            captureFlashes = [];
+            clockTicks = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            titleAlpha = 0;
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            lastSeqIndex = -1;
+            sectionMood = 'fanfare';
+            kingFallProgress = 0;
+            kingFallTarget = 0;
+            scriptIndex = 0;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            var maxBoardW = W * 0.55;
+            var maxBoardH = H * 0.65;
+            sqSize = Math.min(maxBoardW / 8, maxBoardH / (8 * boardPerspective));
+            boardSize = sqSize * 8;
+            boardX = (W - boardSize) / 2;
+            boardY = H * 0.14;
+            updatePiecePositions();
+            initAmbientPetals();
+        }
+
+        // ── Main Render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: draw board and static pieces
+                drawBoard(ctx, 0);
+                drawReflections(ctx, 0);
+                for (var ip = 0; ip < pieces.length; ip++) {
+                    var pp = pieces[ip];
+                    if (pp.alive && !pp.dissolving) {
+                        drawPieceShape(ctx, pp.type, pp.x, pp.y, sqSize, pp.side === 'white' ? MARBLE_WHITE : OBSIDIAN, 0.6, 0);
+                    }
+                }
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+
+                // Flash on significant section changes
+                if (newSection === 'battle' || newSection === 'sacrifice') {
+                    flashAlpha = 0.15;
+                }
+                if (newSection === 'coda_bow') {
+                    flashAlpha = 0.25;
+                }
+
+                // Execute game script events
+                while (scriptIndex < gameScript.length && gameScript[scriptIndex].seq <= seqIdx) {
+                    executeEvent(gameScript[scriptIndex]);
+                    scriptIndex++;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Intro/Outro fades ──
+            if (sectionMood === 'fanfare') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.4);
+            } else {
+                introFadeIn = 1;
+            }
+
+            if (sectionMood === 'silence') {
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.2);
+            } else {
+                outroFadeOut = 1;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Clock tick on every beat
+                var clockX = boardX + boardSize + sqSize * 0.8;
+                var clockY = boardY + sqSize * 2 * boardPerspective;
+                if (clockX < W - 20) {
+                    clockTicks.push({ x: clockX, y: clockY, t: 1 });
+                }
+
+                // Spawn ambient particles on energetic beats
+                if (energy > 0.4) {
+                    var px = boardX + Math.random() * boardSize;
+                    var py = boardY + Math.random() * boardSize * boardPerspective * 0.8;
+                    spawnParticles(px, py, Math.floor(energy * 8), GOLD, 15, 40 + energy * 40);
+                }
+            }
+            lastBeat = beat;
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Title logic ──
+            if (sectionMood === 'fanfare' || sectionMood === 'coda_bow' || sectionMood === 'coda_echo' || sectionMood === 'silence') {
+                titleTarget = 1;
+            } else if (sectionMood === 'sacrifice') {
+                titleTarget = 0.5;
+            } else {
+                titleTarget = 0;
+            }
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 3, dt);
+
+            // ── King fall ──
+            kingFallProgress = lerpSmooth(kingFallProgress, kingFallTarget, 1.5, dt);
+
+            // ── Update pieces ──
+            for (var up = 0; up < pieces.length; up++) {
+                var piece = pieces[up];
+                if (!piece.alive) continue;
+
+                if (piece.dissolving) {
+                    piece.dissolveT += dt * 0.8;
+                    if (piece.dissolveT >= 1) {
+                        piece.alive = false;
+                    }
+                    continue;
+                }
+
+                // Smooth movement
+                if (piece.moveT < 1) {
+                    piece.moveT = Math.min(1, piece.moveT + dt * 3);
+                    var t = piece.moveT;
+                    // Ease-out cubic
+                    var et = 1 - Math.pow(1 - t, 3);
+                    piece.x = lerp(piece.x, piece.targetX, et);
+                    piece.y = lerp(piece.y, piece.targetY, et);
+                } else {
+                    piece.x = piece.targetX;
+                    piece.y = piece.targetY;
+                }
+
+                piece.glow *= Math.exp(-3 * dt);
+
+                // King topple
+                if (piece.type === 'king' && piece.side === 'white' && kingFallProgress > 0.01) {
+                    piece.fallAngle = kingFallProgress * Math.PI * 0.4;
+                    piece.fallSpeed = kingFallProgress;
+                }
+            }
+
+            // ── Update particles ──
+            for (var pi = particles.length - 1; pi >= 0; pi--) {
+                var part = particles[pi];
+                part.x += part.vx * dt;
+                part.y += part.vy * dt;
+                part.vy += 80 * dt; // gravity
+                part.life -= part.decay * dt;
+                if (part.life <= 0) particles.splice(pi, 1);
+            }
+
+            // ── Update petals ──
+            for (var pti = petals.length - 1; pti >= 0; pti--) {
+                var pet = petals[pti];
+                pet.x += pet.vx * dt;
+                pet.y += pet.vy * dt;
+                pet.vy += 40 * dt;
+                pet.vx *= 0.98;
+                pet.rotation += pet.rotSpeed * dt;
+                pet.life -= pet.decay * dt;
+                if (pet.life <= 0) petals.splice(pti, 1);
+            }
+
+            // ── Update ambient petals ──
+            for (var api = 0; api < ambientPetals.length; api++) {
+                var ap = ambientPetals[api];
+                ap.sway += ap.swaySpeed * dt;
+                ap.x += (ap.vx + Math.sin(ap.sway) * 15) * dt;
+                ap.y += ap.vy * dt;
+                ap.rotation += ap.rotSpeed * dt;
+                if (ap.y > H + 10) {
+                    ap.y = -10;
+                    ap.x = Math.random() * W;
+                }
+                if (ap.x < -10) ap.x = W + 10;
+                if (ap.x > W + 10) ap.x = -10;
+            }
+
+            // ── Update capture flashes ──
+            for (var cfi = captureFlashes.length - 1; cfi >= 0; cfi--) {
+                captureFlashes[cfi].t -= dt * 1.5;
+                if (captureFlashes[cfi].t <= 0) captureFlashes.splice(cfi, 1);
+            }
+
+            // ── Update clock ticks ──
+            for (var cti = clockTicks.length - 1; cti >= 0; cti--) {
+                clockTicks[cti].t -= dt * 2;
+                if (clockTicks[cti].t <= 0) clockTicks.splice(cti, 1);
+            }
+
+            // ── DRAW SCENE ──
+
+            // 1. Spotlights
+            drawSpotlight(ctx, energy);
+
+            // 2. Board
+            drawBoard(ctx, energy);
+
+            // 3. Capture flashes (on board)
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var cf2 = 0; cf2 < captureFlashes.length; cf2++) {
+                var flash = captureFlashes[cf2];
+                var fr = 10 + (1 - flash.t) * sqSize * 1.5;
+                var grad = ctx.createRadialGradient(flash.x, flash.y, 0, flash.x, flash.y, fr);
+                grad.addColorStop(0, 'rgba(201,168,76,' + (flash.t * 0.6) + ')');
+                grad.addColorStop(0.5, 'rgba(232,224,208,' + (flash.t * 0.3) + ')');
+                grad.addColorStop(1, 'rgba(201,168,76,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(flash.x - fr, flash.y - fr, fr * 2, fr * 2);
+            }
+            ctx.restore();
+
+            // 4. Pieces
+            for (var dp = 0; dp < pieces.length; dp++) {
+                var dpc = pieces[dp];
+                if (!dpc.alive) continue;
+
+                var pAlpha = 1;
+                if (dpc.dissolving) {
+                    pAlpha = 1 - dpc.dissolveT;
+                    // Dissolving pieces shimmer
+                    if (Math.random() < 0.3) {
+                        spawnParticles(dpc.x + (Math.random() - 0.5) * sqSize * 0.3, dpc.y, 1,
+                            dpc.side === 'white' ? MARBLE_WHITE : SHADOW_BLUE, 5, 30);
+                    }
+                }
+
+                pAlpha *= introFadeIn * outroFadeOut;
+
+                var baseColor = dpc.side === 'white' ? MARBLE_WHITE : OBSIDIAN;
+
+                // Glow effect for recently moved pieces
+                if (dpc.glow > 0.05) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    var glowR = sqSize * 0.6;
+                    var gGrad = ctx.createRadialGradient(dpc.x, dpc.y, 0, dpc.x, dpc.y, glowR);
+                    gGrad.addColorStop(0, 'rgba(201,168,76,' + (dpc.glow * 0.3) + ')');
+                    gGrad.addColorStop(1, 'rgba(201,168,76,0)');
+                    ctx.fillStyle = gGrad;
+                    ctx.fillRect(dpc.x - glowR, dpc.y - glowR, glowR * 2, glowR * 2);
+                    ctx.restore();
+                }
+
+                // Subtle beat bob for alive pieces
+                var bob = 0;
+                if (!dpc.dissolving && energy > 0.2) {
+                    bob = -beatPulse * energy * sqSize * 0.03;
+                }
+
+                drawPieceShape(ctx, dpc.type, dpc.x, dpc.y + bob, sqSize, baseColor, pAlpha, dpc.fallAngle || 0);
+
+                // Shadow on board
+                if (!dpc.dissolving) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.15 * pAlpha;
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.ellipse(dpc.x + 3, dpc.y + sqSize * 0.2, sqSize * 0.2, sqSize * 0.06, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // 5. Reflections below board
+            drawReflections(ctx, energy);
+
+            // 6. Particles
+            ctx.save();
+            for (var pdi = 0; pdi < particles.length; pdi++) {
+                var par = particles[pdi];
+                ctx.globalAlpha = par.life * introFadeIn * outroFadeOut;
+                ctx.fillStyle = par.color;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = par.color;
+                ctx.fillRect(par.x - par.size / 2, par.y - par.size / 2, par.size, par.size);
+            }
+            ctx.restore();
+
+            // 7. Petals (burst)
+            ctx.save();
+            for (var pei = 0; pei < petals.length; pei++) {
+                var pel = petals[pei];
+                ctx.save();
+                ctx.globalAlpha = pel.life * 0.8 * introFadeIn * outroFadeOut;
+                ctx.translate(pel.x, pel.y);
+                ctx.rotate(pel.rotation);
+                ctx.fillStyle = pel.color;
+                // Leaf/petal shape
+                ctx.beginPath();
+                ctx.ellipse(0, 0, pel.size, pel.size * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // 8. Ambient petals
+            ctx.save();
+            var ambientAlpha = 0.15 + energy * 0.1;
+            if (sectionMood === 'coda_bow' || sectionMood === 'coda_echo' || sectionMood === 'silence') {
+                ambientAlpha *= 2;
+            }
+            for (var ai = 0; ai < ambientPetals.length; ai++) {
+                var abp = ambientPetals[ai];
+                ctx.save();
+                ctx.globalAlpha = abp.alpha * ambientAlpha * introFadeIn * outroFadeOut;
+                ctx.translate(abp.x, abp.y);
+                ctx.rotate(abp.rotation);
+                ctx.fillStyle = abp.color;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, abp.size, abp.size * 0.35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // 9. Clock tick rings
+            drawClockTick(ctx);
+
+            // 10. Title
+            drawTitle(ctx);
+
+            // 11. Vignette
+            drawVignette(ctx);
+
+            // 12. Flash
+            drawFlash(ctx);
+
+            // 13. Outro fade to black
+            if (outroFadeOut < 1) {
+                ctx.save();
+                ctx.globalAlpha = 1 - outroFadeOut;
+                ctx.fillStyle = BG;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Graceful Defeat Chess Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('graceful-defeat-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/graceful-defeat.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
