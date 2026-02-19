@@ -71,6 +71,7 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | memphis | npm / yarn / pnpm | |
 | midcentury | | The Space Race |
 | moroccan | | The Geometer's Garden |
+| mozarts-study | | |
 | mughal | | |
 | neo-void | | |
 | neon-brutal | | The Strip |
