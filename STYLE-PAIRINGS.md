@@ -102,7 +102,7 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | suprematism | | |
 | swiss-international | Python & pip | |
 | swiss | | |
-| synthwave | DOM & Node.js | |
+| synthwave | | |
 | talavera | | |
 | terrazzo-atelier | | |
 | tropical | | |
