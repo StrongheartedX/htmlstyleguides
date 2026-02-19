@@ -554,9 +554,9 @@
             stripZoom = lerpExp(stripZoom, targetZoom, 0.8, dt);
 
             ctx.save();
-            // Apply subtle zoom centered on bottom-center
+            // Apply subtle zoom centered on skyline area
             var zoomCX = W * 0.5;
-            var zoomCY = H * 0.75;
+            var zoomCY = H * 0.45;
             ctx.translate(zoomCX, zoomCY);
             ctx.scale(stripZoom, stripZoom);
             ctx.translate(-zoomCX, -zoomCY);
@@ -3033,7 +3033,7 @@
                 lastSeqIndex = seqIdx;
             }
 
-            sceneTransition = Math.max(0, sceneTransition - dt * 1.5);
+            sceneTransition = Math.max(0, sceneTransition - dt * 2.5);
             flashAlpha *= Math.exp(-4 * dt);
             sceneTime += dt;
 
@@ -3059,16 +3059,13 @@
 
             // ── Draw scene with crossfade ──
             if (sceneTransition > 0.01) {
-                // Draw previous scene fading out
+                // Draw current scene at full alpha (fills canvas with its own bg)
+                drawSceneByIndex(currentScene, ctx, dt, cursor, energy, beatPulse);
+
+                // Draw previous scene fading out on top
                 ctx.save();
                 ctx.globalAlpha = sceneTransition;
                 drawSceneByIndex(prevScene, ctx, dt, cursor, energy, beatPulse);
-                ctx.restore();
-
-                // Draw current scene fading in
-                ctx.save();
-                ctx.globalAlpha = 1 - sceneTransition;
-                drawSceneByIndex(currentScene, ctx, dt, cursor, energy, beatPulse);
                 ctx.restore();
             } else {
                 drawSceneByIndex(currentScene, ctx, dt, cursor, energy, beatPulse);
@@ -3088,14 +3085,18 @@
         }
 
         function drawSceneByIndex(sceneIdx, ctx, dt, cursor, energy, bp) {
-            switch (sceneIdx) {
-                case 0: drawStripScene(ctx, dt, cursor, energy, bp); break;
-                case 1: drawLoungeScene(ctx, dt, cursor, energy, bp); break;
-                case 2: drawCasinoFloorScene(ctx, dt, cursor, energy, bp); break;
-                case 3: drawTableScene(ctx, dt, cursor, energy, bp); break;
-                case 4: drawAllInScene(ctx, dt, cursor, energy, bp); break;
-                case 5: drawJackpotScene(ctx, dt, cursor, energy, bp); break;
-                case 6: drawDawnScene(ctx, dt, cursor, energy, bp); break;
+            try {
+                switch (sceneIdx) {
+                    case 0: drawStripScene(ctx, dt, cursor, energy, bp); break;
+                    case 1: drawLoungeScene(ctx, dt, cursor, energy, bp); break;
+                    case 2: drawCasinoFloorScene(ctx, dt, cursor, energy, bp); break;
+                    case 3: drawTableScene(ctx, dt, cursor, energy, bp); break;
+                    case 4: drawAllInScene(ctx, dt, cursor, energy, bp); break;
+                    case 5: drawJackpotScene(ctx, dt, cursor, energy, bp); break;
+                    case 6: drawDawnScene(ctx, dt, cursor, energy, bp); break;
+                }
+            } catch (e) {
+                console.error('Scene ' + sceneIdx + ' render error:', e);
             }
         }
 
