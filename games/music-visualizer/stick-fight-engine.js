@@ -796,6 +796,296 @@
         }
     }
 
+    // ══════════════════ PHASE 4 — Gore & Effects ══════════════════
+
+    // ── Blood particle pool ────────────────────────────────────────
+    var _bloodParticles = [];
+
+    function spawnBlood(x, y, count, impulseX, impulseY) {
+        for (var i = 0; i < count; i++) {
+            var spread = 0.6 + Math.random() * 0.8;
+            var angle = Math.random() * Math.PI * 2;
+            _bloodParticles.push({
+                x: x,
+                y: y,
+                vx: (impulseX || 0) * spread + Math.cos(angle) * 60 * Math.random(),
+                vy: (impulseY || 0) * spread + Math.sin(angle) * 60 * Math.random(),
+                radius: 1 + Math.random() * 2,
+                alpha: 1,
+                grounded: false,
+                life: 3
+            });
+        }
+    }
+
+    function updateBloodParticles(dt, groundY) {
+        var gravity = 1200;
+        var i = _bloodParticles.length;
+        while (i--) {
+            var p = _bloodParticles[i];
+            if (p.grounded) {
+                p.life -= dt;
+                p.alpha = Math.max(0, p.life / 3);
+                if (p.life <= 0) {
+                    _bloodParticles.splice(i, 1);
+                }
+                continue;
+            }
+            p.vy += gravity * dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            if (p.y >= groundY) {
+                p.y = groundY;
+                p.grounded = true;
+                p.vx = 0;
+                p.vy = 0;
+            }
+        }
+    }
+
+    function drawBloodParticles(ctx) {
+        for (var i = 0; i < _bloodParticles.length; i++) {
+            var p = _bloodParticles[i];
+            ctx.fillStyle = 'rgba(180, 20, 20, ' + p.alpha + ')';
+            if (p.grounded) {
+                // Flatten to ellipse splat
+                ctx.beginPath();
+                ctx.ellipse(p.x, p.y, p.radius * 2, p.radius * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    // ── Dismemberment system ───────────────────────────────────────
+    var _detachedLimbs = [];
+
+    // Limb definitions: which joints form each limb
+    var LIMB_JOINTS = {
+        armR:  ['shoulderR', 'elbowR', 'handR'],
+        armL:  ['shoulderL', 'elbowL', 'handL'],
+        legR:  ['hip', 'kneeR', 'ankleR'],
+        legL:  ['hip', 'kneeL', 'ankleL'],
+        head:  ['neck', 'head']
+    };
+
+    function detachLimb(fig, limbName, groundY) {
+        var jointNames = LIMB_JOINTS[limbName];
+        if (!jointNames) return;
+
+        var joints = computeJoints(fig);
+        var pts = [];
+        var dists = [];
+
+        for (var i = 0; i < jointNames.length; i++) {
+            var j = joints[jointNames[i]];
+            var pt = createPoint(fig.x + j.x, fig.y + j.y);
+            // Random detach impulse
+            pt.px = pt.x - (Math.random() - 0.5) * 3;
+            pt.py = pt.y + Math.random() * 2;
+            pts.push(pt);
+        }
+
+        for (var c = 0; c < pts.length - 1; c++) {
+            var a = pts[c];
+            var b = pts[c + 1];
+            var dx = b.x - a.x;
+            var dy = b.y - a.y;
+            dists.push(Math.sqrt(dx * dx + dy * dy));
+        }
+
+        _detachedLimbs.push({
+            pts: pts,
+            dists: dists,
+            groundY: groundY,
+            gravity: 1200,
+            bounce: 0.3,
+            friction: 0.85,
+            color: fig.color,
+            lineWidth: fig.lineWidth,
+            headR: (limbName === 'head') ? joints.headR : 0,
+            settled: false,
+            settleTimer: 0
+        });
+
+        // Spawn blood at detach point
+        var base = pts[0];
+        spawnBlood(base.x, base.y, 8, (Math.random() - 0.5) * 100, -150);
+    }
+
+    function updateDetachedLimbs(dt) {
+        for (var li = 0; li < _detachedLimbs.length; li++) {
+            var limb = _detachedLimbs[li];
+            if (limb.settled) continue;
+
+            var pts = limb.pts;
+            var g = limb.gravity;
+            var groundY = limb.groundY;
+
+            // Verlet integration
+            for (var i = 0; i < pts.length; i++) {
+                var p = pts[i];
+                var vx = p.x - p.px;
+                var vy = p.y - p.py;
+                p.px = p.x;
+                p.py = p.y;
+                p.x += vx * 0.99;
+                p.y += vy * 0.99 + g * dt * dt;
+            }
+
+            // Constraint projection (4 iterations)
+            for (var iter = 0; iter < 4; iter++) {
+                for (var c = 0; c < limb.dists.length; c++) {
+                    var a = pts[c];
+                    var b = pts[c + 1];
+                    var dx = b.x - a.x;
+                    var dy = b.y - a.y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    var target = limb.dists[c];
+                    if (dist < 0.001) dist = 0.001;
+                    var diff = (dist - target) / dist * 0.5;
+                    var ox = dx * diff;
+                    var oy = dy * diff;
+                    a.x += ox;
+                    a.y += oy;
+                    b.x -= ox;
+                    b.y -= oy;
+                }
+            }
+
+            // Ground collision + settle detection
+            var totalVel = 0;
+            for (var gi = 0; gi < pts.length; gi++) {
+                var p2 = pts[gi];
+                if (p2.y > groundY) {
+                    p2.y = groundY;
+                    var vy2 = p2.y - p2.py;
+                    p2.py = p2.y + vy2 * limb.bounce;
+                    var vx2 = p2.x - p2.px;
+                    p2.px = p2.x - vx2 * limb.friction;
+                }
+                var dvx = p2.x - p2.px;
+                var dvy = p2.y - p2.py;
+                totalVel += dvx * dvx + dvy * dvy;
+            }
+
+            if (totalVel < 0.5) {
+                limb.settleTimer += dt;
+                if (limb.settleTimer > 0.5) limb.settled = true;
+            } else {
+                limb.settleTimer = 0;
+            }
+        }
+    }
+
+    function drawDetachedLimbs(ctx) {
+        for (var li = 0; li < _detachedLimbs.length; li++) {
+            var limb = _detachedLimbs[li];
+            var pts = limb.pts;
+
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = limb.color;
+            ctx.lineWidth = limb.lineWidth;
+            ctx.shadowColor = limb.color;
+            ctx.shadowBlur = 8;
+
+            for (var c = 0; c < pts.length - 1; c++) {
+                ctx.beginPath();
+                ctx.moveTo(pts[c].x, pts[c].y);
+                ctx.lineTo(pts[c + 1].x, pts[c + 1].y);
+                ctx.stroke();
+            }
+
+            // Draw head circle if this is a detached head
+            if (limb.headR > 0) {
+                var headPt = pts[pts.length - 1];
+                ctx.beginPath();
+                ctx.arc(headPt.x, headPt.y, limb.headR, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+    }
+
+    // ── Death types ────────────────────────────────────────────────
+    function applyDeath(fig, type, groundY) {
+        var limbNames = ['armR', 'armL', 'legR', 'legL', 'head'];
+
+        if (type === 'collapse') {
+            spawnBlood(fig.x, fig.y - fig.figH * 0.4, 5, 0, -80);
+            goRagdoll(fig, groundY, 50, -100);
+
+        } else if (type === 'flung') {
+            spawnBlood(fig.x, fig.y - fig.figH * 0.4, 15,
+                fig.facing * -200, -150);
+            // Maybe detach a random limb
+            if (Math.random() < 0.6) {
+                var pick = limbNames[Math.floor(Math.random() * limbNames.length)];
+                detachLimb(fig, pick, groundY);
+            }
+            goRagdoll(fig, groundY, 400 * fig.facing * -1, -350);
+
+        } else if (type === 'dramatic') {
+            spawnBlood(fig.x, fig.y - fig.figH * 0.4, 8, 0, -60);
+            setPose(fig, 'kneel');
+            // Delayed ragdoll via a closure-based timer flag
+            fig._dramaticTimer = 0.5;
+            fig._dramaticGroundY = groundY;
+            // The actual ragdoll trigger happens in updateEffects
+
+        } else {
+            // Default: treat as collapse
+            spawnBlood(fig.x, fig.y - fig.figH * 0.4, 5, 0, -80);
+            goRagdoll(fig, groundY, 50, -100);
+        }
+    }
+
+    // Track dramatic-death figures
+    var _dramaticDeaths = [];
+
+    // ── Batch update / draw ────────────────────────────────────────
+    function updateEffects(dt, groundY) {
+        updateBloodParticles(dt, groundY);
+        updateDetachedLimbs(dt);
+
+        // Process dramatic death timers
+        var i = _dramaticDeaths.length;
+        while (i--) {
+            var fig = _dramaticDeaths[i];
+            if (fig._dramaticTimer !== undefined && fig._dramaticTimer > 0) {
+                fig._dramaticTimer -= dt;
+                if (fig._dramaticTimer <= 0) {
+                    fig._dramaticTimer = undefined;
+                    goRagdoll(fig, fig._dramaticGroundY, 30, -60);
+                    fig._dramaticGroundY = undefined;
+                    _dramaticDeaths.splice(i, 1);
+                }
+            } else {
+                _dramaticDeaths.splice(i, 1);
+            }
+        }
+    }
+
+    function drawEffects(ctx) {
+        drawBloodParticles(ctx);
+        drawDetachedLimbs(ctx);
+    }
+
+    // Patch applyDeath to register dramatic deaths for timer processing
+    var _origApplyDeath = applyDeath;
+    function applyDeathWrapped(fig, type, groundY) {
+        _origApplyDeath(fig, type, groundY);
+        if (type === 'dramatic') {
+            _dramaticDeaths.push(fig);
+        }
+    }
+
     // ── Public API ────────────────────────────────────────────────────
     window.StickFight = {
         BONE:       BONE,
@@ -813,6 +1103,13 @@
 
         goRagdoll:      goRagdoll,
         attack:         attack,
+
+        // Phase 4 — Gore & Effects
+        spawnBlood:     spawnBlood,
+        detachLimb:     detachLimb,
+        applyDeath:     applyDeathWrapped,
+        updateEffects:  updateEffects,
+        drawEffects:    drawEffects,
 
         // Expose for custom use
         lerpExp:        lerpExp,
