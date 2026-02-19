@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survivors: Enchanted Forest — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a1a0a;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,26,10,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-family: 'MedievalSharp', cursive;
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 400;
+            letter-spacing: 0.04em;
+            color: #4dff88;
+            text-shadow: 0 0 30px rgba(77,255,136,0.6), 0 0 60px rgba(77,255,136,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #4dff88;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #4dff88;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(77,255,136,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(77,255,136,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Survivors: Enchanted Forest</div>
+        <div class="play-sub">arena theme</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Survivors: Enchanted Forest Video Renderer ────────────────────
+    window.Renderers['survivors-forest-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG_TOP = '#0a1a0a';
+        var BG_BOT = '#051005';
+        var GROUND_Y_RATIO = 0.78;
+
+        var COL = {
+            treeDark:    '#0d2a0d',
+            treeMid:     '#1a4a1a',
+            treeLight:   '#2a6a2a',
+            trunk:       '#3a2a1a',
+            grass:       '#1a5a1a',
+            grassLight:  '#2a8a2a',
+            mushPurple:  '#8844aa',
+            mushRed:     '#cc3344',
+            mushGlow:    '#dd66ff',
+            fairyGold:   '#ffdd44',
+            fairyBlue:   '#44aaff',
+            enchBlue:    '#3388ff',
+            survivor:    '#4dff88',
+            sword:       '#ccddff',
+            slashArc:    '#ffffff',
+            xpOrb:       '#44ffaa',
+            enemyMush:   '#9944bb',
+            enemyTree:   '#5a3a1a',
+            enemyFairy:  '#ffcc33',
+            leaf:        '#33aa44'
+        };
+
+        // ── State ──
+        var groundY = 0;
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var totalTime = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'intro'; // intro, verse, chorus, bridge, fill
+
+        // ── Trees (parallax layers) ──
+        var treeLayers = []; // [{x, height, width, layer, color}]
+        var NUM_TREE_LAYERS = 3;
+
+        // ── Grass blades ──
+        var grassBlades = [];
+
+        // ── Glowing mushrooms ──
+        var mushrooms = [];
+
+        // ── Survivor ──
+        var survivor = {
+            x: 0, y: 0,
+            facing: 1, // 1=right, -1=left
+            swordAngle: 0,
+            swordTarget: 0,
+            attacking: false,
+            attackTimer: 0,
+            bobPhase: 0,
+            walkPhase: 0
+        };
+
+        // ── Enemies ──
+        var enemies = []; // {type:'mush'|'tree'|'fairy', x, y, hp, maxHp, size, speed, dying, deathTimer, color}
+        var MAX_ENEMIES = 12;
+        var spawnTimer = 0;
+        var spawnInterval = 2.0; // seconds between spawns, decreases with energy
+        var killCount = 0;
+
+        // ── Combat effects ──
+        var slashArcs = []; // {x, y, angle, radius, life, maxLife}
+        var popEffects = []; // {x, y, life, color, particles:[]}
+        var xpOrbs = []; // {x, y, targetX, targetY, life, collected}
+
+        // ── Ambient particles ──
+        var fireflies = [];
+        var leaves = [];
+
+        // ── Title ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Helper: lerp ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(a, b, speed, dt) { return a + (b - a) * (1 - Math.exp(-speed * dt)); }
+
+        // ── Helper: random range ──
+        function rng(min, max) { return min + Math.random() * (max - min); }
+
+        // ── Helper: distance ──
+        function dist(ax, ay, bx, by) {
+            var dx = ax - bx, dy = ay - by;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // ── Helper: hex to rgba ──
+        function hexRGBA(hex, alpha) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+        }
+
+        // ── Section mapping (based on song sequence) ──
+        // seq: 0=Intro, 1=VerseA, 2=VerseA2, 3=ChorusA, 4=ChorusB,
+        //      5=VerseA(rep), 6=VerseA2(rep), 7=Bridge, 8=BridgeB,
+        //      9=Fill, 10=ChorusA(rep), 11=ChorusB(rep), 12=VerseA3,
+        //      13=VerseA2(rep), 14=Bridge(rep), 15=BridgeB(rep), 16=Fill(rep)
+        function mapSection(seqIdx) {
+            if (seqIdx <= 0) return 'intro';
+            if (seqIdx <= 2) return 'verse';
+            if (seqIdx <= 4) return 'chorus';
+            if (seqIdx <= 6) return 'verse';
+            if (seqIdx <= 8) return 'bridge';
+            if (seqIdx <= 9) return 'fill';
+            if (seqIdx <= 11) return 'chorus';
+            if (seqIdx <= 13) return 'verse';
+            if (seqIdx <= 15) return 'bridge';
+            return 'fill';
+        }
+
+        // ── Init trees ──
+        function initTrees() {
+            treeLayers = [];
+            var colors = [COL.treeDark, COL.treeMid, COL.treeLight];
+            for (var layer = 0; layer < NUM_TREE_LAYERS; layer++) {
+                var count = 12 + layer * 6;
+                for (var i = 0; i < count; i++) {
+                    treeLayers.push({
+                        x: (i / count) * W * 1.4 - W * 0.2 + rng(-20, 20),
+                        height: H * (0.25 + layer * 0.08) + rng(-30, 30),
+                        width: 30 + rng(10, 30) - layer * 5,
+                        layer: layer,
+                        color: colors[layer],
+                        trunkColor: COL.trunk,
+                        swayPhase: rng(0, Math.PI * 2),
+                        swayAmp: 3 + layer * 2
+                    });
+                }
+            }
+        }
+
+        // ── Init grass ──
+        function initGrass() {
+            grassBlades = [];
+            for (var i = 0; i < 80; i++) {
+                grassBlades.push({
+                    x: rng(0, W),
+                    height: rng(8, 25),
+                    phase: rng(0, Math.PI * 2),
+                    color: Math.random() > 0.5 ? COL.grass : COL.grassLight
+                });
+            }
+        }
+
+        // ── Init mushrooms ──
+        function initMushrooms() {
+            mushrooms = [];
+            for (var i = 0; i < 8; i++) {
+                mushrooms.push({
+                    x: rng(W * 0.05, W * 0.95),
+                    y: groundY + rng(-5, 5),
+                    size: rng(6, 14),
+                    color: Math.random() > 0.5 ? COL.mushPurple : COL.mushRed,
+                    glowPhase: rng(0, Math.PI * 2),
+                    glowSpeed: rng(1.5, 3)
+                });
+            }
+        }
+
+        // ── Init fireflies ──
+        function initFireflies() {
+            fireflies = [];
+            for (var i = 0; i < 30; i++) {
+                fireflies.push({
+                    x: rng(0, W),
+                    y: rng(H * 0.2, groundY),
+                    phase: rng(0, Math.PI * 2),
+                    speed: rng(10, 30),
+                    driftX: rng(-15, 15),
+                    driftY: rng(-10, 10),
+                    size: rng(1.5, 3),
+                    alpha: rng(0.3, 0.8),
+                    baseX: 0, baseY: 0
+                });
+                fireflies[i].baseX = fireflies[i].x;
+                fireflies[i].baseY = fireflies[i].y;
+            }
+        }
+
+        // ── Spawn an enemy ──
+        function spawnEnemy() {
+            if (enemies.length >= MAX_ENEMIES) return;
+            var type;
+            var r = Math.random();
+            if (sectionMood === 'chorus') {
+                type = r < 0.4 ? 'mush' : r < 0.7 ? 'tree' : 'fairy';
+            } else if (sectionMood === 'bridge') {
+                type = r < 0.6 ? 'fairy' : 'mush';
+            } else {
+                type = r < 0.5 ? 'mush' : r < 0.8 ? 'tree' : 'fairy';
+            }
+
+            var fromLeft = Math.random() > 0.5;
+            var ex = fromLeft ? -30 : W + 30;
+            var ey, size, speed, hp, color;
+
+            if (type === 'mush') {
+                ey = groundY;
+                size = rng(18, 30);
+                speed = rng(20, 50);
+                hp = 2;
+                color = COL.enemyMush;
+            } else if (type === 'tree') {
+                ey = groundY;
+                size = rng(35, 55);
+                speed = rng(10, 25);
+                hp = 4;
+                color = COL.enemyTree;
+            } else { // fairy
+                ey = rng(groundY - H * 0.3, groundY - H * 0.1);
+                size = rng(6, 10);
+                speed = rng(30, 60);
+                hp = 1;
+                color = COL.enemyFairy;
+            }
+
+            enemies.push({
+                type: type,
+                x: ex, y: ey,
+                hp: hp, maxHp: hp,
+                size: size,
+                speed: speed,
+                dying: false,
+                deathTimer: 0,
+                color: color,
+                phase: rng(0, Math.PI * 2),
+                fromLeft: fromLeft
+            });
+        }
+
+        // ── Spawn slash arc ──
+        function spawnSlash(x, y, angle) {
+            slashArcs.push({
+                x: x, y: y,
+                angle: angle,
+                radius: 30 + rng(0, 20),
+                life: 0.3,
+                maxLife: 0.3
+            });
+        }
+
+        // ── Spawn pop effect ──
+        function spawnPop(x, y, color) {
+            var parts = [];
+            for (var i = 0; i < 8; i++) {
+                var a = (i / 8) * Math.PI * 2;
+                parts.push({
+                    x: 0, y: 0,
+                    vx: Math.cos(a) * rng(30, 80),
+                    vy: Math.sin(a) * rng(30, 80) - 20
+                });
+            }
+            popEffects.push({ x: x, y: y, life: 0.5, color: color, particles: parts });
+        }
+
+        // ── Spawn XP orbs ──
+        function spawnXPOrbs(x, y, count) {
+            for (var i = 0; i < count; i++) {
+                xpOrbs.push({
+                    x: x + rng(-10, 10),
+                    y: y + rng(-10, 10),
+                    vx: rng(-40, 40),
+                    vy: rng(-80, -30),
+                    life: 2.0,
+                    size: rng(2, 4),
+                    collected: false
+                });
+            }
+        }
+
+        // ── Spawn leaf particle ──
+        function spawnLeaf() {
+            leaves.push({
+                x: rng(-20, W + 20),
+                y: rng(-20, H * 0.3),
+                vx: rng(5, 25),
+                vy: rng(10, 30),
+                rot: rng(0, Math.PI * 2),
+                rotSpeed: rng(-3, 3),
+                size: rng(3, 7),
+                life: rng(3, 6),
+                color: COL.leaf
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // DRAWING FUNCTIONS
+        // ══════════════════════════════════════════════════════════════
+
+        // ── Sky gradient ──
+        function drawSky(ctx, energy) {
+            var grad = ctx.createLinearGradient(0, 0, 0, groundY);
+            var r = Math.floor(10 + energy * 8);
+            var g = Math.floor(26 + energy * 10);
+            var b = Math.floor(10 + energy * 15);
+            grad.addColorStop(0, 'rgb(' + r + ',' + g + ',' + b + ')');
+            grad.addColorStop(1, 'rgb(' + Math.floor(r * 0.6) + ',' + Math.floor(g * 0.7) + ',' + Math.floor(b * 0.6) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, groundY + 10);
+        }
+
+        // ── Trees ──
+        function drawTrees(ctx, energy, layer) {
+            ctx.save();
+            for (var i = 0; i < treeLayers.length; i++) {
+                var t = treeLayers[i];
+                if (t.layer !== layer) continue;
+
+                var parallax = 1 - t.layer * 0.25;
+                var sway = Math.sin(totalTime * 1.2 + t.swayPhase) * t.swayAmp * (1 + energy * 0.5);
+                var bx = t.x;
+                var by = groundY;
+                var th = t.height;
+                var tw = t.width;
+
+                // Trunk
+                ctx.fillStyle = hexRGBA(t.trunkColor, 0.6 + t.layer * 0.15);
+                ctx.fillRect(bx - tw * 0.08, by - th * 0.4, tw * 0.16, th * 0.4);
+
+                // Canopy (triangle)
+                ctx.fillStyle = hexRGBA(t.color, 0.7 + t.layer * 0.1);
+                ctx.beginPath();
+                ctx.moveTo(bx + sway, by - th);
+                ctx.lineTo(bx - tw * 0.5, by - th * 0.3);
+                ctx.lineTo(bx + tw * 0.5, by - th * 0.3);
+                ctx.closePath();
+                ctx.fill();
+
+                // Second tier
+                ctx.beginPath();
+                ctx.moveTo(bx + sway * 0.7, by - th * 0.75);
+                ctx.lineTo(bx - tw * 0.6, by - th * 0.15);
+                ctx.lineTo(bx + tw * 0.6, by - th * 0.15);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ── Ground ──
+        function drawGround(ctx, energy) {
+            ctx.save();
+            // Base ground
+            var grad = ctx.createLinearGradient(0, groundY, 0, H);
+            grad.addColorStop(0, '#1a3a1a');
+            grad.addColorStop(0.3, '#0d1f0d');
+            grad.addColorStop(1, '#050f05');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, groundY - 2, W, H - groundY + 2);
+
+            // Grass line glow
+            ctx.strokeStyle = hexRGBA(COL.grassLight, 0.3 + energy * 0.2);
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = COL.grassLight;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(W, groundY);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Grass blades
+            for (var i = 0; i < grassBlades.length; i++) {
+                var g = grassBlades[i];
+                var sway = Math.sin(totalTime * 2 + g.phase) * 3 * (1 + energy * 0.5);
+                ctx.strokeStyle = hexRGBA(g.color, 0.5);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(g.x, groundY);
+                ctx.quadraticCurveTo(g.x + sway * 0.5, groundY - g.height * 0.5, g.x + sway, groundY - g.height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Glowing mushrooms ──
+        function drawMushrooms(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < mushrooms.length; i++) {
+                var m = mushrooms[i];
+                var glow = 0.3 + Math.sin(totalTime * m.glowSpeed + m.glowPhase) * 0.3 + energy * 0.2;
+                var s = m.size;
+
+                // Stem
+                ctx.fillStyle = hexRGBA('#ccbbaa', 0.5);
+                ctx.fillRect(m.x - s * 0.1, m.y - s * 0.6, s * 0.2, s * 0.6);
+
+                // Cap
+                ctx.fillStyle = hexRGBA(m.color, 0.7);
+                ctx.beginPath();
+                ctx.ellipse(m.x, m.y - s * 0.6, s * 0.5, s * 0.35, 0, Math.PI, 0);
+                ctx.fill();
+
+                // Glow
+                ctx.shadowBlur = 15 + energy * 10;
+                ctx.shadowColor = COL.mushGlow;
+                ctx.fillStyle = hexRGBA(COL.mushGlow, glow * 0.4);
+                ctx.beginPath();
+                ctx.arc(m.x, m.y - s * 0.5, s * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            ctx.restore();
+        }
+
+        // ── Fireflies ──
+        function drawFireflies(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < fireflies.length; i++) {
+                var f = fireflies[i];
+                var blink = Math.sin(totalTime * 3 + f.phase) * 0.5 + 0.5;
+                var alpha = f.alpha * blink * (0.5 + energy * 0.5);
+                if (alpha < 0.05) continue;
+
+                ctx.globalAlpha = alpha;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = COL.fairyGold;
+                ctx.fillStyle = COL.fairyGold;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // ── Leaf particles ──
+        function updateLeaves(dt) {
+            for (var i = leaves.length - 1; i >= 0; i--) {
+                var l = leaves[i];
+                l.x += l.vx * dt;
+                l.y += l.vy * dt;
+                l.rot += l.rotSpeed * dt;
+                l.life -= dt;
+                if (l.life <= 0 || l.y > H + 20) {
+                    leaves.splice(i, 1);
+                }
+            }
+        }
+
+        function drawLeaves(ctx) {
+            ctx.save();
+            for (var i = 0; i < leaves.length; i++) {
+                var l = leaves[i];
+                var alpha = Math.min(1, l.life / 1.0);
+                ctx.globalAlpha = alpha * 0.6;
+                ctx.fillStyle = l.color;
+                ctx.save();
+                ctx.translate(l.x, l.y);
+                ctx.rotate(l.rot);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, l.size, l.size * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        // ── Survivor stick figure ──
+        function drawSurvivor(ctx, energy) {
+            var s = survivor;
+            var bob = Math.sin(s.bobPhase) * 3;
+            var sx = s.x;
+            var sy = s.y + bob;
+            var fh = H * 0.12; // figure height
+            var facing = s.facing;
+
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.scale(facing, 1);
+
+            var lw = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = COL.survivor;
+            ctx.lineWidth = lw;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = COL.survivor;
+
+            var headR = fh * 0.08;
+            var neckY = -fh * 0.82;
+            var headY = neckY - headR * 1.5;
+            var hipY = -fh * 0.4;
+            var shoulderW = fh * 0.1;
+
+            // Legs with walking animation
+            var walkA = Math.sin(s.walkPhase) * 0.3;
+            var lAnkleX = -fh * 0.06 + Math.sin(walkA) * fh * 0.08;
+            var rAnkleX = fh * 0.06 - Math.sin(walkA) * fh * 0.08;
+            var lKneeX = -fh * 0.03;
+            var rKneeX = fh * 0.03;
+            var kneeY = hipY + fh * 0.2;
+
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(lKneeX, kneeY);
+            ctx.lineTo(lAnkleX, 0);
+            ctx.stroke();
+
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(rKneeX, kneeY);
+            ctx.lineTo(rAnkleX, 0);
+            ctx.stroke();
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(0, neckY);
+            ctx.stroke();
+
+            // Shoulders
+            ctx.beginPath();
+            ctx.moveTo(-shoulderW, neckY + fh * 0.02);
+            ctx.lineTo(shoulderW, neckY + fh * 0.02);
+            ctx.stroke();
+
+            // Left arm (shield arm, slight forward)
+            var laElbowX = -shoulderW - fh * 0.06;
+            var laElbowY = neckY + fh * 0.12;
+            var laHandX = -shoulderW - fh * 0.03;
+            var laHandY = neckY + fh * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(-shoulderW, neckY + fh * 0.02);
+            ctx.lineTo(laElbowX, laElbowY);
+            ctx.lineTo(laHandX, laHandY);
+            ctx.stroke();
+
+            // Right arm (sword arm)
+            var swordArmAngle = s.swordAngle;
+            var raElbowX = shoulderW + Math.cos(swordArmAngle) * fh * 0.1;
+            var raElbowY = neckY + fh * 0.02 + Math.sin(swordArmAngle) * fh * 0.1;
+            var raHandX = raElbowX + Math.cos(swordArmAngle) * fh * 0.1;
+            var raHandY = raElbowY + Math.sin(swordArmAngle) * fh * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(shoulderW, neckY + fh * 0.02);
+            ctx.lineTo(raElbowX, raElbowY);
+            ctx.lineTo(raHandX, raHandY);
+            ctx.stroke();
+
+            // Sword
+            var swordLen = fh * 0.2;
+            var swordEndX = raHandX + Math.cos(swordArmAngle - 0.3) * swordLen;
+            var swordEndY = raHandY + Math.sin(swordArmAngle - 0.3) * swordLen;
+            ctx.strokeStyle = COL.sword;
+            ctx.shadowColor = COL.sword;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(raHandX, raHandY);
+            ctx.lineTo(swordEndX, swordEndY);
+            ctx.stroke();
+
+            // Head
+            ctx.strokeStyle = COL.survivor;
+            ctx.shadowColor = COL.survivor;
+            ctx.lineWidth = lw;
+            ctx.beginPath();
+            ctx.arc(0, headY, headR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = hexRGBA(COL.survivor, 0.2);
+            ctx.fill();
+
+            // Eyes (tiny dots)
+            ctx.fillStyle = COL.survivor;
+            ctx.fillRect(headR * 0.15, headY - headR * 0.15, 1.5, 1.5);
+            ctx.fillRect(headR * 0.5, headY - headR * 0.15, 1.5, 1.5);
+
+            ctx.restore();
+        }
+
+        // ── Draw enemies ──
+        function drawEnemies(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < enemies.length; i++) {
+                var e = enemies[i];
+                var alpha = e.dying ? Math.max(0, e.deathTimer / 0.4) : 1;
+
+                ctx.globalAlpha = alpha;
+
+                if (e.type === 'mush') {
+                    drawMushroomEnemy(ctx, e, energy);
+                } else if (e.type === 'tree') {
+                    drawTreeEnemy(ctx, e, energy);
+                } else {
+                    drawFairyEnemy(ctx, e, energy);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawMushroomEnemy(ctx, e, energy) {
+            var s = e.size;
+            var wobble = Math.sin(totalTime * 4 + e.phase) * 3;
+
+            // Body (blob)
+            ctx.fillStyle = hexRGBA(e.color, 0.8);
+            ctx.beginPath();
+            ctx.ellipse(e.x + wobble, e.y - s * 0.3, s * 0.4, s * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cap
+            ctx.fillStyle = hexRGBA(COL.mushRed, 0.7);
+            ctx.beginPath();
+            ctx.ellipse(e.x + wobble, e.y - s * 0.6, s * 0.5, s * 0.3, 0, Math.PI, 0);
+            ctx.fill();
+
+            // Spots
+            ctx.fillStyle = hexRGBA('#ffffff', 0.4);
+            ctx.beginPath();
+            ctx.arc(e.x + wobble - s * 0.15, e.y - s * 0.7, s * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(e.x + wobble + s * 0.2, e.y - s * 0.65, s * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes (angry)
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(e.x + wobble - s * 0.12, e.y - s * 0.35, 3, 3);
+            ctx.fillRect(e.x + wobble + s * 0.08, e.y - s * 0.35, 3, 3);
+
+            // Glow
+            ctx.shadowBlur = 8 + energy * 6;
+            ctx.shadowColor = COL.mushGlow;
+            ctx.fillStyle = hexRGBA(COL.mushGlow, 0.15);
+            ctx.beginPath();
+            ctx.arc(e.x, e.y - s * 0.4, s * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawTreeEnemy(ctx, e, energy) {
+            var s = e.size;
+            var sway = Math.sin(totalTime * 1.5 + e.phase) * 4;
+
+            // Trunk (rectangle)
+            ctx.fillStyle = hexRGBA(e.color, 0.8);
+            ctx.fillRect(e.x - s * 0.12, e.y - s * 0.8, s * 0.24, s * 0.8);
+
+            // Branches (rectangles with angles)
+            ctx.save();
+            ctx.translate(e.x, e.y - s * 0.6);
+            ctx.rotate(sway * 0.02 - 0.4);
+            ctx.fillRect(0, -2, s * 0.35, 4);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(e.x, e.y - s * 0.5);
+            ctx.rotate(sway * 0.02 + 0.4);
+            ctx.fillRect(-s * 0.3, -2, s * 0.3, 4);
+            ctx.restore();
+
+            // Top branches
+            ctx.save();
+            ctx.translate(e.x, e.y - s * 0.75);
+            ctx.rotate(sway * 0.03 - 0.3);
+            ctx.fillRect(0, -2, s * 0.25, 3);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(e.x, e.y - s * 0.7);
+            ctx.rotate(sway * 0.03 + 0.5);
+            ctx.fillRect(-s * 0.2, -2, s * 0.2, 3);
+            ctx.restore();
+
+            // Canopy (small)
+            ctx.fillStyle = hexRGBA(COL.treeMid, 0.6);
+            ctx.beginPath();
+            ctx.arc(e.x + sway * 0.5, e.y - s * 0.85, s * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes (knotholes)
+            ctx.fillStyle = '#ff6633';
+            ctx.beginPath();
+            ctx.arc(e.x - s * 0.04, e.y - s * 0.65, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(e.x + s * 0.06, e.y - s * 0.65, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawFairyEnemy(ctx, e, energy) {
+            var s = e.size;
+            var hover = Math.sin(totalTime * 5 + e.phase) * 5;
+            var fx = e.x;
+            var fy = e.y + hover;
+
+            // Trail
+            ctx.globalAlpha *= 0.3;
+            for (var t = 0; t < 3; t++) {
+                ctx.fillStyle = COL.enemyFairy;
+                ctx.beginPath();
+                ctx.arc(fx - t * 6 * (e.fromLeft ? -1 : 1), fy + t * 2, s * (0.8 - t * 0.2), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha /= 0.3;
+
+            // Body
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = COL.fairyGold;
+            ctx.fillStyle = COL.enemyFairy;
+            ctx.beginPath();
+            ctx.arc(fx, fy, s, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wings
+            ctx.fillStyle = hexRGBA(COL.fairyGold, 0.3);
+            var wingFlap = Math.sin(totalTime * 12 + e.phase) * 0.3;
+            ctx.save();
+            ctx.translate(fx, fy);
+            ctx.beginPath();
+            ctx.ellipse(-s * 0.5, -s * 0.3, s * 0.8, s * 0.4, wingFlap - 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(s * 0.5, -s * 0.3, s * 0.8, s * 0.4, -wingFlap + 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.shadowBlur = 0;
+        }
+
+        // ── Slash arcs ──
+        function drawSlashArcs(ctx) {
+            ctx.save();
+            for (var i = 0; i < slashArcs.length; i++) {
+                var s = slashArcs[i];
+                var t = 1 - s.life / s.maxLife;
+                var alpha = (1 - t) * 0.8;
+                var r = s.radius * (0.5 + t * 0.5);
+
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = COL.slashArc;
+                ctx.lineWidth = 3 * (1 - t);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = COL.survivor;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, r, s.angle - 0.8, s.angle + 0.8);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            ctx.restore();
+        }
+
+        // ── Pop effects ──
+        function drawPopEffects(ctx) {
+            ctx.save();
+            for (var i = 0; i < popEffects.length; i++) {
+                var p = popEffects[i];
+                var t = 1 - p.life / 0.5;
+                var alpha = (1 - t);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.color;
+
+                for (var j = 0; j < p.particles.length; j++) {
+                    var pp = p.particles[j];
+                    ctx.beginPath();
+                    ctx.arc(p.x + pp.x, p.y + pp.y, 3 * (1 - t), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── XP Orbs ──
+        function drawXPOrbs(ctx) {
+            ctx.save();
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = COL.xpOrb;
+            for (var i = 0; i < xpOrbs.length; i++) {
+                var o = xpOrbs[i];
+                var alpha = Math.min(1, o.life);
+                ctx.globalAlpha = alpha * 0.8;
+                ctx.fillStyle = COL.xpOrb;
+                ctx.beginPath();
+                ctx.arc(o.x, o.y, o.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // ── Title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.035, 44));
+            ctx.font = '400 ' + fontSize + 'px "MedievalSharp", cursive';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var y = H * 0.12;
+
+            // Glow
+            ctx.globalAlpha = titleAlpha * 0.6;
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = COL.survivor;
+            ctx.fillStyle = COL.survivor;
+            ctx.fillText('SURVIVORS: ENCHANTED FOREST', W / 2, y);
+
+            // Main text
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('SURVIVORS: ENCHANTED FOREST', W / 2, y);
+
+            ctx.restore();
+        }
+
+        // ── Enchanted glow overlay on beat ──
+        function drawBeatGlow(ctx, energy) {
+            if (beatPulse < 0.01) return;
+            ctx.save();
+            var grad = ctx.createRadialGradient(W / 2, groundY, 0, W / 2, groundY, W * 0.5);
+            var alpha = beatPulse * 0.08 * energy;
+            grad.addColorStop(0, hexRGBA(COL.enchBlue, alpha));
+            grad.addColorStop(1, hexRGBA(COL.enchBlue, 0));
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // UPDATE LOGIC
+        // ══════════════════════════════════════════════════════════════
+
+        function updateFireflies(dt) {
+            for (var i = 0; i < fireflies.length; i++) {
+                var f = fireflies[i];
+                f.x = f.baseX + Math.sin(totalTime * 0.5 + f.phase) * f.driftX;
+                f.y = f.baseY + Math.cos(totalTime * 0.3 + f.phase * 1.3) * f.driftY;
+            }
+        }
+
+        function updateEnemies(dt, energy) {
+            // Spawn
+            spawnTimer -= dt;
+            var interval = spawnInterval / (0.5 + energy);
+            if (sectionMood === 'chorus') interval *= 0.5;
+            if (sectionMood === 'bridge') interval *= 2.0;
+            if (sectionMood === 'intro') interval *= 3.0;
+
+            if (spawnTimer <= 0) {
+                spawnEnemy();
+                spawnTimer = interval;
+            }
+
+            // Move toward survivor
+            for (var i = enemies.length - 1; i >= 0; i--) {
+                var e = enemies[i];
+
+                if (e.dying) {
+                    e.deathTimer -= dt;
+                    if (e.deathTimer <= 0) {
+                        enemies.splice(i, 1);
+                    }
+                    continue;
+                }
+
+                var dx = survivor.x - e.x;
+                var dy = (e.type === 'fairy' ? survivor.y - H * 0.06 : survivor.y) - e.y;
+                var d = Math.sqrt(dx * dx + dy * dy);
+                if (d > 1) {
+                    e.x += (dx / d) * e.speed * dt;
+                    if (e.type !== 'fairy') {
+                        e.y += (dy / d) * e.speed * dt * 0.3;
+                    } else {
+                        e.y += (dy / d) * e.speed * dt;
+                    }
+                }
+            }
+        }
+
+        function updateCombat(dt, beat, energy) {
+            // Attack on beat
+            if (beat !== lastBeat && enemies.length > 0) {
+                survivor.attacking = true;
+                survivor.attackTimer = 0.15;
+
+                // Find nearest enemy
+                var nearest = null;
+                var nearDist = Infinity;
+                for (var i = 0; i < enemies.length; i++) {
+                    if (enemies[i].dying) continue;
+                    var d = dist(survivor.x, survivor.y, enemies[i].x, enemies[i].y);
+                    if (d < nearDist) {
+                        nearDist = d;
+                        nearest = enemies[i];
+                    }
+                }
+
+                // Attack range
+                var range = H * 0.18;
+                if (nearest && nearDist < range) {
+                    // Face enemy
+                    survivor.facing = nearest.x > survivor.x ? 1 : -1;
+
+                    // Swing sword
+                    var angle = Math.atan2(nearest.y - survivor.y, (nearest.x - survivor.x) * survivor.facing);
+                    survivor.swordTarget = angle - 1.2;
+
+                    // Spawn slash
+                    spawnSlash(survivor.x + survivor.facing * 20, survivor.y - H * 0.06, angle);
+
+                    // Damage enemy
+                    nearest.hp--;
+                    if (nearest.hp <= 0) {
+                        nearest.dying = true;
+                        nearest.deathTimer = 0.4;
+                        spawnPop(nearest.x, nearest.y - nearest.size * 0.3, nearest.color);
+                        spawnXPOrbs(nearest.x, nearest.y - nearest.size * 0.3, nearest.type === 'tree' ? 4 : 2);
+                        killCount++;
+                    }
+                } else {
+                    // Idle swing
+                    survivor.swordTarget = rng(-1.5, -0.5);
+                    if (nearest) {
+                        survivor.facing = nearest.x > survivor.x ? 1 : -1;
+                    }
+                }
+            }
+
+            // Update attack state
+            if (survivor.attacking) {
+                survivor.attackTimer -= dt;
+                if (survivor.attackTimer <= 0) {
+                    survivor.attacking = false;
+                    survivor.swordTarget = -0.8; // rest position
+                }
+            }
+
+            survivor.swordAngle = lerpSmooth(survivor.swordAngle, survivor.swordTarget, 20, dt);
+            survivor.bobPhase += dt * 3;
+            survivor.walkPhase += dt * 4 * (energy * 0.5 + 0.5);
+        }
+
+        function updateEffects(dt) {
+            // Slash arcs
+            for (var i = slashArcs.length - 1; i >= 0; i--) {
+                slashArcs[i].life -= dt;
+                if (slashArcs[i].life <= 0) slashArcs.splice(i, 1);
+            }
+
+            // Pop effects
+            for (var j = popEffects.length - 1; j >= 0; j--) {
+                var p = popEffects[j];
+                p.life -= dt;
+                for (var k = 0; k < p.particles.length; k++) {
+                    p.particles[k].x += p.particles[k].vx * dt;
+                    p.particles[k].y += p.particles[k].vy * dt;
+                    p.particles[k].vy += 150 * dt; // gravity
+                }
+                if (p.life <= 0) popEffects.splice(j, 1);
+            }
+
+            // XP Orbs
+            for (var m = xpOrbs.length - 1; m >= 0; m--) {
+                var o = xpOrbs[m];
+                o.life -= dt;
+                // Float up then drift toward survivor
+                o.vy += 30 * dt;
+                o.x += o.vx * dt;
+                o.y += o.vy * dt;
+                o.vx *= 0.98;
+
+                // After initial burst, attract to survivor
+                if (o.life < 1.5) {
+                    var dx = survivor.x - o.x;
+                    var dy = (survivor.y - H * 0.06) - o.y;
+                    o.x += dx * dt * 2;
+                    o.y += dy * dt * 2;
+                }
+
+                if (o.life <= 0) xpOrbs.splice(m, 1);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // RENDERER API
+        // ══════════════════════════════════════════════════════════════
+
+        function init(ctx, width, height, anal) {
+            W = width;
+            H = height;
+            analysis = anal;
+            groundY = H * GROUND_Y_RATIO;
+
+            survivor.x = W * 0.5;
+            survivor.y = groundY;
+            survivor.swordAngle = -0.8;
+            survivor.swordTarget = -0.8;
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            totalTime = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'intro';
+            titleAlpha = 0;
+            killCount = 0;
+            spawnTimer = 2.0;
+
+            enemies = [];
+            slashArcs = [];
+            popEffects = [];
+            xpOrbs = [];
+            leaves = [];
+
+            initTrees();
+            initGrass();
+            initMushrooms();
+            initFireflies();
+        }
+
+        function resize(width, height) {
+            W = width;
+            H = height;
+            groundY = H * GROUND_Y_RATIO;
+            survivor.x = W * 0.5;
+            survivor.y = groundY;
+
+            initTrees();
+            initGrass();
+            initMushrooms();
+            initFireflies();
+        }
+
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            totalTime += dt;
+
+            // ── Idle state ──
+            if (!cursor) {
+                drawSky(ctx, 0);
+                drawTrees(ctx, 0, 0);
+                drawTrees(ctx, 0, 1);
+                drawTrees(ctx, 0, 2);
+                drawGround(ctx, 0);
+                drawMushrooms(ctx, 0);
+                updateFireflies(dt);
+                drawFireflies(ctx, 0.3);
+                drawSurvivor(ctx, 0);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+
+                // Flash on chorus entry
+                if (newSection === 'chorus') {
+                    flashAlpha = 0.2;
+                }
+
+                // Burst of leaves on section change
+                for (var li = 0; li < 6; li++) spawnLeaf();
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat events ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Spawn leaves occasionally
+                if (Math.random() > 0.6) spawnLeaf();
+
+                // Flash on high-energy chorus beats
+                if (sectionMood === 'chorus' && energy > 0.6) {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.06);
+                }
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'chorus') ? 1 : 0;
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 4, dt);
+
+            // ── Update systems ──
+            updateFireflies(dt);
+            updateEnemies(dt, energy);
+            updateCombat(dt, beat, energy);
+            updateEffects(dt);
+            updateLeaves(dt);
+
+            lastBeat = beat;
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx, energy);
+
+            // 2. Far trees
+            drawTrees(ctx, energy, 0);
+
+            // 3. Mid trees
+            drawTrees(ctx, energy, 1);
+
+            // 4. Title (behind near trees)
+            drawTitle(ctx);
+
+            // 5. Near trees
+            drawTrees(ctx, energy, 2);
+
+            // 6. Ground
+            drawGround(ctx, energy);
+
+            // 7. Mushrooms
+            drawMushrooms(ctx, energy);
+
+            // 8. Enemies (behind survivor)
+            drawEnemies(ctx, energy);
+
+            // 9. Survivor
+            drawSurvivor(ctx, energy);
+
+            // 10. Combat effects
+            drawSlashArcs(ctx);
+            drawPopEffects(ctx);
+            drawXPOrbs(ctx);
+
+            // 11. Leaves
+            drawLeaves(ctx);
+
+            // 12. Fireflies (overlay)
+            drawFireflies(ctx, energy);
+
+            // 13. Beat glow
+            drawBeatGlow(ctx, energy);
+
+            // 14. Flash
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'Survivors: Enchanted Forest',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('survivors-forest-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/survivors-forest.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
