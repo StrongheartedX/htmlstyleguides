@@ -378,8 +378,11 @@
         }
 
         // ── Spawn enemies ──
+        var _lastSpawnSide = 1;
         function spawnEnemy(hp, hasSword, figHMult, isBoss) {
-            var side = Math.random() < 0.5 ? -1 : 1;
+            // Alternate sides so enemies don't cluster on one side
+            _lastSpawnSide *= -1;
+            var side = _lastSpawnSide;
             var spawnX = side < 0 ? arenaLeft - 50 : arenaRight + 50;
             var figH = H * 0.28 * (figHMult || 1);
             if (isBoss) figH = H * 0.42;
@@ -420,31 +423,50 @@
         }
 
         // ── Enemy AI ──
+        // Enemies form a queue: only the 1-2 nearest engage in melee,
+        // others hang back at staggered distances creating a crowd effect.
         function updateEnemyAI(dt) {
-            for (var i = 0; i < activeFigs.length; i++) {
-                var enemy = activeFigs[i];
-                if (enemy.mode === 'ragdoll' || enemy.hp <= 0) continue;
+            if (!hero || hero.mode === 'ragdoll') return;
 
-                // Walk toward hero
+            // Sort alive enemies by distance to hero for engagement priority
+            var alive = [];
+            for (var i = 0; i < activeFigs.length; i++) {
+                var e = activeFigs[i];
+                if (e.mode !== 'ragdoll' && e.hp > 0) {
+                    e._dist = Math.abs(e.x - hero.x);
+                    e._side = e.x < hero.x ? -1 : 1; // which side of hero
+                    alive.push({ idx: i, fig: e });
+                }
+            }
+            alive.sort(function(a, b) { return a.fig._dist - b.fig._dist; });
+
+            // Allow up to 2 melee engagers (1 per side ideally)
+            var meleeSlots = { left: 0, right: 0 };
+            var maxMeleePerSide = section === 'breakdown' || section === 'final_chorus' ? 2 : 1;
+
+            for (var ai = 0; ai < alive.length; ai++) {
+                var entry = alive[ai];
+                var enemy = entry.fig;
+                var idx = entry.idx;
+
                 var distToHero = hero.x - enemy.x;
                 var absDist = Math.abs(distToHero);
                 var faceDir = distToHero > 0 ? 1 : -1;
                 enemy.facing = faceDir;
 
-                var attackRange = enemy.figH * 0.4;
-                if (enemy.params.swordLen > 0) attackRange = enemy.figH * 0.55;
+                var attackRange = enemy.figH * 0.45;
+                if (enemy.params.swordLen > 0) attackRange = enemy.figH * 0.6;
+                if (enemy._isBoss) attackRange = enemy.figH * 0.55;
 
-                if (absDist > attackRange) {
-                    // Walk toward hero
-                    var walkSpeed = enemy._isBoss ? 80 : 120;
-                    enemy.x += faceDir * walkSpeed * dt;
-                    if (!enemy.attacking) {
-                        StickFight.setPose(enemy, 'idle');
-                        StickFight.setTarget(enemy, 'legSpread', 0.2 + Math.sin(performance.now() * 0.005 + i) * 0.05);
-                    }
-                } else {
-                    // In range — attack on cooldown
-                    var timer = enemyTimers[i];
+                // Determine if this enemy gets a melee slot
+                var sideKey = enemy._side < 0 ? 'left' : 'right';
+                var canMelee = meleeSlots[sideKey] < maxMeleePerSide || enemy._isBoss;
+
+                if (canMelee && absDist <= attackRange) {
+                    // Engaged in melee — count the slot
+                    meleeSlots[sideKey]++;
+
+                    var timer = enemyTimers[idx];
                     if (timer) {
                         timer.cooldown -= dt;
                         if (timer.cooldown <= 0 && !enemy.attacking) {
@@ -454,28 +476,59 @@
                             }
                             var moveName = pickRandom(moves);
                             StickFight.attack(enemy, moveName, hero);
-                            timer.cooldown = rand(0.6, 2.0);
-                            if (enemy._isBoss) timer.cooldown = rand(0.4, 1.0);
+                            timer.cooldown = rand(0.8, 2.2);
+                            if (enemy._isBoss) timer.cooldown = rand(0.5, 1.2);
                         } else if (!enemy.attacking) {
-                            // Idle guard while waiting
                             StickFight.setPose(enemy, 'guard');
-                            // Sometimes block
-                            if (hero.attacking && Math.random() < 0.2) {
+                            if (hero.attacking && Math.random() < 0.25) {
                                 StickFight.setPose(enemy, 'block');
                             }
                         }
                     }
+                } else if (canMelee && absDist > attackRange) {
+                    // Walking in to engage
+                    meleeSlots[sideKey]++;
+                    var walkSpeed = enemy._isBoss ? 90 : 130;
+                    enemy.x += faceDir * walkSpeed * dt;
+                    if (!enemy.attacking) {
+                        StickFight.setPose(enemy, 'guard');
+                        StickFight.setTarget(enemy, 'legSpread', 0.2 + Math.sin(performance.now() * 0.005 + idx) * 0.05);
+                    }
+                } else {
+                    // Hanging back — maintain staggered distance from hero
+                    var hangDist = attackRange + 40 + ai * 30;
+                    var idealX = hero.x + enemy._side * hangDist;
+                    var driftSpeed = 60;
+                    var dToIdeal = idealX - enemy.x;
+                    if (Math.abs(dToIdeal) > 10) {
+                        enemy.x += (dToIdeal > 0 ? 1 : -1) * driftSpeed * dt;
+                    }
+                    if (!enemy.attacking) {
+                        StickFight.setPose(enemy, 'guard');
+                    }
                 }
+
+                // Separation push: don't overlap other enemies
+                for (var oi = 0; oi < alive.length; oi++) {
+                    if (oi === ai) continue;
+                    var other = alive[oi].fig;
+                    var sep = enemy.x - other.x;
+                    var absSep = Math.abs(sep);
+                    var minSep = enemy.figH * 0.25;
+                    if (absSep < minSep && absSep > 0.1) {
+                        var push = (minSep - absSep) * 0.3;
+                        enemy.x += (sep > 0 ? push : -push);
+                    }
+                }
+
+                // Clamp to arena
+                if (enemy.x < arenaLeft) enemy.x = arenaLeft;
+                if (enemy.x > arenaRight) enemy.x = arenaRight;
             }
         }
 
-        // ── Hero attack on beat ──
-        function heroAttackOnBeat(energy) {
-            if (!hero || hero.mode === 'ragdoll') return;
-            if (heroAttackCooldown > 0) return;
-            if (activeFigs.length === 0) return;
-
-            // Find nearest alive enemy
+        // ── Find nearest alive enemy ──
+        function findNearestEnemy() {
             var nearest = null;
             var nearDist = Infinity;
             for (var i = 0; i < activeFigs.length; i++) {
@@ -487,33 +540,79 @@
                     nearest = e;
                 }
             }
+            return { fig: nearest, dist: nearDist };
+        }
 
-            if (!nearest) return;
+        // ── Hero attack on beat (flashier, higher damage feel) ──
+        function heroAttackOnBeat(energy) {
+            if (!hero || hero.mode === 'ragdoll') return;
+            if (heroAttackCooldown > 0) return;
 
-            // Face the enemy
-            hero.facing = nearest.x > hero.x ? 1 : -1;
+            var near = findNearestEnemy();
+            if (!near.fig) return;
 
-            // Walk toward if too far
-            var attackRange = hero.figH * 0.45;
-            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.6;
-            if (nearDist > attackRange) {
-                hero.x += hero.facing * 150 * (1 / 60);
-            }
+            hero.facing = near.fig.x > hero.x ? 1 : -1;
 
-            // Pick a move
-            var moves = ['punch_r', 'punch_l', 'kick_high'];
-            if (hero.params.swordLen > 0) {
-                moves.push('slash', 'lunge');
-            }
+            var attackRange = hero.figH * 0.5;
+            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.65;
+
+            if (near.dist > attackRange) return; // Don't lunge from far — continuous movement handles closing
+
+            // On-beat: pick power moves
             var moveName;
             if (energy > 0.7) {
                 moveName = hero.params.swordLen > 0 ? 'slash' : 'kick_high';
+            } else if (energy > 0.4) {
+                moveName = hero.params.swordLen > 0 ?
+                    pickRandom(['slash', 'lunge']) :
+                    pickRandom(['punch_r', 'kick_high']);
             } else {
-                moveName = pickRandom(moves);
+                moveName = pickRandom(['punch_r', 'punch_l']);
             }
 
-            StickFight.attack(hero, moveName, nearest);
-            heroAttackCooldown = 0.15;
+            StickFight.attack(hero, moveName, near.fig);
+            heroAttackCooldown = 0.25;
+            shakeIntensity = Math.max(shakeIntensity, 1.5 + energy * 2);
+        }
+
+        // ── Continuous hero combat (called every frame, not just on beat) ──
+        function updateHeroCombat(dt) {
+            if (!hero || hero.mode === 'ragdoll') return;
+            heroAttackCooldown = Math.max(0, heroAttackCooldown - dt);
+
+            var near = findNearestEnemy();
+            if (!near.fig) {
+                // No enemies — idle guard
+                if (!hero.attacking) {
+                    StickFight.setPose(hero, 'guard');
+                }
+                return;
+            }
+
+            // Face nearest enemy
+            hero.facing = near.fig.x > hero.x ? 1 : -1;
+
+            var attackRange = hero.figH * 0.5;
+            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.65;
+
+            if (near.dist > attackRange) {
+                // Move toward enemy (hero is proactive)
+                var moveSpeed = 180;
+                hero.x += hero.facing * moveSpeed * dt;
+                if (!hero.attacking) {
+                    StickFight.setPose(hero, 'guard');
+                    StickFight.setTarget(hero, 'legSpread', 0.25);
+                }
+            } else if (!hero.attacking && heroAttackCooldown <= 0) {
+                // In range and not on cooldown — attack between beats too
+                // Use lighter moves between beats (punches), save heavy for on-beat
+                var moveName = pickRandom(['punch_r', 'punch_l']);
+                if (hero.params.swordLen > 0 && Math.random() < 0.3) {
+                    moveName = 'slash';
+                }
+                StickFight.attack(hero, moveName, near.fig);
+                heroAttackCooldown = 0.35; // Slightly longer cooldown for between-beat attacks
+            }
         }
 
         // ── Signature combo: rapid punch_r, punch_l, kick_high ──
@@ -696,6 +795,7 @@
                     }
 
                     // Attack every beat
+                    heroAttackCooldown = 0;
                     heroAttackOnBeat(1.0);
 
                     // Flung deaths
@@ -718,17 +818,18 @@
                 return;
             }
 
-            // Normal sections — hero attacks on beat
+            // Normal sections — on-beat attacks override cooldown for punchy sync
             if (section === 'verse1' || section === 'verse2') {
-                if (beat % 4 === 0) {
+                if (beat % 2 === 0) {
+                    heroAttackCooldown = 0; // Force allow on-beat attack
                     heroAttackOnBeat(energy);
                 }
             }
 
             if (section === 'chorus1' || section === 'chorus2') {
-                if (beat % 2 === 0) {
-                    heroAttackOnBeat(energy);
-                }
+                // Every beat in choruses
+                heroAttackCooldown = 0;
+                heroAttackOnBeat(energy);
                 // Signature combo on high energy beats every 16 beats
                 if (beat % 16 === 0 && energy > 0.5) {
                     triggerSignatureCombo();
@@ -739,9 +840,9 @@
                 // Key change blend
                 keyChangeBlend = lerpExp(keyChangeBlend, 1, 3, 1 / 60);
 
-                if (beat % 2 === 0) {
-                    heroAttackOnBeat(energy);
-                }
+                // Every beat — all-out
+                heroAttackCooldown = 0;
+                heroAttackOnBeat(energy);
 
                 // Signature combo
                 if (beat % 12 === 0 && energy > 0.4) {
@@ -751,7 +852,6 @@
                 // Check boss defeat
                 if (boss && boss.hp <= 0 && !bossDefeated) {
                     bossDefeated = true;
-                    // Slow-motion for last hit
                     slowMoFactor = 0.2;
                     slowMoTimer = 1.5;
                     StickFight.applyDeath(boss, 'dramatic', groundY);
@@ -912,7 +1012,6 @@
             beatPulse *= Math.exp(-8 * dt);
             shakeIntensity *= Math.exp(-6 * dt);
             screenPulse *= Math.exp(-4 * dt);
-            heroAttackCooldown = Math.max(0, heroAttackCooldown - dt);
 
             // Lerp targets
             spotlightAlpha = lerpExp(spotlightAlpha, spotlightTarget, 3, dt);
@@ -951,6 +1050,13 @@
 
             // ── Enemy AI ──
             updateEnemyAI(dt);
+
+            // ── Continuous hero combat (movement + between-beat attacks) ──
+            if (section !== 'intro' && section !== 'outro') {
+                updateHeroCombat(dt);
+            } else {
+                heroAttackCooldown = Math.max(0, heroAttackCooldown - dt);
+            }
 
             // ── Signature combo ──
             updateSignatureCombo(dt);
