@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Velocity — Cyberpunk Chase Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0014;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,0,20,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #ff2d95;
+            text-shadow: 0 0 30px rgba(255,45,149,0.6), 0 0 60px rgba(0,229,255,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(0,229,255,0.6);
+            margin-bottom: 40px;
+            letter-spacing: 0.2em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5ff;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,255,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: 'Orbitron', sans-serif;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&#8592; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Neon Velocity</div>
+        <div class="play-sub">a cyberpunk chase at 175 bpm</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Neon Velocity Video Renderer ──────────────────────────────────
+    window.Renderers['neon-velocity-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Colors ──
+        var BG = '#0a0014';
+        var PINK = '#ff2d95';
+        var CYAN = '#00e5ff';
+        var BLUE = '#4466ff';
+        var PURPLE = '#8800cc';
+        var YELLOW = '#ffea00';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var elapsed = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'intro'; // intro, verse, prechorus, chorus, breakdown, outro
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+
+        // ── Scrolling city ──
+        var buildings = [];
+        var scrollX = 0;
+        var speedMultiplier = 1;
+        var groundLinePhase = 0;
+
+        // ── Hover-bike ──
+        var bikeY = 0;
+        var bikeTargetY = 0;
+        var bikeTilt = 0;
+        var bikeTiltTarget = 0;
+        var bikeTrail = [];
+        var bikeBoost = 0;
+
+        // ── Police drones ──
+        var drones = [];
+        var droneFlashPhase = 0;
+
+        // ── Neon signs ──
+        var signs = [];
+        var signFlash = 0;
+
+        // ── Particles (sparks, debris) ──
+        var sparks = [];
+
+        // ── Speed lines ──
+        var speedLines = [];
+
+        // ── Stars / distant lights ──
+        var stars = [];
+
+        // ── Title state ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Section mapping for 64-entry sequence ──
+        // seq 0-3: intro (patterns 0,1,0,1)
+        // seq 4-11: verse (patterns 2,3 repeating)
+        // seq 12: pre-chorus (pattern 4)
+        // seq 13-19: chorus (patterns 5,6 alternating)
+        // seq 20-23: breakdown (pattern 7)
+        // seq 24-31: verse2 (patterns 2,3 repeating)
+        // seq 32: pre-chorus2 (pattern 4)
+        // seq 33-39: chorus2 (patterns 5,6 alternating)
+        // seq 40-43: breakdown2 (pattern 7)
+        // seq 44: pre-chorus3 (pattern 4)
+        // seq 45-51: chorus3 (patterns 5,6 alternating)
+        // seq 52: pre-chorus4 (pattern 4)
+        // seq 53-59: chorus4 (patterns 5,6 alternating)
+        // seq 60-63: outro (pattern 8)
+        function mapSection(seqIndex) {
+            if (seqIndex <= 3) return 'intro';
+            if (seqIndex <= 11) return 'verse';
+            if (seqIndex === 12) return 'prechorus';
+            if (seqIndex <= 19) return 'chorus';
+            if (seqIndex <= 23) return 'breakdown';
+            if (seqIndex <= 31) return 'verse';
+            if (seqIndex === 32) return 'prechorus';
+            if (seqIndex <= 39) return 'chorus';
+            if (seqIndex <= 43) return 'breakdown';
+            if (seqIndex === 44) return 'prechorus';
+            if (seqIndex <= 51) return 'chorus';
+            if (seqIndex === 52) return 'prechorus';
+            if (seqIndex <= 59) return 'chorus';
+            return 'outro';
+        }
+
+        // ── Building generator ──
+        function makeBuilding(x) {
+            var h = 80 + Math.random() * 300;
+            var w = 40 + Math.random() * 80;
+            var neonColor = [PINK, CYAN, BLUE, PURPLE, YELLOW][Math.floor(Math.random() * 5)];
+            var windowRows = Math.floor(h / 20);
+            var windowCols = Math.floor(w / 18);
+            var hasSign = Math.random() > 0.6;
+            var signY = 0.2 + Math.random() * 0.4;
+            return {
+                x: x, w: w, h: h,
+                neonColor: neonColor,
+                windowRows: windowRows, windowCols: windowCols,
+                hasSign: hasSign, signY: signY,
+                signWidth: w * (0.5 + Math.random() * 0.4),
+                layer: Math.random() > 0.5 ? 1 : 0 // 0=back, 1=front
+            };
+        }
+
+        function initBuildings() {
+            buildings = [];
+            var x = -100;
+            while (x < W + 200) {
+                var b = makeBuilding(x);
+                buildings.push(b);
+                x += b.w + 5 + Math.random() * 30;
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (var i = 0; i < 120; i++) {
+                stars.push({
+                    x: Math.random() * 2000,
+                    y: Math.random() * (H * 0.5),
+                    size: 0.5 + Math.random() * 1.5,
+                    alpha: 0.2 + Math.random() * 0.6,
+                    speed: 10 + Math.random() * 40
+                });
+            }
+        }
+
+        function initDrones() {
+            drones = [
+                { x: -120, y: 0, offsetY: 0, phase: 0 },
+                { x: -200, y: 0, offsetY: 0, phase: Math.PI * 0.7 },
+                { x: -160, y: 0, offsetY: 0, phase: Math.PI * 1.4 }
+            ];
+        }
+
+        function initSpeedLines() {
+            speedLines = [];
+            for (var i = 0; i < 30; i++) {
+                speedLines.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    len: 20 + Math.random() * 80,
+                    speed: 400 + Math.random() * 600,
+                    alpha: 0.1 + Math.random() * 0.3
+                });
+            }
+        }
+
+        // ── Lerp ──
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Hex to RGB ──
+        function hexRgb(hex) {
+            return {
+                r: parseInt(hex.slice(1,3), 16),
+                g: parseInt(hex.slice(3,5), 16),
+                b: parseInt(hex.slice(5,7), 16)
+            };
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            elapsed = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'intro';
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            scrollX = 0;
+            speedMultiplier = 1;
+            groundLinePhase = 0;
+            bikeY = H * 0.55;
+            bikeTargetY = H * 0.55;
+            bikeTilt = 0;
+            bikeTiltTarget = 0;
+            bikeTrail = [];
+            bikeBoost = 0;
+            droneFlashPhase = 0;
+            signFlash = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            sparks = [];
+
+            initBuildings();
+            initStars();
+            initDrones();
+            initSpeedLines();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            initBuildings();
+            initStars();
+            initSpeedLines();
+        }
+
+        // ── Draw the hover-bike ──
+        function drawBike(ctx, x, y, tilt, energy) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(tilt * 0.15);
+
+            var scale = Math.min(W, H) / 800;
+            var s = Math.max(0.5, scale);
+
+            // Engine glow underneath
+            var glowR = 20 * s + bikeBoost * 15 * s;
+            var grad = ctx.createRadialGradient(0, 8*s, 2, 0, 8*s, glowR);
+            grad.addColorStop(0, 'rgba(0,229,255,0.6)');
+            grad.addColorStop(0.5, 'rgba(0,229,255,0.15)');
+            grad.addColorStop(1, 'rgba(0,229,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(-glowR, 8*s - glowR*0.3, glowR*2, glowR);
+
+            // Body - sleek wedge shape
+            ctx.fillStyle = '#1a1a2e';
+            ctx.strokeStyle = CYAN;
+            ctx.lineWidth = 2 * s;
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(50*s, 0);          // nose
+            ctx.lineTo(30*s, -12*s);      // top front
+            ctx.lineTo(-35*s, -10*s);     // top back
+            ctx.lineTo(-45*s, 0);         // tail
+            ctx.lineTo(-35*s, 8*s);       // bottom back
+            ctx.lineTo(30*s, 6*s);        // bottom front
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Neon trim line
+            ctx.strokeStyle = PINK;
+            ctx.shadowColor = PINK;
+            ctx.shadowBlur = 12;
+            ctx.lineWidth = 1.5 * s;
+            ctx.beginPath();
+            ctx.moveTo(48*s, 0);
+            ctx.lineTo(-40*s, -2*s);
+            ctx.stroke();
+
+            // Windshield
+            ctx.fillStyle = 'rgba(0,229,255,0.2)';
+            ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+            ctx.lineWidth = 1 * s;
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.moveTo(30*s, -11*s);
+            ctx.lineTo(15*s, -16*s);
+            ctx.lineTo(-5*s, -14*s);
+            ctx.lineTo(-5*s, -10*s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Rider silhouette
+            ctx.fillStyle = '#0a0014';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.ellipse(-5*s, -18*s, 6*s, 6*s, 0, 0, Math.PI * 2); // head
+            ctx.fill();
+            ctx.fillRect(-15*s, -14*s, 18*s, 8*s); // torso
+
+            // Exhaust / boost flames
+            if (bikeBoost > 0.1 || energy > 0.3) {
+                var flameLen = (20 + bikeBoost * 40 + energy * 20) * s;
+                var flameGrad = ctx.createLinearGradient(-45*s, 0, -45*s - flameLen, 0);
+                flameGrad.addColorStop(0, 'rgba(0,229,255,0.8)');
+                flameGrad.addColorStop(0.3, 'rgba(255,45,149,0.5)');
+                flameGrad.addColorStop(1, 'rgba(255,45,149,0)');
+                ctx.fillStyle = flameGrad;
+                ctx.beginPath();
+                ctx.moveTo(-45*s, -4*s);
+                ctx.lineTo(-45*s - flameLen, 0);
+                ctx.lineTo(-45*s, 4*s);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Headlight beam
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var headGrad = ctx.createLinearGradient(50*s, 0, 50*s + 200*s, 0);
+            headGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+            headGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath();
+            ctx.moveTo(50*s, -3*s);
+            ctx.lineTo(50*s + 200*s, -30*s);
+            ctx.lineTo(50*s + 200*s, 30*s);
+            ctx.lineTo(50*s, 3*s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // ── Draw a police drone ──
+        function drawDrone(ctx, dx, dy, phase, energy) {
+            ctx.save();
+            ctx.translate(dx, dy);
+
+            var scale = Math.min(W, H) / 800;
+            var s = Math.max(0.4, scale);
+            var bob = Math.sin(phase * 3) * 3;
+
+            // Body
+            ctx.fillStyle = '#1a1a2e';
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 1.5 * s;
+            ctx.shadowColor = '#ff4444';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.ellipse(0, bob, 18*s, 8*s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Rotor lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+            var rotorAngle = phase * 20;
+            for (var r = 0; r < 2; r++) {
+                var ra = rotorAngle + r * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(ra) * 22*s, bob - 6*s + Math.sin(ra) * 3*s);
+                ctx.lineTo(Math.cos(ra + Math.PI) * 22*s, bob - 6*s + Math.sin(ra + Math.PI) * 3*s);
+                ctx.stroke();
+            }
+
+            // Flashing red/blue lights
+            var flashOn = Math.sin(droneFlashPhase * 8 + phase) > 0;
+            var lightColor = flashOn ? '#ff0000' : '#0044ff';
+            ctx.fillStyle = lightColor;
+            ctx.shadowColor = lightColor;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(-8*s, bob, 3*s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(8*s, bob, 3*s, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Searchlight beam
+            if (energy > 0.3) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var beamGrad = ctx.createLinearGradient(0, bob + 8*s, 0, bob + 150*s);
+                beamGrad.addColorStop(0, 'rgba(255,255,255,0.12)');
+                beamGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = beamGrad;
+                ctx.beginPath();
+                ctx.moveTo(-4*s, bob + 8*s);
+                ctx.lineTo(-40*s, bob + 150*s);
+                ctx.lineTo(40*s, bob + 150*s);
+                ctx.lineTo(4*s, bob + 8*s);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw buildings for a layer ──
+        function drawBuildingLayer(ctx, layer, energy) {
+            var horizon = H * 0.35;
+            var floorY = H * 0.75;
+
+            for (var i = 0; i < buildings.length; i++) {
+                var b = buildings[i];
+                if (b.layer !== layer) continue;
+
+                var bx = b.x - scrollX * (layer === 0 ? 0.6 : 1.0);
+                // Wrap around
+                var totalWidth = 0;
+                for (var tw = 0; tw < buildings.length; tw++) totalWidth += buildings[tw].w + 20;
+                while (bx + b.w < -100) bx += totalWidth;
+                while (bx > W + 200) bx -= totalWidth;
+
+                var by = floorY;
+                var bh = b.h * (layer === 0 ? 0.7 : 1.0);
+                var alpha = layer === 0 ? 0.4 : 0.8;
+
+                // Building body
+                ctx.fillStyle = layer === 0 ? '#08001a' : '#0d0020';
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(bx, by - bh, b.w, bh);
+
+                // Neon outline (top and sides)
+                var nc = hexRgb(b.neonColor);
+                ctx.strokeStyle = 'rgba(' + nc.r + ',' + nc.g + ',' + nc.b + ',' + (0.3 + energy * 0.3) + ')';
+                ctx.lineWidth = layer === 0 ? 1 : 1.5;
+                ctx.shadowColor = b.neonColor;
+                ctx.shadowBlur = layer === 0 ? 4 : 8;
+                ctx.strokeRect(bx, by - bh, b.w, bh);
+                ctx.shadowBlur = 0;
+
+                // Windows
+                if (layer === 1) {
+                    var wGap = b.w / (b.windowCols + 1);
+                    var hGap = bh / (b.windowRows + 1);
+                    for (var wr = 1; wr <= b.windowRows; wr++) {
+                        for (var wc = 1; wc <= b.windowCols; wc++) {
+                            var lit = Math.sin(wr * 3.7 + wc * 5.1 + b.x * 0.01) > -0.2;
+                            if (!lit) continue;
+                            var wx = bx + wc * wGap - 3;
+                            var wy = by - bh + wr * hGap - 3;
+                            ctx.fillStyle = 'rgba(255,234,0,' + (0.15 + Math.random() * 0.1) + ')';
+                            ctx.fillRect(wx, wy, 6, 6);
+                        }
+                    }
+                }
+
+                // Neon sign flash
+                if (b.hasSign && layer === 1) {
+                    var sy = by - bh + bh * b.signY;
+                    var sw = b.signWidth;
+                    var signAlpha = 0.3 + signFlash * 0.5 + energy * 0.2;
+                    ctx.fillStyle = 'rgba(' + nc.r + ',' + nc.g + ',' + nc.b + ',' + signAlpha + ')';
+                    ctx.shadowColor = b.neonColor;
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(bx + (b.w - sw) / 2, sy, sw, 6);
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ── Draw perspective ground ──
+        function drawGround(ctx, energy) {
+            var floorY = H * 0.75;
+            ctx.save();
+
+            // Road surface
+            var roadGrad = ctx.createLinearGradient(0, floorY, 0, H);
+            roadGrad.addColorStop(0, '#0d0020');
+            roadGrad.addColorStop(1, '#050010');
+            ctx.fillStyle = roadGrad;
+            ctx.fillRect(0, floorY, W, H - floorY);
+
+            // Perspective grid lines
+            var numV = 24;
+            var vpX = W * 0.35; // vanishing point slightly left (we're moving right)
+            ctx.strokeStyle = 'rgba(0,229,255,' + (0.04 + energy * 0.06) + ')';
+            ctx.lineWidth = 1;
+            for (var i = 0; i <= numV; i++) {
+                var x = (i / numV) * W;
+                ctx.beginPath();
+                ctx.moveTo(x, floorY);
+                ctx.lineTo(vpX + (x - vpX) * 3, H);
+                ctx.stroke();
+            }
+
+            // Horizontal lines scrolling toward viewer
+            var lineCount = 12;
+            ctx.strokeStyle = 'rgba(255,45,149,' + (0.05 + energy * 0.08) + ')';
+            for (var j = 0; j < lineCount; j++) {
+                var t = ((j / lineCount) + groundLinePhase) % 1;
+                var y = floorY + Math.pow(t, 1.8) * (H - floorY);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            // Road edge glow
+            ctx.strokeStyle = CYAN;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = CYAN;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(W, floorY);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Center lane dashes
+            ctx.strokeStyle = 'rgba(255,234,0,0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([20, 30]);
+            ctx.lineDashOffset = -scrollX * 2;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY + (H - floorY) * 0.3);
+            ctx.lineTo(W, floorY + (H - floorY) * 0.3);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.restore();
+        }
+
+        // ── Draw sky gradient ──
+        function drawSky(ctx, energy) {
+            var horizon = H * 0.35;
+            var grad = ctx.createLinearGradient(0, 0, 0, horizon + 100);
+            grad.addColorStop(0, '#050010');
+            grad.addColorStop(0.6, '#0a0020');
+            grad.addColorStop(1, '#1a0040');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, horizon + 100);
+
+            // Distant city glow on horizon
+            var glowGrad = ctx.createLinearGradient(0, horizon - 40, 0, horizon + 60);
+            glowGrad.addColorStop(0, 'rgba(255,45,149,0)');
+            glowGrad.addColorStop(0.5, 'rgba(255,45,149,' + (0.05 + energy * 0.08) + ')');
+            glowGrad.addColorStop(1, 'rgba(0,229,255,' + (0.02 + energy * 0.04) + ')');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, horizon - 40, W, 100);
+        }
+
+        // ── Draw stars ──
+        function drawStars(ctx) {
+            ctx.save();
+            for (var i = 0; i < stars.length; i++) {
+                var st = stars[i];
+                var sx = ((st.x - scrollX * st.speed * 0.002) % W + W) % W;
+                ctx.globalAlpha = st.alpha * introFadeIn * outroFadeOut;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(sx, st.y, st.size, st.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw speed lines ──
+        function drawSpeedLines(ctx, energy) {
+            if (energy < 0.2) return;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0,229,255,' + (energy * 0.15) + ')';
+            ctx.lineWidth = 1;
+            for (var i = 0; i < speedLines.length; i++) {
+                var sl = speedLines[i];
+                var alpha = sl.alpha * energy * introFadeIn;
+                if (alpha < 0.01) continue;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.moveTo(sl.x, sl.y);
+                ctx.lineTo(sl.x - sl.len * energy, sl.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw sparks ──
+        function drawSparks(ctx) {
+            ctx.save();
+            for (var i = sparks.length - 1; i >= 0; i--) {
+                var sp = sparks[i];
+                ctx.globalAlpha = sp.life;
+                ctx.fillStyle = sp.color;
+                ctx.shadowColor = sp.color;
+                ctx.shadowBlur = 4;
+                ctx.fillRect(sp.x, sp.y, sp.size, sp.size);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            var fontSize = Math.max(16, Math.min(W * 0.06, 64));
+            ctx.font = '900 ' + fontSize + 'px "Orbitron", sans-serif';
+
+            // Glow layers
+            ctx.globalAlpha = titleAlpha * 0.4;
+            ctx.shadowColor = CYAN;
+            ctx.shadowBlur = 60;
+            ctx.fillStyle = CYAN;
+            ctx.fillText('NEON VELOCITY', W / 2, H * 0.15);
+
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowColor = PINK;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = PINK;
+            ctx.fillText('NEON VELOCITY', W / 2, H * 0.15);
+
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.fillStyle = '#fff';
+            ctx.fillText('NEON VELOCITY', W / 2, H * 0.15);
+
+            ctx.restore();
+        }
+
+        // ── Draw bike trail ──
+        function drawBikeTrail(ctx) {
+            if (bikeTrail.length < 2) return;
+            ctx.save();
+            for (var i = 1; i < bikeTrail.length; i++) {
+                var t = i / bikeTrail.length;
+                var pt = bikeTrail[i];
+                var prev = bikeTrail[i - 1];
+                ctx.globalAlpha = t * 0.4;
+                ctx.strokeStyle = CYAN;
+                ctx.lineWidth = 2 + t * 3;
+                ctx.shadowColor = CYAN;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(pt.x, pt.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Spawn sparks ──
+        function spawnSparks(x, y, count, color) {
+            for (var i = 0; i < count; i++) {
+                sparks.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 300,
+                    vy: (Math.random() - 0.8) * 200,
+                    life: 0.8 + Math.random() * 0.2,
+                    size: 1 + Math.random() * 3,
+                    color: color || YELLOW
+                });
+            }
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: draw static scene
+                drawSky(ctx, 0);
+                drawStars(ctx);
+                drawBuildingLayer(ctx, 0, 0);
+                drawBuildingLayer(ctx, 1, 0);
+                drawGround(ctx, 0);
+                drawBike(ctx, W * 0.3, H * 0.55, 0, 0);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            elapsed = cursor.elapsed;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+
+                // Flash on chorus entry
+                if (newSection === 'chorus' && oldSection !== 'chorus') {
+                    flashAlpha = 0.3;
+                    bikeBoost = 1;
+                    spawnSparks(W * 0.3, H * 0.55, 20, CYAN);
+                }
+
+                // Flash on breakdown
+                if (newSection === 'breakdown' && oldSection !== 'breakdown') {
+                    flashAlpha = 0.15;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Intro fade-in ──
+            if (sectionMood === 'intro') {
+                introFadeIn = Math.min(1, introFadeIn + dt * 0.4);
+            } else {
+                introFadeIn = 1;
+            }
+
+            // ── Outro fade ──
+            if (sectionMood === 'outro') {
+                outroFadeOut = Math.max(0, outroFadeOut - dt * 0.12);
+            } else {
+                outroFadeOut = 1;
+            }
+
+            // ── Speed based on section ──
+            var targetSpeed;
+            switch (sectionMood) {
+                case 'intro': targetSpeed = 0.4 + introFadeIn * 0.3; break;
+                case 'verse': targetSpeed = 1.0; break;
+                case 'prechorus': targetSpeed = 1.3 + energy * 0.5; break;
+                case 'chorus': targetSpeed = 1.8 + energy * 0.7; break;
+                case 'breakdown': targetSpeed = 0.3; break;
+                case 'outro': targetSpeed = 0.5 * outroFadeOut; break;
+                default: targetSpeed = 1.0;
+            }
+            speedMultiplier = lerpExp(speedMultiplier, targetSpeed, 4, dt);
+
+            // ── Beat sync ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                signFlash = 1;
+
+                // Bike weaving on beats
+                if (sectionMood === 'chorus' || sectionMood === 'prechorus') {
+                    bikeTiltTarget = (Math.random() - 0.5) * 1.5;
+                    bikeTargetY = H * 0.5 + (Math.random() - 0.5) * H * 0.15;
+                    if (Math.random() > 0.7) {
+                        spawnSparks(W * 0.3 - 40, bikeY + 10, 5, YELLOW);
+                    }
+                } else if (sectionMood === 'verse') {
+                    bikeTiltTarget = (Math.random() - 0.5) * 0.5;
+                    bikeTargetY = H * 0.55 + (Math.random() - 0.5) * H * 0.05;
+                } else if (sectionMood === 'breakdown') {
+                    bikeTiltTarget = 0;
+                    bikeTargetY = H * 0.58;
+                }
+
+                // Chorus beat flashes
+                if (sectionMood === 'chorus' && energy > 0.4) {
+                    flashAlpha = Math.max(flashAlpha, 0.06 + energy * 0.06);
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            signFlash *= Math.exp(-6 * dt);
+            bikeBoost *= Math.exp(-3 * dt);
+
+            // ── Scroll city ──
+            scrollX += speedMultiplier * 200 * dt;
+            groundLinePhase = (groundLinePhase + speedMultiplier * dt * 0.8) % 1;
+
+            // ── Update bike ──
+            bikeY = lerpExp(bikeY, bikeTargetY, 6, dt);
+            bikeTilt = lerpExp(bikeTilt, bikeTiltTarget, 8, dt);
+
+            // Bike trail
+            bikeTrail.push({ x: W * 0.3, y: bikeY });
+            if (bikeTrail.length > 20) bikeTrail.shift();
+            // Shift trail back as if moving
+            for (var ti = 0; ti < bikeTrail.length; ti++) {
+                bikeTrail[ti].x -= speedMultiplier * 100 * dt;
+            }
+            // Remove offscreen trail points
+            while (bikeTrail.length > 0 && bikeTrail[0].x < -50) bikeTrail.shift();
+
+            // ── Update drones ──
+            droneFlashPhase += dt;
+            var droneVisible = sectionMood !== 'intro' || introFadeIn > 0.7;
+            for (var di = 0; di < drones.length; di++) {
+                var dr = drones[di];
+                dr.phase += dt;
+                var droneTargetX;
+                var droneTargetY;
+                if (sectionMood === 'chorus') {
+                    // Drones close in during chorus
+                    droneTargetX = W * 0.3 - 100 - di * 60 - Math.sin(dr.phase * 1.5) * 30;
+                    droneTargetY = bikeY - 80 - di * 25 + Math.sin(dr.phase * 2) * 15;
+                } else if (sectionMood === 'breakdown') {
+                    // Drones pull back
+                    droneTargetX = W * 0.3 - 250 - di * 50;
+                    droneTargetY = H * 0.3 + di * 30;
+                } else {
+                    droneTargetX = W * 0.3 - 150 - di * 50 + Math.sin(dr.phase) * 20;
+                    droneTargetY = bikeY - 60 - di * 30 + Math.cos(dr.phase * 1.3) * 10;
+                }
+                dr.x = lerpExp(dr.x, droneTargetX, 3, dt);
+                dr.y = lerpExp(dr.y, droneTargetY, 3, dt);
+            }
+
+            // ── Update speed lines ──
+            for (var si = 0; si < speedLines.length; si++) {
+                var sl = speedLines[si];
+                sl.x -= sl.speed * speedMultiplier * dt;
+                if (sl.x < -sl.len) {
+                    sl.x = W + Math.random() * 100;
+                    sl.y = Math.random() * H;
+                }
+            }
+
+            // ── Update sparks ──
+            for (var sp = sparks.length - 1; sp >= 0; sp--) {
+                var spark = sparks[sp];
+                spark.x += spark.vx * dt;
+                spark.y += spark.vy * dt;
+                spark.vy += 300 * dt; // gravity
+                spark.life -= dt * 2;
+                if (spark.life <= 0) {
+                    sparks.splice(sp, 1);
+                }
+            }
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'chorus') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 4, dt);
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx, energy);
+
+            // 2. Stars
+            drawStars(ctx);
+
+            // 3. Back buildings
+            drawBuildingLayer(ctx, 0, energy);
+
+            // 4. Front buildings
+            drawBuildingLayer(ctx, 1, energy);
+
+            // 5. Ground
+            drawGround(ctx, energy);
+
+            // 6. Speed lines
+            drawSpeedLines(ctx, energy);
+
+            // 7. Bike trail
+            drawBikeTrail(ctx);
+
+            // 8. Police drones (behind bike)
+            if (droneVisible) {
+                for (var ddi = 0; ddi < drones.length; ddi++) {
+                    drawDrone(ctx, drones[ddi].x, drones[ddi].y, drones[ddi].phase, energy);
+                }
+            }
+
+            // 9. Hover-bike
+            ctx.save();
+            ctx.globalAlpha = introFadeIn * outroFadeOut;
+            drawBike(ctx, W * 0.3, bikeY, bikeTilt, energy);
+            ctx.restore();
+
+            // 10. Sparks
+            drawSparks(ctx);
+
+            // 11. Title
+            drawTitle(ctx);
+
+            // 12. Vignette
+            var vigGrad = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.8);
+            vigGrad.addColorStop(0, 'rgba(10,0,20,0)');
+            vigGrad.addColorStop(1, 'rgba(10,0,20,' + (0.4 + beatPulse * 0.1) + ')');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // 13. Beat pulse border flash
+            if (beatPulse > 0.1 && sectionMood === 'chorus') {
+                ctx.save();
+                ctx.globalAlpha = beatPulse * 0.15;
+                ctx.strokeStyle = PINK;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = PINK;
+                ctx.shadowBlur = 20;
+                ctx.strokeRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // 14. Flash
+            drawFlash(ctx);
+
+            // 15. Outro fade to black
+            if (outroFadeOut < 1) {
+                ctx.save();
+                ctx.globalAlpha = 1 - outroFadeOut;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Neon Velocity Chase',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('neon-velocity-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/neon-velocity.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
