@@ -105,6 +105,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── The Diva's Aria Video Renderer ─────────────────────────────────
     window.Renderers['divas-aria-video'] = (function() {
@@ -139,7 +140,8 @@
         var lastSeqIndex = -1;
         var sectionMood = 'intro'; // intro, aria, coloratura, shift, action, climax, descent, coda
 
-        // Diva state
+        // Diva state — StickFight figure with custom overlays
+        var divaFig = null;
         var divaArmAngle = 0;       // 0 = sides, 1 = raised
         var divaArmTarget = 0;
         var divaSway = 0;
@@ -327,12 +329,31 @@
             ctx.restore();
         }
 
-        // ── Draw the diva silhouette ──
+        // ── Draw the diva silhouette (StickFight skeleton + custom overlays) ──
         function drawDiva(ctx, energy, time) {
             var cx = W * 0.5;
             var baseY = stageY;
             var figH = H * 0.32;
 
+            if (!divaFig) return;
+
+            // Update StickFight figure dimensions and position
+            divaFig.figH = figH;
+            divaFig.x = cx + divaSway * figH * 0.02;
+            divaFig.y = baseY;
+
+            // Map divaArmAngle to StickFight arm targets
+            // armAngle 0 = sides (positive angle = down), 1 = raised (negative angle = up)
+            var armUpL = -1.2 * divaArmAngle + 0.4 * (1 - divaArmAngle);
+            var armUpR = -1.2 * divaArmAngle + 0.4 * (1 - divaArmAngle);
+            StickFight.setTarget(divaFig, 'armLAngle', armUpL);
+            StickFight.setTarget(divaFig, 'armRAngle', armUpR);
+            StickFight.setTarget(divaFig, 'elbowLBend', 0.3 + divaArmAngle * 0.2);
+            StickFight.setTarget(divaFig, 'elbowRBend', 0.3 + divaArmAngle * 0.2);
+            StickFight.setTarget(divaFig, 'bounce', Math.sin(divaBreathPhase) * 0.05);
+            StickFight.updateFigure(divaFig, 1/60);
+
+            var joints = StickFight.computeJoints(divaFig);
             var breath = Math.sin(divaBreathPhase) * figH * 0.008;
             var sway = divaSway * figH * 0.02;
 
@@ -350,16 +371,16 @@
             ctx.save();
             ctx.translate(cx + sway, baseY);
 
-            // Dress / body (elongated triangle)
+            // ── Custom dress/body overlays using StickFight joint positions ──
             var dressW = figH * 0.18;
             var dressBot = 0;
-            var dressTop = -figH * 0.55;
-            var waistY = -figH * 0.58;
-            var neckY = -figH * 0.72 + breath;
-            var headY = -figH * 0.82 + breath;
-            var headR = figH * 0.07;
+            // Use StickFight joint positions for key body points
+            var waistY = joints.hip.y;
+            var neckY = joints.neck.y;
+            var headY = joints.head.y;
+            var headR = joints.headR;
 
-            // Flowing dress
+            // Flowing dress (from hip down)
             ctx.fillStyle = DIVA_DARK;
             ctx.shadowColor = DIVA_BLUE;
             ctx.shadowBlur = 20;
@@ -371,7 +392,7 @@
             ctx.closePath();
             ctx.fill();
 
-            // Torso
+            // Torso (from hip to neck)
             ctx.fillStyle = DIVA_SKIN;
             ctx.shadowBlur = 10;
             ctx.beginPath();
@@ -383,24 +404,24 @@
             ctx.fill();
 
             // Neck
-            ctx.fillRect(-figH * 0.025, neckY, figH * 0.05, figH * 0.06);
+            ctx.fillRect(-figH * 0.025, neckY, figH * 0.05, joints.neck.y - joints.head.y - headR);
 
             // Head
             ctx.beginPath();
-            ctx.arc(0, headY, headR, 0, Math.PI * 2);
+            ctx.arc(joints.head.x, headY, headR, 0, Math.PI * 2);
             ctx.fill();
 
             // Hair (ornate updo)
             ctx.fillStyle = DIVA_DARK;
             ctx.beginPath();
-            ctx.arc(0, headY - headR * 0.3, headR * 1.15, -Math.PI, 0);
+            ctx.arc(joints.head.x, headY - headR * 0.3, headR * 1.15, -Math.PI, 0);
             ctx.fill();
             // Hair ornament / crown
             ctx.fillStyle = GOLD_SPOT;
             ctx.shadowColor = GOLD_SPOT;
             ctx.shadowBlur = 8;
             for (var hi = -2; hi <= 2; hi++) {
-                var hx = hi * headR * 0.3;
+                var hx = joints.head.x + hi * headR * 0.3;
                 var hy = headY - headR * 1.2 - Math.abs(hi) * headR * 0.15;
                 ctx.beginPath();
                 ctx.arc(hx, hy, 2 + (2 - Math.abs(hi)), 0, Math.PI * 2);
@@ -411,69 +432,47 @@
             ctx.fillStyle = '#fff';
             ctx.shadowBlur = 0;
             var eyeY = headY + headR * 0.05;
-            ctx.fillRect(-headR * 0.3, eyeY, headR * 0.18, 2);
-            ctx.fillRect(headR * 0.12, eyeY, headR * 0.18, 2);
+            ctx.fillRect(joints.head.x - headR * 0.3, eyeY, headR * 0.18, 2);
+            ctx.fillRect(joints.head.x + headR * 0.12, eyeY, headR * 0.18, 2);
 
             // Mouth (open when singing)
             var mouthH = divaMouthOpen * headR * 0.35;
             if (mouthH > 1) {
                 ctx.fillStyle = '#1a3050';
                 ctx.beginPath();
-                ctx.ellipse(0, headY + headR * 0.4, headR * 0.2, mouthH, 0, 0, Math.PI * 2);
+                ctx.ellipse(joints.head.x, headY + headR * 0.4, headR * 0.2, mouthH, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = DIVA_SKIN;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
 
-            // Arms
-            var shoulderY = neckY + figH * 0.04;
-            var shoulderW = dressW * 0.35;
-            var armLen = figH * 0.22;
-            var foreLen = figH * 0.18;
-
-            var armAngle = divaArmAngle;
-            // Left arm
-            var lArmUp = -Math.PI * 0.5 + (1 - armAngle) * Math.PI * 0.6;
-            var lElbowX = -shoulderW + Math.cos(lArmUp) * armLen;
-            var lElbowY = shoulderY + Math.sin(lArmUp) * armLen;
-            var lForeAngle = lArmUp + 0.3 - armAngle * 0.5;
-            var lHandX = lElbowX + Math.cos(lForeAngle) * foreLen;
-            var lHandY = lElbowY + Math.sin(lForeAngle) * foreLen;
-
-            // Right arm (mirrored)
-            var rArmUp = -Math.PI * 0.5 - (1 - armAngle) * Math.PI * 0.6;
-            var rElbowX = shoulderW + Math.cos(rArmUp) * armLen;
-            var rElbowY = shoulderY + Math.sin(rArmUp) * armLen;
-            var rForeAngle = rArmUp - 0.3 + armAngle * 0.5;
-            var rHandX = rElbowX + Math.cos(rForeAngle) * foreLen;
-            var rHandY = rElbowY + Math.sin(rForeAngle) * foreLen;
-
+            // Arms — drawn using StickFight joint positions
             ctx.strokeStyle = DIVA_SKIN;
             ctx.lineWidth = figH * 0.025;
             ctx.lineCap = 'round';
             ctx.shadowColor = DIVA_BLUE;
             ctx.shadowBlur = 6;
 
-            // Left arm
+            // Left arm (shoulder -> elbow -> hand)
             ctx.beginPath();
-            ctx.moveTo(-shoulderW, shoulderY);
-            ctx.lineTo(lElbowX, lElbowY);
-            ctx.lineTo(lHandX, lHandY);
+            ctx.moveTo(joints.shoulderL.x, joints.shoulderL.y);
+            ctx.lineTo(joints.elbowL.x, joints.elbowL.y);
+            ctx.lineTo(joints.handL.x, joints.handL.y);
             ctx.stroke();
 
             // Right arm
             ctx.beginPath();
-            ctx.moveTo(shoulderW, shoulderY);
-            ctx.lineTo(rElbowX, rElbowY);
-            ctx.lineTo(rHandX, rHandY);
+            ctx.moveTo(joints.shoulderR.x, joints.shoulderR.y);
+            ctx.lineTo(joints.elbowR.x, joints.elbowR.y);
+            ctx.lineTo(joints.handR.x, joints.handR.y);
             ctx.stroke();
 
             // Hands (small circles)
             ctx.fillStyle = DIVA_SKIN;
             ctx.beginPath();
-            ctx.arc(lHandX, lHandY, figH * 0.015, 0, Math.PI * 2);
-            ctx.arc(rHandX, rHandY, figH * 0.015, 0, Math.PI * 2);
+            ctx.arc(joints.handL.x, joints.handL.y, figH * 0.015, 0, Math.PI * 2);
+            ctx.arc(joints.handR.x, joints.handR.y, figH * 0.015, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.restore();
@@ -743,6 +742,18 @@
             titleAlpha = 0;
             titleTarget = 0;
             spotPhase = 0;
+
+            // Create StickFight figure for the diva
+            divaFig = StickFight.create({
+                x: W * 0.5,
+                y: H * STAGE_Y_RATIO,
+                figH: H * 0.32,
+                facing: 1,
+                color: DIVA_SKIN,
+                lineWidth: 2.5,
+                poseSpeed: 8
+            });
+            StickFight.setPose(divaFig, 'idle');
 
             initAudience();
             initFog();

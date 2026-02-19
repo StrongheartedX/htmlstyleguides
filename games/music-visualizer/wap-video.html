@@ -102,6 +102,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── WAP Video Renderer ──────────────────────────────────────────
     window.Renderers['wap-video'] = (function() {
@@ -152,95 +153,135 @@
         var crowd = [];
         var floorGridPhase = 0;
 
-        // ── Stick Figure Joint System ──
-        // Joints: head, neck, lShoulder, rShoulder, lElbow, rElbow, lHand, rHand, hip, lKnee, rKnee, lAnkle, rAnkle
-        // Bone sizes relative to figure height
-        var BONE = {
-            headR: 0.08,
-            neck: 0.07,
-            shoulder: 0.11,   // narrower shoulders
-            hipWidth: 0.13,   // wider hips than shoulders
-            upperArm: 0.12,
-            forearm: 0.11,
-            torso: 0.23,
-            thigh: 0.19,
-            shin: 0.18
-        };
-
-        // ── Pose Parameters ──
-        // Each figure has a set of lerped parameters that define its current pose
-        function createPoseParams() {
-            return {
-                bounce: 0,       // -1 to 1, vertical bob
-                armRaise: 0,     // 0 to 1, arms raised overhead
-                lean: 0,         // -1 to 1, torso lean left/right
-                kick: 0,         // 0 to 1, one leg kicks out
-                kickSide: 1,     // 1 or -1, which leg kicks
-                hipThrust: 0,    // 0 to 1, hip forward
-                headBang: 0,     // 0 to 1, head forward
-                armPump: 0,      // 0 to 1, fist pump
-                armPumpSide: 1,
-                windmill: 0,     // 0 to 1, arms spinning
-                windmillAngle: 0,
-                splits: 0,       // 0 to 1, legs split wide
-                freeze: false,
-                hairWhip: 0,     // 0 to 1, hair flying out dramatically
-                hairWhipDir: 1   // 1 or -1, direction of whip
-            };
-        }
-
-        function createPoseTargets() {
-            return createPoseParams();
-        }
-
         // ── Figure State ──
         var figures = [];
 
-        function createPoleDancer(color, poleX, phaseOffset) {
+        // Custom overlay params that StickFight doesn't handle
+        function createOverlayParams() {
             return {
-                type: 'pole',
-                color: color,
-                poleX: poleX,
-                phaseOffset: phaseOffset,
-                orbitAngle: phaseOffset,
-                orbitSpeed: 1.8,
-                slideY: 0.5,       // 0=top, 1=bottom of pole
-                slideTarget: 0.5,
-                hangMode: false,    // one-hand hang
-                upsideDown: false,
-                kickSpin: 0,
-                params: createPoseParams(),
-                targets: createPoseTargets(),
-                active: false,
-                figureH: 0
+                hairWhip: 0,
+                hairWhipDir: 1,
+                headBang: 0,
+                hipThrust: 0,
+                windmillAngle: 0
             };
+        }
+
+        function createPoleDancer(color, poleX, phaseOffset) {
+            var fig = StickFight.create({
+                x: poleX,
+                y: 0,  // will be positioned dynamically
+                figH: 100, // set in render
+                facing: 1,
+                color: color,
+                lineWidth: 3,
+                poseSpeed: 12
+            });
+            fig.type = 'pole';
+            fig.poleX = poleX;
+            fig.phaseOffset = phaseOffset;
+            fig.orbitAngle = phaseOffset;
+            fig.orbitSpeed = 1.8;
+            fig.slideY = 0.5;
+            fig.slideTarget = 0.5;
+            fig.hangMode = false;
+            fig.upsideDown = false;
+            fig.kickSpin = 0;
+            fig.active = false;
+            fig.overlay = createOverlayParams();
+            StickFight.setPose(fig, 'idle');
+            return fig;
         }
 
         function createFloorDancer(color, xPos) {
-            return {
-                type: 'floor',
-                color: color,
+            var fig = StickFight.create({
                 x: xPos,
-                params: createPoseParams(),
-                targets: createPoseTargets(),
-                currentMove: 'BasicBounce',
-                moveBeatCounter: 0,
-                splitsBeatTimer: 0,
-                active: false,
-                figureH: 0
-            };
+                y: 0,  // set in render
+                figH: 100, // set in render
+                facing: 1,
+                color: color,
+                lineWidth: 3,
+                poseSpeed: 12
+            });
+            fig.type = 'floor';
+            fig.currentMove = 'BasicBounce';
+            fig.moveBeatCounter = 0;
+            fig.splitsBeatTimer = 0;
+            fig.active = false;
+            fig.overlay = createOverlayParams();
+            StickFight.setPose(fig, 'idle');
+            return fig;
         }
 
         // ── Move Pool for Floor Dancers ──
+        // Move functions now set StickFight targets + overlay params on the figure
         var MOVES = {
-            BasicBounce: function(t, e) { t.bounce = 0.3 + e * 0.3; },
-            ArmPump: function(t, e) { t.bounce = 0.2; t.armPump = 0.8 + e * 0.2; t.armPumpSide = Math.random() > 0.5 ? 1 : -1; },
-            HipThrust: function(t, e) { t.hipThrust = 0.6 + e * 0.4; t.bounce = 0.15; t.lean = (Math.random() - 0.5) * 0.3; t.hairWhip = 0.4; t.hairWhipDir = t.lean > 0 ? -1 : 1; },
-            Windmill: function(t, e) { t.windmill = 0.7 + e * 0.3; t.bounce = 0.1; t.hairWhip = 0.6; t.hairWhipDir = 1; },
-            RunningMan: function(t, e) { t.kick = 0.5 + e * 0.3; t.kickSide = Math.random() > 0.5 ? 1 : -1; t.armPump = 0.4; t.armPumpSide = -t.kickSide; },
-            HeadBang: function(t, e) { t.headBang = 0.7 + e * 0.3; t.bounce = 0.25; t.hairWhip = 0.9; t.hairWhipDir = Math.random() > 0.5 ? 1 : -1; },
-            Splits: function(t, e) { t.splits = 0.9; t.bounce = -0.1; },
-            FreezeFrame: function(t, e) { t.armRaise = 1; t.lean = (Math.random() - 0.5) * 0.6; t.kick = 0.3; }
+            BasicBounce: function(fig, e) {
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'bounce', 0.3 + e * 0.3);
+            },
+            ArmPump: function(fig, e) {
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'bounce', 0.2);
+                var side = Math.random() > 0.5 ? 1 : -1;
+                if (side > 0) {
+                    StickFight.setTarget(fig, 'armRAngle', -1.0 * (0.8 + e * 0.2));
+                    StickFight.setTarget(fig, 'elbowRBend', 0.6);
+                } else {
+                    StickFight.setTarget(fig, 'armLAngle', -1.0 * (0.8 + e * 0.2));
+                    StickFight.setTarget(fig, 'elbowLBend', 0.6);
+                }
+            },
+            HipThrust: function(fig, e) {
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'bounce', 0.15);
+                var lean = (Math.random() - 0.5) * 0.3;
+                StickFight.setTarget(fig, 'lean', lean + (0.6 + e * 0.4) * 0.3);
+                fig.overlay.hairWhip = 0.4;
+                fig.overlay.hairWhipDir = lean > 0 ? -1 : 1;
+            },
+            Windmill: function(fig, e) {
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'bounce', 0.1);
+                // Windmill arms via direct angle manipulation
+                var wa = fig.overlay.windmillAngle;
+                StickFight.setTarget(fig, 'armLAngle', wa);
+                StickFight.setTarget(fig, 'armRAngle', wa + Math.PI);
+                StickFight.setTarget(fig, 'elbowLBend', 0.1);
+                StickFight.setTarget(fig, 'elbowRBend', 0.1);
+                fig.overlay.hairWhip = 0.6;
+                fig.overlay.hairWhipDir = 1;
+            },
+            RunningMan: function(fig, e) {
+                var kickSide = Math.random() > 0.5 ? 1 : -1;
+                StickFight.setPose(fig, 'kick');
+                StickFight.setTarget(fig, 'kneeL', kickSide > 0 ? 0 : -(0.5 + e * 0.3));
+                StickFight.setTarget(fig, 'kneeR', kickSide > 0 ? -(0.5 + e * 0.3) : 0);
+                StickFight.setTarget(fig, 'legSpread', 0.3);
+                if (kickSide > 0) {
+                    StickFight.setTarget(fig, 'armLAngle', -0.8);
+                } else {
+                    StickFight.setTarget(fig, 'armRAngle', -0.8);
+                }
+            },
+            HeadBang: function(fig, e) {
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'bounce', 0.25);
+                StickFight.setTarget(fig, 'lean', 0.4 + e * 0.3);
+                fig.overlay.headBang = 0.7 + e * 0.3;
+                fig.overlay.hairWhip = 0.9;
+                fig.overlay.hairWhipDir = Math.random() > 0.5 ? 1 : -1;
+            },
+            Splits: function(fig, e) {
+                StickFight.setPose(fig, 'idle');
+                StickFight.setTarget(fig, 'legSpread', 0.9);
+                StickFight.setTarget(fig, 'bounce', -0.1);
+            },
+            FreezeFrame: function(fig, e) {
+                StickFight.setPose(fig, 'arms_up');
+                StickFight.setTarget(fig, 'lean', (Math.random() - 0.5) * 0.6);
+                StickFight.setTarget(fig, 'kneeL', -0.3);
+            }
         };
 
         var MOVE_NAMES = Object.keys(MOVES);
@@ -267,144 +308,36 @@
             return 'BasicBounce';
         }
 
-        // ── Lerp helper ──
+        // ── Lerp helper (for overlay params) ──
         function lerpParam(current, target, speed, dt) {
             return current + (target - current) * (1 - Math.exp(-speed * dt));
         }
 
-        function lerpParams(fig, dt) {
-            var speed = freezeTimer > 0 ? 0.5 : 12;
-            var p = fig.params;
-            var t = fig.targets;
-            p.bounce = lerpParam(p.bounce, t.bounce, speed, dt);
-            p.armRaise = lerpParam(p.armRaise, t.armRaise, speed, dt);
-            p.lean = lerpParam(p.lean, t.lean, speed, dt);
-            p.kick = lerpParam(p.kick, t.kick, speed, dt);
-            p.hipThrust = lerpParam(p.hipThrust, t.hipThrust, speed, dt);
-            p.headBang = lerpParam(p.headBang, t.headBang, speed, dt);
-            p.armPump = lerpParam(p.armPump, t.armPump, speed, dt);
-            p.windmill = lerpParam(p.windmill, t.windmill, speed, dt);
-            p.splits = lerpParam(p.splits, t.splits, speed, dt);
-            p.hairWhip = lerpParam(p.hairWhip, t.hairWhip, 6, dt);
-            // Continuous windmill angle
-            p.windmillAngle += p.windmill * dt * 8;
+        function updateOverlayParams(fig, dt) {
+            var o = fig.overlay;
+            o.hairWhip = lerpParam(o.hairWhip, 0, 6, dt);
+            o.headBang = lerpParam(o.headBang, 0, 6, dt);
+            o.windmillAngle += dt * 8; // continuous spin
         }
 
-        // ── Compute joints from parameters ──
-        // Returns an object with joint positions relative to (0,0) at feet center
-        // figH is total figure height in pixels
-        function computeJoints(params, figH) {
-            var b = {};
-            for (var k in BONE) b[k] = BONE[k] * figH;
-
-            var bounceOff = params.bounce * figH * 0.06;
-            var leanOff = params.lean * figH * 0.08;
-            var hipOff = params.hipThrust * figH * 0.04;
-            var headBangOff = params.headBang * figH * 0.06;
-
-            // Feet are at y=0, figure extends upward (negative y)
-            var totalH = b.shin + b.thigh + b.torso + b.neck + b.headR * 2;
-
-            // Ankle positions (splits widen them)
-            var splitW = params.splits * figH * 0.25;
-            var hw = b.hipWidth; // wider hip reference for legs
-            var lAnkle = { x: -hw * 0.3 - splitW + leanOff, y: 0 };
-            var rAnkle = { x: hw * 0.3 + splitW + leanOff, y: 0 };
-
-            // Knees
-            var kneeY = -b.shin + bounceOff + params.splits * b.shin * 0.5;
-            var kickOff = params.kick * figH * 0.15;
-            var lKnee, rKnee;
-            if (params.kickSide > 0) {
-                lKnee = { x: -hw * 0.2 - splitW * 0.5 + leanOff, y: kneeY };
-                rKnee = { x: hw * 0.2 + splitW * 0.5 + kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
-            } else {
-                lKnee = { x: -hw * 0.2 - splitW * 0.5 - kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
-                rKnee = { x: hw * 0.2 + splitW * 0.5 + leanOff, y: kneeY };
-            }
-
-            // Hip
-            var hipY = kneeY - b.thigh + bounceOff;
-            var hip = { x: leanOff + hipOff, y: hipY };
-
-            // Neck
-            var neckY = hipY - b.torso;
-            var neck = { x: leanOff * 1.2, y: neckY };
-
-            // Head
-            var headY = neckY - b.neck - b.headR;
-            var head = { x: leanOff * 1.3 + headBangOff, y: headY };
-
-            // Shoulders
-            var lShoulder = { x: neck.x - b.shoulder, y: neckY + b.neck * 0.2 };
-            var rShoulder = { x: neck.x + b.shoulder, y: neckY + b.neck * 0.2 };
-
-            // Arms
-            var armRaise = params.armRaise;
-            var armAngleBase = Math.PI * 0.4; // arms at sides
-            var armAngleRaised = -Math.PI * 0.3; // arms up
-
-            var lArmAngle = armAngleBase + (armAngleRaised - armAngleBase) * armRaise;
-            var rArmAngle = armAngleBase + (armAngleRaised - armAngleBase) * armRaise;
-
-            // Arm pump overrides one arm
-            if (params.armPump > 0.1) {
-                var pumpAngle = -Math.PI * 0.4 * params.armPump;
-                if (params.armPumpSide > 0) rArmAngle = pumpAngle;
-                else lArmAngle = pumpAngle;
-            }
-
-            // Windmill overrides both arms
-            if (params.windmill > 0.3) {
-                var wa = params.windmillAngle;
-                lArmAngle = wa;
-                rArmAngle = wa + Math.PI;
-            }
-
-            var lElbow = {
-                x: lShoulder.x + Math.sin(lArmAngle) * b.upperArm,
-                y: lShoulder.y + Math.cos(lArmAngle) * b.upperArm
-            };
-            var rElbow = {
-                x: rShoulder.x + Math.sin(rArmAngle) * b.upperArm,
-                y: rShoulder.y + Math.cos(rArmAngle) * b.upperArm
-            };
-
-            var lHand = {
-                x: lElbow.x + Math.sin(lArmAngle + 0.3) * b.forearm,
-                y: lElbow.y + Math.cos(lArmAngle + 0.3) * b.forearm
-            };
-            var rHand = {
-                x: rElbow.x + Math.sin(rArmAngle + 0.3) * b.forearm,
-                y: rElbow.y + Math.cos(rArmAngle + 0.3) * b.forearm
-            };
-
-            return {
-                head: head, headR: b.headR,
-                neck: neck,
-                lShoulder: lShoulder, rShoulder: rShoulder,
-                lElbow: lElbow, rElbow: rElbow,
-                lHand: lHand, rHand: rHand,
-                hip: hip,
-                lKnee: lKnee, rKnee: rKnee,
-                lAnkle: lAnkle, rAnkle: rAnkle
-            };
-        }
-
-        // ── Draw a stick figure ──
-        function drawFigure(ctx, joints, color, alpha, scaleX, params) {
+        // ── Draw a figure with overlays (hair, clothing, face) ──
+        // Uses StickFight for skeleton, then draws custom overlays on top
+        function drawFigureWithOverlays(ctx, fig, alpha, scaleX) {
             scaleX = scaleX || 1;
-            params = params || {};
-            var lw = 3;  // fixed width
+            var color = fig.color;
+            var joints = StickFight.computeJoints(fig);
+            var hr = joints.headR;
+            var o = fig.overlay || {};
+
+            var lean = fig.params.lean || 0;
+            var headBang = o.headBang || 0;
+            var whip = o.hairWhip || 0;
+            var whipDir = o.hairWhipDir || 1;
+            var hairSwing = -lean * 0.4 - headBang * 0.6 + whip * whipDir * 2.2;
+
+            // Joint positions scaled by scaleX for pole-dancer foreshortening
             var hx = joints.head.x * scaleX;
             var hy = joints.head.y;
-            var hr = joints.headR;
-
-            var lean = params.lean || 0;
-            var headBang = params.headBang || 0;
-            var whip = params.hairWhip || 0;
-            var whipDir = params.hairWhipDir || 1;
-            var hairSwing = -lean * 0.4 - headBang * 0.6 + whip * whipDir * 2.2;
 
             ctx.save();
             ctx.globalAlpha = alpha;
@@ -413,7 +346,7 @@
             ctx.shadowBlur = 12;
             ctx.shadowColor = color;
             ctx.strokeStyle = color;
-            ctx.lineWidth = lw;
+            ctx.lineWidth = 3;
 
             // --- HAIR (BACK LAYER) ---
             function drawHairStrands(count, startRange, lengthMult, strandAlpha) {
@@ -424,13 +357,13 @@
                     var startAngle = -Math.PI * 0.5 + spread;
                     var sX = hx + Math.cos(startAngle) * hr * 0.85;
                     var sY = hy + Math.sin(startAngle) * hr * 0.75;
-                    
+
                     var strandLen = baseLen * lengthMult * (0.7 + Math.abs(t - 0.5) * 0.6);
                     var fAng = Math.PI * 0.5 + spread * 0.2 + hairSwing;
-                    
+
                     var eX = sX + Math.cos(fAng) * strandLen;
                     var eY = sY + Math.sin(fAng) * strandLen;
-                    
+
                     var cX = sX + Math.cos(fAng) * strandLen * 0.5 + hairSwing * hr;
                     var cY = sY + Math.sin(fAng) * strandLen * 0.5;
 
@@ -441,7 +374,7 @@
                     ctx.stroke();
                 }
             }
-            
+
             drawHairStrands(10, [-1.2, 1.2], 1.0, 0.4); // Back hair
 
             function line(a, b) {
@@ -451,13 +384,13 @@
                 ctx.stroke();
             }
 
-            // Torso — hourglass curve
+            // Torso — hourglass curve (overlay on top of skeleton)
             var waistY = (joints.neck.y + joints.hip.y) * 0.55;
             var waistX = (joints.neck.x + joints.hip.x) * 0.5 * scaleX;
             var neckSX = joints.neck.x * scaleX;
             var hipSX = joints.hip.x * scaleX;
             var hipSpread = hr * 0.9;
-            
+
             // --- CLOTHING FILLS ---
             ctx.fillStyle = color;
             ctx.globalAlpha = alpha * 0.25;
@@ -476,6 +409,7 @@
             ctx.arc(waistX + hr * 0.45 * scaleX, chestY, hr * 0.35, 0, Math.PI * 2);
             ctx.fill();
 
+            // Hourglass torso curves
             ctx.globalAlpha = alpha;
             ctx.beginPath();
             ctx.moveTo(neckSX, joints.neck.y);
@@ -485,17 +419,17 @@
             ctx.moveTo(neckSX, joints.neck.y);
             ctx.quadraticCurveTo(waistX + hipSpread * 0.2 * scaleX, waistY, hipSX + hipSpread * scaleX, joints.hip.y);
             ctx.stroke();
-            
-            // Shoulders & Limbs
-            line(joints.lShoulder, joints.rShoulder);
-            line(joints.lShoulder, joints.lElbow);
-            line(joints.lElbow, joints.lHand);
-            line(joints.rShoulder, joints.rElbow);
-            line(joints.rElbow, joints.rHand);
-            line(joints.hip, joints.lKnee);
-            line(joints.lKnee, joints.lAnkle);
-            line(joints.hip, joints.rKnee);
-            line(joints.rKnee, joints.rAnkle);
+
+            // Limbs via StickFight joint positions
+            line(joints.shoulderL, joints.shoulderR);
+            line(joints.shoulderL, joints.elbowL);
+            line(joints.elbowL, joints.handL);
+            line(joints.shoulderR, joints.elbowR);
+            line(joints.elbowR, joints.handR);
+            line(joints.hip, joints.kneeL);
+            line(joints.kneeL, joints.ankleL);
+            line(joints.hip, joints.kneeR);
+            line(joints.kneeR, joints.ankleR);
 
             // Head Circle
             ctx.beginPath();
@@ -562,35 +496,49 @@
 
             fig.slideY = lerpParam(fig.slideY, fig.slideTarget, 4, dt);
 
-            // Pose targets for pole dancer
-            var t = fig.targets;
-            t.bounce = 0.1;
-            t.armRaise = fig.hangMode ? 0.9 : 0.3;
-            t.lean = Math.sin(fig.orbitAngle * 0.5) * 0.3;
-            t.kick = fig.kickSpin * 0.6;
-            t.kickSide = Math.sin(fig.orbitAngle) > 0 ? 1 : -1;
+            // Pose targets via StickFight
+            StickFight.setTarget(fig, 'bounce', 0.1);
+            StickFight.setTarget(fig, 'lean', Math.sin(fig.orbitAngle * 0.5) * 0.3);
 
-            // Hair whip on spins and upside-down
-            t.hairWhip = fig.kickSpin > 0.3 ? 0.7 : 0;
-            t.hairWhipDir = Math.sin(fig.orbitAngle) > 0 ? 1 : -1;
-
-            if (fig.upsideDown) {
-                t.armRaise = 0;
-                t.kick = 0.8;
-                t.splits = 0.3;
-                t.hairWhip = 1.0;  // maximum drama upside down
+            if (fig.hangMode) {
+                StickFight.setPose(fig, 'arms_up');
             } else {
-                t.splits = 0;
+                StickFight.setPose(fig, 'dance_basic');
+                StickFight.setTarget(fig, 'armLAngle', -0.3);
+                StickFight.setTarget(fig, 'armRAngle', -0.3);
             }
 
-            lerpParams(fig, dt);
+            if (fig.kickSpin > 0.3) {
+                var kickSide = Math.sin(fig.orbitAngle) > 0 ? 1 : -1;
+                StickFight.setTarget(fig, 'kneeL', kickSide < 0 ? -fig.kickSpin * 0.6 : 0);
+                StickFight.setTarget(fig, 'kneeR', kickSide > 0 ? -fig.kickSpin * 0.6 : 0);
+                StickFight.setTarget(fig, 'legSpread', 0.3);
+                fig.overlay.hairWhip = 0.7;
+                fig.overlay.hairWhipDir = kickSide;
+            } else {
+                fig.overlay.hairWhip = lerpParam(fig.overlay.hairWhip, 0, 6, dt);
+            }
+
+            if (fig.upsideDown) {
+                StickFight.setPose(fig, 'kick');
+                StickFight.setTarget(fig, 'legSpread', 0.4);
+                fig.overlay.hairWhip = 1.0;
+            }
+
+            // Update figure via StickFight engine
+            if (freezeTimer > 0) {
+                fig.poseSpeed = 0.5;
+            } else {
+                fig.poseSpeed = 12;
+            }
+            StickFight.updateFigure(fig, dt);
+            updateOverlayParams(fig, dt);
         }
 
         function drawPoleDancer(ctx, fig) {
             if (!fig.active) return;
 
             var poleTop = floorY - poleH;
-            var poleBot = floorY;
             var figY = poleTop + fig.slideY * poleH;
 
             // Faux-3D: orbit around pole
@@ -605,22 +553,13 @@
             // Depth: behind pole when cos < 0
             var behind = cosA < 0;
 
-            fig.figureH = H * 0.16;
-            var joints = computeJoints(fig.params, fig.figureH);
-
-            // If upside down, flip
-            var flipY = fig.upsideDown ? -1 : 1;
+            fig.figH = H * 0.16;
 
             ctx.save();
             ctx.translate(figX, figY);
             if (fig.upsideDown) ctx.scale(1, -1);
 
-            if (behind) {
-                // Draw pole in front (draw figure first, then pole over it)
-                drawFigure(ctx, joints, fig.color, 0.5, scaleX, fig.params);
-            } else {
-                drawFigure(ctx, joints, fig.color, 1.0, scaleX, fig.params);
-            }
+            drawFigureWithOverlays(ctx, fig, behind ? 0.5 : 1.0, scaleX);
 
             ctx.restore();
 
@@ -652,30 +591,31 @@
                     if (fig.currentMove === 'Splits') fig.splitsBeatTimer = 0;
                 }
 
-                // Apply move to targets
-                var t = fig.targets;
-                // Reset
-                t.bounce = 0; t.armRaise = 0; t.lean = 0; t.kick = 0;
-                t.hipThrust = 0; t.headBang = 0; t.armPump = 0;
-                t.windmill = 0; t.splits = 0; t.hairWhip = 0;
-
+                // Apply move via StickFight
                 if (freezeTimer <= 0) {
-                    MOVES[fig.currentMove](t, energy);
+                    MOVES[fig.currentMove](fig, energy);
                 }
             }
 
-            lerpParams(fig, dt);
+            // Update pose speed based on freeze
+            if (freezeTimer > 0) {
+                fig.poseSpeed = 0.5;
+            } else {
+                fig.poseSpeed = 12;
+            }
+            StickFight.updateFigure(fig, dt);
+            updateOverlayParams(fig, dt);
         }
 
         function drawFloorDancer(ctx, fig) {
             if (!fig.active) return;
 
-            fig.figureH = H * 0.18;
-            var joints = computeJoints(fig.params, fig.figureH);
+            fig.figH = H * 0.18;
+            fig.y = floorY;
 
             ctx.save();
             ctx.translate(fig.x, floorY);
-            drawFigure(ctx, joints, fig.color, 1.0, 1.0, fig.params);
+            drawFigureWithOverlays(ctx, fig, 1.0, 1.0);
             ctx.restore();
         }
 
@@ -1135,10 +1075,9 @@
                         freezeExplode = false;
                         // Explode all figures into high energy poses
                         for (var fe = 0; fe < figures.length; fe++) {
-                            var t = figures[fe].targets;
-                            t.armRaise = 1;
-                            t.bounce = 0.8;
-                            t.kick = 0.5;
+                            StickFight.setPose(figures[fe], 'arms_up');
+                            StickFight.setTarget(figures[fe], 'bounce', 0.8);
+                            StickFight.setTarget(figures[fe], 'kneeL', -0.5);
                         }
                     }
                 }

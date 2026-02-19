@@ -103,6 +103,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── Tavern Brawl Crescendo Video Renderer ──────────────────────────
     window.Renderers['tavern-brawl-video'] = (function() {
@@ -172,26 +173,30 @@
 
         // ── Patron creation ──
         function createPatron(x, y, colorIdx, pairId, isLeader) {
-            return {
-                baseX: x,
-                baseY: y,
+            var color = PATRON_COLORS[colorIdx % PATRON_COLORS.length];
+            var fig = StickFight.create({
                 x: x,
                 y: y,
-                color: PATRON_COLORS[colorIdx % PATRON_COLORS.length],
-                pairId: pairId,
-                isLeader: isLeader,
-                waltzPhase: pairId * Math.PI * 0.5,
-                waltzRadius: 20 + Math.random() * 15,
-                armAngle: 0,
-                legPhase: 0,
-                bounce: 0,
-                headTilt: 0,
-                throwTimer: 0,      // > 0 means throwing something
-                throwArm: 0,        // 0-1, arm raised to throw
-                hitStun: 0,         // > 0 means stunned (stars over head)
-                sheepish: 0,        // 0-1, how embarrassed
-                figH: 0
-            };
+                figH: 100, // will be set in update
+                facing: isLeader ? 1 : -1,
+                color: color,
+                lineWidth: 2.5,
+                poseSpeed: 12
+            });
+            StickFight.setPose(fig, 'idle');
+            fig.baseX = x;
+            fig.baseY = y;
+            fig.pairId = pairId;
+            fig.isLeader = isLeader;
+            fig.waltzPhase = pairId * Math.PI * 0.5;
+            fig.waltzRadius = 20 + Math.random() * 15;
+            fig.legPhase = 0;
+            fig.headTilt = 0;
+            fig.throwTimer = 0;
+            fig.throwArm = 0;
+            fig.hitStun = 0;
+            fig.sheepish = 0;
+            return fig;
         }
 
         function initPatrons() {
@@ -239,6 +244,7 @@
         // ── Lerp ──
         function lerp(a, b, t) { return a + (b - a) * t; }
         function lerpExp(cur, tgt, speed, dt) { return cur + (tgt - cur) * (1 - Math.exp(-speed * dt)); }
+        var sfLerpExp = StickFight.lerpExp;
 
         // ── Draw tavern interior ──
         function drawTavern(ctx, energy) {
@@ -443,39 +449,19 @@
 
         // ── Draw stick figure patron ──
         function drawPatron(ctx, p) {
-            var fh = p.figH;
-            var headR = fh * 0.07;
-            var x = p.x;
-            var y = p.y;
+            // Draw skeleton via StickFight engine
+            StickFight.drawFigure(ctx, p);
+
+            // Overlay: face, stun stars, sheepish blush
+            var joints = StickFight.computeJoints(p);
+            var headR = joints.headR;
+            var headX = p.x + joints.head.x;
+            var headY = p.y + joints.head.y;
 
             ctx.save();
-            ctx.translate(x, y);
-
-            // Body proportions
-            var neckY = -fh * 0.82;
-            var hipY = -fh * 0.4;
-            var kneeY = -fh * 0.18;
-            var footY = 0;
-            var shoulderW = fh * 0.1;
-
-            // Bounce
-            var bounce = Math.sin(p.legPhase) * p.bounce;
-            neckY += bounce;
-            hipY += bounce;
-
-            // Head tilt
-            var headX = Math.sin(p.headTilt) * headR * 0.5;
-            var headY = neckY - fh * 0.06 - headR;
-
-            ctx.strokeStyle = p.color;
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 4;
 
             // Hit stun effect - draw stars
             if (p.hitStun > 0) {
-                ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = COL.star;
                 ctx.globalAlpha = Math.min(1, p.hitStun);
@@ -484,27 +470,20 @@
                     var sr = headR * 1.8;
                     drawStar(ctx, headX + Math.cos(sa) * sr, headY + Math.sin(sa) * sr - 5, 4, 5);
                 }
-                ctx.restore();
             }
 
             // Sheepish blush
             if (p.sheepish > 0.1) {
-                ctx.save();
                 ctx.globalAlpha = p.sheepish * 0.4;
                 ctx.fillStyle = '#ff6666';
                 ctx.beginPath();
                 ctx.arc(headX - headR * 0.4, headY + headR * 0.2, headR * 0.25, 0, Math.PI * 2);
                 ctx.arc(headX + headR * 0.4, headY + headR * 0.2, headR * 0.25, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.restore();
             }
 
-            // Head
-            ctx.beginPath();
-            ctx.arc(headX, headY, headR, 0, Math.PI * 2);
-            ctx.stroke();
-
             // Face - simple dots for eyes
+            ctx.globalAlpha = 1;
             ctx.fillStyle = p.color;
             var eyeSize = headR * 0.12;
             ctx.beginPath();
@@ -513,91 +492,24 @@
             ctx.fill();
 
             // Mouth varies by mood
+            ctx.strokeStyle = p.color;
             ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 4;
             ctx.beginPath();
             if (p.sheepish > 0.3) {
-                // Nervous smile
                 ctx.moveTo(headX - headR * 0.2, headY + headR * 0.25);
                 ctx.lineTo(headX + headR * 0.2, headY + headR * 0.25);
             } else if (p.hitStun > 0) {
-                // O-mouth (stunned)
                 ctx.arc(headX, headY + headR * 0.2, headR * 0.12, 0, Math.PI * 2);
             } else if (p.throwTimer > 0) {
-                // Angry
                 ctx.moveTo(headX - headR * 0.2, headY + headR * 0.15);
                 ctx.lineTo(headX, headY + headR * 0.25);
                 ctx.lineTo(headX + headR * 0.2, headY + headR * 0.15);
             } else {
-                // Happy smile
                 ctx.arc(headX, headY + headR * 0.15, headR * 0.2, 0, Math.PI);
             }
-            ctx.stroke();
-            ctx.lineWidth = 2.5;
-
-            // Neck
-            ctx.beginPath();
-            ctx.moveTo(headX, headY + headR);
-            ctx.lineTo(0, neckY);
-            ctx.stroke();
-
-            // Torso
-            ctx.beginPath();
-            ctx.moveTo(0, neckY);
-            ctx.lineTo(0, hipY);
-            ctx.stroke();
-
-            // Arms
-            var lArmAngle, rArmAngle;
-            if (p.throwArm > 0.1 && p.throwTimer > 0) {
-                // One arm back to throw
-                lArmAngle = -Math.PI * 0.3 - p.throwArm * Math.PI * 0.4;
-                rArmAngle = Math.PI * 0.3;
-            } else {
-                // Waltz arms
-                lArmAngle = p.armAngle;
-                rArmAngle = -p.armAngle * 0.5 + Math.PI * 0.15;
-            }
-
-            var elbowLen = fh * 0.14;
-            var forearmLen = fh * 0.13;
-
-            // Left arm
-            var lElbowX = -shoulderW + Math.sin(lArmAngle) * elbowLen;
-            var lElbowY = neckY + Math.cos(lArmAngle) * elbowLen;
-            var lHandX = lElbowX + Math.sin(lArmAngle + 0.4) * forearmLen;
-            var lHandY = lElbowY + Math.cos(lArmAngle + 0.4) * forearmLen;
-
-            ctx.beginPath();
-            ctx.moveTo(-shoulderW, neckY);
-            ctx.lineTo(lElbowX, lElbowY);
-            ctx.lineTo(lHandX, lHandY);
-            ctx.stroke();
-
-            // Right arm
-            var rElbowX = shoulderW + Math.sin(rArmAngle) * elbowLen;
-            var rElbowY = neckY + Math.cos(rArmAngle) * elbowLen;
-            var rHandX = rElbowX + Math.sin(rArmAngle + 0.4) * forearmLen;
-            var rHandY = rElbowY + Math.cos(rArmAngle + 0.4) * forearmLen;
-
-            ctx.beginPath();
-            ctx.moveTo(shoulderW, neckY);
-            ctx.lineTo(rElbowX, rElbowY);
-            ctx.lineTo(rHandX, rHandY);
-            ctx.stroke();
-
-            // Legs with waltz step
-            var legSpread = Math.sin(p.legPhase) * fh * 0.06;
-
-            ctx.beginPath();
-            ctx.moveTo(0, hipY);
-            ctx.lineTo(-fh * 0.04 - legSpread, kneeY);
-            ctx.lineTo(-fh * 0.02 - legSpread * 0.5, footY);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(0, hipY);
-            ctx.lineTo(fh * 0.04 + legSpread, kneeY);
-            ctx.lineTo(fh * 0.02 + legSpread * 0.5, footY);
             ctx.stroke();
 
             ctx.restore();
@@ -944,31 +856,51 @@
                     var pairOffset = p.isLeader ? 0 : Math.PI;
                     p.x = lerpExp(p.x, p.baseX + Math.cos(p.waltzPhase * slowFactor + pairOffset) * p.waltzRadius * 0.5, 3, dt);
                     p.y = lerpExp(p.y, p.baseY, 3, dt);
-                    p.bounce = lerpExp(p.bounce, 2, 4, dt);
                     p.legPhase += 2 * dt;
-                    p.armAngle = lerpExp(p.armAngle, Math.sin(p.waltzPhase * slowFactor) * 0.2, 3, dt);
-                    p.headTilt = lerpExp(p.headTilt, Math.sin(p.waltzPhase * slowFactor * 0.5) * 0.1, 3, dt);
+
+                    StickFight.setPose(p, 'idle');
+                    StickFight.setTarget(p, 'bounce', Math.sin(p.legPhase) * 0.1);
+                    StickFight.setTarget(p, 'legSpread', 0.1 + Math.abs(Math.sin(p.legPhase)) * 0.05);
+                    StickFight.setTarget(p, 'armLAngle', Math.sin(p.waltzPhase * slowFactor) * 0.2);
+                    StickFight.setTarget(p, 'armRAngle', -Math.sin(p.waltzPhase * slowFactor) * 0.15);
                 } else if (brawlMode) {
                     // Brawl: chaotic movement
                     p.sheepish = 0;
                     var chaos = intensity;
                     p.x = p.baseX + Math.sin(p.waltzPhase * 3 + ui) * p.waltzRadius * chaos * 2;
                     p.y = p.baseY + Math.cos(p.waltzPhase * 2.5 + ui * 0.7) * 10 * chaos;
-                    p.bounce = 5 * chaos;
                     p.legPhase += 8 * chaos * dt;
-                    p.armAngle = Math.sin(p.waltzPhase * 4 + ui) * 1.2 * chaos;
-                    p.headTilt = Math.sin(p.waltzPhase * 3) * 0.5 * chaos;
+
+                    // Brawl poses
+                    if (p.throwTimer > 0) {
+                        StickFight.setPose(p, 'punch');
+                        StickFight.setTarget(p, 'lean', 0.5 * p.throwArm);
+                    } else if (p.hitStun > 0) {
+                        StickFight.setPose(p, 'recoil');
+                    } else {
+                        StickFight.setPose(p, 'guard');
+                        StickFight.setTarget(p, 'bounce', Math.sin(p.legPhase) * 0.3 * chaos);
+                        StickFight.setTarget(p, 'armLAngle', Math.sin(p.waltzPhase * 4 + ui) * 1.2 * chaos);
+                        StickFight.setTarget(p, 'armRAngle', Math.sin(p.waltzPhase * 4 + ui + 1) * 1.0 * chaos);
+                        StickFight.setTarget(p, 'legSpread', 0.2 + chaos * 0.2);
+                    }
                 } else {
                     // Normal waltz
                     p.sheepish = lerpExp(p.sheepish, 0, 2, dt);
                     var pairOff = p.isLeader ? 0 : Math.PI;
                     p.x = p.baseX + Math.cos(p.waltzPhase + pairOff) * p.waltzRadius;
                     p.y = p.baseY;
-                    p.bounce = lerpExp(p.bounce, 3, 4, dt);
                     p.legPhase += 3 * dt;
-                    p.armAngle = Math.sin(p.waltzPhase * 0.5) * 0.4;
-                    p.headTilt = Math.sin(p.waltzPhase * 0.3) * 0.15;
+
+                    StickFight.setPose(p, 'dance_basic');
+                    StickFight.setTarget(p, 'bounce', Math.sin(p.legPhase) * 0.15);
+                    StickFight.setTarget(p, 'armLAngle', Math.sin(p.waltzPhase * 0.5) * 0.4);
+                    StickFight.setTarget(p, 'armRAngle', -Math.sin(p.waltzPhase * 0.5) * 0.3 + 0.15);
+                    StickFight.setTarget(p, 'legSpread', 0.1 + Math.abs(Math.sin(p.legPhase)) * 0.1);
                 }
+
+                // Update figure via engine
+                StickFight.updateFigure(p, dt);
 
                 // Decay timers
                 p.throwTimer = Math.max(0, p.throwTimer - dt);

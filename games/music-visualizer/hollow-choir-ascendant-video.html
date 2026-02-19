@@ -104,6 +104,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── Hollow Choir Ascendant Video Renderer ──────────────────────────
     window.Renderers['hollow-choir-video'] = (function() {
@@ -139,28 +140,35 @@
         var stars = [];
         var NUM_STARS = 200;
 
-        // ── Figure definition ──
+        // ── Figure definition (uses StickFight for skeleton, custom rendering) ──
         function createFigure(x, y, scale, hue, delay) {
-            return {
+            var fig = StickFight.create({
                 x: x,
                 y: y,
-                baseY: y,
-                scale: scale,
-                hue: hue,           // 200-240 range (icy blues) or 40-50 (gold)
-                riseSpeed: 15 + Math.random() * 25,
-                swayPhase: Math.random() * Math.PI * 2,
-                swayAmp: 8 + Math.random() * 12,
-                breathPhase: Math.random() * Math.PI * 2,
-                hollowPulse: 0,
-                alpha: 0,
-                targetAlpha: 0,
-                mouthOpen: 0,
-                mouthTarget: 0,
-                glowIntensity: 0,
-                delay: delay,
-                born: 0,
-                active: false
-            };
+                figH: 85 * scale,
+                facing: 1,
+                color: hsla(hue, 40, 70, 0.6),
+                lineWidth: 1.5 * scale,
+                poseSpeed: 6
+            });
+            StickFight.setPose(fig, 'idle');
+            fig.baseY = y;
+            fig.scale = scale;
+            fig.hue = hue;
+            fig.riseSpeed = 15 + Math.random() * 25;
+            fig.swayPhase = Math.random() * Math.PI * 2;
+            fig.swayAmp = 8 + Math.random() * 12;
+            fig.breathPhase = Math.random() * Math.PI * 2;
+            fig.hollowPulse = 0;
+            fig.alpha = 0;
+            fig.targetAlpha = 0;
+            fig.mouthOpen = 0;
+            fig.mouthTarget = 0;
+            fig.glowIntensity = 0;
+            fig.delay = delay;
+            fig.born = 0;
+            fig.active = false;
+            return fig;
         }
 
         // ── Ripple definition ──
@@ -235,31 +243,61 @@
             return current + (target - current) * (1 - Math.exp(-speed * dt));
         }
 
-        // ── Draw a single ghostly figure ──
+        // ── Draw a single ghostly figure (using StickFight joints, custom ethereal rendering) ──
         function drawFigure(ctx, fig, energy) {
             if (!fig.active || fig.alpha < 0.01) return;
 
             var s = fig.scale;
-            var headR = 12 * s;
-            var bodyH = 50 * s;
-            var shoulderW = 18 * s;
-            var armLen = 30 * s;
-            var legLen = 35 * s;
-            var hollowR = 8 * s;
-
             var x = fig.x;
             var y = fig.y;
             var a = fig.alpha;
-            var breath = Math.sin(fig.breathPhase) * 3 * s;
+
+            // Update pose based on section
+            var armRaise = sectionMood === 'apotheosis' ? 0.7 : sectionMood === 'choir' ? 0.3 : 0.1;
+            armRaise += fig.hollowPulse * 0.3;
+            var sway = Math.sin(fig.swayPhase * 0.7) * 0.15;
+
+            StickFight.setTarget(fig, 'bounce', Math.sin(fig.breathPhase) * 0.1);
+            StickFight.setTarget(fig, 'armLAngle', -(armRaise * 1.2 + sway));
+            StickFight.setTarget(fig, 'armRAngle', -(armRaise * 1.2 - sway));
+            StickFight.setTarget(fig, 'elbowLBend', 0.15);
+            StickFight.setTarget(fig, 'elbowRBend', 0.15);
+            StickFight.setTarget(fig, 'legSpread', 0.15);
+
+            fig.figH = 85 * s;
+            StickFight.updateFigure(fig, 1/60);
+
+            // Get joint positions from StickFight
+            var joints = StickFight.computeJoints(fig);
+            var headR = joints.headR;
+            var hollowR = 8 * s;
+
+            // World positions
+            var headX = x + joints.head.x;
+            var headY = y + joints.head.y;
+            var neckX = x + joints.neck.x;
+            var neckY = y + joints.neck.y;
+            var hipX = x + joints.hip.x;
+            var hipY = y + joints.hip.y;
+            var shoulderLX = x + joints.shoulderL.x;
+            var shoulderLY = y + joints.shoulderL.y;
+            var shoulderRX = x + joints.shoulderR.x;
+            var shoulderRY = y + joints.shoulderR.y;
+            var shoulderW = (shoulderRX - shoulderLX) * 0.5;
+
+            // Torso derived positions
+            var torsoTop = shoulderLY;
+            var torsoBot = hipY;
+            var torsoMid = (torsoTop + torsoBot) * 0.5;
 
             // Glow behind figure
             var glowR = (40 + fig.glowIntensity * 40) * s;
-            var glowGrad = ctx.createRadialGradient(x, y - bodyH * 0.3, 0, x, y - bodyH * 0.3, glowR);
+            var glowGrad = ctx.createRadialGradient(x, torsoMid, 0, x, torsoMid, glowR);
             glowGrad.addColorStop(0, hsla(fig.hue, 60, 80, a * 0.15 * (0.5 + fig.glowIntensity * 0.5)));
             glowGrad.addColorStop(0.5, hsla(fig.hue, 50, 70, a * 0.05));
             glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = glowGrad;
-            ctx.fillRect(x - glowR, y - bodyH * 0.3 - glowR, glowR * 2, glowR * 2);
+            ctx.fillRect(x - glowR, torsoMid - glowR, glowR * 2, glowR * 2);
 
             ctx.save();
             ctx.globalAlpha = a;
@@ -275,13 +313,12 @@
             ctx.shadowBlur = 8 + fig.glowIntensity * 12;
 
             // Head
-            var headY = y - bodyH - headR + breath;
             ctx.beginPath();
-            ctx.arc(x, headY, headR, 0, Math.PI * 2);
+            ctx.arc(headX, headY, headR, 0, Math.PI * 2);
             ctx.stroke();
 
             // Hollow center in head
-            var hollowGrad = ctx.createRadialGradient(x, headY, 0, x, headY, hollowR + fig.hollowPulse * 4 * s);
+            var hollowGrad = ctx.createRadialGradient(headX, headY, 0, headX, headY, hollowR + fig.hollowPulse * 4 * s);
             hollowGrad.addColorStop(0, hsla(fig.hue, 60, 90, 0.3 + fig.hollowPulse * 0.4));
             hollowGrad.addColorStop(0.6, hsla(fig.hue, 40, 70, 0.1));
             hollowGrad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -294,41 +331,33 @@
                 var mouthW = headR * 0.4 * fig.mouthOpen;
                 var mouthH = headR * 0.25 * fig.mouthOpen;
                 ctx.beginPath();
-                ctx.ellipse(x, mouthY, mouthW, mouthH, 0, 0, Math.PI * 2);
+                ctx.ellipse(headX, mouthY, mouthW, mouthH, 0, 0, Math.PI * 2);
                 ctx.fillStyle = hsla(fig.hue, 50, 85, 0.3 * fig.mouthOpen);
                 ctx.fill();
                 ctx.stroke();
             }
 
             // Neck
-            var neckTop = headY + headR;
-            var neckBot = y - bodyH + breath;
             ctx.beginPath();
-            ctx.moveTo(x, neckTop);
-            ctx.lineTo(x, neckBot);
+            ctx.moveTo(neckX, neckY);
+            ctx.lineTo(headX, headY + headR);
             ctx.stroke();
 
-            // Torso - hollow center silhouette
-            var torsoTop = neckBot;
-            var torsoBot = y - legLen + breath * 0.5;
-            var torsoMid = (torsoTop + torsoBot) * 0.5;
-
-            // Left torso outline
+            // Torso - hollow center silhouette (custom curves, not straight lines)
             ctx.beginPath();
-            ctx.moveTo(x - shoulderW, torsoTop);
-            ctx.quadraticCurveTo(x - shoulderW * 0.6, torsoMid, x - shoulderW * 0.5, torsoBot);
+            ctx.moveTo(shoulderLX, torsoTop);
+            ctx.quadraticCurveTo(shoulderLX + shoulderW * 0.4, torsoMid, hipX - shoulderW * 0.5, torsoBot);
             ctx.stroke();
 
-            // Right torso outline
             ctx.beginPath();
-            ctx.moveTo(x + shoulderW, torsoTop);
-            ctx.quadraticCurveTo(x + shoulderW * 0.6, torsoMid, x + shoulderW * 0.5, torsoBot);
+            ctx.moveTo(shoulderRX, torsoTop);
+            ctx.quadraticCurveTo(shoulderRX - shoulderW * 0.4, torsoMid, hipX + shoulderW * 0.5, torsoBot);
             ctx.stroke();
 
             // Shoulders
             ctx.beginPath();
-            ctx.moveTo(x - shoulderW, torsoTop);
-            ctx.lineTo(x + shoulderW, torsoTop);
+            ctx.moveTo(shoulderLX, torsoTop);
+            ctx.lineTo(shoulderRX, torsoTop);
             ctx.stroke();
 
             // Inner glow (hollow body)
@@ -338,47 +367,41 @@
             bodyGlow.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = bodyGlow;
             ctx.beginPath();
-            ctx.moveTo(x - shoulderW, torsoTop);
-            ctx.quadraticCurveTo(x - shoulderW * 0.6, torsoMid, x - shoulderW * 0.5, torsoBot);
-            ctx.lineTo(x + shoulderW * 0.5, torsoBot);
-            ctx.quadraticCurveTo(x + shoulderW * 0.6, torsoMid, x + shoulderW, torsoTop);
+            ctx.moveTo(shoulderLX, torsoTop);
+            ctx.quadraticCurveTo(shoulderLX + shoulderW * 0.4, torsoMid, hipX - shoulderW * 0.5, torsoBot);
+            ctx.lineTo(hipX + shoulderW * 0.5, torsoBot);
+            ctx.quadraticCurveTo(shoulderRX - shoulderW * 0.4, torsoMid, shoulderRX, torsoTop);
             ctx.closePath();
             ctx.fill();
 
-            // Arms - raised higher during apotheosis
-            var armRaise = sectionMood === 'apotheosis' ? 0.7 : sectionMood === 'choir' ? 0.3 : 0.1;
-            armRaise += fig.hollowPulse * 0.3;
-            var armAngle = Math.PI * 0.5 - armRaise * Math.PI * 0.6;
-            var sway = Math.sin(fig.swayPhase * 0.7) * 0.15;
-
-            // Left arm
-            var lax = x - shoulderW + Math.cos(Math.PI + armAngle + sway) * armLen;
-            var lay = torsoTop + Math.sin(Math.PI + armAngle + sway) * armLen;
+            // Arms (from StickFight joints)
             ctx.beginPath();
-            ctx.moveTo(x - shoulderW, torsoTop);
-            ctx.lineTo(lax, lay);
+            ctx.moveTo(shoulderLX, shoulderLY);
+            ctx.lineTo(x + joints.elbowL.x, y + joints.elbowL.y);
+            ctx.lineTo(x + joints.handL.x, y + joints.handL.y);
             ctx.stroke();
 
-            // Right arm
-            var rax = x + shoulderW + Math.cos(-armAngle - sway) * armLen;
-            var ray = torsoTop + Math.sin(-armAngle - sway) * armLen;
             ctx.beginPath();
-            ctx.moveTo(x + shoulderW, torsoTop);
-            ctx.lineTo(rax, ray);
+            ctx.moveTo(shoulderRX, shoulderRY);
+            ctx.lineTo(x + joints.elbowR.x, y + joints.elbowR.y);
+            ctx.lineTo(x + joints.handR.x, y + joints.handR.y);
             ctx.stroke();
 
-            // Legs
-            var legSpread = shoulderW * 0.4;
+            // Legs (from StickFight joints)
             ctx.beginPath();
-            ctx.moveTo(x - shoulderW * 0.5, torsoBot);
-            ctx.lineTo(x - legSpread, y);
+            ctx.moveTo(hipX, hipY);
+            ctx.lineTo(x + joints.kneeL.x, y + joints.kneeL.y);
+            ctx.lineTo(x + joints.ankleL.x, y + joints.ankleL.y);
             ctx.stroke();
+
             ctx.beginPath();
-            ctx.moveTo(x + shoulderW * 0.5, torsoBot);
-            ctx.lineTo(x + legSpread, y);
+            ctx.moveTo(hipX, hipY);
+            ctx.lineTo(x + joints.kneeR.x, y + joints.kneeR.y);
+            ctx.lineTo(x + joints.ankleR.x, y + joints.ankleR.y);
             ctx.stroke();
 
             // Trailing wisps below (ghostly tail)
+            var legSpread = shoulderW * 0.4;
             ctx.globalAlpha = a * 0.2;
             ctx.strokeStyle = hsla(fig.hue, 30, 70, 0.2);
             ctx.lineWidth = 1 * s;

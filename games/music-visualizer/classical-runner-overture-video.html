@@ -103,6 +103,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── Classical Runner Overture Video Renderer ──────────────────────
     window.Renderers['classical-runner-video'] = (function() {
@@ -315,99 +316,77 @@
             ctx.restore();
         }
 
-        // ── Runner stick figure ──
+        // ── Runner figure (StickFight-based) ──
+        var runnerFig = null;
+
+        function initRunnerFig() {
+            runnerFig = StickFight.create({
+                x: 0,
+                y: 0,
+                figH: H * 0.12,
+                facing: 1,
+                color: SEPIA_DARK,
+                lineWidth: 2.5,
+                poseSpeed: 15
+            });
+        }
+
+        function updateRunnerPose(phase, energy, jumping) {
+            if (!runnerFig) return;
+
+            var legSwing = Math.sin(phase) * 0.6 * (1 + energy * 0.4);
+            var armSwing = Math.sin(phase + Math.PI) * 0.5 * (1 + energy * 0.3);
+
+            // Map running phase to StickFight parameters
+            StickFight.setTarget(runnerFig, 'bounce', jumping ? 0.1 : Math.abs(Math.sin(phase * 2)) * 0.15);
+            StickFight.setTarget(runnerFig, 'lean', 0.15 + energy * 0.1);
+
+            // Legs alternating
+            StickFight.setTarget(runnerFig, 'kneeL', -legSwing * 0.8);
+            StickFight.setTarget(runnerFig, 'kneeR', legSwing * 0.8);
+            StickFight.setTarget(runnerFig, 'legSpread', 0.15 + Math.abs(legSwing) * 0.2);
+
+            // Arms swinging opposite to legs
+            StickFight.setTarget(runnerFig, 'armLAngle', armSwing);
+            StickFight.setTarget(runnerFig, 'armRAngle', -armSwing);
+            StickFight.setTarget(runnerFig, 'elbowLBend', 0.5 + Math.abs(armSwing) * 0.3);
+            StickFight.setTarget(runnerFig, 'elbowRBend', 0.5 + Math.abs(-armSwing) * 0.3);
+        }
+
         function drawRunner(ctx, x, y, phase, energy, scale, jumping) {
+            if (!runnerFig) initRunnerFig();
+
+            runnerFig.figH = H * 0.12;
+            runnerFig.x = 0;
+            runnerFig.y = 0;
+
+            updateRunnerPose(phase, energy, jumping);
+            StickFight.updateFigure(runnerFig, 1/60);
+
+            var joints = StickFight.computeJoints(runnerFig);
+
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(scale, scale);
 
-            var figH = H * 0.12;
-            var headR = figH * 0.09;
-            var bounce = jumping ? 0 : Math.abs(Math.sin(phase * 2)) * figH * 0.03;
+            // Draw skeleton via StickFight
+            StickFight.drawFigure(ctx, runnerFig, joints);
 
-            // Legs
-            var legAngle1 = Math.sin(phase) * 0.6 * (1 + energy * 0.4);
-            var legAngle2 = Math.sin(phase + Math.PI) * 0.6 * (1 + energy * 0.4);
-            var hipY = -figH * 0.4 - bounce;
-            var legLen = figH * 0.22;
-            var shinLen = figH * 0.2;
-
-            ctx.strokeStyle = SEPIA_DARK;
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-
-            // Left leg
-            var lKneeX = Math.sin(legAngle1) * legLen;
-            var lKneeY = hipY + Math.cos(legAngle1) * legLen;
-            var lFootX = lKneeX + Math.sin(legAngle1 * 0.5 + 0.3) * shinLen;
-            var lFootY = lKneeY + Math.cos(legAngle1 * 0.3) * shinLen;
-            ctx.beginPath();
-            ctx.moveTo(0, hipY);
-            ctx.lineTo(lKneeX, lKneeY);
-            ctx.lineTo(lFootX, lFootY);
-            ctx.stroke();
-
-            // Right leg
-            var rKneeX = Math.sin(legAngle2) * legLen;
-            var rKneeY = hipY + Math.cos(legAngle2) * legLen;
-            var rFootX = rKneeX + Math.sin(legAngle2 * 0.5 + 0.3) * shinLen;
-            var rFootY = rKneeY + Math.cos(legAngle2 * 0.3) * shinLen;
-            ctx.beginPath();
-            ctx.moveTo(0, hipY);
-            ctx.lineTo(rKneeX, rKneeY);
-            ctx.lineTo(rFootX, rFootY);
-            ctx.stroke();
-
-            // Torso
-            var shoulderY = -figH * 0.7 - bounce;
-            ctx.beginPath();
-            ctx.moveTo(0, hipY);
-            ctx.lineTo(0, shoulderY);
-            ctx.stroke();
-
-            // Arms swinging opposite to legs
-            var armAngle1 = Math.sin(phase + Math.PI) * 0.5 * (1 + energy * 0.3);
-            var armAngle2 = Math.sin(phase) * 0.5 * (1 + energy * 0.3);
-            var armLen = figH * 0.16;
-            var foreLen = figH * 0.14;
-
-            // Left arm
-            var lElbowX = -figH * 0.02 + Math.sin(armAngle1) * armLen;
-            var lElbowY = shoulderY + Math.cos(armAngle1) * armLen;
-            ctx.beginPath();
-            ctx.moveTo(0, shoulderY);
-            ctx.lineTo(lElbowX, lElbowY);
-            ctx.lineTo(lElbowX + Math.sin(armAngle1 + 0.5) * foreLen, lElbowY + Math.cos(armAngle1 + 0.3) * foreLen);
-            ctx.stroke();
-
-            // Right arm
-            var rElbowX = figH * 0.02 + Math.sin(armAngle2) * armLen;
-            var rElbowY = shoulderY + Math.cos(armAngle2) * armLen;
-            ctx.beginPath();
-            ctx.moveTo(0, shoulderY);
-            ctx.lineTo(rElbowX, rElbowY);
-            ctx.lineTo(rElbowX + Math.sin(armAngle2 + 0.5) * foreLen, rElbowY + Math.cos(armAngle2 + 0.3) * foreLen);
-            ctx.stroke();
-
-            // Head
-            var headY = shoulderY - figH * 0.06 - headR - bounce;
-            ctx.beginPath();
-            ctx.arc(0, headY, headR, 0, Math.PI * 2);
-            ctx.strokeStyle = SEPIA_DARK;
-            ctx.stroke();
+            // Overlay: fill head with cream
             ctx.fillStyle = CREAM;
+            ctx.beginPath();
+            ctx.arc(joints.head.x, joints.head.y, joints.headR, 0, Math.PI * 2);
             ctx.fill();
 
             // Conductor's baton in right hand (during finale)
             if (sectionMood === 'finale') {
-                var batonX = rElbowX + Math.sin(armAngle2 + 0.5) * foreLen;
-                var batonY = rElbowY + Math.cos(armAngle2 + 0.3) * foreLen;
-                var batonAngle = armAngle2 + Math.sin(phase * 3) * 0.4;
+                var handR = joints.handR;
+                var batonAngle = runnerFig.params.armRAngle + Math.sin(phase * 3) * 0.4;
                 ctx.strokeStyle = GOLD;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                ctx.moveTo(batonX, batonY);
-                ctx.lineTo(batonX + Math.sin(batonAngle) * figH * 0.15, batonY - Math.cos(batonAngle) * figH * 0.15);
+                ctx.moveTo(handR.x, handR.y);
+                ctx.lineTo(handR.x + Math.sin(batonAngle) * runnerFig.figH * 0.15, handR.y - Math.cos(batonAngle) * runnerFig.figH * 0.15);
                 ctx.stroke();
             }
 

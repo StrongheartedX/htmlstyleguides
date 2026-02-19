@@ -102,6 +102,7 @@
 
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
     <script>
     // ── The Duel at World's End — Video Renderer ──────────────────────
     window.Renderers['duel-video'] = (function() {
@@ -142,9 +143,32 @@
         var cliffGap = 0;            // gap in center (grows as cliff crumbles)
         var cliffY = 0;              // Y position of cliff top
 
-        // Figure states
-        var figA = { x: 0, y: 0, lean: 0, armAngle: 0, armTarget: 0, legBend: 0, glow: 0, glowColor: COLOR_A, playing: false, fallY: 0, falling: false };
-        var figB = { x: 0, y: 0, lean: 0, armAngle: 0, armTarget: 0, legBend: 0, glow: 0, glowColor: COLOR_B, playing: false, fallY: 0, falling: false };
+        // Figure states — StickFight figures with extra duel properties
+        var figA = null;
+        var figB = null;
+
+        function createDuelFig(x, y, color, facing) {
+            var fig = StickFight.create({
+                x: x,
+                y: y,
+                figH: 100,
+                facing: facing,
+                color: color,
+                lineWidth: 3,
+                poseSpeed: 8
+            });
+            StickFight.setPose(fig, 'idle');
+            fig.lean = 0;
+            fig.armAngle = 0;
+            fig.armTarget = 0;
+            fig.legBend = 0;
+            fig.glow = 0;
+            fig.glowColor = color;
+            fig.playing = false;
+            fig.fallY = 0;
+            fig.falling = false;
+            return fig;
+        }
 
         // Bolt alternation
         var boltDirection = 1; // 1 = A->B, -1 = B->A
@@ -363,21 +387,43 @@
             }
         }
 
-        // ── Silhouette Musician ──
+        // ── Silhouette Musician (StickFight skeleton + instrument overlays) ──
         function drawMusician(ctx, fig, facing, instrument) {
             var x = fig.x;
             var y = fig.y + (fig.falling ? fig.fallY : 0);
-            var lean = fig.lean;
-            var armAngle = fig.armAngle;
-            var legBend = fig.legBend;
             var glow = fig.glow;
             var color = fig.glowColor;
 
             var scale = H * 0.001;
-            var headR = 12 * scale;
-            var bodyH = 50 * scale;
-            var legH = 40 * scale;
-            var armH = 35 * scale;
+            fig.figH = 90 * scale;
+            fig.facing = facing;
+            fig.color = color;
+
+            // Update pose based on playing state
+            StickFight.setTarget(fig, 'lean', fig.lean * 0.3);
+            StickFight.setTarget(fig, 'legSpread', 0.15 + fig.legBend * 0.2);
+            StickFight.setTarget(fig, 'bounce', -fig.legBend * 0.08);
+
+            if (instrument === 'guitar') {
+                // Front arm holding neck, back arm strumming
+                StickFight.setTarget(fig, 'armLAngle', -0.6 + fig.armAngle * 0.4);
+                StickFight.setTarget(fig, 'elbowLBend', 0.5);
+                var strumAng = 0.3 + Math.sin(globalTime * 12) * 0.3 * (fig.playing ? 1 : 0.1);
+                StickFight.setTarget(fig, 'armRAngle', strumAng);
+                StickFight.setTarget(fig, 'elbowRBend', 0.4);
+            } else if (instrument === 'violin') {
+                // Front arm holding violin up
+                StickFight.setTarget(fig, 'armLAngle', -1.0 + fig.armAngle * 0.3);
+                StickFight.setTarget(fig, 'elbowLBend', 0.6);
+                // Bow arm sweeping
+                var bowSweep = Math.sin(globalTime * 8) * 0.6 * (fig.playing ? 1 : 0.1);
+                StickFight.setTarget(fig, 'armRAngle', 0.1 + bowSweep);
+                StickFight.setTarget(fig, 'elbowRBend', 0.4);
+            }
+
+            StickFight.updateFigure(fig, 1/60);
+
+            var joints = StickFight.computeJoints(fig);
 
             ctx.save();
             ctx.translate(x, y);
@@ -385,90 +431,68 @@
 
             // Glow aura
             if (glow > 0.05) {
-                var grad = ctx.createRadialGradient(0, -bodyH * 0.5, headR, 0, -bodyH * 0.5, bodyH * 1.5);
+                var bodyH = fig.figH * 0.5;
+                var grad = ctx.createRadialGradient(0, -bodyH, joints.headR, 0, -bodyH, bodyH * 1.5);
                 grad.addColorStop(0, rgba(color, glow * 0.4));
                 grad.addColorStop(1, rgba(color, 0));
                 ctx.fillStyle = grad;
                 ctx.beginPath();
-                ctx.arc(0, -bodyH * 0.5, bodyH * 1.5, 0, Math.PI * 2);
+                ctx.arc(0, -bodyH, bodyH * 1.5, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            ctx.lineWidth = 3 * scale;
+            // Draw skeleton via StickFight (at local origin since we already translated)
+            // We need to draw manually since we've already translated+scaled
+            ctx.lineWidth = fig.lineWidth;
             ctx.lineCap = 'round';
             ctx.strokeStyle = color;
             ctx.shadowColor = color;
             ctx.shadowBlur = 8 + glow * 20;
 
+            function line(a, b) {
+                ctx.beginPath();
+                ctx.moveTo(a.x * facing, a.y); // undo the facing scale for joint coords
+                ctx.lineTo(b.x * facing, b.y);
+                ctx.stroke();
+            }
+
             // Head
             ctx.beginPath();
-            ctx.arc(lean * 5, -bodyH - headR, headR, 0, Math.PI * 2);
+            ctx.arc(joints.head.x * facing, joints.head.y, joints.headR, 0, Math.PI * 2);
             ctx.stroke();
             ctx.fillStyle = rgba(color, 0.2);
             ctx.fill();
 
             // Torso
-            ctx.beginPath();
-            ctx.moveTo(0, -bodyH);
-            ctx.lineTo(lean * 8, 0);
-            ctx.stroke();
+            line(joints.neck, joints.hip);
+
+            // Shoulders
+            line(joints.shoulderL, joints.shoulderR);
+
+            // Arms
+            line(joints.shoulderL, joints.elbowL);
+            line(joints.elbowL, joints.handL);
+            line(joints.shoulderR, joints.elbowR);
+            line(joints.elbowR, joints.handR);
 
             // Legs
-            var legSpread = 8 * scale + legBend * 10 * scale;
-            ctx.beginPath();
-            ctx.moveTo(lean * 8, 0);
-            var lKneeX = lean * 4 - legSpread;
-            var lKneeY = legH * 0.5;
-            ctx.lineTo(lKneeX, lKneeY);
-            ctx.lineTo(lKneeX - legBend * 3, legH);
-            ctx.stroke();
+            line(joints.hip, joints.kneeL);
+            line(joints.kneeL, joints.ankleL);
+            line(joints.hip, joints.kneeR);
+            line(joints.kneeR, joints.ankleR);
 
-            ctx.beginPath();
-            ctx.moveTo(lean * 8, 0);
-            var rKneeX = lean * 4 + legSpread;
-            ctx.lineTo(rKneeX, lKneeY);
-            ctx.lineTo(rKneeX + legBend * 3, legH);
-            ctx.stroke();
-
-            // Arms holding instrument
-            var shoulderX = lean * 2;
-            var shoulderY = -bodyH * 0.85;
+            // ── Instrument overlays using joint positions ──
+            var handL = { x: joints.handL.x * facing, y: joints.handL.y };
+            var handR = { x: joints.handR.x * facing, y: joints.handR.y };
 
             if (instrument === 'guitar') {
-                // Front arm: holding neck
-                var fArmAngle = -0.6 + armAngle * 0.4;
-                var fElbowX = shoulderX + Math.sin(fArmAngle) * armH * 0.6;
-                var fElbowY = shoulderY + Math.cos(fArmAngle) * armH * 0.6;
-                var fHandX = fElbowX + Math.sin(fArmAngle + 0.5) * armH * 0.5;
-                var fHandY = fElbowY + Math.cos(fArmAngle + 0.5) * armH * 0.5;
-
-                ctx.beginPath();
-                ctx.moveTo(shoulderX, shoulderY);
-                ctx.lineTo(fElbowX, fElbowY);
-                ctx.lineTo(fHandX, fHandY);
-                ctx.stroke();
-
-                // Back arm: strumming
-                var bArmAngle = 0.3 + Math.sin(globalTime * 12) * 0.3 * (fig.playing ? 1 : 0.1);
-                var bElbowX = shoulderX + Math.sin(bArmAngle) * armH * 0.5;
-                var bElbowY = shoulderY + Math.cos(bArmAngle) * armH * 0.5;
-                var bHandX = bElbowX + Math.sin(bArmAngle - 0.3) * armH * 0.4;
-                var bHandY = bElbowY + Math.cos(bArmAngle - 0.3) * armH * 0.4;
-
-                ctx.beginPath();
-                ctx.moveTo(shoulderX, shoulderY);
-                ctx.lineTo(bElbowX, bElbowY);
-                ctx.lineTo(bHandX, bHandY);
-                ctx.stroke();
-
-                // Guitar body
-                var gBodyX = (fHandX + bHandX) * 0.5;
-                var gBodyY = (fHandY + bHandY) * 0.5 - 5 * scale;
+                var gBodyX = (handL.x + handR.x) * 0.5;
+                var gBodyY = (handL.y + handR.y) * 0.5 - 5 * scale;
                 ctx.lineWidth = 2 * scale;
                 // Neck
                 ctx.beginPath();
                 ctx.moveTo(gBodyX, gBodyY);
-                ctx.lineTo(fHandX + 15 * scale, fHandY - 10 * scale);
+                ctx.lineTo(handL.x + 15 * scale, handL.y - 10 * scale);
                 ctx.stroke();
                 // Body
                 ctx.beginPath();
@@ -478,36 +502,9 @@
                 ctx.fill();
 
             } else if (instrument === 'violin') {
-                // Front arm: holding violin up
-                var vArmAngle = -1.0 + armAngle * 0.3;
-                var vElbowX = shoulderX + Math.sin(vArmAngle) * armH * 0.6;
-                var vElbowY = shoulderY + Math.cos(vArmAngle) * armH * 0.6;
-                var vHandX = vElbowX + Math.sin(vArmAngle + 0.7) * armH * 0.5;
-                var vHandY = vElbowY + Math.cos(vArmAngle + 0.7) * armH * 0.5;
-
-                ctx.beginPath();
-                ctx.moveTo(shoulderX, shoulderY);
-                ctx.lineTo(vElbowX, vElbowY);
-                ctx.lineTo(vHandX, vHandY);
-                ctx.stroke();
-
-                // Bow arm: sweeping
-                var bowSweep = Math.sin(globalTime * 8) * 0.6 * (fig.playing ? 1 : 0.1);
-                var bwArmAngle = 0.1 + bowSweep;
-                var bwElbowX = shoulderX + Math.sin(bwArmAngle) * armH * 0.55;
-                var bwElbowY = shoulderY + Math.cos(bwArmAngle) * armH * 0.55;
-                var bwHandX = bwElbowX + Math.sin(bwArmAngle - 0.2) * armH * 0.5;
-                var bwHandY = bwElbowY + Math.cos(bwArmAngle - 0.2) * armH * 0.5;
-
-                ctx.beginPath();
-                ctx.moveTo(shoulderX, shoulderY);
-                ctx.lineTo(bwElbowX, bwElbowY);
-                ctx.lineTo(bwHandX, bwHandY);
-                ctx.stroke();
-
-                // Violin body near chin
-                var vBodyX = vHandX;
-                var vBodyY = vHandY - 5 * scale;
+                // Violin body near left hand
+                var vBodyX = handL.x;
+                var vBodyY = handL.y - 5 * scale;
                 ctx.lineWidth = 2 * scale;
                 ctx.beginPath();
                 ctx.ellipse(vBodyX, vBodyY, 7 * scale, 11 * scale, -0.3, 0, Math.PI * 2);
@@ -515,11 +512,11 @@
                 ctx.fillStyle = rgba(color, 0.15);
                 ctx.fill();
 
-                // Bow line
+                // Bow line from right hand
                 ctx.lineWidth = 1.5 * scale;
                 ctx.beginPath();
-                ctx.moveTo(bwHandX - 20 * scale, bwHandY - 10 * scale);
-                ctx.lineTo(bwHandX + 20 * scale, bwHandY + 10 * scale);
+                ctx.moveTo(handR.x - 20 * scale, handR.y - 10 * scale);
+                ctx.lineTo(handR.x + 20 * scale, handR.y + 10 * scale);
                 ctx.stroke();
             }
 
@@ -781,17 +778,8 @@
             fallingChunks = [];
             particles = [];
 
-            figA.x = W * 0.32;
-            figA.y = cliffY;
-            figA.lean = 0; figA.armAngle = 0; figA.armTarget = 0;
-            figA.legBend = 0; figA.glow = 0; figA.glowColor = COLOR_A;
-            figA.playing = false; figA.fallY = 0; figA.falling = false;
-
-            figB.x = W * 0.68;
-            figB.y = cliffY;
-            figB.lean = 0; figB.armAngle = 0; figB.armTarget = 0;
-            figB.legBend = 0; figB.glow = 0; figB.glowColor = COLOR_B;
-            figB.playing = false; figB.fallY = 0; figB.falling = false;
+            figA = createDuelFig(W * 0.32, cliffY, COLOR_A, 1);
+            figB = createDuelFig(W * 0.68, cliffY, COLOR_B, -1);
 
             initStars();
         }
@@ -800,10 +788,8 @@
         function resize(width, height) {
             W = width; H = height;
             cliffY = H * 0.65;
-            figA.x = W * 0.32;
-            figA.y = cliffY;
-            figB.x = W * 0.68;
-            figB.y = cliffY;
+            if (figA) { figA.x = W * 0.32; figA.y = cliffY; }
+            if (figB) { figB.x = W * 0.68; figB.y = cliffY; }
         }
 
         // ── Main render ──
