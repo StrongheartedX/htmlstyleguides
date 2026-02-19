@@ -143,7 +143,13 @@
 
             // mode: 'pose' or 'ragdoll'
             mode: 'pose',
-            ragdoll: null
+            ragdoll: null,
+
+            // combat state
+            hp:          opts.hp || 100,
+            attacking:   null,
+            combo:       0,
+            lastHitTime: 0
         };
     }
 
@@ -337,6 +343,10 @@
         if (fig.mode === 'ragdoll') {
             if (fig.ragdoll) stepRagdoll(fig.ragdoll, dt);
             return;
+        }
+        // Drive attack animation if active
+        if (fig.attacking) {
+            updateAttack(fig, dt);
         }
         var speed = fig.poseSpeed;
         var p = fig.params;
@@ -549,10 +559,248 @@
         ctx.restore();
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    //  PHASE 3 — Combat System
+    // ══════════════════════════════════════════════════════════════════
+
+    // ── Move Library ─────────────────────────────────────────────────
+    var MOVES = {
+        punch_r: {
+            duration: 0.22, hitAt: 0.12, hitRange: 0.18,
+            damage: 15, impulseX: 400, impulseY: -150,
+            keyframes: [
+                { t: 0.0,  pose: { lean: 0.1, armRAngle: 0.3, elbowRBend: 0.6 } },
+                { t: 0.45, pose: { lean: 0.35, armRAngle: -0.1, elbowRBend: 0.05 } },
+                { t: 0.75, pose: { lean: 0.35, armRAngle: -0.1, elbowRBend: 0.05 } },
+                { t: 1.0,  pose: { lean: 0.1, armRAngle: 0.3, elbowRBend: 0.3 } }
+            ]
+        },
+        punch_l: {
+            duration: 0.22, hitAt: 0.12, hitRange: 0.18,
+            damage: 15, impulseX: 400, impulseY: -150,
+            keyframes: [
+                { t: 0.0,  pose: { lean: 0.1, armLAngle: 0.3, elbowLBend: 0.6 } },
+                { t: 0.45, pose: { lean: 0.35, armLAngle: -0.1, elbowLBend: 0.05 } },
+                { t: 0.75, pose: { lean: 0.35, armLAngle: -0.1, elbowLBend: 0.05 } },
+                { t: 1.0,  pose: { lean: 0.1, armLAngle: 0.3, elbowLBend: 0.3 } }
+            ]
+        },
+        kick_high: {
+            duration: 0.30, hitAt: 0.18, hitRange: 0.22,
+            damage: 20, impulseX: 300, impulseY: -250,
+            keyframes: [
+                { t: 0.0,  pose: { bounce: 0, lean: -0.1, legSpread: 0.2, kneeL: 0 } },
+                { t: 0.35, pose: { bounce: 0.05, lean: -0.15, legSpread: 0.5, kneeL: -0.6 } },
+                { t: 0.7,  pose: { bounce: 0.05, lean: -0.15, legSpread: 0.5, kneeL: -0.6 } },
+                { t: 1.0,  pose: { bounce: 0, lean: 0, legSpread: 0.2, kneeL: 0 } }
+            ]
+        },
+        slash: {
+            duration: 0.28, hitAt: 0.14, hitRange: 0.25,
+            damage: 25, impulseX: 500, impulseY: -200,
+            keyframes: [
+                { t: 0.0,  pose: { lean: 0.1, armLAngle: -0.8, elbowLBend: 0.2, swordAngle: -1.2 } },
+                { t: 0.4,  pose: { lean: 0.4, armLAngle: 0.2, elbowLBend: 0.1, swordAngle: 0.5 } },
+                { t: 0.7,  pose: { lean: 0.4, armLAngle: 0.3, elbowLBend: 0.15, swordAngle: 0.6 } },
+                { t: 1.0,  pose: { lean: 0.1, armLAngle: 0.1, elbowLBend: 0.3, swordAngle: 0 } }
+            ]
+        },
+        lunge: {
+            duration: 0.35, hitAt: 0.20, hitRange: 0.30,
+            damage: 30, impulseX: 600, impulseY: -180,
+            keyframes: [
+                { t: 0.0,  pose: { lean: 0.1, legSpread: 0.2, armLAngle: 0.1, elbowLBend: 0.4 } },
+                { t: 0.5,  pose: { lean: 0.5, legSpread: 0.6, armLAngle: -0.1, elbowLBend: 0.15 } },
+                { t: 0.75, pose: { lean: 0.5, legSpread: 0.6, armLAngle: -0.1, elbowLBend: 0.15 } },
+                { t: 1.0,  pose: { lean: 0.1, legSpread: 0.3, armLAngle: 0.1, elbowLBend: 0.3 } }
+            ]
+        },
+        block: {
+            duration: 0.40,
+            keyframes: [
+                { t: 0.0, pose: { lean: -0.1, armLAngle: -0.6, armRAngle: -0.5, elbowLBend: 0.7, elbowRBend: 0.6 } },
+                { t: 0.3, pose: { lean: -0.15, armLAngle: -0.6, armRAngle: -0.5, elbowLBend: 0.7, elbowRBend: 0.6 } },
+                { t: 1.0, pose: { lean: 0, armLAngle: 0.4, armRAngle: 0.4, elbowLBend: 0.3, elbowRBend: 0.3 } }
+            ]
+        },
+        grab: {
+            duration: 0.50, hitAt: 0.25, hitRange: 0.12,
+            damage: 10, impulseX: 200, impulseY: -100,
+            keyframes: [
+                { t: 0.0,  pose: { lean: 0.2, armLAngle: 0.1, armRAngle: 0.1, elbowLBend: 0.4, elbowRBend: 0.4 } },
+                { t: 0.4,  pose: { lean: 0.4, armLAngle: -0.3, armRAngle: -0.3, elbowLBend: 0.2, elbowRBend: 0.2 } },
+                { t: 0.6,  pose: { lean: 0.4, armLAngle: -0.3, armRAngle: -0.3, elbowLBend: 0.5, elbowRBend: 0.5 } },
+                { t: 1.0,  pose: { lean: 0.1, armLAngle: 0.4, armRAngle: 0.4, elbowLBend: 0.3, elbowRBend: 0.3 } }
+            ]
+        }
+    };
+
+    // ── Interpolate keyframes at a given progress (0..1) ─────────────
+    function sampleKeyframes(keyframes, progress) {
+        if (progress <= 0) return keyframes[0].pose;
+        if (progress >= 1) return keyframes[keyframes.length - 1].pose;
+
+        // Find surrounding keyframes
+        var i;
+        for (i = 0; i < keyframes.length - 1; i++) {
+            if (progress < keyframes[i + 1].t) break;
+        }
+        var kA = keyframes[i];
+        var kB = keyframes[i + 1];
+        var segLen = kB.t - kA.t;
+        var localT = segLen > 0 ? (progress - kA.t) / segLen : 0;
+
+        // Lerp pose values between kA and kB
+        var result = {};
+        var k;
+        for (k in kA.pose) {
+            if (kA.pose.hasOwnProperty(k)) {
+                var a = kA.pose[k];
+                var b = kB.pose.hasOwnProperty(k) ? kB.pose[k] : a;
+                result[k] = a + (b - a) * localT;
+            }
+        }
+        // Include any keys only in kB
+        for (k in kB.pose) {
+            if (kB.pose.hasOwnProperty(k) && !result.hasOwnProperty(k)) {
+                result[k] = kB.pose[k];
+            }
+        }
+        return result;
+    }
+
+    // ── Start an attack ──────────────────────────────────────────────
+    function attack(attacker, moveName, target) {
+        if (attacker.attacking) return false;
+        var move = MOVES[moveName];
+        if (!move) return false;
+        attacker.attacking = {
+            move: move,
+            moveName: moveName,
+            target: target || null,
+            elapsed: 0,
+            hit: false
+        };
+        return true;
+    }
+
+    // ── Update attack animation ──────────────────────────────────────
+    function updateAttack(fig, dt) {
+        var atk = fig.attacking;
+        if (!atk) return;
+
+        atk.elapsed += dt;
+        var move = atk.move;
+        var progress = Math.min(atk.elapsed / move.duration, 1);
+
+        // Drive pose targets from keyframes
+        if (move.keyframes) {
+            var posed = sampleKeyframes(move.keyframes, progress);
+            for (var k in posed) {
+                if (posed.hasOwnProperty(k)) {
+                    fig.targets[k] = posed[k];
+                }
+            }
+        }
+
+        // Check hit at the hitAt timing (once)
+        if (!atk.hit && move.hitAt && atk.elapsed >= move.hitAt && atk.target) {
+            checkHit(fig, atk.target);
+            atk.hit = true;
+        }
+
+        // Attack finished
+        if (atk.elapsed >= move.duration) {
+            fig.attacking = null;
+        }
+    }
+
+    // ── Hit detection ────────────────────────────────────────────────
+    function checkHit(attacker, target) {
+        if (target.mode === 'ragdoll') return;
+
+        var atk = attacker.attacking;
+        if (!atk) return;
+        var move = atk.move;
+
+        var aJoints = computeJoints(attacker);
+        var tJoints = computeJoints(target);
+
+        // Determine weapon tip: sword tip for slash/lunge with sword, handL for punches, handR for punch_r
+        var tipX, tipY;
+        if ((atk.moveName === 'slash' || atk.moveName === 'lunge') && attacker.params.swordLen > 0) {
+            var sLen = attacker.params.swordLen * attacker.figH;
+            var sAng = attacker.params.swordAngle;
+            var hand = aJoints.handL;
+            tipX = attacker.x + hand.x + Math.cos(sAng) * sLen * attacker.facing;
+            tipY = attacker.y + hand.y + Math.sin(sAng) * sLen;
+        } else if (atk.moveName === 'punch_r') {
+            tipX = attacker.x + aJoints.handR.x;
+            tipY = attacker.y + aJoints.handR.y;
+        } else if (atk.moveName === 'kick_high') {
+            tipX = attacker.x + aJoints.ankleL.x;
+            tipY = attacker.y + aJoints.ankleL.y;
+        } else {
+            tipX = attacker.x + aJoints.handL.x;
+            tipY = attacker.y + aJoints.handL.y;
+        }
+
+        // Target torso center (midpoint between hip and neck)
+        var tHip = tJoints.hip;
+        var tNeck = tJoints.neck;
+        var tcX = target.x + (tHip.x + tNeck.x) * 0.5;
+        var tcY = target.y + (tHip.y + tNeck.y) * 0.5;
+
+        var dx = tipX - tcX;
+        var dy = tipY - tcY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var range = move.hitRange * attacker.figH;
+
+        if (dist < range) {
+            applyHit(target, move, attacker);
+        }
+    }
+
+    // ── Apply hit damage and reactions ───────────────────────────────
+    function applyHit(target, move, attacker) {
+        var damage = move.damage;
+
+        // Block check: is target currently in block pose?
+        var t = target.targets;
+        var isBlocking = (
+            t.armLAngle < -0.4 && t.armRAngle < -0.3 &&
+            t.elbowLBend > 0.5 && t.elbowRBend > 0.4 &&
+            t.lean < 0
+        );
+        if (isBlocking) {
+            damage = Math.round(damage * 0.4);
+        }
+
+        target.hp -= damage;
+
+        // Update attacker combo
+        var now = (typeof performance !== 'undefined') ? performance.now() / 1000 : Date.now() / 1000;
+        if (now - attacker.lastHitTime < 0.8) {
+            attacker.combo += 1;
+        } else {
+            attacker.combo = 1;
+        }
+        attacker.lastHitTime = now;
+
+        // Apply recoil pose to target (if not already ragdolled)
+        if (target.hp <= 0) {
+            var dir = attacker.facing;
+            goRagdoll(target, target.y, move.impulseX * dir, move.impulseY);
+        } else {
+            setPose(target, 'recoil');
+        }
+    }
+
     // ── Public API ────────────────────────────────────────────────────
     window.StickFight = {
         BONE:       BONE,
         POSES:      POSES,
+        MOVES:      MOVES,
 
         create:         create,
         computeJoints:  computeJoints,
@@ -564,6 +812,7 @@
         drawAll:        drawAll,
 
         goRagdoll:      goRagdoll,
+        attack:         attack,
 
         // Expose for custom use
         lerpExp:        lerpExp,
