@@ -158,6 +158,13 @@
         var waltzPairs = [];
         var MAX_PAIRS = 6;
 
+        // ── Cached offscreen canvases ──
+        var vignetteCanvas = null;
+        var vignetteCtx = null;
+        var vignetteW = 0;
+        var vignetteH = 0;
+        var lastVignetteDepth = -1;
+
         // ── Depth fog color ──
         function getDepthColor(depth) {
             // 0=midnight blue, 1=deep blue, 2=near-black blue, 3=pure black
@@ -213,7 +220,8 @@
                 p.pulsePhase += p.pulseSpeed * dt;
                 p.life -= p.decay * dt;
                 if (p.life <= 0 || p.y < -20 || p.x < -20 || p.x > W + 20) {
-                    particles.splice(i, 1);
+                    particles[i] = particles[particles.length - 1];
+                    particles.pop();
                 }
             }
             // Spawn new based on energy
@@ -226,6 +234,7 @@
 
         function drawParticles(ctx, energy) {
             ctx.save();
+            ctx.shadowBlur = 0;
             ctx.globalCompositeOperation = 'lighter';
             for (var i = 0; i < particles.length; i++) {
                 var p = particles[i];
@@ -233,11 +242,15 @@
                 var a = p.alpha * p.life * (0.3 + energy * 0.7) * pulse;
                 if (a < 0.01) continue;
                 var sz = p.size * (1 + beatPulse * 0.5);
+                // Glow layer: larger circle at lower alpha (replaces shadowBlur)
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, sz * 3, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color, a * 0.15);
+                ctx.fill();
+                // Core
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
                 ctx.fillStyle = rgb(p.color, a);
-                ctx.shadowColor = rgb(p.color, a * 0.8);
-                ctx.shadowBlur = sz * 4;
                 ctx.fill();
             }
             ctx.restore();
@@ -284,6 +297,7 @@
 
         function drawJellyfish(ctx, energy) {
             ctx.save();
+            ctx.shadowBlur = 0;
             ctx.globalCompositeOperation = 'lighter';
             for (var i = 0; i < jellyfish.length; i++) {
                 var j = jellyfish[i];
@@ -292,7 +306,7 @@
                 var sz = j.size * (0.8 + pulseOpen * 0.4);
                 var glowIntensity = 0.3 + energy * 0.7 + beatPulse * 0.3;
 
-                // Bell (dome)
+                // Bell (dome) — radial gradient already provides the glow
                 ctx.beginPath();
                 ctx.ellipse(j.x, j.y, sz, sz * (0.5 + pulseOpen * 0.2), 0, Math.PI, 0);
                 var bellGrad = ctx.createRadialGradient(j.x, j.y - sz * 0.2, 0, j.x, j.y, sz);
@@ -302,11 +316,9 @@
                 ctx.fillStyle = bellGrad;
                 ctx.fill();
 
-                // Bell outline glow
+                // Bell outline — no shadowBlur, just brighter stroke
                 ctx.strokeStyle = rgb(j.color, j.alpha * glowIntensity * 0.8);
-                ctx.lineWidth = 1.5;
-                ctx.shadowColor = rgb(j.color, j.alpha * 0.6);
-                ctx.shadowBlur = 12;
+                ctx.lineWidth = 2;
                 ctx.stroke();
 
                 // Tentacles
@@ -327,12 +339,15 @@
                     ctx.stroke();
                 }
 
-                // Inner glow dot
+                // Inner glow dot — use radial gradient instead of shadowBlur
+                var dotR = sz * 0.15;
+                var dotGrad = ctx.createRadialGradient(j.x, j.y - sz * 0.15, 0, j.x, j.y - sz * 0.15, dotR * 3);
+                dotGrad.addColorStop(0, rgb(PALETTE.white, j.alpha * glowIntensity * 0.5));
+                dotGrad.addColorStop(0.3, rgb(j.color, j.alpha * glowIntensity * 0.3));
+                dotGrad.addColorStop(1, rgb(j.color, 0));
                 ctx.beginPath();
-                ctx.arc(j.x, j.y - sz * 0.15, sz * 0.15, 0, Math.PI * 2);
-                ctx.fillStyle = rgb(PALETTE.white, j.alpha * glowIntensity * 0.5);
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = rgb(j.color, j.alpha * 0.8);
+                ctx.arc(j.x, j.y - sz * 0.15, dotR * 3, 0, Math.PI * 2);
+                ctx.fillStyle = dotGrad;
                 ctx.fill();
             }
             ctx.restore();
@@ -371,6 +386,7 @@
 
         function drawAnglerfish(ctx, energy) {
             ctx.save();
+            ctx.shadowBlur = 0;
             for (var i = 0; i < anglerfish.length; i++) {
                 var a = anglerfish[i];
                 if (a.alpha < 0.02) continue;
@@ -388,12 +404,15 @@
                 ctx.fillStyle = rgb({ r: 10, g: 15, b: 30 }, a.alpha * 0.9);
                 ctx.fill();
 
-                // Eye
+                // Eye — glow via larger circle behind instead of shadowBlur
+                var eyeR = sz * 0.1;
                 ctx.beginPath();
-                ctx.arc(sz * 0.3, -sz * 0.15, sz * 0.1, 0, Math.PI * 2);
+                ctx.arc(sz * 0.3, -sz * 0.15, eyeR * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(PALETTE.amber, a.alpha * glow * 0.2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(sz * 0.3, -sz * 0.15, eyeR, 0, Math.PI * 2);
                 ctx.fillStyle = rgb(PALETTE.amber, a.alpha * glow);
-                ctx.shadowColor = rgb(PALETTE.amber, a.alpha * 0.8);
-                ctx.shadowBlur = 10;
                 ctx.fill();
 
                 // Jaw
@@ -428,19 +447,17 @@
                 ctx.quadraticCurveTo(lureX, lureY - sz * 0.2, lureEndX, lureEndY);
                 ctx.strokeStyle = rgb(PALETTE.teal, a.alpha * 0.4);
                 ctx.lineWidth = 1.5;
-                ctx.shadowBlur = 0;
                 ctx.stroke();
 
-                // Lure bulb
+                // Lure bulb — radial gradient already provides the glow, no shadowBlur needed
                 ctx.globalCompositeOperation = 'lighter';
                 ctx.beginPath();
-                ctx.arc(lureEndX, lureEndY, sz * 0.12 * (0.8 + lureGlow * 0.4), 0, Math.PI * 2);
+                ctx.arc(lureEndX, lureEndY, sz * 0.3, 0, Math.PI * 2);
                 var lureGrad = ctx.createRadialGradient(lureEndX, lureEndY, 0, lureEndX, lureEndY, sz * 0.3);
                 lureGrad.addColorStop(0, rgb(PALETTE.teal, a.alpha * glow * lureGlow));
+                lureGrad.addColorStop(0.4, rgb(PALETTE.teal, a.alpha * glow * lureGlow * 0.3));
                 lureGrad.addColorStop(1, rgb(PALETTE.teal, 0));
                 ctx.fillStyle = lureGrad;
-                ctx.shadowColor = rgb(PALETTE.teal, a.alpha * 0.8);
-                ctx.shadowBlur = 20;
                 ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
 
@@ -469,22 +486,28 @@
                 r.radius += r.speed * dt;
                 r.alpha *= Math.exp(-1.2 * dt);
                 if (r.alpha < 0.01 || r.radius > r.maxRadius) {
-                    sonarRings.splice(i, 1);
+                    sonarRings[i] = sonarRings[sonarRings.length - 1];
+                    sonarRings.pop();
                 }
             }
         }
 
         function drawSonarRings(ctx) {
             ctx.save();
+            ctx.shadowBlur = 0;
             ctx.globalCompositeOperation = 'lighter';
             for (var i = 0; i < sonarRings.length; i++) {
                 var r = sonarRings[i];
+                // Wider stroke at lower alpha for glow effect, then core stroke
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = rgb(r.color, r.alpha * 0.25);
+                ctx.lineWidth = r.width + 4;
+                ctx.stroke();
                 ctx.beginPath();
                 ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
                 ctx.strokeStyle = rgb(r.color, r.alpha);
                 ctx.lineWidth = r.width;
-                ctx.shadowColor = rgb(r.color, r.alpha * 0.5);
-                ctx.shadowBlur = 8;
                 ctx.stroke();
             }
             ctx.restore();
@@ -528,6 +551,7 @@
 
         function drawWaltzPairs(ctx, energy) {
             ctx.save();
+            ctx.shadowBlur = 0;
             ctx.globalCompositeOperation = 'lighter';
             for (var i = 0; i < waltzPairs.length; i++) {
                 var p = waltzPairs[i];
@@ -556,20 +580,24 @@
                 ctx.lineWidth = 0.5;
                 ctx.stroke();
 
-                // Orbs
+                // Orbs — glow via larger circle at 30% alpha instead of shadowBlur
                 var glowMult = 1 + beatPulse * 0.5;
+                ctx.beginPath();
+                ctx.arc(x1, y1, p.size1 * glowMult * 3, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color1, p.alpha * 0.15);
+                ctx.fill();
                 ctx.beginPath();
                 ctx.arc(x1, y1, p.size1 * glowMult, 0, Math.PI * 2);
                 ctx.fillStyle = rgb(p.color1, p.alpha * 0.8);
-                ctx.shadowColor = rgb(p.color1, p.alpha * 0.6);
-                ctx.shadowBlur = p.size1 * 4;
                 ctx.fill();
 
                 ctx.beginPath();
+                ctx.arc(x2, y2, p.size2 * glowMult * 3, 0, Math.PI * 2);
+                ctx.fillStyle = rgb(p.color2, p.alpha * 0.15);
+                ctx.fill();
+                ctx.beginPath();
                 ctx.arc(x2, y2, p.size2 * glowMult, 0, Math.PI * 2);
                 ctx.fillStyle = rgb(p.color2, p.alpha * 0.8);
-                ctx.shadowColor = rgb(p.color2, p.alpha * 0.6);
-                ctx.shadowBlur = p.size2 * 4;
                 ctx.fill();
             }
             ctx.restore();
@@ -639,6 +667,7 @@
         function drawTitle(ctx) {
             if (titleAlpha < 0.01) return;
             ctx.save();
+            ctx.shadowBlur = 0;
             var fontSize = Math.max(16, Math.min(W * 0.045, 52));
             ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
             ctx.textAlign = 'center';
@@ -648,14 +677,19 @@
             var text = 'ABYSSAL WALTZ';
             var y = H * 0.15;
 
-            // Glow layers
-            ctx.shadowColor = 'rgba(0,229,204,0.8)';
-            ctx.shadowBlur = 40;
+            // Glow layers — use multiple text draws at decreasing alpha instead of shadowBlur
+            ctx.fillStyle = 'rgba(0,180,255,' + (titleAlpha * 0.08) + ')';
+            ctx.font = '700 ' + (fontSize * 1.08) + 'px "Cinzel", serif';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.fillStyle = 'rgba(0,229,204,' + (titleAlpha * 0.15) + ')';
+            ctx.font = '700 ' + (fontSize * 1.04) + 'px "Cinzel", serif';
+            ctx.fillText(text, W / 2, y);
+
+            ctx.font = '700 ' + fontSize + 'px "Cinzel", serif';
             ctx.fillStyle = 'rgba(0,229,204,' + (titleAlpha * 0.9) + ')';
             ctx.fillText(text, W / 2, y);
 
-            ctx.shadowColor = 'rgba(0,180,255,0.5)';
-            ctx.shadowBlur = 60;
             ctx.fillStyle = 'rgba(200,240,255,' + (titleAlpha * 0.7) + ')';
             ctx.fillText(text, W / 2, y);
 
@@ -904,15 +938,27 @@
             // 10. Flash
             drawFlash(ctx);
 
-            // 11. Vignette
-            ctx.save();
-            var vigR = Math.max(W, H) * 0.7;
-            var vig = ctx.createRadialGradient(W / 2, H / 2, vigR * 0.3, W / 2, H / 2, vigR);
-            vig.addColorStop(0, 'rgba(0,0,0,0)');
-            vig.addColorStop(1, 'rgba(0,0,0,' + (0.4 + depthLevel * 0.15) + ')');
-            ctx.fillStyle = vig;
-            ctx.fillRect(0, 0, W, H);
-            ctx.restore();
+            // 11. Vignette — cached offscreen, redrawn only on resize or depth change
+            var quantizedDepth = Math.round(depthLevel * 20) / 20;
+            if (!vignetteCanvas || vignetteW !== W || vignetteH !== H || lastVignetteDepth !== quantizedDepth) {
+                if (!vignetteCanvas) {
+                    vignetteCanvas = document.createElement('canvas');
+                    vignetteCtx = vignetteCanvas.getContext('2d');
+                }
+                vignetteCanvas.width = W;
+                vignetteCanvas.height = H;
+                vignetteW = W;
+                vignetteH = H;
+                lastVignetteDepth = quantizedDepth;
+                var vigR = Math.max(W, H) * 0.7;
+                var vig = vignetteCtx.createRadialGradient(W / 2, H / 2, vigR * 0.3, W / 2, H / 2, vigR);
+                vig.addColorStop(0, 'rgba(0,0,0,0)');
+                vig.addColorStop(1, 'rgba(0,0,0,' + (0.4 + quantizedDepth * 0.15) + ')');
+                vignetteCtx.clearRect(0, 0, W, H);
+                vignetteCtx.fillStyle = vig;
+                vignetteCtx.fillRect(0, 0, W, H);
+            }
+            ctx.drawImage(vignetteCanvas, 0, 0);
         }
 
         return {

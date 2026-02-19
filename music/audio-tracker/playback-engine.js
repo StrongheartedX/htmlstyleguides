@@ -50,17 +50,18 @@ var ChipPlayer = (function () {
 
   // ---- Playback note ----
 
-  function playNote(midi, inst, time) {
+  function playNote(midi, inst, time, durationRows) {
     var vol = inst.vol !== undefined ? inst.vol : 0.8;
     var a = inst.a || 0.01, d = inst.d || 0.1;
     var s = inst.s !== undefined ? inst.s : 0.6, r = inst.r || 0.1;
+    var rows = durationRows || 1;
 
     var gainNode = ctx.createGain();
     gainNode.gain.setValueAtTime(0, time);
     gainNode.gain.linearRampToValueAtTime(vol, time + a);
     gainNode.gain.linearRampToValueAtTime(vol * s, time + a + d);
-    // Sustain holds until release; schedule release at row end
-    var releaseAt = time + secondsPerRow() - 0.005;
+    // Sustain holds until release; schedule release at end of note duration
+    var releaseAt = time + secondsPerRow() * rows - 0.005;
     gainNode.gain.setValueAtTime(vol * s, releaseAt);
     gainNode.gain.linearRampToValueAtTime(0, releaseAt + r);
 
@@ -138,7 +139,8 @@ var ChipPlayer = (function () {
       if (!cell || cell[0] < 0) continue;
       var midi = cell[0];
       var inst = song.instruments[cell[1]] || song.instruments[0];
-      playNote(midi, inst, time);
+      var dur = cell[2] || 1;
+      playNote(midi, inst, time, dur);
     }
   }
 
@@ -213,7 +215,7 @@ var ChipPlayer = (function () {
               var events = pat.channels[c];
               for (var e = 0; e < events.length; e++) {
                 var ev = events[e];
-                dense[ev.r] = [ev.n, ev.i];
+                dense[ev.r] = ev.d && ev.d > 1 ? [ev.n, ev.i, ev.d] : [ev.n, ev.i];
               }
               pat.ch.push(dense);
             }

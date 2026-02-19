@@ -189,6 +189,16 @@
         var heroAttackQueue = [];
         var heroAttackCooldown = 0;
 
+        // Hero state machine: 'seeking', 'engaging', 'attacking', 'dodging', 'post_kill'
+        var heroState = 'seeking';
+        var heroStateTimer = 0;
+        var lastKillTime = 0;
+        var heroLastEnemyCount = 0;
+
+        // Track which enemy is currently allowed to attack
+        var activeAttackerIdx = -1;
+        var activeAttackerTimer = 0;
+
         // Boss ref
         var boss = null;
         var bossDefeated = false;
@@ -428,19 +438,38 @@
         function updateEnemyAI(dt) {
             if (!hero || hero.mode === 'ragdoll') return;
 
+            // Manage active attacker rotation timer
+            activeAttackerTimer -= dt;
+
             // Sort alive enemies by distance to hero for engagement priority
             var alive = [];
             for (var i = 0; i < activeFigs.length; i++) {
                 var e = activeFigs[i];
                 if (e.mode !== 'ragdoll' && e.hp > 0) {
                     e._dist = Math.abs(e.x - hero.x);
-                    e._side = e.x < hero.x ? -1 : 1; // which side of hero
+                    e._side = e.x < hero.x ? -1 : 1;
                     alive.push({ idx: i, fig: e });
                 }
             }
             alive.sort(function(a, b) { return a.fig._dist - b.fig._dist; });
 
-            // Allow up to 2 melee engagers (1 per side ideally)
+            // Only ONE enemy actively attacks at a time (boss always can)
+            // Rotate which enemy is the active attacker
+            if (activeAttackerTimer <= 0 && alive.length > 0) {
+                // Pick the nearest non-retreating enemy
+                var picked = -1;
+                for (var pi = 0; pi < alive.length; pi++) {
+                    if (!alive[pi].fig._retreating) {
+                        picked = alive[pi].idx;
+                        break;
+                    }
+                }
+                if (picked < 0 && alive.length > 0) picked = alive[0].idx;
+                activeAttackerIdx = picked;
+                activeAttackerTimer = rand(1.0, 2.0);
+            }
+
+            // Allow up to 1 melee engager per side (2 during intense sections)
             var meleeSlots = { left: 0, right: 0 };
             var maxMeleePerSide = section === 'breakdown' || section === 'final_chorus' ? 2 : 1;
 
@@ -454,16 +483,32 @@
                 var faceDir = distToHero > 0 ? 1 : -1;
                 enemy.facing = faceDir;
 
+                // Initialize retreat state if needed
+                if (enemy._retreating === undefined) enemy._retreating = false;
+                if (enemy._retreatTimer === undefined) enemy._retreatTimer = 0;
+
                 var attackRange = enemy.figH * 0.45;
                 if (enemy.params.swordLen > 0) attackRange = enemy.figH * 0.6;
                 if (enemy._isBoss) attackRange = enemy.figH * 0.55;
 
-                // Determine if this enemy gets a melee slot
                 var sideKey = enemy._side < 0 ? 'left' : 'right';
                 var canMelee = meleeSlots[sideKey] < maxMeleePerSide || enemy._isBoss;
+                var isActiveAttacker = (idx === activeAttackerIdx) || enemy._isBoss;
 
-                if (canMelee && absDist <= attackRange) {
-                    // Engaged in melee — count the slot
+                // Handle retreat after attacking
+                if (enemy._retreating) {
+                    enemy._retreatTimer -= dt;
+                    var retreatDir = -faceDir; // step away from hero
+                    enemy.x += retreatDir * 160 * dt;
+                    if (!enemy.attacking) {
+                        StickFight.setPose(enemy, 'guard');
+                        StickFight.setTarget(enemy, 'lean', -0.1);
+                    }
+                    if (enemy._retreatTimer <= 0) {
+                        enemy._retreating = false;
+                    }
+                } else if (canMelee && absDist <= attackRange && isActiveAttacker) {
+                    // Active attacker in melee range — attack then retreat
                     meleeSlots[sideKey]++;
 
                     var timer = enemyTimers[idx];
@@ -476,35 +521,52 @@
                             }
                             var moveName = pickRandom(moves);
                             StickFight.attack(enemy, moveName, hero);
-                            timer.cooldown = rand(0.8, 2.2);
+                            timer.cooldown = rand(1.2, 2.5);
                             if (enemy._isBoss) timer.cooldown = rand(0.5, 1.2);
+
+                            // After attacking, retreat to create space
+                            if (!enemy._isBoss) {
+                                enemy._retreating = true;
+                                enemy._retreatTimer = rand(0.4, 0.8);
+                            }
                         } else if (!enemy.attacking) {
                             StickFight.setPose(enemy, 'guard');
-                            if (hero.attacking && Math.random() < 0.25) {
+                            // Block occasionally when hero is attacking
+                            if (hero.attacking && Math.random() < 0.3) {
                                 StickFight.setPose(enemy, 'block');
                             }
                         }
                     }
-                } else if (canMelee && absDist > attackRange) {
-                    // Walking in to engage
+                } else if (canMelee && absDist > attackRange && isActiveAttacker) {
+                    // Active attacker approaching cautiously
                     meleeSlots[sideKey]++;
-                    var walkSpeed = enemy._isBoss ? 90 : 130;
+                    var walkSpeed = enemy._isBoss ? 80 : 70; // slow cautious approach
                     enemy.x += faceDir * walkSpeed * dt;
                     if (!enemy.attacking) {
                         StickFight.setPose(enemy, 'guard');
-                        StickFight.setTarget(enemy, 'legSpread', 0.2 + Math.sin(performance.now() * 0.005 + idx) * 0.05);
+                        StickFight.setTarget(enemy, 'legSpread', 0.25 + Math.sin(performance.now() * 0.004 + idx) * 0.08);
                     }
                 } else {
-                    // Hanging back — maintain staggered distance from hero
-                    var hangDist = attackRange + 40 + ai * 30;
+                    // Hanging back — threatening idle at staggered distances
+                    var hangDist = attackRange + 60 + ai * 40;
                     var idealX = hero.x + enemy._side * hangDist;
-                    var driftSpeed = 60;
+                    var driftSpeed = 45;
                     var dToIdeal = idealX - enemy.x;
-                    if (Math.abs(dToIdeal) > 10) {
+                    if (Math.abs(dToIdeal) > 15) {
                         enemy.x += (dToIdeal > 0 ? 1 : -1) * driftSpeed * dt;
                     }
                     if (!enemy.attacking) {
+                        // Threatening idle — shift weight, adjust guard
+                        var t = performance.now() * 0.001 + idx * 1.7;
                         StickFight.setPose(enemy, 'guard');
+                        StickFight.setTarget(enemy, 'bounce', Math.sin(t * 2) * 0.04);
+                        StickFight.setTarget(enemy, 'lean', 0.05 + Math.sin(t * 1.3) * 0.08);
+                        StickFight.setTarget(enemy, 'legSpread', 0.25 + Math.sin(t * 0.9) * 0.05);
+                        // Occasionally feint — briefly shift forward
+                        if (Math.sin(t * 3.7) > 0.95) {
+                            StickFight.setTarget(enemy, 'lean', 0.25);
+                            StickFight.setTarget(enemy, 'armRAngle', -0.2);
+                        }
                     }
                 }
 
@@ -514,9 +576,9 @@
                     var other = alive[oi].fig;
                     var sep = enemy.x - other.x;
                     var absSep = Math.abs(sep);
-                    var minSep = enemy.figH * 0.25;
+                    var minSep = enemy.figH * 0.3;
                     if (absSep < minSep && absSep > 0.1) {
-                        var push = (minSep - absSep) * 0.3;
+                        var push = (minSep - absSep) * 0.4;
                         enemy.x += (sep > 0 ? push : -push);
                     }
                 }
@@ -547,21 +609,25 @@
         function heroAttackOnBeat(energy) {
             if (!hero || hero.mode === 'ragdoll') return;
             if (heroAttackCooldown > 0) return;
+            if (heroState === 'post_kill' || heroState === 'dodging') return;
 
             var near = findNearestEnemy();
             if (!near.fig) return;
 
             hero.facing = near.fig.x > hero.x ? 1 : -1;
 
-            var attackRange = hero.figH * 0.5;
-            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.65;
+            var attackRange = hero.figH * 0.55;
+            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.7;
 
-            if (near.dist > attackRange) return; // Don't lunge from far — continuous movement handles closing
+            if (near.dist > attackRange) return;
 
-            // On-beat: pick power moves
+            // On-beat: pick power moves — higher damage for decisive kills
             var moveName;
             if (energy > 0.7) {
-                moveName = hero.params.swordLen > 0 ? 'slash' : 'kick_high';
+                // Power attack — guaranteed flung death if it kills
+                moveName = hero.params.swordLen > 0 ? 'lunge' : 'kick_high';
+                // Boost damage for power attacks — ensure 1-hit kills on low HP enemies
+                near.fig.hp = Math.min(near.fig.hp, 30);
             } else if (energy > 0.4) {
                 moveName = hero.params.swordLen > 0 ?
                     pickRandom(['slash', 'lunge']) :
@@ -571,18 +637,88 @@
             }
 
             StickFight.attack(hero, moveName, near.fig);
-            heroAttackCooldown = 0.25;
-            shakeIntensity = Math.max(shakeIntensity, 1.5 + energy * 2);
+            heroAttackCooldown = 0.2;
+            heroState = 'attacking';
+            shakeIntensity = Math.max(shakeIntensity, 2 + energy * 3);
+
+            // Check if this will kill — pre-trigger slow-mo on kill
+            if (near.fig.hp <= 30 && energy > 0.5) {
+                slowMoFactor = 0.3;
+                slowMoTimer = 0.3;
+            }
         }
 
         // ── Continuous hero combat (called every frame, not just on beat) ──
+        // State machine: seeking -> engaging -> attacking -> post_kill -> seeking
+        //                                     dodging (interrupt) ->
         function updateHeroCombat(dt) {
             if (!hero || hero.mode === 'ragdoll') return;
             heroAttackCooldown = Math.max(0, heroAttackCooldown - dt);
+            heroStateTimer = Math.max(0, heroStateTimer - dt);
+
+            // Count alive enemies for kill detection
+            var aliveCount = 0;
+            for (var ci = 0; ci < activeFigs.length; ci++) {
+                if (activeFigs[ci].mode !== 'ragdoll' && activeFigs[ci].hp > 0) aliveCount++;
+            }
+
+            // Detect a kill just happened (alive count dropped)
+            if (aliveCount < heroLastEnemyCount && aliveCount >= 0 && heroState !== 'post_kill') {
+                heroState = 'post_kill';
+                heroStateTimer = aliveCount === 0 ? 0.5 : 0.3; // longer pause if no enemies left
+                lastKillTime = performance.now() / 1000;
+            }
+            heroLastEnemyCount = aliveCount;
 
             var near = findNearestEnemy();
+
+            // Check if an enemy is mid-attack on the hero — dodge opportunity
+            if (heroState !== 'dodging' && heroState !== 'post_kill' && near.fig) {
+                var enemyAttacking = near.fig.attacking && !near.fig.attacking.hit;
+                var closeEnough = near.dist < hero.figH * 0.6;
+                if (enemyAttacking && closeEnough && Math.random() < 0.4 * dt * 60) {
+                    heroState = 'dodging';
+                    heroStateTimer = 0.25;
+                }
+            }
+
+            // State machine
+            if (heroState === 'post_kill') {
+                // Victory stance — brief dramatic pause
+                if (!hero.attacking) {
+                    StickFight.setPose(hero, 'guard');
+                    StickFight.setTarget(hero, 'lean', -0.1); // slight lean back
+                    StickFight.setTarget(hero, 'bounce', -0.08);
+                }
+                // Face nearest remaining enemy if any
+                if (near.fig) {
+                    hero.facing = near.fig.x > hero.x ? 1 : -1;
+                }
+                if (heroStateTimer <= 0) {
+                    heroState = near.fig ? 'seeking' : 'seeking';
+                }
+                return;
+            }
+
+            if (heroState === 'dodging') {
+                // Step back and block pose
+                if (near.fig) {
+                    var dodgeDir = near.fig.x > hero.x ? -1 : 1;
+                    hero.x += dodgeDir * 200 * dt;
+                }
+                if (!hero.attacking) {
+                    StickFight.setPose(hero, 'block');
+                    StickFight.setTarget(hero, 'lean', -0.2);
+                }
+                if (heroStateTimer <= 0) {
+                    heroState = 'engaging';
+                }
+                return;
+            }
+
             if (!near.fig) {
                 // No enemies — idle guard
+                heroState = 'seeking';
                 if (!hero.attacking) {
                     StickFight.setPose(hero, 'guard');
                 }
@@ -596,22 +732,26 @@
             if (hero.params.swordLen > 0) attackRange = hero.figH * 0.65;
 
             if (near.dist > attackRange) {
-                // Move toward enemy (hero is proactive)
-                var moveSpeed = 180;
-                hero.x += hero.facing * moveSpeed * dt;
+                // DASH to the next enemy aggressively
+                heroState = 'seeking';
+                var dashSpeed = near.dist > hero.figH * 1.5 ? 350 : 240; // faster dash for far enemies
+                hero.x += hero.facing * dashSpeed * dt;
                 if (!hero.attacking) {
                     StickFight.setPose(hero, 'guard');
-                    StickFight.setTarget(hero, 'legSpread', 0.25);
+                    StickFight.setTarget(hero, 'lean', 0.3); // lean into the dash
+                    StickFight.setTarget(hero, 'legSpread', 0.35);
                 }
             } else if (!hero.attacking && heroAttackCooldown <= 0) {
-                // In range and not on cooldown — attack between beats too
-                // Use lighter moves between beats (punches), save heavy for on-beat
+                // In range — attack decisively between beats
+                heroState = 'attacking';
                 var moveName = pickRandom(['punch_r', 'punch_l']);
-                if (hero.params.swordLen > 0 && Math.random() < 0.3) {
+                if (hero.params.swordLen > 0 && Math.random() < 0.4) {
                     moveName = 'slash';
                 }
                 StickFight.attack(hero, moveName, near.fig);
-                heroAttackCooldown = 0.35; // Slightly longer cooldown for between-beat attacks
+                heroAttackCooldown = 0.28;
+            } else {
+                heroState = 'engaging';
             }
         }
 
@@ -710,11 +850,11 @@
             if (section === 'verse1') {
                 titleTarget = 0;
                 spotlightTarget = 1;
-                startWave(3, 60, false, 1);
+                startWave(3, 35, false, 1);  // 1-2 hit kills
             }
 
             if (section === 'chorus1') {
-                startWave(6, 50, true, 1);
+                startWave(6, 45, true, 1);  // fast kills with sword
                 // Give hero a sword
                 hero.params.swordLen = 0.3;
                 hero.targets.swordLen = 0.3;
@@ -726,12 +866,12 @@
             }
 
             if (section === 'verse2') {
-                startWave(4, 150, true, 1.15);
+                startWave(4, 60, true, 1.15);  // slightly tougher
                 spotlightTarget = 1;
             }
 
             if (section === 'chorus2') {
-                startWave(8, 80, true, 1.1);
+                startWave(8, 50, true, 1.1);
             }
 
             if (section === 'breakdown') {
@@ -770,7 +910,7 @@
                 } else if (seqIdx === 20) {
                     // New enemies slowly emerge
                     if (beat % 8 === 0 && activeFigs.length < 4) {
-                        spawnEnemy(100, true, 1.1, false);
+                        spawnEnemy(50, true, 1.1, false);
                     }
                     // Heartbeat pulse
                     if (beat % 4 === 0) {
@@ -789,13 +929,15 @@
                     heroGlowTarget = 1;
                     spotlightTarget = 1;
 
-                    // Spawn enemies constantly
+                    // Spawn enemies constantly — instant kill fodder
                     if (activeFigs.length < 6) {
-                        spawnEnemy(40, false, 1, false);
+                        spawnEnemy(20, false, 1, false);
                     }
 
-                    // Attack every beat
+                    // Attack every beat — override any state pauses
                     heroAttackCooldown = 0;
+                    heroState = 'attacking';
+                    heroStateTimer = 0;
                     heroAttackOnBeat(1.0);
 
                     // Flung deaths
@@ -827,11 +969,12 @@
             }
 
             if (section === 'chorus1' || section === 'chorus2') {
-                // Every beat in choruses
+                // Every beat in choruses — decisive kills
                 heroAttackCooldown = 0;
+                heroState = 'attacking'; // override post_kill pause for relentless choruses
                 heroAttackOnBeat(energy);
-                // Signature combo on high energy beats every 16 beats
-                if (beat % 16 === 0 && energy > 0.5) {
+                // Signature combo more frequently
+                if (beat % 12 === 0 && energy > 0.4) {
                     triggerSignatureCombo();
                 }
             }
@@ -840,8 +983,9 @@
                 // Key change blend
                 keyChangeBlend = lerpExp(keyChangeBlend, 1, 3, 1 / 60);
 
-                // Every beat — all-out
+                // Every beat — all-out, override any pauses
                 heroAttackCooldown = 0;
+                heroState = 'attacking';
                 heroAttackOnBeat(energy);
 
                 // Signature combo
@@ -861,19 +1005,31 @@
                 }
             }
 
-            // Blood on any combat hit
+            // Death handling — spectacular kills on any dead enemy
             if (section !== 'intro' && section !== 'outro' && section !== 'breakdown') {
                 for (var k = 0; k < activeFigs.length; k++) {
                     var fig = activeFigs[k];
                     if (fig.hp <= 0 && fig.mode !== 'ragdoll') {
-                        if (energy > 0.6) {
+                        // Most kills are flung for stickdeath feel
+                        if (energy > 0.4 || Math.random() < 0.6) {
                             StickFight.applyDeath(fig, 'flung', groundY);
+                            // Occasional extra dismemberment
+                            if (energy > 0.6 && Math.random() < 0.4) {
+                                var limbs = ['armR', 'armL', 'legR', 'legL', 'head'];
+                                StickFight.detachLimb(fig, pickRandom(limbs), groundY);
+                            }
                         } else {
                             StickFight.applyDeath(fig, 'collapse', groundY);
                         }
                         StickFight.spawnBlood(fig.x, fig.y - fig.figH * 0.4,
-                            12, hero.facing * 150, -120);
-                        shakeIntensity = Math.max(shakeIntensity, 3 + energy * 4);
+                            15, hero.facing * 200, -150);
+                        shakeIntensity = Math.max(shakeIntensity, 4 + energy * 5);
+
+                        // Brief slow-mo on kills during high-energy sections
+                        if (energy > 0.5 && slowMoTimer <= 0) {
+                            slowMoFactor = 0.35;
+                            slowMoTimer = 0.25;
+                        }
                     }
                 }
             }
@@ -942,6 +1098,12 @@
             signatureComboQueue = [];
             signatureTimer = 0;
             heroAttackCooldown = 0;
+            heroState = 'seeking';
+            heroStateTimer = 0;
+            lastKillTime = 0;
+            heroLastEnemyCount = 0;
+            activeAttackerIdx = -1;
+            activeAttackerTimer = 0;
             waveEnemies = 0;
             waveSpawned = 0;
 

@@ -157,6 +157,31 @@
         var dragon = { x: 0, y: 0, wingAngle: 0, breathTimer: 0, breathActive: false, headAngle: 0 };
         var campfire = { flicker: 0, windDir: 0 };
 
+        // ── Duel choreography state machine ──
+        var duel = {
+            phase: 'idle',           // idle, circling, approaching, attacking, separating, clash, finished
+            turnToAttack: 0,         // 0 = warrior1 attacks, 1 = warrior2 attacks
+            exchangeTimer: 0,        // time in current exchange
+            separationTimer: 0,      // cooldown between exchanges
+            approachTimer: 0,        // time spent approaching
+            clashTimer: 0,           // power clash duration
+            warrior1HP: 200,
+            warrior2HP: 200,
+            finaleKillDone: false,
+            finaleBeats: 0,          // beat counter in finale
+            circleDir: 1,            // circling direction
+            circleTimer: 0,
+            lastAttackBeat: -1,      // last beat an attack was triggered
+            attackCooldown: 0,       // prevents double-attacks
+            centerX: 0,             // center point between warriors
+            desiredGap: 0,          // target distance between warriors
+            actualGap: 0,           // current distance
+            lastSection: '',        // track section changes for HP reset
+            slowMoTimer: 0,         // slow motion countdown
+            slowMoActive: false,
+            victoryTimer: 0         // post-kill victory pose timer
+        };
+
         // ── Section mapping (130 patterns at 200 BPM) ──
         // Rough breakdown for a DragonForce-style song:
         // 0-7: keyboard intro
@@ -465,6 +490,8 @@
 
         // ── Warrior drawing (uses StickFight engine) ──
         function drawWarriorExtras(ctx, fig, slashIdx, energy) {
+            // Skip extras for ragdolled figures
+            if (fig.mode === 'ragdoll') return;
             var joints = StickFight.computeJoints(fig);
 
             ctx.save();
@@ -504,22 +531,425 @@
             ctx.restore();
         }
 
-        function updateWarrior(fig, slashIdx, dt, energy, beat) {
-            // Sword slashing on beat
-            if (beat !== lastBeat && energy > 0.3) {
-                var newSwordAngle = rand(-2.2, -0.3);
-                StickFight.setTarget(fig, 'swordAngle', newSwordAngle);
-                StickFight.setTarget(fig, 'armLAngle', newSwordAngle * 0.4);
-                StickFight.setTarget(fig, 'elbowLBend', 0.2 + Math.random() * 0.3);
-                slashTimers[slashIdx] = 0.7 + energy * 0.3;
+        // ── Duel helper: get attacker/defender by turn ──
+        function getDuelFighters() {
+            if (duel.turnToAttack === 0) {
+                return { attacker: warrior1, defender: warrior2, atkIdx: 0, defIdx: 1 };
+            }
+            return { attacker: warrior2, defender: warrior1, atkIdx: 1, defIdx: 0 };
+        }
+
+        // ── Duel helper: move warrior toward a target X ──
+        function moveWarriorX(fig, targetX, speed, dt) {
+            var dx = targetX - fig.x;
+            var dist = Math.abs(dx);
+            if (dist < 2) return;
+            var step = Math.min(dist, speed * dt);
+            fig.x += (dx > 0 ? step : -step);
+        }
+
+        // ── Duel helper: ensure warriors face each other ──
+        function faceEachOther() {
+            if (warrior1.mode === 'ragdoll' || warrior2.mode === 'ragdoll') return;
+            warrior1.facing = warrior1.x < warrior2.x ? 1 : -1;
+            warrior2.facing = warrior2.x < warrior1.x ? 1 : -1;
+        }
+
+        // ── Duel helper: current gap between warriors ──
+        function getGap() {
+            return Math.abs(warrior2.x - warrior1.x);
+        }
+
+        // ── Duel helper: trigger an attack on beat ──
+        function triggerDuelAttack(energy) {
+            if (duel.finaleKillDone) return;
+            var f = getDuelFighters();
+            var attacker = f.attacker;
+            var defender = f.defender;
+
+            if (attacker.mode === 'ragdoll' || defender.mode === 'ragdoll') return;
+            if (attacker.attacking) return;
+
+            // Pick attack move
+            var moves = ['slash', 'lunge', 'slash'];
+            if (energy > 0.7) moves.push('lunge', 'slash');
+            var moveName = moves[Math.floor(Math.random() * moves.length)];
+
+            // Execute attack
+            StickFight.attack(attacker, moveName, defender);
+            slashTimers[f.atkIdx] = 0.8 + energy * 0.4;
+
+            // Defender reaction: block or take hit
+            var blockChance = 0.55;
+            if (sectionMood === 'chorus' || sectionMood === 'finale') blockChance = 0.4;
+            if (sectionMood === 'twin-guitar') blockChance = 0.7;
+
+            if (Math.random() < blockChance) {
+                // Block
+                StickFight.setPose(defender, 'block');
+                StickFight.setTarget(defender, 'swordAngle', -1.5);
+            } else {
+                // Hit lands — recoil + blood
+                StickFight.setPose(defender, 'recoil');
+                var hitX = defender.x;
+                var hitY = defender.y - defender.figH * 0.4;
+                var impulseDir = attacker.facing;
+                StickFight.spawnBlood(hitX, hitY, 4 + Math.floor(energy * 6),
+                    impulseDir * 120, -80);
+
+                // Screen shake on hit
+                shakeAmount = Math.max(shakeAmount, 3 + energy * 6);
+
+                // HP damage (only matters in finale)
+                if (sectionMood === 'finale') {
+                    if (f.defIdx === 0) {
+                        duel.warrior1HP -= 12 + Math.floor(energy * 8);
+                    } else {
+                        duel.warrior2HP -= 12 + Math.floor(energy * 8);
+                    }
+                }
+            }
+
+            // Swap turn
+            duel.turnToAttack = 1 - duel.turnToAttack;
+        }
+
+        // ── Duel helper: trigger a power clash (both attack) ──
+        function triggerClash() {
+            if (warrior1.mode === 'ragdoll' || warrior2.mode === 'ragdoll') return;
+            StickFight.attack(warrior1, 'lunge', warrior2);
+            StickFight.attack(warrior2, 'lunge', warrior1);
+            slashTimers[0] = 1.0;
+            slashTimers[1] = 1.0;
+            duel.phase = 'clash';
+            duel.clashTimer = 0.3;
+            shakeAmount = Math.max(shakeAmount, 15);
+            flashAlpha = Math.max(flashAlpha, 0.15);
+            // Spark blood from clash point
+            var midX = (warrior1.x + warrior2.x) * 0.5;
+            var midY = warrior1.y - warrior1.figH * 0.5;
+            StickFight.spawnBlood(midX, midY, 3, 0, -100);
+        }
+
+        // ── Duel helper: apply the killing blow in finale ──
+        function triggerFinaleKill() {
+            duel.finaleKillDone = true;
+            duel.slowMoActive = true;
+            duel.slowMoTimer = 1.5;
+
+            // Warrior1 wins (the "hero")
+            var loser = warrior2;
+            var winner = warrior1;
+
+            // Big blood burst
+            StickFight.spawnBlood(loser.x, loser.y - loser.figH * 0.4, 25,
+                winner.facing * 200, -180);
+
+            // Apply dramatic death with dismemberment
+            loser.hp = 0;
+            StickFight.applyDeath(loser, 'flung', loser.y);
+
+            // Extra dismemberment for spectacle
+            StickFight.detachLimb(loser, 'armR', loser.y);
+
+            // Screen effects
+            shakeAmount = 25;
+            flashAlpha = 0.6;
+
+            // Victory pose for winner
+            duel.victoryTimer = 0;
+            StickFight.setPose(winner, 'salute');
+            StickFight.setTarget(winner, 'swordAngle', -1.8);
+        }
+
+        // ── Main duel update — called each frame when warriors are active ──
+        function updateDuel(dt, energy, beat, section) {
+            var groundY = H * 0.78;
+
+            // Slow-mo effect
+            if (duel.slowMoActive) {
+                duel.slowMoTimer -= dt;
+                dt = dt * 0.25; // quarter speed
+                if (duel.slowMoTimer <= 0) {
+                    duel.slowMoActive = false;
+                }
+            }
+
+            // Decay slash timers
+            slashTimers[0] = Math.max(0, slashTimers[0] - dt * 3);
+            slashTimers[1] = Math.max(0, slashTimers[1] - dt * 3);
+
+            // Cooldown
+            duel.attackCooldown = Math.max(0, duel.attackCooldown - dt);
+
+            // Reset HP between non-finale sections
+            if (section !== duel.lastSection) {
+                duel.lastSection = section;
+                if (section !== 'finale') {
+                    duel.warrior1HP = 200;
+                    duel.warrior2HP = 200;
+                }
+                duel.finaleBeats = 0;
+            }
+
+            // Post-kill victory handling
+            if (duel.finaleKillDone) {
+                duel.victoryTimer += dt;
+                if (duel.victoryTimer > 1.5) {
+                    StickFight.setPose(warrior1, 'arms_up');
+                    StickFight.setTarget(warrior1, 'swordAngle', -2.0);
+                }
+                // Update effects for blood/limbs
+                StickFight.updateEffects(dt, groundY);
+                return;
+            }
+
+            faceEachOther();
+
+            var gap = getGap();
+            var figH = warrior1.figH;
+            var strikeRange = figH * 0.7;  // close enough to hit
+            var comfortGap = figH * 1.2;   // normal spacing
+            var farGap = figH * 2.5;       // far apart
+            var newBeat = (beat !== duel.lastAttackBeat);
+
+            // ── Section-specific behavior ──
+            if (section === 'twin-guitar') {
+                // Circling phase — slow, tentative
+                duel.circleTimer += dt;
+                var circleSpeed = 40;
+                var cx = (warrior1.x + warrior2.x) * 0.5;
+
+                // Drift warriors in a circle around center
+                if (duel.circleTimer > 3) {
+                    duel.circleDir *= -1;
+                    duel.circleTimer = 0;
+                }
+                moveWarriorX(warrior1, cx - comfortGap * 0.5 + duel.circleDir * 30, circleSpeed, dt);
+                moveWarriorX(warrior2, cx + comfortGap * 0.5 - duel.circleDir * 30, circleSpeed, dt);
+
+                // Guard pose as default
+                if (!warrior1.attacking) StickFight.setPose(warrior1, 'guard');
+                if (!warrior2.attacking) StickFight.setPose(warrior2, 'guard');
+
+                // Occasional tentative attack (every 4th beat)
+                if (newBeat && beat % 4 === 0 && energy > 0.3 && duel.attackCooldown <= 0) {
+                    // Approach first
+                    moveWarriorX(warrior1, warrior2.x - strikeRange * warrior1.facing, 200, dt);
+                    triggerDuelAttack(energy);
+                    duel.attackCooldown = 0.8;
+                    duel.lastAttackBeat = beat;
+                }
+
                 // Bounce on beat
-                StickFight.setTarget(fig, 'bounce', 0.15 * energy);
+                if (newBeat) {
+                    StickFight.setTarget(warrior1, 'bounce', 0.08);
+                    StickFight.setTarget(warrior2, 'bounce', 0.08);
+                }
+
+            } else if (section === 'pre-chorus') {
+                // Escalation — faster exchanges, every other beat
+                var targetGap = comfortGap * 0.8;
+
+                // Move toward each other
+                if (gap > targetGap) {
+                    moveWarriorX(warrior1, warrior2.x - targetGap * 0.5, 100, dt);
+                    moveWarriorX(warrior2, warrior1.x + targetGap * 0.5, 100, dt);
+                }
+
+                if (!warrior1.attacking && !warrior2.attacking) {
+                    StickFight.setPose(warrior1, 'guard');
+                    StickFight.setPose(warrior2, 'guard');
+                }
+
+                // Attack every other beat
+                if (newBeat && beat % 2 === 0 && duel.attackCooldown <= 0) {
+                    if (gap > strikeRange) {
+                        // Rush in
+                        var f = getDuelFighters();
+                        moveWarriorX(f.attacker, f.defender.x - strikeRange * f.attacker.facing, 250, dt);
+                    }
+                    triggerDuelAttack(energy);
+                    duel.attackCooldown = 0.4;
+                    duel.lastAttackBeat = beat;
+                }
+
+                // Separate after attacks land
+                if (duel.attackCooldown > 0 && duel.attackCooldown < 0.2 && gap < comfortGap) {
+                    moveWarriorX(warrior1, warrior1.x - warrior1.facing * 40, 180, dt);
+                    moveWarriorX(warrior2, warrior2.x - warrior2.facing * 40, 180, dt);
+                }
+
+                if (newBeat) {
+                    StickFight.setTarget(warrior1, 'bounce', 0.1 * energy);
+                    StickFight.setTarget(warrior2, 'bounce', 0.1 * energy);
+                }
+
+            } else if (section === 'chorus') {
+                // Full battle — attack every beat, intense
+                var battleGap = strikeRange * 1.1;
+
+                // Close distance aggressively
+                if (gap > battleGap) {
+                    moveWarriorX(warrior1, warrior2.x - battleGap * 0.5, 180, dt);
+                    moveWarriorX(warrior2, warrior1.x + battleGap * 0.5, 180, dt);
+                }
+
+                if (!warrior1.attacking && !warrior2.attacking) {
+                    StickFight.setPose(warrior1, 'guard');
+                    StickFight.setPose(warrior2, 'guard');
+                }
+
+                // Attack every beat
+                if (newBeat && duel.attackCooldown <= 0) {
+                    // Occasional power clash (every 8th beat)
+                    if (beat % 8 === 0 && Math.random() > 0.4) {
+                        triggerClash();
+                    } else {
+                        triggerDuelAttack(energy);
+                    }
+                    duel.attackCooldown = 0.25;
+                    duel.lastAttackBeat = beat;
+                }
+
+                // Handle clash recoil
+                if (duel.phase === 'clash') {
+                    duel.clashTimer -= dt;
+                    if (duel.clashTimer <= 0) {
+                        // Both recoil and separate
+                        StickFight.setPose(warrior1, 'recoil');
+                        StickFight.setPose(warrior2, 'recoil');
+                        moveWarriorX(warrior1, warrior1.x - warrior1.facing * 60, 300, dt);
+                        moveWarriorX(warrior2, warrior2.x - warrior2.facing * 60, 300, dt);
+                        duel.phase = 'exchanging';
+                    }
+                }
+
+                // Separate briefly after attacks
+                if (!warrior1.attacking && !warrior2.attacking && gap < strikeRange * 0.8) {
+                    moveWarriorX(warrior1, warrior1.x - warrior1.facing * 20, 120, dt);
+                    moveWarriorX(warrior2, warrior2.x - warrior2.facing * 20, 120, dt);
+                }
+
+                if (newBeat) {
+                    StickFight.setTarget(warrior1, 'bounce', 0.12 * energy);
+                    StickFight.setTarget(warrior2, 'bounce', 0.12 * energy);
+                }
+
+            } else if (section === 'guitar-solo') {
+                // Rest — guard pose, slow circle, catching breath
+                var restGap = farGap;
+                if (gap < restGap) {
+                    moveWarriorX(warrior1, warrior1.x - warrior1.facing * 30, 50, dt);
+                    moveWarriorX(warrior2, warrior2.x - warrior2.facing * 30, 50, dt);
+                }
+                StickFight.setPose(warrior1, 'guard');
+                StickFight.setPose(warrior2, 'guard');
+                StickFight.setTarget(warrior1, 'swordAngle', -0.5 + Math.sin(globalTime * 0.5) * 0.1);
+                StickFight.setTarget(warrior2, 'swordAngle', -0.5 + Math.sin(globalTime * 0.5 + 1) * 0.1);
+
+                // Slow circling drift
+                duel.circleTimer += dt;
+                if (duel.circleTimer > 4) {
+                    duel.circleDir *= -1;
+                    duel.circleTimer = 0;
+                }
+                moveWarriorX(warrior1, warrior1.x + duel.circleDir * 15, 20, dt);
+                moveWarriorX(warrior2, warrior2.x - duel.circleDir * 15, 20, dt);
+
+            } else if (section === 'build') {
+                // Tension builds — slow approach, feints
+                var buildTargetGap = lerp(farGap, comfortGap, clamp01(energy * 1.5));
+
+                // Slowly approach
+                var cx2 = (warrior1.x + warrior2.x) * 0.5;
+                moveWarriorX(warrior1, cx2 - buildTargetGap * 0.5, 60 + energy * 80, dt);
+                moveWarriorX(warrior2, cx2 + buildTargetGap * 0.5, 60 + energy * 80, dt);
+
+                StickFight.setPose(warrior1, 'guard');
+                StickFight.setPose(warrior2, 'guard');
+
+                // Feints — start attack animation then cancel
+                if (newBeat && beat % 3 === 0 && energy > 0.4) {
+                    var feinter = duel.turnToAttack === 0 ? warrior1 : warrior2;
+                    var feintIdx = duel.turnToAttack;
+                    // Quick sword raise (feint) — just visual, no real attack
+                    StickFight.setTarget(feinter, 'swordAngle', -2.0);
+                    StickFight.setTarget(feinter, 'armLAngle', -0.8);
+                    StickFight.setTarget(feinter, 'lean', 0.3);
+                    slashTimers[feintIdx] = 0.3;
+                    duel.turnToAttack = 1 - duel.turnToAttack;
+                    duel.lastAttackBeat = beat;
+                }
+
+                if (newBeat) {
+                    StickFight.setTarget(warrior1, 'bounce', 0.06 * energy);
+                    StickFight.setTarget(warrior2, 'bounce', 0.06 * energy);
+                }
+
+            } else if (section === 'finale') {
+                // Climactic final exchange — fastest, most intense
+                var finaleGap = strikeRange * 0.9;
+
+                // Close distance fast
+                if (gap > finaleGap) {
+                    moveWarriorX(warrior1, warrior2.x - finaleGap * 0.5, 220, dt);
+                    moveWarriorX(warrior2, warrior1.x + finaleGap * 0.5, 220, dt);
+                }
+
+                if (!warrior1.attacking && !warrior2.attacking) {
+                    StickFight.setPose(warrior1, 'guard');
+                    StickFight.setPose(warrior2, 'guard');
+                }
+
+                // Attack EVERY beat
+                if (newBeat && duel.attackCooldown <= 0) {
+                    duel.finaleBeats++;
+
+                    // After ~16 beats, trigger the killing blow
+                    if (duel.finaleBeats >= 16 && !duel.finaleKillDone) {
+                        triggerFinaleKill();
+                    } else {
+                        // Occasional clash
+                        if (beat % 6 === 0 && Math.random() > 0.5) {
+                            triggerClash();
+                        } else {
+                            triggerDuelAttack(energy);
+                        }
+                    }
+                    duel.attackCooldown = 0.18;
+                    duel.lastAttackBeat = beat;
+                }
+
+                // Handle clash
+                if (duel.phase === 'clash') {
+                    duel.clashTimer -= dt;
+                    if (duel.clashTimer <= 0) {
+                        StickFight.setPose(warrior1, 'recoil');
+                        StickFight.setPose(warrior2, 'recoil');
+                        duel.phase = 'exchanging';
+                    }
+                }
+
+                if (newBeat) {
+                    StickFight.setTarget(warrior1, 'bounce', 0.15);
+                    StickFight.setTarget(warrior2, 'bounce', 0.15);
+                }
             }
-            slashTimers[slashIdx] = Math.max(0, slashTimers[slashIdx] - dt * 3);
-            // Relax bounce
-            if (beatPulse < 0.2) {
-                StickFight.setTarget(fig, 'bounce', 0);
+
+            // Relax bounce between beats (all sections)
+            if (beatPulse < 0.15) {
+                if (!warrior1.attacking) StickFight.setTarget(warrior1, 'bounce', 0);
+                if (!warrior2.attacking) StickFight.setTarget(warrior2, 'bounce', 0);
             }
+
+            // Keep warriors on screen
+            var margin = W * 0.08;
+            warrior1.x = Math.max(margin, Math.min(W - margin, warrior1.x));
+            warrior2.x = Math.max(margin, Math.min(W - margin, warrior2.x));
+
+            // Update blood/gore effects
+            StickFight.updateEffects(dt, groundY);
         }
 
         // ── Dragon drawing ──
@@ -896,6 +1326,26 @@
             warriors = [warrior1, warrior2];
             slashTimers = [0, 0];
 
+            // Reset duel state
+            duel.phase = 'idle';
+            duel.turnToAttack = 0;
+            duel.exchangeTimer = 0;
+            duel.separationTimer = 0;
+            duel.approachTimer = 0;
+            duel.clashTimer = 0;
+            duel.warrior1HP = 200;
+            duel.warrior2HP = 200;
+            duel.finaleKillDone = false;
+            duel.finaleBeats = 0;
+            duel.circleDir = 1;
+            duel.circleTimer = 0;
+            duel.lastAttackBeat = -1;
+            duel.attackCooldown = 0;
+            duel.lastSection = '';
+            duel.slowMoTimer = 0;
+            duel.slowMoActive = false;
+            duel.victoryTimer = 0;
+
             dragon.x = W * 0.55;
             dragon.y = H * 0.2;
 
@@ -910,9 +1360,19 @@
 
         // ── Resize ──
         function resize(width, height) {
+            var oldW = W || width;
             W = width; H = height;
-            if (warrior1) { warrior1.x = W * 0.3; warrior1.y = H * 0.78; warrior1.figH = H * 0.22; }
-            if (warrior2) { warrior2.x = W * 0.7; warrior2.y = H * 0.78; warrior2.figH = H * 0.22; }
+            if (warrior1) {
+                // Scale X position proportionally instead of hard-resetting
+                warrior1.x = (warrior1.x / oldW) * W;
+                warrior1.y = H * 0.78;
+                warrior1.figH = H * 0.22;
+            }
+            if (warrior2) {
+                warrior2.x = (warrior2.x / oldW) * W;
+                warrior2.y = H * 0.78;
+                warrior2.figH = H * 0.22;
+            }
             dragon.x = W * 0.55;
             dragon.y = H * 0.2;
         }
@@ -1039,6 +1499,7 @@
                     break;
                 case 'guitar-solo':
                     flameIntensity = 0.3 + energy * 0.5;
+                    showWarriors = true;
                     starsAlpha = 0.2;
                     break;
                 case 'acoustic':
@@ -1066,8 +1527,7 @@
             updateChargeParticles(dt, energy);
 
             if (showWarriors) {
-                updateWarrior(warrior1, 0, dt, energy, beat);
-                updateWarrior(warrior2, 1, dt, energy, beat);
+                updateDuel(dt, energy, beat, sectionMood);
             }
             StickFight.updateAll(warriors, dt);
 
@@ -1103,6 +1563,8 @@
                 StickFight.drawAll(ctx, warriors);
                 drawWarriorExtras(ctx, warrior1, 0, energy);
                 drawWarriorExtras(ctx, warrior2, 1, energy);
+                // Blood, dismembered limbs
+                StickFight.drawEffects(ctx);
             }
 
             // Flames from bottom
