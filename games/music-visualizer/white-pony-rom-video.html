@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Pony ROM — 8-bit Shoegaze Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0b0a10;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(11,10,16,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #e0d8f0;
+            text-shadow: 0 0 40px rgba(180,160,220,0.5), 0 0 80px rgba(140,100,200,0.2);
+            margin-bottom: 10px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 2vw, 16px);
+            font-weight: 300;
+            color: rgba(180,170,200,0.5);
+            letter-spacing: 0.2em;
+            margin-bottom: 44px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 2px solid rgba(180,160,220,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 16px 0 16px 28px;
+            border-color: transparent transparent transparent rgba(180,160,220,0.7);
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(180,160,220,0.3); }
+            50% { box-shadow: 0 0 0 24px rgba(180,160,220,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.3);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.7); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">White Pony ROM</div>
+        <div class="play-sub">8-bit shoegaze</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- White Pony ROM Video Renderer --
+    window.Renderers['white-pony-rom-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Palette --
+        var QUIET_BG = [11, 10, 16];
+        var LOUD_BG = [30, 8, 40];
+        var UNDERWATER_BG = [6, 20, 28];
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var sectionMood = 'intro'; // intro, verse, prechorus, chorus, bridge, underwater, finalchorus, outro
+        var sectionEnergy = 0;
+        var introFadeIn = 0;
+        var outroFadeOut = 1;
+        var lastSeqIndex = -1;
+        var globalTime = 0;
+        var saturation = 0.2;
+        var satTarget = 0.2;
+        var hazeAlpha = 0.15;
+        var hazeTarget = 0.15;
+        var distortion = 0;
+        var distTarget = 0;
+        var flashAlpha = 0;
+
+        // -- Horse animation --
+        var horseFrame = 0;
+        var horseX = 0;
+        var horseY = 0;
+        var horseSpeed = 1;
+        var horseSpeedTarget = 1;
+        var horseBob = 0;
+
+        // -- Landscape --
+        var scrollX = 0;
+        var hills = [];
+        var floatingShapes = [];
+        var particles = [];
+        var bubbles = [];
+
+        // -- Horse silhouette frames (simplified polygon outlines) --
+        // Each frame is an array of {x,y} points relative to center, scaled by size
+        // 4-frame gallop cycle
+        var HORSE_FRAMES = [
+            // Frame 0: legs gathered
+            [
+                {x:-0.5,y:-0.1},{x:-0.45,y:-0.3},{x:-0.35,y:-0.42},{x:-0.2,y:-0.48},
+                {x:0.0,y:-0.5},{x:0.15,y:-0.48},{x:0.3,y:-0.42},{x:0.4,y:-0.35},
+                {x:0.5,y:-0.25},{x:0.55,y:-0.45},{x:0.6,y:-0.55},  // head
+                {x:0.55,y:-0.5},{x:0.5,y:-0.4},{x:0.48,y:-0.2},
+                {x:0.4,y:-0.05},{x:0.3,y:0.1},{x:0.2,y:0.25},{x:0.15,y:0.4},{x:0.1,y:0.5},
+                {x:0.05,y:0.4},{x:0.0,y:0.25},{x:-0.05,y:0.1},
+                {x:-0.15,y:0.25},{x:-0.2,y:0.4},{x:-0.25,y:0.5},
+                {x:-0.3,y:0.4},{x:-0.35,y:0.2},{x:-0.4,y:0.05},{x:-0.5,y:-0.1}
+            ],
+            // Frame 1: front legs forward, back legs back
+            [
+                {x:-0.5,y:-0.12},{x:-0.45,y:-0.3},{x:-0.35,y:-0.42},{x:-0.2,y:-0.48},
+                {x:0.0,y:-0.5},{x:0.15,y:-0.48},{x:0.3,y:-0.42},{x:0.4,y:-0.35},
+                {x:0.5,y:-0.25},{x:0.55,y:-0.45},{x:0.6,y:-0.55},
+                {x:0.55,y:-0.5},{x:0.5,y:-0.4},{x:0.48,y:-0.2},
+                {x:0.42,y:-0.05},{x:0.45,y:0.15},{x:0.5,y:0.35},{x:0.52,y:0.5},
+                {x:0.45,y:0.4},{x:0.35,y:0.2},{x:0.25,y:0.05},
+                {x:0.0,y:0.05},{x:-0.2,y:0.05},
+                {x:-0.35,y:0.15},{x:-0.5,y:0.35},{x:-0.55,y:0.5},
+                {x:-0.5,y:0.35},{x:-0.45,y:0.1},{x:-0.5,y:-0.12}
+            ],
+            // Frame 2: airborne (legs tucked)
+            [
+                {x:-0.48,y:-0.15},{x:-0.42,y:-0.32},{x:-0.3,y:-0.44},{x:-0.15,y:-0.5},
+                {x:0.05,y:-0.52},{x:0.2,y:-0.5},{x:0.35,y:-0.44},{x:0.45,y:-0.35},
+                {x:0.52,y:-0.28},{x:0.57,y:-0.48},{x:0.62,y:-0.58},
+                {x:0.57,y:-0.52},{x:0.52,y:-0.42},{x:0.5,y:-0.25},
+                {x:0.4,y:-0.08},{x:0.3,y:0.02},{x:0.2,y:0.08},{x:0.1,y:0.05},
+                {x:0.0,y:0.0},{x:-0.1,y:0.05},{x:-0.2,y:0.08},
+                {x:-0.3,y:0.02},{x:-0.4,y:-0.05},{x:-0.48,y:-0.15}
+            ],
+            // Frame 3: back legs forward, front legs back
+            [
+                {x:-0.5,y:-0.12},{x:-0.45,y:-0.3},{x:-0.35,y:-0.42},{x:-0.2,y:-0.48},
+                {x:0.0,y:-0.5},{x:0.15,y:-0.48},{x:0.3,y:-0.42},{x:0.4,y:-0.35},
+                {x:0.5,y:-0.25},{x:0.55,y:-0.45},{x:0.6,y:-0.55},
+                {x:0.55,y:-0.5},{x:0.5,y:-0.4},{x:0.48,y:-0.2},
+                {x:0.42,y:-0.05},{x:0.35,y:0.1},{x:0.25,y:0.2},{x:0.2,y:0.1},
+                {x:0.1,y:0.05},{x:0.0,y:0.05},
+                {x:-0.15,y:0.1},{x:-0.25,y:0.3},{x:-0.2,y:0.45},{x:-0.15,y:0.5},
+                {x:-0.2,y:0.4},{x:-0.3,y:0.2},
+                {x:-0.4,y:0.1},{x:-0.48,y:0.0},{x:-0.5,y:-0.12}
+            ]
+        ];
+
+        // Mane/tail polylines for extra flair
+        var MANE_POINTS = [
+            {x:0.1,y:-0.5},{x:0.0,y:-0.55},{x:-0.1,y:-0.52},{x:-0.2,y:-0.48},{x:-0.25,y:-0.42}
+        ];
+        var TAIL_POINTS = [
+            {x:-0.5,y:-0.12},{x:-0.6,y:-0.15},{x:-0.7,y:-0.1},{x:-0.75,y:0.0},{x:-0.72,y:0.1}
+        ];
+
+        // -- Hill generation --
+        function generateHills(count, yBase, amplitude, freq) {
+            var pts = [];
+            var segments = 60;
+            for (var i = 0; i <= segments; i++) {
+                var t = i / segments;
+                var y = yBase;
+                for (var h = 0; h < count; h++) {
+                    y += Math.sin(t * freq * (h + 1) + h * 1.7) * amplitude / (h + 1);
+                }
+                pts.push({ t: t, y: y });
+            }
+            return pts;
+        }
+
+        function initHills() {
+            hills = [
+                { points: generateHills(3, 0.55, 0.08, 4), color: [40, 30, 55], speed: 0.3 },
+                { points: generateHills(3, 0.62, 0.06, 5), color: [30, 25, 45], speed: 0.5 },
+                { points: generateHills(2, 0.70, 0.04, 6), color: [20, 18, 35], speed: 0.8 }
+            ];
+        }
+
+        function initFloatingShapes() {
+            floatingShapes = [];
+            for (var i = 0; i < 20; i++) {
+                floatingShapes.push({
+                    x: Math.random(),
+                    y: 0.15 + Math.random() * 0.5,
+                    size: 4 + Math.random() * 20,
+                    type: Math.floor(Math.random() * 3), // 0=circle, 1=triangle, 2=diamond
+                    speed: 0.02 + Math.random() * 0.05,
+                    drift: Math.random() * Math.PI * 2,
+                    alpha: 0.05 + Math.random() * 0.15,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (var i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * 2 - 0.5,
+                    y: Math.random(),
+                    vx: (Math.random() - 0.5) * 0.01,
+                    vy: -0.005 - Math.random() * 0.02,
+                    size: 1 + Math.random() * 3,
+                    alpha: 0.1 + Math.random() * 0.4,
+                    life: Math.random()
+                });
+            }
+        }
+
+        function initBubbles() {
+            bubbles = [];
+            for (var i = 0; i < 40; i++) {
+                bubbles.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    size: 3 + Math.random() * 12,
+                    speed: 0.01 + Math.random() * 0.03,
+                    wobble: Math.random() * Math.PI * 2,
+                    alpha: 0.1 + Math.random() * 0.3
+                });
+            }
+        }
+
+        // -- Section mapping (36 sequence entries) --
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'intro';        // 0-1: Intro Wash
+            if (seqIndex <= 3) return 'intro';         // 2-3: Intro Arp Emerge
+            if (seqIndex <= 7) return 'verse';         // 4-7: Verse 1
+            if (seqIndex <= 8) return 'prechorus';     // 8: Pre-Chorus
+            if (seqIndex <= 11) return 'chorus';       // 9-11: Chorus 1
+            if (seqIndex <= 15) return 'verse';        // 12-15: Verse 2
+            if (seqIndex <= 17) return 'prechorus';    // 16-17: Pre-Chorus 2
+            if (seqIndex <= 21) return 'chorus';       // 18-21: Chorus 2
+            if (seqIndex <= 25) return 'underwater';   // 22-25: Bridge (underwater)
+            if (seqIndex <= 30) return 'finalchorus';  // 26-30: Final Chorus
+            return 'outro';                            // 31-35: Outro
+        }
+
+        // -- Lerp helper --
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        function lerpColor(c1, c2, t) {
+            return [
+                Math.round(lerp(c1[0], c2[0], t)),
+                Math.round(lerp(c1[1], c2[1], t)),
+                Math.round(lerp(c1[2], c2[2], t))
+            ];
+        }
+
+        // -- Draw horse silhouette --
+        function drawHorse(ctx, cx, cy, size, frame, alpha, glow) {
+            var pts = HORSE_FRAMES[frame % 4];
+            if (!pts || pts.length < 3) return;
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+
+            // Glow effect
+            if (glow > 0) {
+                ctx.shadowBlur = 20 + glow * 40;
+                ctx.shadowColor = 'rgba(220,210,240,' + (glow * 0.6) + ')';
+            }
+
+            // Body fill
+            ctx.fillStyle = 'rgba(230,225,240,' + (0.8 + glow * 0.2) + ')';
+            ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 + glow * 0.5) + ')';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(cx + pts[0].x * size, cy + pts[0].y * size);
+            for (var i = 1; i < pts.length; i++) {
+                ctx.lineTo(cx + pts[i].x * size, cy + pts[i].y * size);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Mane
+            ctx.strokeStyle = 'rgba(200,190,220,' + (0.5 + glow * 0.3) + ')';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (var m = 0; m < MANE_POINTS.length; m++) {
+                var mx = cx + MANE_POINTS[m].x * size;
+                var my = cy + MANE_POINTS[m].y * size;
+                if (m === 0) ctx.moveTo(mx, my);
+                else ctx.lineTo(mx, my);
+            }
+            ctx.stroke();
+
+            // Tail (with wind/motion sway)
+            var tailSway = Math.sin(globalTime * 3) * 0.05 * (1 + horseSpeed);
+            ctx.beginPath();
+            for (var ti = 0; ti < TAIL_POINTS.length; ti++) {
+                var tx = cx + (TAIL_POINTS[ti].x + tailSway * ti * 0.5) * size;
+                var ty = cy + TAIL_POINTS[ti].y * size;
+                if (ti === 0) ctx.moveTo(tx, ty);
+                else ctx.lineTo(tx, ty);
+            }
+            ctx.stroke();
+
+            // Eye
+            ctx.fillStyle = 'rgba(60,50,80,0.9)';
+            ctx.beginPath();
+            ctx.arc(cx + 0.54 * size, cy - 0.48 * size, size * 0.025, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // -- Draw background gradient --
+        function drawSky(ctx, bgColor, energy) {
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            var r = bgColor[0], g = bgColor[1], b = bgColor[2];
+            grad.addColorStop(0, 'rgb(' + r + ',' + g + ',' + b + ')');
+            grad.addColorStop(0.6, 'rgb(' + Math.floor(r * 0.7) + ',' + Math.floor(g * 0.7) + ',' + Math.floor(b * 0.7) + ')');
+            grad.addColorStop(1, 'rgb(' + Math.floor(r * 0.4) + ',' + Math.floor(g * 0.4) + ',' + Math.floor(b * 0.4) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Horizon glow
+            var horizonY = H * 0.55;
+            var glowR = sectionMood === 'underwater' ? 40 : (120 + energy * 80);
+            var glowG = sectionMood === 'underwater' ? 120 : (80 + energy * 60);
+            var glowB = sectionMood === 'underwater' ? 140 : (160 + energy * 60);
+            var horizGrad = ctx.createRadialGradient(W * 0.5, horizonY, 0, W * 0.5, horizonY, W * 0.6);
+            horizGrad.addColorStop(0, 'rgba(' + Math.floor(glowR) + ',' + Math.floor(glowG) + ',' + Math.floor(glowB) + ',' + (0.1 + energy * 0.15) + ')');
+            horizGrad.addColorStop(1, 'rgba(' + Math.floor(glowR) + ',' + Math.floor(glowG) + ',' + Math.floor(glowB) + ',0)');
+            ctx.fillStyle = horizGrad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // -- Draw scrolling hills --
+        function drawHills(ctx, energy) {
+            for (var hi = 0; hi < hills.length; hi++) {
+                var hill = hills[hi];
+                var offset = (scrollX * hill.speed) % 1;
+                var c = hill.color;
+                // Saturation boost
+                var sr = Math.floor(c[0] + saturation * 40 * (sectionMood === 'underwater' ? 0 : 1));
+                var sg = Math.floor(c[1] + saturation * 20);
+                var sb = Math.floor(c[2] + saturation * 60);
+                ctx.fillStyle = 'rgb(' + sr + ',' + sg + ',' + sb + ')';
+                ctx.beginPath();
+                ctx.moveTo(0, H);
+                for (var pi = 0; pi < hill.points.length; pi++) {
+                    var pt = hill.points[pi];
+                    var px = ((pt.t + offset) % 1) * W * 1.5 - W * 0.25;
+                    var py = pt.y * H + beatPulse * energy * 5 * (hi + 1);
+                    if (pi === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.lineTo(W + 10, H);
+                ctx.lineTo(-10, H);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // -- Draw ground --
+        function drawGround(ctx, energy) {
+            var groundY = H * 0.78;
+            var c = sectionMood === 'underwater' ? [10, 35, 45] : [15, 12, 25];
+            var gr = c[0] + Math.floor(saturation * 15);
+            var gg = c[1] + Math.floor(saturation * 10);
+            var gb = c[2] + Math.floor(saturation * 20);
+            ctx.fillStyle = 'rgb(' + gr + ',' + gg + ',' + gb + ')';
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Ground line
+            ctx.strokeStyle = 'rgba(180,170,200,' + (0.15 + energy * 0.15) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(W, groundY);
+            ctx.stroke();
+        }
+
+        // -- Draw floating geometric shapes --
+        function drawFloatingShapes(ctx, energy) {
+            for (var i = 0; i < floatingShapes.length; i++) {
+                var s = floatingShapes[i];
+                var sx = ((s.x + scrollX * s.speed * 0.3) % 1.4 - 0.2) * W;
+                var sy = s.y * H + Math.sin(globalTime * 0.5 + s.drift) * 20;
+                var size = s.size * (1 + energy * 0.5);
+                var alpha = s.alpha * (0.5 + saturation * 1.5);
+
+                if (sectionMood === 'underwater') {
+                    alpha *= 0.5;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(sx, sy);
+                ctx.rotate(s.rotation + globalTime * s.rotSpeed);
+
+                var hue = sectionMood === 'underwater' ? 'rgba(80,180,200,' : 'rgba(180,140,220,';
+                ctx.strokeStyle = hue + '1)';
+                ctx.lineWidth = 1;
+
+                if (s.type === 0) {
+                    // Circle
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else if (s.type === 1) {
+                    // Triangle
+                    ctx.beginPath();
+                    for (var ti = 0; ti < 3; ti++) {
+                        var ang = (ti / 3) * Math.PI * 2 - Math.PI / 2;
+                        var px = Math.cos(ang) * size;
+                        var py = Math.sin(ang) * size;
+                        if (ti === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                } else {
+                    // Diamond
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size);
+                    ctx.lineTo(size * 0.6, 0);
+                    ctx.lineTo(0, size);
+                    ctx.lineTo(-size * 0.6, 0);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // -- Draw particles --
+        function updateAndDrawParticles(ctx, dt, energy) {
+            var burstMult = sectionMood === 'chorus' || sectionMood === 'finalchorus' ? 2 : 1;
+            if (sectionMood === 'underwater') burstMult = 0.3;
+
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.x += p.vx * dt * 60 * burstMult;
+                p.y += p.vy * dt * 60 * burstMult;
+                p.life -= dt * 0.3;
+
+                if (p.life <= 0 || p.y < -0.1 || p.x < -0.5 || p.x > 1.5) {
+                    // Reset particle
+                    p.x = Math.random() * 1.2 - 0.1;
+                    p.y = 0.5 + Math.random() * 0.5;
+                    p.vx = (Math.random() - 0.5) * 0.01 * burstMult;
+                    p.vy = -0.005 - Math.random() * 0.02 * burstMult;
+                    p.life = 0.5 + Math.random() * 0.5;
+                    p.size = 1 + Math.random() * 3 * burstMult;
+                    p.alpha = 0.1 + Math.random() * 0.4;
+                }
+
+                // Beat burst
+                if (beatPulse > 0.5 && Math.random() < 0.1 * energy) {
+                    p.vy -= 0.02;
+                    p.vx += (Math.random() - 0.5) * 0.03;
+                }
+
+                var px = p.x * W;
+                var py = p.y * H;
+                var pa = p.alpha * p.life * (0.3 + saturation * 1.5);
+
+                var pr, pg, pb;
+                if (sectionMood === 'underwater') {
+                    pr = 80; pg = 200; pb = 220;
+                } else if (sectionMood === 'chorus' || sectionMood === 'finalchorus') {
+                    pr = 200 + Math.floor(Math.random() * 55);
+                    pg = 100 + Math.floor(Math.random() * 80);
+                    pb = 220;
+                } else {
+                    pr = 200; pg = 195; pb = 220;
+                }
+
+                ctx.fillStyle = 'rgba(' + pr + ',' + pg + ',' + pb + ',' + pa + ')';
+                ctx.fillRect(px, py, p.size, p.size);
+            }
+        }
+
+        // -- Draw bubbles (underwater sections) --
+        function updateAndDrawBubbles(ctx, dt) {
+            if (sectionMood !== 'underwater') return;
+
+            for (var i = 0; i < bubbles.length; i++) {
+                var b = bubbles[i];
+                b.y -= b.speed * dt * 60;
+                b.wobble += dt * 2;
+
+                if (b.y < -0.05) {
+                    b.y = 1.05;
+                    b.x = Math.random();
+                }
+
+                var bx = (b.x + Math.sin(b.wobble) * 0.02) * W;
+                var by = b.y * H;
+
+                ctx.save();
+                ctx.globalAlpha = b.alpha * 0.6;
+                ctx.strokeStyle = 'rgba(100,210,230,0.6)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(bx, by, b.size, 0, Math.PI * 2);
+                ctx.stroke();
+                // Highlight
+                ctx.fillStyle = 'rgba(180,240,255,0.2)';
+                ctx.beginPath();
+                ctx.arc(bx - b.size * 0.25, by - b.size * 0.25, b.size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // -- Haze/bloom overlay --
+        function drawHaze(ctx, alpha) {
+            if (alpha < 0.005) return;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            var grad = ctx.createRadialGradient(W * 0.5, H * 0.4, 0, W * 0.5, H * 0.4, W * 0.8);
+            if (sectionMood === 'underwater') {
+                grad.addColorStop(0, 'rgba(40,120,140,0.4)');
+                grad.addColorStop(0.5, 'rgba(20,80,100,0.2)');
+                grad.addColorStop(1, 'rgba(6,20,28,0)');
+            } else {
+                grad.addColorStop(0, 'rgba(140,100,180,0.3)');
+                grad.addColorStop(0.5, 'rgba(80,60,120,0.15)');
+                grad.addColorStop(1, 'rgba(11,10,16,0)');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // -- Distortion effect (scanlines + chromatic shift) --
+        function drawDistortion(ctx, amount) {
+            if (amount < 0.01) return;
+            ctx.save();
+            // Scanlines
+            ctx.globalAlpha = amount * 0.15;
+            ctx.fillStyle = '#000';
+            for (var i = 0; i < H; i += 3) {
+                ctx.fillRect(0, i, W, 1);
+            }
+            ctx.restore();
+        }
+
+        // -- Flash --
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // -- Title text --
+        function drawTitle(ctx, alpha) {
+            if (alpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(16, Math.min(W * 0.045, 56));
+            ctx.font = '700 ' + fontSize + 'px "Inter", sans-serif';
+            ctx.fillStyle = 'rgba(230,220,245,0.9)';
+            ctx.shadowColor = 'rgba(160,120,220,0.6)';
+            ctx.shadowBlur = 30 + beatPulse * 20;
+            ctx.fillText('WHITE PONY ROM', W * 0.5, H * 0.14);
+
+            ctx.font = '300 ' + Math.floor(fontSize * 0.35) + 'px "Inter", sans-serif';
+            ctx.fillStyle = 'rgba(180,170,200,0.6)';
+            ctx.shadowBlur = 10;
+            ctx.fillText('8-bit shoegaze', W * 0.5, H * 0.14 + fontSize * 0.7);
+
+            ctx.restore();
+        }
+
+        // -- Stars/sky details --
+        var stars = [];
+        function initStars() {
+            stars = [];
+            for (var i = 0; i < 80; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random() * 0.5,
+                    size: 0.5 + Math.random() * 2,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: 0.5 + Math.random() * 2
+                });
+            }
+        }
+
+        function drawStars(ctx) {
+            if (sectionMood === 'underwater') return;
+            ctx.save();
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                var twinkle = 0.3 + Math.sin(globalTime * s.speed + s.twinkle) * 0.3;
+                ctx.globalAlpha = twinkle * (1 - saturation * 0.5);
+                ctx.fillStyle = '#d0c8e8';
+                ctx.fillRect(s.x * W, s.y * H, s.size, s.size);
+            }
+            ctx.restore();
+        }
+
+        // ===== INIT =====
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            globalTime = 0;
+            scrollX = 0;
+            lastBeat = -1;
+            beatPulse = 0;
+            sectionMood = 'intro';
+            introFadeIn = 0;
+            outroFadeOut = 1;
+            lastSeqIndex = -1;
+            saturation = 0.1;
+            satTarget = 0.1;
+            hazeAlpha = 0.15;
+            hazeTarget = 0.15;
+            distortion = 0;
+            distTarget = 0;
+            flashAlpha = 0;
+            horseFrame = 0;
+            horseSpeed = 0.5;
+            horseSpeedTarget = 0.5;
+            horseBob = 0;
+            horseX = W * 0.45;
+            horseY = H * 0.72;
+
+            initHills();
+            initFloatingShapes();
+            initParticles();
+            initBubbles();
+            initStars();
+        }
+
+        // ===== RESIZE =====
+        function resize(width, height) {
+            W = width; H = height;
+            horseX = W * 0.45;
+            horseY = H * 0.72;
+        }
+
+        // ===== RENDER =====
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // -- Determine background color and mood --
+            var bgColor = QUIET_BG;
+            var energy = 0;
+            var titleAlpha = 0;
+
+            if (!cursor) {
+                // Idle state
+                drawSky(ctx, QUIET_BG, 0);
+                drawStars(ctx);
+                drawHills(ctx, 0);
+                drawGround(ctx, 0);
+                drawHorse(ctx, W * 0.45, H * 0.72, H * 0.14, 0, 0.4, 0);
+                drawHaze(ctx, 0.1);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // -- Section transitions --
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                lastSeqIndex = seqIdx;
+
+                // Chorus/final chorus entry flash
+                if (newSection === 'chorus' || newSection === 'finalchorus') {
+                    flashAlpha = 0.3;
+                }
+            }
+
+            sectionEnergy = energy;
+
+            // -- Set targets based on section --
+            switch (sectionMood) {
+                case 'intro':
+                    introFadeIn = Math.min(1, introFadeIn + dt * 0.2);
+                    satTarget = 0.1;
+                    hazeTarget = 0.2;
+                    distTarget = 0;
+                    horseSpeedTarget = 0.5;
+                    bgColor = QUIET_BG;
+                    break;
+                case 'verse':
+                    satTarget = 0.15 + energy * 0.15;
+                    hazeTarget = 0.12;
+                    distTarget = 0;
+                    horseSpeedTarget = 1.0;
+                    bgColor = QUIET_BG;
+                    break;
+                case 'prechorus':
+                    satTarget = 0.3 + energy * 0.2;
+                    hazeTarget = 0.08;
+                    distTarget = energy * 0.2;
+                    horseSpeedTarget = 1.5;
+                    bgColor = lerpColor(QUIET_BG, LOUD_BG, 0.4);
+                    break;
+                case 'chorus':
+                    satTarget = 0.7 + energy * 0.3;
+                    hazeTarget = 0.05 + energy * 0.1;
+                    distTarget = energy * 0.5;
+                    horseSpeedTarget = 3.0;
+                    bgColor = LOUD_BG;
+                    titleAlpha = 0.8;
+                    break;
+                case 'underwater':
+                    satTarget = 0.2;
+                    hazeTarget = 0.3;
+                    distTarget = 0;
+                    horseSpeedTarget = 0.3;
+                    bgColor = UNDERWATER_BG;
+                    break;
+                case 'finalchorus':
+                    satTarget = 0.9 + energy * 0.1;
+                    hazeTarget = 0.04 + energy * 0.12;
+                    distTarget = energy * 0.7;
+                    horseSpeedTarget = 3.5;
+                    bgColor = lerpColor(LOUD_BG, [50, 10, 60], energy);
+                    titleAlpha = 1.0;
+                    break;
+                case 'outro':
+                    outroFadeOut = Math.max(0, outroFadeOut - dt * 0.08);
+                    satTarget = 0.05 * outroFadeOut;
+                    hazeTarget = 0.2 + (1 - outroFadeOut) * 0.3;
+                    distTarget = 0;
+                    horseSpeedTarget = 0.3 * outroFadeOut;
+                    bgColor = QUIET_BG;
+                    break;
+            }
+
+            // -- Lerp continuous values --
+            saturation = lerpSmooth(saturation, satTarget, 3, dt);
+            hazeAlpha = lerpSmooth(hazeAlpha, hazeTarget, 4, dt);
+            distortion = lerpSmooth(distortion, distTarget, 5, dt);
+            horseSpeed = lerpSmooth(horseSpeed, horseSpeedTarget, 4, dt);
+
+            // -- Beat detection --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Horse frame advance
+                if (horseSpeed > 0.8) {
+                    horseFrame = (horseFrame + 1) % 4;
+                } else if (horseSpeed > 0.3) {
+                    // Slower frame advance for trotting
+                    if (beat % 2 === 0) horseFrame = (horseFrame + 1) % 4;
+                }
+
+                // Chorus flash on strong beats
+                if ((sectionMood === 'chorus' || sectionMood === 'finalchorus') && energy > 0.5) {
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.1);
+                }
+
+                // Particle burst on beats
+                if (energy > 0.4) {
+                    for (var pb = 0; pb < 5; pb++) {
+                        var pi = Math.floor(Math.random() * particles.length);
+                        particles[pi].vy = -0.03 - energy * 0.03;
+                        particles[pi].vx = (Math.random() - 0.5) * 0.04;
+                        particles[pi].life = 1;
+                        particles[pi].size = 2 + energy * 4;
+                    }
+                }
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            lastBeat = beat;
+
+            // -- Scroll landscape --
+            scrollX += horseSpeed * dt * 0.1;
+
+            // -- Horse bob --
+            horseBob = Math.sin(globalTime * horseSpeed * 4) * (3 + horseSpeed * 3);
+            horseY = H * 0.72 + horseBob;
+
+            // -- Underwater slow motion effect --
+            var effectiveDt = dt;
+            if (sectionMood === 'underwater') {
+                effectiveDt = dt * 0.6; // slow motion feel
+            }
+
+            // -- Draw layers back to front --
+
+            // Sky
+            drawSky(ctx, bgColor, energy);
+
+            // Stars (not during underwater)
+            drawStars(ctx);
+
+            // Floating shapes
+            drawFloatingShapes(ctx, energy);
+
+            // Hills
+            drawHills(ctx, energy);
+
+            // Ground
+            drawGround(ctx, energy);
+
+            // Particles
+            updateAndDrawParticles(ctx, effectiveDt, energy);
+
+            // Bubbles (underwater only)
+            updateAndDrawBubbles(ctx, effectiveDt);
+
+            // Horse
+            var horseSize = H * 0.14;
+            var horseGlow = sectionMood === 'chorus' || sectionMood === 'finalchorus' ? saturation : saturation * 0.3;
+            var horseAlpha = sectionMood === 'outro' ? outroFadeOut : (sectionMood === 'intro' ? introFadeIn : 1);
+            drawHorse(ctx, horseX, horseY, horseSize, horseFrame, horseAlpha, horseGlow);
+
+            // Haze/bloom
+            drawHaze(ctx, hazeAlpha);
+
+            // Distortion
+            drawDistortion(ctx, distortion);
+
+            // Title (during chorus sections)
+            drawTitle(ctx, titleAlpha * saturation);
+
+            // Flash
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'White Pony ROM Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('white-pony-rom-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/white-pony-rom.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
