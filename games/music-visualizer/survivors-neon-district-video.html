@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survivors: Neon District — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #080812;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(8,8,18,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(18px, 4.5vw, 44px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #00e5ff;
+            text-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 60px rgba(0,229,255,0.3);
+            margin-bottom: 10px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            font-weight: 400;
+            color: rgba(255,45,149,0.7);
+            letter-spacing: 0.2em;
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00e5ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00e5ff;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,229,255,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: monospace;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Survivors: Neon District</div>
+        <div class="play-sub">arena theme</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Survivors: Neon District Video Renderer ───────────────────────
+    window.Renderers['survivors-neon-district'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG = '#080812';
+        var NEON_PINK = '#ff2d95';
+        var NEON_CYAN = '#00e5ff';
+        var NEON_PURPLE = '#b84dff';
+        var CHROME_WHITE = '#e0e8ff';
+        var STEEL_BLUE = '#1a2a4a';
+        var DARK_STEEL = '#0c1428';
+
+        // ── Layout ratios ──
+        var GROUND_Y_RATIO = 0.72;
+        var SKYLINE_TOP_RATIO = 0.12;
+
+        // ── State ──
+        var groundY = 0;
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var globalTime = 0;
+        var sectionMood = 'intro'; // intro, verse, drop, breakdown, build, fill
+        var lastSeqIndex = -1;
+
+        // ── Rain ──
+        var raindrops = [];
+        var NUM_RAIN = 200;
+
+        // ── Buildings ──
+        var buildings = [];
+        var NUM_BUILDINGS = 12;
+
+        // ── Neon Signs ──
+        var neonSigns = [];
+
+        // ── Holographic Ads ──
+        var holoAds = [];
+
+        // ── Enemies ──
+        var androids = [];
+        var drones = [];
+        var NUM_ANDROIDS = 4;
+        var NUM_DRONES = 3;
+
+        // ── Survivor ──
+        var survivor = {
+            x: 0, y: 0,
+            weaponAngle: 0,
+            weaponTargetAngle: 0,
+            attackFlash: 0,
+            bodyBob: 0,
+            breathPhase: 0
+        };
+
+        // ── Projectiles / hit effects ──
+        var hitEffects = [];
+
+        // ── Title state ──
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Intro/outro fade ──
+        var introFade = 0;
+
+        // ── Lerp ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // ── Color parse ──
+        function hexRGB(hex) {
+            return {
+                r: parseInt(hex.slice(1,3), 16),
+                g: parseInt(hex.slice(3,5), 16),
+                b: parseInt(hex.slice(5,7), 16)
+            };
+        }
+
+        // ── Section mapping ──
+        // Song sequence: 0=Intro, 1-2=Verse, 3-4=Drop, 5-6=Verse, 7=Breakdown, 8=Build, 9=Fill, 10-11=Drop, 12-13=Verse, 14=Breakdown, 15=Build/Fill
+        function mapSection(seqIndex) {
+            if (seqIndex <= 0) return 'intro';
+            if (seqIndex <= 2) return 'verse';
+            if (seqIndex <= 4) return 'drop';
+            if (seqIndex <= 6) return 'verse';
+            if (seqIndex === 7) return 'breakdown';
+            if (seqIndex === 8) return 'build';
+            if (seqIndex === 9) return 'fill';
+            if (seqIndex <= 11) return 'drop';
+            if (seqIndex <= 13) return 'verse';
+            if (seqIndex === 14) return 'breakdown';
+            return 'build';
+        }
+
+        // ── Init buildings ──
+        function initBuildings() {
+            buildings = [];
+            for (var i = 0; i < NUM_BUILDINGS; i++) {
+                var bw = W * (0.06 + Math.random() * 0.08);
+                var bh = H * (0.2 + Math.random() * 0.35);
+                buildings.push({
+                    x: (i / NUM_BUILDINGS) * W + (Math.random() - 0.5) * W * 0.04,
+                    w: bw,
+                    h: bh,
+                    windowRows: 3 + Math.floor(Math.random() * 6),
+                    windowCols: 2 + Math.floor(Math.random() * 3),
+                    tint: Math.random() > 0.5 ? STEEL_BLUE : DARK_STEEL
+                });
+            }
+        }
+
+        // ── Init neon signs ──
+        function initNeonSigns() {
+            neonSigns = [];
+            var signTexts = ['ARENA', 'NEON', 'CYBER', 'LIVE', 'ZONE', 'DATA', 'NET', 'HACK'];
+            for (var i = 0; i < 5; i++) {
+                neonSigns.push({
+                    buildingIdx: Math.floor(Math.random() * NUM_BUILDINGS),
+                    yOffset: 0.2 + Math.random() * 0.4,
+                    text: signTexts[Math.floor(Math.random() * signTexts.length)],
+                    color: [NEON_PINK, NEON_CYAN, NEON_PURPLE][Math.floor(Math.random() * 3)],
+                    flickerPhase: Math.random() * Math.PI * 2,
+                    flickerSpeed: 2 + Math.random() * 6,
+                    glitchTimer: 0
+                });
+            }
+        }
+
+        // ── Init holo ads ──
+        function initHoloAds() {
+            holoAds = [];
+            for (var i = 0; i < 3; i++) {
+                holoAds.push({
+                    buildingIdx: 1 + Math.floor(Math.random() * (NUM_BUILDINGS - 2)),
+                    yOffset: 0.1 + Math.random() * 0.3,
+                    w: W * 0.06,
+                    h: H * 0.08,
+                    hue: Math.random() * 360,
+                    distortion: 0,
+                    scanlineOffset: Math.random() * 100
+                });
+            }
+        }
+
+        // ── Init rain ──
+        function initRain() {
+            raindrops = [];
+            for (var i = 0; i < NUM_RAIN; i++) {
+                raindrops.push({
+                    x: Math.random() * W * 1.2 - W * 0.1,
+                    y: Math.random() * H,
+                    speed: 400 + Math.random() * 600,
+                    len: 8 + Math.random() * 20,
+                    alpha: 0.1 + Math.random() * 0.3
+                });
+            }
+        }
+
+        // ── Init enemies ──
+        function initEnemies() {
+            androids = [];
+            for (var i = 0; i < NUM_ANDROIDS; i++) {
+                var side = i < NUM_ANDROIDS / 2 ? -1 : 1;
+                androids.push({
+                    x: survivor.x + side * (W * 0.12 + i * W * 0.08),
+                    baseX: 0,
+                    bobPhase: Math.random() * Math.PI * 2,
+                    hitFlash: 0,
+                    eyeGlow: 0.5 + Math.random() * 0.5,
+                    size: H * 0.08,
+                    alive: true,
+                    respawnTimer: 0
+                });
+                androids[i].baseX = androids[i].x;
+            }
+            drones = [];
+            for (var j = 0; j < NUM_DRONES; j++) {
+                drones.push({
+                    x: W * 0.2 + j * W * 0.25,
+                    y: groundY - H * 0.25 - Math.random() * H * 0.15,
+                    baseY: 0,
+                    hoverPhase: Math.random() * Math.PI * 2,
+                    searchAngle: Math.random() * Math.PI * 2,
+                    searchSpeed: 0.5 + Math.random() * 1.5,
+                    hitFlash: 0,
+                    size: H * 0.035
+                });
+                drones[j].baseY = drones[j].y;
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            groundY = H * GROUND_Y_RATIO;
+
+            survivor.x = W * 0.5;
+            survivor.y = groundY;
+
+            initBuildings();
+            initNeonSigns();
+            initHoloAds();
+            initRain();
+            initEnemies();
+
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            globalTime = 0;
+            introFade = 0;
+            lastSeqIndex = -1;
+            hitEffects = [];
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            groundY = H * GROUND_Y_RATIO;
+            survivor.x = W * 0.5;
+            survivor.y = groundY;
+            initBuildings();
+            initNeonSigns();
+            initHoloAds();
+            initEnemies();
+        }
+
+        // ── Draw sky ──
+        function drawSky(ctx, energy) {
+            var grad = ctx.createLinearGradient(0, 0, 0, groundY);
+            var topR = 8, topG = 8, topB = 18;
+            var midR = 12 + energy * 20, midG = 8 + energy * 10, midB = 30 + energy * 20;
+            grad.addColorStop(0, 'rgb(' + topR + ',' + topG + ',' + topB + ')');
+            grad.addColorStop(0.6, 'rgb(' + Math.floor(midR) + ',' + Math.floor(midG) + ',' + Math.floor(midB) + ')');
+            grad.addColorStop(1, 'rgb(15,10,30)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, groundY);
+        }
+
+        // ── Draw buildings ──
+        function drawBuildings(ctx, energy) {
+            for (var i = 0; i < buildings.length; i++) {
+                var b = buildings[i];
+                var bx = b.x;
+                var by = groundY - b.h;
+
+                // Building body
+                ctx.fillStyle = b.tint;
+                ctx.fillRect(bx, by, b.w, b.h);
+
+                // Edge highlight
+                ctx.strokeStyle = 'rgba(0,229,255,0.08)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(bx, by, b.w, b.h);
+
+                // Windows
+                var winW = b.w / (b.windowCols * 2 + 1);
+                var winH = b.h / (b.windowRows * 2 + 1);
+                for (var row = 0; row < b.windowRows; row++) {
+                    for (var col = 0; col < b.windowCols; col++) {
+                        var wx = bx + winW * (col * 2 + 1);
+                        var wy = by + winH * (row * 2 + 1);
+                        var lit = Math.sin(globalTime * 0.3 + i * 2 + row + col * 3) > 0.2;
+                        if (lit) {
+                            var wc = energy > 0.5 ? 'rgba(255,45,149,0.3)' : 'rgba(0,229,255,0.2)';
+                            ctx.fillStyle = wc;
+                            ctx.fillRect(wx, wy, winW, winH);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Draw neon signs ──
+        function drawNeonSigns(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < neonSigns.length; i++) {
+                var s = neonSigns[i];
+                var b = buildings[s.buildingIdx];
+                if (!b) continue;
+
+                var sx = b.x + b.w * 0.5;
+                var sy = groundY - b.h + b.h * s.yOffset;
+
+                // Flicker
+                var flicker = Math.sin(globalTime * s.flickerSpeed + s.flickerPhase);
+                var alpha = 0.5 + flicker * 0.3 + energy * 0.2;
+                if (s.glitchTimer > 0) {
+                    alpha *= Math.random() > 0.3 ? 1 : 0.1;
+                    s.glitchTimer -= 1/60;
+                }
+
+                var rgb = hexRGB(s.color);
+                ctx.font = '700 ' + Math.max(10, W * 0.015) + 'px "Orbitron", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = s.color;
+                ctx.shadowBlur = 15 + energy * 20;
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                ctx.fillStyle = s.color;
+                ctx.fillText(s.text, sx, sy);
+
+                // Double glow layer
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.4));
+                ctx.shadowBlur = 30 + energy * 30;
+                ctx.fillText(s.text, sx, sy);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw holographic ads ──
+        function drawHoloAds(ctx, energy) {
+            ctx.save();
+            for (var i = 0; i < holoAds.length; i++) {
+                var ad = holoAds[i];
+                var b = buildings[ad.buildingIdx];
+                if (!b) continue;
+
+                var ax = b.x + b.w + 4;
+                var ay = groundY - b.h + b.h * ad.yOffset;
+                var aw = ad.w;
+                var ah = ad.h;
+
+                // Distortion during combat
+                var dist = ad.distortion;
+                var scanY = (globalTime * 40 + ad.scanlineOffset) % ah;
+
+                ctx.globalAlpha = 0.3 + energy * 0.3;
+
+                // Ad panel background
+                var grad = ctx.createLinearGradient(ax, ay, ax, ay + ah);
+                grad.addColorStop(0, 'rgba(' + Math.floor(128 + Math.sin(ad.hue * 0.017) * 127) + ',0,255,0.15)');
+                grad.addColorStop(1, 'rgba(0,229,255,0.08)');
+                ctx.fillStyle = grad;
+
+                ctx.save();
+                if (dist > 0.1) {
+                    ctx.translate(ax + aw / 2, ay + ah / 2);
+                    ctx.transform(1, Math.sin(globalTime * 10) * dist * 0.1, 0, 1, 0, 0);
+                    ctx.translate(-(ax + aw / 2), -(ay + ah / 2));
+                }
+                ctx.fillRect(ax, ay, aw, ah);
+
+                // Scanlines
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                for (var sl = 0; sl < ah; sl += 3) {
+                    ctx.fillRect(ax, ay + sl, aw, 1);
+                }
+
+                // Moving scan bar
+                ctx.fillStyle = 'rgba(0,229,255,0.2)';
+                ctx.fillRect(ax, ay + scanY, aw, 2);
+
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        // ── Draw ground with reflections ──
+        function drawGround(ctx, energy) {
+            ctx.save();
+
+            // Ground base
+            ctx.fillStyle = '#0a0a18';
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Rain-slick wet reflection
+            var grad = ctx.createLinearGradient(0, groundY, 0, H);
+            grad.addColorStop(0, 'rgba(0,229,255,0.06)');
+            grad.addColorStop(0.3, 'rgba(255,45,149,0.04)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Neon reflection streaks
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < 8; i++) {
+                var rx = Math.random() * W;
+                var rColor = [NEON_PINK, NEON_CYAN, NEON_PURPLE][i % 3];
+                var rgb = hexRGB(rColor);
+                var rGrad = ctx.createRadialGradient(rx, groundY, 0, rx, groundY + H * 0.15, H * 0.15);
+                rGrad.addColorStop(0, 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + (0.02 + energy * 0.03) + ')');
+                rGrad.addColorStop(1, 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0)');
+                ctx.fillStyle = rGrad;
+                ctx.fillRect(rx - H * 0.15, groundY, H * 0.3, H * 0.15);
+            }
+
+            // Ground line
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = NEON_CYAN;
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = NEON_CYAN;
+            ctx.shadowBlur = 8;
+            ctx.globalAlpha = 0.4 + energy * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(W, groundY);
+            ctx.stroke();
+
+            // Perspective grid on ground
+            ctx.globalAlpha = 0.05 + energy * 0.05;
+            ctx.strokeStyle = NEON_PURPLE;
+            ctx.lineWidth = 0.5;
+            ctx.shadowBlur = 0;
+            var vpX = W * 0.5;
+            var numLines = 14;
+            for (var j = 0; j <= numLines; j++) {
+                var lx = (j / numLines) * W;
+                ctx.beginPath();
+                ctx.moveTo(lx, groundY);
+                ctx.lineTo(vpX + (lx - vpX) * 3, H);
+                ctx.stroke();
+            }
+            for (var k = 0; k < 6; k++) {
+                var gy = groundY + Math.pow(k / 6, 1.5) * (H - groundY);
+                ctx.beginPath();
+                ctx.moveTo(0, gy);
+                ctx.lineTo(W, gy);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw rain ──
+        function drawRain(ctx, dt, energy) {
+            var windX = Math.sin(globalTime * 0.3) * 30;
+            var rainAlphaMult = sectionMood === 'breakdown' ? 1.5 : (sectionMood === 'drop' ? 0.6 : 1.0);
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(150,180,255,0.25)';
+            ctx.lineWidth = 0.8;
+
+            for (var i = 0; i < raindrops.length; i++) {
+                var r = raindrops[i];
+                r.y += r.speed * dt;
+                r.x += windX * dt;
+
+                if (r.y > H + 20) {
+                    r.y = -r.len;
+                    r.x = Math.random() * W * 1.2 - W * 0.1;
+                }
+                if (r.x > W + 20) r.x = -20;
+                if (r.x < -20) r.x = W + 20;
+
+                ctx.globalAlpha = r.alpha * rainAlphaMult;
+                ctx.beginPath();
+                ctx.moveTo(r.x, r.y);
+                ctx.lineTo(r.x + windX * 0.02, r.y + r.len);
+                ctx.stroke();
+
+                // Splash on ground
+                if (r.y >= groundY && r.y < groundY + r.len) {
+                    ctx.globalAlpha = r.alpha * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(r.x, groundY, 2, 0, Math.PI);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Draw survivor ──
+        function drawSurvivor(ctx, energy, beat) {
+            var sx = survivor.x;
+            var sy = survivor.y;
+            var size = H * 0.1;
+
+            // Body bob
+            survivor.breathPhase += 1/60 * 3;
+            var bob = Math.sin(survivor.breathPhase) * size * 0.02;
+            var combatBob = beatPulse * size * 0.04;
+
+            ctx.save();
+            ctx.translate(sx, sy + bob - combatBob);
+
+            // ── Legs ──
+            ctx.strokeStyle = NEON_CYAN;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = NEON_CYAN;
+            ctx.shadowBlur = 6;
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.08, 0);
+            ctx.lineTo(-size * 0.15, size * 0.15);
+            ctx.lineTo(-size * 0.12, size * 0.3);
+            ctx.stroke();
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(size * 0.08, 0);
+            ctx.lineTo(size * 0.15, size * 0.15);
+            ctx.lineTo(size * 0.12, size * 0.3);
+            ctx.stroke();
+
+            // ── Torso ──
+            ctx.strokeStyle = CHROME_WHITE;
+            ctx.shadowColor = CHROME_WHITE;
+            ctx.shadowBlur = 4;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -size * 0.35);
+            ctx.stroke();
+
+            // ── Shoulders ──
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.18, -size * 0.28);
+            ctx.lineTo(size * 0.18, -size * 0.28);
+            ctx.stroke();
+
+            // ── Left arm (non-weapon) ──
+            ctx.strokeStyle = CHROME_WHITE;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.18, -size * 0.28);
+            ctx.lineTo(-size * 0.28, -size * 0.15);
+            ctx.lineTo(-size * 0.22, -size * 0.02);
+            ctx.stroke();
+
+            // ── Right arm + weapon ──
+            var wa = survivor.weaponAngle;
+            var armEndX = size * 0.18 + Math.cos(wa) * size * 0.2;
+            var armEndY = -size * 0.28 + Math.sin(wa) * size * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.18, -size * 0.28);
+            ctx.lineTo(armEndX, armEndY);
+            ctx.stroke();
+
+            // Energy weapon
+            var wepLen = size * 0.3;
+            var wepEndX = armEndX + Math.cos(wa) * wepLen;
+            var wepEndY = armEndY + Math.sin(wa) * wepLen;
+            ctx.strokeStyle = NEON_PINK;
+            ctx.shadowColor = NEON_PINK;
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(armEndX, armEndY);
+            ctx.lineTo(wepEndX, wepEndY);
+            ctx.stroke();
+
+            // Weapon glow
+            ctx.shadowBlur = 20 + energy * 15;
+            ctx.globalAlpha = 0.4 + energy * 0.3;
+            ctx.beginPath();
+            ctx.arc(wepEndX, wepEndY, 3 + energy * 4, 0, Math.PI * 2);
+            ctx.fillStyle = NEON_PINK;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // ── Head ──
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = NEON_CYAN;
+            ctx.strokeStyle = NEON_CYAN;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.45, size * 0.1, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Visor / eyes
+            ctx.fillStyle = NEON_CYAN;
+            ctx.shadowBlur = 12;
+            ctx.globalAlpha = 0.8 + beatPulse * 0.2;
+            ctx.fillRect(-size * 0.07, -size * 0.47, size * 0.14, size * 0.03);
+            ctx.globalAlpha = 1;
+
+            // ── Attack flash ──
+            if (survivor.attackFlash > 0.01) {
+                ctx.globalCompositeOperation = 'lighter';
+                // Beam from weapon tip toward current target
+                var beamLen = W * 0.2 * survivor.attackFlash;
+                var grad = ctx.createLinearGradient(wepEndX, wepEndY,
+                    wepEndX + Math.cos(wa) * beamLen,
+                    wepEndY + Math.sin(wa) * beamLen);
+                grad.addColorStop(0, 'rgba(255,45,149,' + survivor.attackFlash * 0.8 + ')');
+                grad.addColorStop(1, 'rgba(255,45,149,0)');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 2 + survivor.attackFlash * 4;
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = NEON_PINK;
+                ctx.beginPath();
+                ctx.moveTo(wepEndX, wepEndY);
+                ctx.lineTo(wepEndX + Math.cos(wa) * beamLen, wepEndY + Math.sin(wa) * beamLen);
+                ctx.stroke();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw android enemy ──
+        function drawAndroid(ctx, android, energy) {
+            if (!android.alive && android.respawnTimer > 0) return;
+
+            var ax = android.x;
+            var ay = groundY;
+            var sz = android.size;
+            var bob = Math.sin(globalTime * 2 + android.bobPhase) * sz * 0.03;
+
+            ctx.save();
+            ctx.translate(ax, ay + bob);
+
+            var bodyColor = android.hitFlash > 0.1 ? '#ffffff' : NEON_PURPLE;
+            var eyeAlpha = 0.6 + Math.sin(globalTime * 4 + android.bobPhase) * 0.3;
+
+            ctx.strokeStyle = bodyColor;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = bodyColor;
+            ctx.shadowBlur = 6;
+
+            // Legs - geometric
+            ctx.beginPath();
+            ctx.moveTo(-sz * 0.12, 0);
+            ctx.lineTo(-sz * 0.08, -sz * 0.2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(sz * 0.12, 0);
+            ctx.lineTo(sz * 0.08, -sz * 0.2);
+            ctx.stroke();
+
+            // Torso - angular
+            ctx.beginPath();
+            ctx.moveTo(-sz * 0.15, -sz * 0.2);
+            ctx.lineTo(-sz * 0.12, -sz * 0.5);
+            ctx.lineTo(sz * 0.12, -sz * 0.5);
+            ctx.lineTo(sz * 0.15, -sz * 0.2);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(-sz * 0.12, -sz * 0.45);
+            ctx.lineTo(-sz * 0.25, -sz * 0.3);
+            ctx.lineTo(-sz * 0.2, -sz * 0.15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(sz * 0.12, -sz * 0.45);
+            ctx.lineTo(sz * 0.25, -sz * 0.3);
+            ctx.lineTo(sz * 0.2, -sz * 0.15);
+            ctx.stroke();
+
+            // Head - hexagonal
+            ctx.beginPath();
+            var hr = sz * 0.1;
+            for (var hi = 0; hi < 6; hi++) {
+                var ha = (hi / 6) * Math.PI * 2 - Math.PI / 2;
+                var hx = Math.cos(ha) * hr;
+                var hy = -sz * 0.6 + Math.sin(ha) * hr;
+                if (hi === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Glowing eyes
+            ctx.fillStyle = '#ff0044';
+            ctx.shadowColor = '#ff0044';
+            ctx.shadowBlur = 10;
+            ctx.globalAlpha = eyeAlpha * android.eyeGlow;
+            ctx.beginPath();
+            ctx.arc(-sz * 0.04, -sz * 0.6, sz * 0.025, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(sz * 0.04, -sz * 0.6, sz * 0.025, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw drone ──
+        function drawDrone(ctx, drone, energy) {
+            var dx = drone.x;
+            var dy = drone.y + Math.sin(globalTime * 3 + drone.hoverPhase) * 8;
+            var sz = drone.size;
+
+            ctx.save();
+            ctx.translate(dx, dy);
+
+            var bodyColor = drone.hitFlash > 0.1 ? '#ffffff' : NEON_CYAN;
+            ctx.strokeStyle = bodyColor;
+            ctx.fillStyle = bodyColor;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = bodyColor;
+            ctx.shadowBlur = 8;
+
+            // Triangle body
+            ctx.beginPath();
+            ctx.moveTo(0, -sz);
+            ctx.lineTo(-sz * 0.8, sz * 0.5);
+            ctx.lineTo(sz * 0.8, sz * 0.5);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.globalAlpha = 0.15;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Center eye
+            ctx.fillStyle = '#ff0044';
+            ctx.shadowColor = '#ff0044';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(0, 0, sz * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Searchlight
+            var sa = drone.searchAngle;
+            var slLen = H * 0.2 + energy * H * 0.1;
+            ctx.globalAlpha = 0.06 + energy * 0.04;
+            ctx.globalCompositeOperation = 'lighter';
+            var slGrad = ctx.createLinearGradient(0, sz * 0.5, Math.cos(sa) * slLen, sz * 0.5 + Math.sin(sa) * slLen);
+            slGrad.addColorStop(0, 'rgba(255,255,255,0.3)');
+            slGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = slGrad;
+            ctx.beginPath();
+            ctx.moveTo(-sz * 0.2, sz * 0.5);
+            ctx.lineTo(sz * 0.2, sz * 0.5);
+            ctx.lineTo(Math.cos(sa) * slLen + sz * 0.8, sz * 0.5 + Math.sin(sa) * slLen);
+            ctx.lineTo(Math.cos(sa) * slLen - sz * 0.8, sz * 0.5 + Math.sin(sa) * slLen);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ── Draw hit effects ──
+        function drawHitEffects(ctx, dt) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = hitEffects.length - 1; i >= 0; i--) {
+                var e = hitEffects[i];
+                e.life -= dt;
+                if (e.life <= 0) {
+                    hitEffects.splice(i, 1);
+                    continue;
+                }
+                var t = 1 - e.life / e.maxLife;
+                var radius = e.radius * t;
+                var alpha = (1 - t) * 0.6;
+                var rgb = hexRGB(e.color);
+
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',1)';
+                ctx.lineWidth = 2 * (1 - t);
+                ctx.shadowColor = e.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Spark particles
+                for (var p = 0; p < e.sparks; p++) {
+                    var sa = (p / e.sparks) * Math.PI * 2 + e.spin;
+                    var sd = radius * (0.8 + Math.random() * 0.4);
+                    ctx.fillStyle = e.color;
+                    ctx.globalAlpha = alpha * 0.8;
+                    ctx.fillRect(e.x + Math.cos(sa) * sd, e.y + Math.sin(sa) * sd, 2, 2);
+                }
+                e.spin += dt * 3;
+            }
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var baseFontSize = Math.max(14, Math.min(W * 0.04, 50));
+            var y = H * 0.15;
+
+            ctx.font = '900 ' + baseFontSize + 'px "Orbitron", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Glitch offset during drops
+            var glitchX = 0, glitchY = 0;
+            if (sectionMood === 'drop' && Math.random() > 0.85) {
+                glitchX = (Math.random() - 0.5) * 8;
+                glitchY = (Math.random() - 0.5) * 4;
+            }
+
+            // Shadow layers
+            ctx.globalAlpha = titleAlpha * 0.3;
+            ctx.shadowColor = NEON_PINK;
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = NEON_PINK;
+            ctx.fillText('SURVIVORS', W * 0.5 + glitchX + 2, y + glitchY - baseFontSize * 0.05);
+
+            ctx.globalAlpha = titleAlpha * 0.3;
+            ctx.shadowColor = NEON_CYAN;
+            ctx.fillStyle = NEON_CYAN;
+            ctx.fillText('SURVIVORS', W * 0.5 + glitchX - 2, y + glitchY + baseFontSize * 0.05);
+
+            // Main text
+            ctx.globalAlpha = titleAlpha;
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('SURVIVORS', W * 0.5 + glitchX, y + glitchY);
+
+            // Subtitle
+            ctx.font = '400 ' + Math.max(10, baseFontSize * 0.4) + 'px "Orbitron", sans-serif';
+            ctx.globalAlpha = titleAlpha * 0.6;
+            ctx.shadowColor = NEON_CYAN;
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = NEON_CYAN;
+            ctx.fillText('NEON DISTRICT', W * 0.5, y + baseFontSize * 0.8);
+
+            ctx.restore();
+        }
+
+        // ── Draw flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Draw vignette ──
+        function drawVignette(ctx) {
+            var grad = ctx.createRadialGradient(W * 0.5, H * 0.5, W * 0.2, W * 0.5, H * 0.5, W * 0.8);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ── Spawn hit effect ──
+        function spawnHit(x, y, color) {
+            hitEffects.push({
+                x: x, y: y,
+                radius: 20 + Math.random() * 30,
+                life: 0.4,
+                maxLife: 0.4,
+                color: color,
+                sparks: 4 + Math.floor(Math.random() * 4),
+                spin: Math.random() * Math.PI * 2
+            });
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            globalTime += dt;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state
+                drawSky(ctx, 0);
+                drawBuildings(ctx, 0);
+                drawGround(ctx, 0);
+                drawRain(ctx, dt, 0);
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+
+                // Flash on section change
+                if (newSection === 'drop' && oldSection !== 'drop') {
+                    flashAlpha = 0.5;
+                }
+                if (newSection === 'fill') {
+                    flashAlpha = 0.3;
+                }
+
+                // Trigger neon sign glitches on section changes
+                for (var gi = 0; gi < neonSigns.length; gi++) {
+                    neonSigns[gi].glitchTimer = 0.5 + Math.random() * 0.5;
+                }
+
+                // Holo ad distortion
+                for (var hi = 0; hi < holoAds.length; hi++) {
+                    holoAds[hi].distortion = (newSection === 'drop' || newSection === 'fill') ? 1.0 : 0;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Intro fade ──
+            introFade = Math.min(1, introFade + dt * 0.5);
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Attack on beats during high energy
+                if (energy > 0.3) {
+                    survivor.attackFlash = 0.6 + energy * 0.4;
+
+                    // Pick a target
+                    var targetIdx = Math.floor(Math.random() * (androids.length + drones.length));
+                    if (targetIdx < androids.length) {
+                        var target = androids[targetIdx];
+                        survivor.weaponTargetAngle = Math.atan2(
+                            groundY - target.size * 0.35 - survivor.y,
+                            target.x - survivor.x
+                        );
+                        if (target.alive) {
+                            spawnHit(target.x, groundY - target.size * 0.35, NEON_PINK);
+                            target.hitFlash = 0.3;
+                        }
+                    } else {
+                        var dIdx = targetIdx - androids.length;
+                        if (dIdx < drones.length) {
+                            var dTarget = drones[dIdx];
+                            survivor.weaponTargetAngle = Math.atan2(
+                                dTarget.y - survivor.y,
+                                dTarget.x - survivor.x
+                            );
+                            spawnHit(dTarget.x, dTarget.y, NEON_CYAN);
+                            dTarget.hitFlash = 0.3;
+                        }
+                    }
+                }
+
+                // Flash on strong beats in drops
+                if ((sectionMood === 'drop' || sectionMood === 'fill') && energy > 0.5) {
+                    flashAlpha = Math.max(flashAlpha, 0.1 + energy * 0.1);
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            survivor.attackFlash *= Math.exp(-10 * dt);
+
+            // ── Update weapon angle ──
+            survivor.weaponAngle = lerpExp(survivor.weaponAngle, survivor.weaponTargetAngle, 8, dt);
+
+            // ── Update androids ──
+            for (var ai = 0; ai < androids.length; ai++) {
+                var a = androids[ai];
+                // Sway movement
+                a.x = a.baseX + Math.sin(globalTime * 0.8 + a.bobPhase) * W * 0.03;
+                a.hitFlash *= Math.exp(-6 * dt);
+
+                // In drops, androids advance
+                if (sectionMood === 'drop') {
+                    var dir = a.baseX < survivor.x ? 1 : -1;
+                    a.baseX += dir * dt * 10 * energy;
+                    // Clamp
+                    var minDist = W * 0.08;
+                    if (Math.abs(a.baseX - survivor.x) < minDist) {
+                        a.baseX = survivor.x + (a.baseX < survivor.x ? -minDist : minDist);
+                    }
+                } else if (sectionMood === 'breakdown') {
+                    // Retreat during breakdown
+                    var dir2 = a.baseX < survivor.x ? -1 : 1;
+                    a.baseX += dir2 * dt * 20;
+                }
+            }
+
+            // ── Update drones ──
+            for (var di = 0; di < drones.length; di++) {
+                var d = drones[di];
+                d.searchAngle += d.searchSpeed * dt;
+                d.hitFlash *= Math.exp(-6 * dt);
+
+                // Circle movement
+                d.x += Math.cos(globalTime * 0.5 + di * 2) * dt * 30;
+                d.y = d.baseY + Math.sin(globalTime * 1.5 + d.hoverPhase) * 15;
+            }
+
+            // ── Holo ad distortion decay ──
+            for (var hdi = 0; hdi < holoAds.length; hdi++) {
+                holoAds[hdi].distortion *= Math.exp(-2 * dt);
+            }
+
+            // ── Title ──
+            titleTarget = (sectionMood === 'drop' || sectionMood === 'fill') ? 1 : 0;
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 4, dt);
+
+            // ── Draw scene ──
+
+            // 1. Sky
+            drawSky(ctx, energy);
+
+            // 2. Buildings
+            drawBuildings(ctx, energy);
+
+            // 3. Neon signs
+            drawNeonSigns(ctx, energy);
+
+            // 4. Holo ads
+            drawHoloAds(ctx, energy);
+
+            // 5. Title
+            drawTitle(ctx);
+
+            // 6. Ground
+            drawGround(ctx, energy);
+
+            // 7. Androids (behind survivor on sides)
+            for (var adi = 0; adi < androids.length; adi++) {
+                drawAndroid(ctx, androids[adi], energy);
+            }
+
+            // 8. Drones
+            for (var ddi = 0; ddi < drones.length; ddi++) {
+                drawDrone(ctx, drones[ddi], energy);
+            }
+
+            // 9. Survivor
+            drawSurvivor(ctx, energy, beat);
+
+            // 10. Hit effects
+            drawHitEffects(ctx, dt);
+
+            // 11. Rain (over everything)
+            drawRain(ctx, dt, energy);
+
+            // 12. Flash
+            drawFlash(ctx);
+
+            // 13. Vignette
+            drawVignette(ctx);
+
+            // 14. Scanline overlay
+            if (sectionMood === 'drop' || sectionMood === 'fill') {
+                ctx.save();
+                ctx.globalAlpha = 0.03 + beatPulse * 0.02;
+                ctx.fillStyle = '#000';
+                for (var sl = 0; sl < H; sl += 3) {
+                    ctx.fillRect(0, sl, W, 1);
+                }
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'Survivors: Neon District',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('survivors-neon-district');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/survivors-cyberpunk.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
