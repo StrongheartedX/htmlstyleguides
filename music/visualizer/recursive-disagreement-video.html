@@ -125,6 +125,8 @@
         var sectionMood = 'polite'; // polite, assertive, heated, shouting, chaos, pause, agreement, relapse, meltdown
         var flashAlpha = 0;
         var flashColor = WHITE;
+        var contextLimitAlpha = 0;
+        var contextLimitTime = 0;
 
         // ── Text systems ──
         // Active text blocks on each screen
@@ -602,6 +604,75 @@
             ctx.restore();
         }
 
+        // ── Context limit message (end screen) ──
+        function drawContextLimit(ctx, dt) {
+            if (contextLimitAlpha < 0.01) return;
+            contextLimitTime += dt;
+
+            ctx.save();
+            // Dim the whole screen
+            ctx.globalAlpha = contextLimitAlpha * 0.85;
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.globalAlpha = contextLimitAlpha;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(13, Math.min(W * 0.018, 22));
+            ctx.font = '400 ' + Math.floor(fontSize) + 'px "JetBrains Mono", monospace';
+
+            // Cursor blink for the circle
+            var blink = Math.sin(contextLimitTime * 3) > -0.3 ? 1 : 0;
+
+            var msg1 = 'Context limit reached';
+            var circle = ' \u25CF ';
+            var msg2 = '/compact';
+            var msg3 = ' or ';
+            var msg4 = '/clear';
+            var msg5 = ' to continue';
+
+            // Measure parts for manual layout
+            var w1 = ctx.measureText(msg1).width;
+            var wc = ctx.measureText(circle).width;
+            var w2 = ctx.measureText(msg2).width;
+            var w3 = ctx.measureText(msg3).width;
+            var w4 = ctx.measureText(msg4).width;
+            var w5 = ctx.measureText(msg5).width;
+            var totalW = w1 + wc + w2 + w3 + w4 + w5;
+            var startX = (W - totalW) / 2;
+            var y = H * 0.5;
+
+            // Draw each part
+            ctx.fillStyle = '#ef4444';
+            ctx.textAlign = 'left';
+            ctx.fillText(msg1, startX, y);
+
+            // Circle icon (blinks)
+            ctx.globalAlpha = contextLimitAlpha * blink;
+            ctx.fillText(circle, startX + w1, y);
+
+            ctx.globalAlpha = contextLimitAlpha;
+            ctx.fillText(msg2, startX + w1 + wc, y);
+            ctx.fillText(msg3, startX + w1 + wc + w2, y);
+            ctx.fillText(msg4, startX + w1 + wc + w2 + w3, y);
+            ctx.fillText(msg5, startX + w1 + wc + w2 + w3 + w4, y);
+
+            // Second line: /compact failed — appears after a delay
+            var failDelay = 2.5; // seconds after meltdown starts
+            if (contextLimitTime > failDelay) {
+                var failAlpha = Math.min(1, (contextLimitTime - failDelay) * 0.8);
+                ctx.globalAlpha = contextLimitAlpha * failAlpha;
+                ctx.fillStyle = '#ef4444';
+                var failFontSize = Math.max(11, Math.min(W * 0.013, 16));
+                ctx.font = '400 ' + Math.floor(failFontSize) + 'px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('/compact failed. Conversation too long', W * 0.5, y + fontSize * 2.2);
+            }
+
+            ctx.restore();
+        }
+
         // ── Init ──
         function init(ctx, width, height, anal) {
             W = width; H = height;
@@ -618,6 +689,8 @@
             agreementSymbols = [];
             titleAlpha = 0;
             cursorBlink = 0;
+            contextLimitAlpha = 0;
+            contextLimitTime = 0;
         }
 
         // ── Resize ──
@@ -718,6 +791,10 @@
             // ── Title ──
             var titleTarget = (sectionMood === 'chaos' || sectionMood === 'meltdown' || sectionMood === 'shouting') ? 1 : 0;
             titleAlpha = lerpParam(titleAlpha, titleTarget, 3, dt);
+
+            // ── Context limit fade-in during meltdown ──
+            var clTarget = sectionMood === 'meltdown' ? 1 : 0;
+            contextLimitAlpha = lerpParam(contextLimitAlpha, clTarget, 0.8, dt);
 
             // ── Update texts ──
             updateTexts(dt);
@@ -882,6 +959,9 @@
 
             // ── Title ──
             drawTitle(ctx, energy);
+
+            // ── Context limit end screen ──
+            drawContextLimit(ctx, dt);
 
             // ── Flash overlay ──
             if (flashAlpha > 0.01) {
