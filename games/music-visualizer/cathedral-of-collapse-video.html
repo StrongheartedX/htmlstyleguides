@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cathedral of Collapse — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,10,15,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(18px, 4.5vw, 44px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c8a050;
+            text-shadow: 0 0 30px rgba(200,160,80,0.5), 0 0 60px rgba(200,160,80,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+            letter-spacing: 0.08em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #c8a050;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #c8a050;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(200,160,80,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(200,160,80,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+            font-family: sans-serif;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Cathedral of Collapse</div>
+        <div class="play-sub">a gothic architecture music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // -- Cathedral of Collapse Video Renderer --
+    window.Renderers['cathedral-collapse-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // -- Colors --
+        var BG = '#0a0a0f';
+        var STONE_LIGHT = '#b0a898';
+        var STONE_MID = '#706858';
+        var STONE_DARK = '#3a3228';
+        var GLASS_RUBY = '#cc2244';
+        var GLASS_SAPPHIRE = '#2244cc';
+        var GLASS_EMERALD = '#22aa44';
+        var GLASS_AMBER = '#ccaa22';
+        var GLASS_VIOLET = '#8822cc';
+        var GLASS_COLORS = [GLASS_RUBY, GLASS_SAPPHIRE, GLASS_EMERALD, GLASS_AMBER, GLASS_VIOLET];
+        var GOLD = '#c8a050';
+
+        // -- State --
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'void';
+        var collapseProgress = 0; // 0 = intact, 1 = rubble
+        var collapseTarget = 0;
+        var dustIntensity = 0;
+        var shakeX = 0, shakeY = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var introFade = 0;
+
+        // -- Architectural elements --
+        var pillars = [];
+        var arches = [];
+        var roseWindow = null;
+        var flyingButtresses = [];
+        var stainedGlassPanels = [];
+        var fallingBlocks = [];
+        var cracks = [];
+        var dustParticles = [];
+        var glassShards = [];
+        var lightBeams = [];
+        var spires = [];
+        var rubblePiles = [];
+
+        // -- Seeded random for consistent architecture --
+        var seed = 42;
+        function seededRandom() {
+            seed = (seed * 16807 + 0) % 2147483647;
+            return (seed - 1) / 2147483646;
+        }
+
+        // -- Lerp --
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        // -- Section mapping based on pattern names --
+        // seq 0-2: I. Void/Bell (intact grandeur)
+        // seq 3-7: II. Organ (first cracks appear)
+        // seq 8-11: III. Floor Drops / Crushing (accelerating collapse)
+        // seq 12-15: IV. Fragile Return (beauty in partial ruins)
+        // seq 16-19: V. Second Collapse / Riff Fury (major destruction)
+        // seq 20-25: VI-VII. Ghost Bell / Building Storm
+        // seq 26-29: VIII. Final Collapse / Climax
+        // seq 30+: IX. Aftermath (silence/beauty in ruins)
+        function mapSection(seqIndex) {
+            if (seqIndex <= 2) return 'grandeur';
+            if (seqIndex <= 7) return 'first_cracks';
+            if (seqIndex <= 11) return 'collapse_1';
+            if (seqIndex <= 15) return 'fragile_beauty';
+            if (seqIndex <= 19) return 'collapse_2';
+            if (seqIndex <= 25) return 'storm';
+            if (seqIndex <= 29) return 'final_collapse';
+            return 'aftermath';
+        }
+
+        function getCollapseTarget(section) {
+            switch(section) {
+                case 'grandeur': return 0;
+                case 'first_cracks': return 0.12;
+                case 'collapse_1': return 0.4;
+                case 'fragile_beauty': return 0.35;
+                case 'collapse_2': return 0.65;
+                case 'storm': return 0.8;
+                case 'final_collapse': return 0.95;
+                case 'aftermath': return 1.0;
+                default: return 0;
+            }
+        }
+
+        // -- Create architectural elements --
+        function createPillar(x, height, width) {
+            return {
+                x: x, baseY: 0, height: height, width: width,
+                crackLevel: 0, crackTarget: 0,
+                lean: 0, leanTarget: 0,
+                fallen: false, fallAngle: 0,
+                segments: [],
+                capitalHeight: height * 0.06
+            };
+        }
+
+        function createArch(x, y, span, height) {
+            return {
+                x: x, y: y, span: span, height: height,
+                cracked: false, gapSize: 0, gapTarget: 0,
+                keystoneFall: 0
+            };
+        }
+
+        function initArchitecture() {
+            seed = 42;
+            pillars = [];
+            arches = [];
+            flyingButtresses = [];
+            stainedGlassPanels = [];
+            spires = [];
+            fallingBlocks = [];
+            cracks = [];
+            dustParticles = [];
+            glassShards = [];
+            lightBeams = [];
+            rubblePiles = [];
+
+            var floorY = H * 0.85;
+            var ceilingY = H * 0.08;
+            var pillarH = floorY - ceilingY;
+
+            // Main nave pillars (symmetrical pairs)
+            var numPairs = 5;
+            var naveWidth = W * 0.5;
+            var centerX = W * 0.5;
+            for (var i = 0; i < numPairs; i++) {
+                var z = (i + 1) / (numPairs + 1); // depth factor
+                var spacing = naveWidth * (0.3 + z * 0.15);
+                var pw = W * (0.018 + z * 0.008);
+                var ph = pillarH * (0.7 + z * 0.3);
+                pillars.push(createPillar(centerX - spacing, ph, pw));
+                pillars.push(createPillar(centerX + spacing, ph, pw));
+            }
+
+            // Pointed arches between pillar pairs
+            for (var ai = 0; ai < numPairs; ai++) {
+                var lp = pillars[ai * 2];
+                var rp = pillars[ai * 2 + 1];
+                arches.push(createArch(
+                    (lp.x + rp.x) / 2,
+                    floorY - lp.height,
+                    rp.x - lp.x,
+                    lp.height * 0.25
+                ));
+            }
+
+            // Rose window (center, high)
+            roseWindow = {
+                x: centerX,
+                y: H * 0.22,
+                radius: Math.min(W, H) * 0.12,
+                intactness: 1.0,
+                shatterPhase: 0,
+                petals: 12,
+                innerRings: 3
+            };
+
+            // Flying buttresses on sides
+            for (var bi = 0; bi < 4; bi++) {
+                var bz = (bi + 1) / 5;
+                flyingButtresses.push({
+                    startX: centerX - naveWidth * (0.35 + bz * 0.15),
+                    startY: floorY - pillarH * (0.3 + bz * 0.2),
+                    endX: centerX - naveWidth * (0.55 + bz * 0.1),
+                    endY: floorY - pillarH * (0.1 + bz * 0.1),
+                    intact: 1.0, crumbleY: 0
+                });
+                flyingButtresses.push({
+                    startX: centerX + naveWidth * (0.35 + bz * 0.15),
+                    startY: floorY - pillarH * (0.3 + bz * 0.2),
+                    endX: centerX + naveWidth * (0.55 + bz * 0.1),
+                    endY: floorY - pillarH * (0.1 + bz * 0.1),
+                    intact: 1.0, crumbleY: 0
+                });
+            }
+
+            // Stained glass panels between arches
+            for (var si = 0; si < numPairs; si++) {
+                var arch = arches[si];
+                stainedGlassPanels.push({
+                    x: arch.x,
+                    y: arch.y - arch.height * 0.3,
+                    width: arch.span * 0.4,
+                    height: arch.height * 0.8,
+                    color: GLASS_COLORS[si % GLASS_COLORS.length],
+                    intactness: 1.0,
+                    shatterTime: 0
+                });
+            }
+
+            // Spires at the top
+            for (var spi = 0; spi < 3; spi++) {
+                var sx = centerX + (spi - 1) * W * 0.2;
+                spires.push({
+                    x: sx, baseY: ceilingY + H * 0.02,
+                    height: H * (0.08 + seededRandom() * 0.04),
+                    width: W * 0.015,
+                    intact: 1.0,
+                    fallAngle: 0, fallTarget: 0
+                });
+            }
+
+            // Pre-generate rubble pile positions
+            for (var ri = 0; ri < 30; ri++) {
+                rubblePiles.push({
+                    x: W * (0.15 + seededRandom() * 0.7),
+                    y: floorY - seededRandom() * H * 0.03,
+                    size: W * (0.01 + seededRandom() * 0.02),
+                    alpha: 0, alphaTarget: 0,
+                    color: seededRandom() > 0.7 ? GLASS_COLORS[Math.floor(seededRandom() * GLASS_COLORS.length)] : STONE_MID
+                });
+            }
+
+            // Initialize light beams
+            for (var li = 0; li < 6; li++) {
+                lightBeams.push({
+                    x: W * (0.2 + seededRandom() * 0.6),
+                    width: W * (0.02 + seededRandom() * 0.03),
+                    alpha: 0, alphaTarget: 0,
+                    color: GLASS_COLORS[Math.floor(seededRandom() * GLASS_COLORS.length)],
+                    angle: (seededRandom() - 0.5) * 0.15
+                });
+            }
+        }
+
+        // -- Spawn effects --
+        function spawnDust(x, y, count, speed) {
+            for (var i = 0; i < count; i++) {
+                dustParticles.push({
+                    x: x + (Math.random() - 0.5) * W * 0.05,
+                    y: y + (Math.random() - 0.5) * H * 0.02,
+                    vx: (Math.random() - 0.5) * speed,
+                    vy: -Math.random() * speed * 0.5 - speed * 0.2,
+                    life: 1.0,
+                    decay: 0.2 + Math.random() * 0.4,
+                    size: 1 + Math.random() * 3,
+                    color: Math.random() > 0.3 ? STONE_LIGHT : STONE_MID
+                });
+            }
+        }
+
+        function spawnGlassShards(x, y, color, count) {
+            for (var i = 0; i < count; i++) {
+                var angle = Math.random() * Math.PI * 2;
+                var speed = 30 + Math.random() * 120;
+                glassShards.push({
+                    x: x + (Math.random() - 0.5) * 20,
+                    y: y + (Math.random() - 0.5) * 20,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 40,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 10,
+                    size: 2 + Math.random() * 6,
+                    life: 1.0,
+                    decay: 0.15 + Math.random() * 0.3,
+                    color: color
+                });
+            }
+        }
+
+        function spawnFallingBlock(x, y, size) {
+            fallingBlocks.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 30,
+                vy: 0,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 3,
+                size: size,
+                life: 1.0
+            });
+        }
+
+        function spawnCrack(x, y, length, angle) {
+            var segments = [];
+            var cx = x, cy = y;
+            var numSeg = 4 + Math.floor(Math.random() * 6);
+            for (var i = 0; i < numSeg; i++) {
+                var segLen = length / numSeg * (0.5 + Math.random());
+                var segAngle = angle + (Math.random() - 0.5) * 0.8;
+                var nx = cx + Math.cos(segAngle) * segLen;
+                var ny = cy + Math.sin(segAngle) * segLen;
+                segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+                cx = nx; cy = ny;
+                // Branch occasionally
+                if (Math.random() > 0.7 && i > 1) {
+                    var bAngle = segAngle + (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random() * 0.5);
+                    var bLen = segLen * 0.6;
+                    segments.push({
+                        x1: cx, y1: cy,
+                        x2: cx + Math.cos(bAngle) * bLen,
+                        y2: cy + Math.sin(bAngle) * bLen
+                    });
+                }
+            }
+            cracks.push({ segments: segments, alpha: 0, alphaTarget: 1.0, growProgress: 0 });
+        }
+
+        // -- Drawing functions --
+
+        function drawSky(ctx) {
+            // Dark cathedral interior with slight gradient
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            var aftermathBright = sectionMood === 'aftermath' ? 0.08 : 0;
+            grad.addColorStop(0, 'rgb(' + Math.floor(10 + aftermathBright * 80) + ',' + Math.floor(10 + aftermathBright * 70) + ',' + Math.floor(18 + aftermathBright * 60) + ')');
+            grad.addColorStop(0.5, 'rgb(' + Math.floor(8 + aftermathBright * 40) + ',' + Math.floor(8 + aftermathBright * 35) + ',' + Math.floor(12 + aftermathBright * 30) + ')');
+            grad.addColorStop(1, '#050508');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        function drawPillar(ctx, pillar, floorY) {
+            var cp = collapseProgress;
+            var crackAlpha = Math.min(1, pillar.crackLevel);
+            var leanAngle = pillar.lean * 0.3;
+
+            ctx.save();
+            ctx.translate(pillar.x, floorY);
+            ctx.rotate(leanAngle);
+
+            var pw = pillar.width;
+            var ph = pillar.height;
+
+            // Main shaft
+            var stoneGrad = ctx.createLinearGradient(-pw/2, -ph, pw/2, 0);
+            stoneGrad.addColorStop(0, STONE_LIGHT);
+            stoneGrad.addColorStop(0.3, STONE_MID);
+            stoneGrad.addColorStop(1, STONE_DARK);
+            ctx.fillStyle = stoneGrad;
+            ctx.globalAlpha = 0.8;
+
+            // Draw pillar with slight taper
+            ctx.beginPath();
+            ctx.moveTo(-pw * 0.55, 0);
+            ctx.lineTo(-pw * 0.45, -ph);
+            ctx.lineTo(pw * 0.45, -ph);
+            ctx.lineTo(pw * 0.55, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Capital (decorative top)
+            ctx.fillStyle = STONE_LIGHT;
+            ctx.globalAlpha = 0.7;
+            ctx.fillRect(-pw * 0.65, -ph - pillar.capitalHeight, pw * 1.3, pillar.capitalHeight);
+
+            // Base
+            ctx.fillStyle = STONE_DARK;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(-pw * 0.7, -pw * 0.15, pw * 1.4, pw * 0.15);
+
+            // Vertical fluting lines
+            ctx.strokeStyle = STONE_DARK;
+            ctx.globalAlpha = 0.3;
+            ctx.lineWidth = 1;
+            for (var fi = -2; fi <= 2; fi++) {
+                var fx = fi * pw * 0.15;
+                ctx.beginPath();
+                ctx.moveTo(fx, 0);
+                ctx.lineTo(fx * 0.9, -ph);
+                ctx.stroke();
+            }
+
+            // Crack overlay
+            if (crackAlpha > 0) {
+                ctx.strokeStyle = '#1a1510';
+                ctx.lineWidth = 1 + crackAlpha;
+                ctx.globalAlpha = crackAlpha * 0.8;
+                for (var ci = 0; ci < Math.floor(crackAlpha * 5); ci++) {
+                    var cy = -ph * (0.2 + ci * 0.15);
+                    ctx.beginPath();
+                    ctx.moveTo(-pw * 0.3, cy);
+                    ctx.lineTo(pw * 0.1, cy + ph * 0.05);
+                    ctx.lineTo(pw * 0.3, cy - ph * 0.02);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawPointedArch(ctx, arch) {
+            ctx.save();
+            ctx.translate(arch.x, arch.y);
+
+            var halfSpan = arch.span / 2;
+            var ah = arch.height;
+            var gap = arch.gapSize;
+
+            ctx.strokeStyle = STONE_LIGHT;
+            ctx.lineWidth = Math.max(2, W * 0.005);
+            ctx.globalAlpha = 0.7;
+
+            // Pointed (Gothic) arch shape
+            ctx.beginPath();
+            ctx.moveTo(-halfSpan, 0);
+            // Left curve up to peak
+            ctx.quadraticCurveTo(-halfSpan * 0.3, -ah * 0.8, gap > 0.3 ? -gap * 10 : 0, -ah);
+            if (gap < 0.3) {
+                // Right curve down from peak
+                ctx.quadraticCurveTo(halfSpan * 0.3, -ah * 0.8, halfSpan, 0);
+            }
+            ctx.stroke();
+
+            // Inner arch (tracery)
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.4;
+            var innerScale = 0.75;
+            ctx.beginPath();
+            ctx.moveTo(-halfSpan * innerScale, 0);
+            ctx.quadraticCurveTo(-halfSpan * 0.2, -ah * innerScale * 0.8, 0, -ah * innerScale);
+            ctx.quadraticCurveTo(halfSpan * 0.2, -ah * innerScale * 0.8, halfSpan * innerScale, 0);
+            ctx.stroke();
+
+            // Keystone at peak
+            if (arch.keystoneFall < 0.5) {
+                ctx.fillStyle = STONE_LIGHT;
+                ctx.globalAlpha = 0.8 * (1 - arch.keystoneFall * 2);
+                var ksW = W * 0.012;
+                var ksH = W * 0.018;
+                ctx.beginPath();
+                ctx.moveTo(-ksW, -ah + ksH);
+                ctx.lineTo(0, -ah - ksH * 0.3);
+                ctx.lineTo(ksW, -ah + ksH);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function drawRoseWindow(ctx) {
+            if (!roseWindow) return;
+            var rw = roseWindow;
+            var intact = rw.intactness;
+            if (intact < 0.02) return;
+
+            ctx.save();
+            ctx.translate(rw.x, rw.y);
+            ctx.globalAlpha = intact * 0.9;
+
+            var r = rw.radius;
+
+            // Outer ring
+            ctx.strokeStyle = STONE_LIGHT;
+            ctx.lineWidth = Math.max(2, r * 0.06);
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner ring
+            ctx.lineWidth = Math.max(1, r * 0.03);
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Innermost ring
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Radial spokes (tracery)
+            ctx.lineWidth = Math.max(1, r * 0.02);
+            for (var i = 0; i < rw.petals; i++) {
+                var angle = (i / rw.petals) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * r * 0.3, Math.sin(angle) * r * 0.3);
+                ctx.lineTo(Math.cos(angle) * r * 0.95, Math.sin(angle) * r * 0.95);
+                ctx.stroke();
+            }
+
+            // Colored glass petals
+            for (var p = 0; p < rw.petals; p++) {
+                var a1 = (p / rw.petals) * Math.PI * 2;
+                var a2 = ((p + 1) / rw.petals) * Math.PI * 2;
+                var color = GLASS_COLORS[p % GLASS_COLORS.length];
+
+                // Outer petal
+                ctx.fillStyle = color;
+                ctx.globalAlpha = intact * 0.35;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a1) * r * 0.62, Math.sin(a1) * r * 0.62);
+                ctx.lineTo(Math.cos(a1) * r * 0.93, Math.sin(a1) * r * 0.93);
+                ctx.arc(0, 0, r * 0.93, a1, a2);
+                ctx.lineTo(Math.cos(a2) * r * 0.62, Math.sin(a2) * r * 0.62);
+                ctx.arc(0, 0, r * 0.62, a2, a1, true);
+                ctx.fill();
+
+                // Inner petal
+                ctx.globalAlpha = intact * 0.45;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a1) * r * 0.32, Math.sin(a1) * r * 0.32);
+                ctx.lineTo(Math.cos(a1) * r * 0.58, Math.sin(a1) * r * 0.58);
+                ctx.arc(0, 0, r * 0.58, a1, a2);
+                ctx.lineTo(Math.cos(a2) * r * 0.32, Math.sin(a2) * r * 0.32);
+                ctx.arc(0, 0, r * 0.32, a2, a1, true);
+                ctx.fill();
+            }
+
+            // Center medallion
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = intact * 0.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Glow effect when intact
+            if (intact > 0.5) {
+                ctx.globalCompositeOperation = 'lighter';
+                var glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.3);
+                glow.addColorStop(0, 'rgba(200,160,80,' + (intact * 0.08) + ')');
+                glow.addColorStop(0.5, 'rgba(200,160,80,' + (intact * 0.03) + ')');
+                glow.addColorStop(1, 'rgba(200,160,80,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            ctx.restore();
+        }
+
+        function drawFlyingButtress(ctx, fb) {
+            ctx.save();
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = Math.max(2, W * 0.006);
+            ctx.globalAlpha = fb.intact * 0.7;
+
+            // Arc from high wall to outer support
+            ctx.beginPath();
+            ctx.moveTo(fb.startX, fb.startY);
+            var cpx = (fb.startX + fb.endX) / 2;
+            var cpy = Math.min(fb.startY, fb.endY) - H * 0.06;
+            ctx.quadraticCurveTo(cpx, cpy, fb.endX, fb.endY);
+            ctx.stroke();
+
+            // Support column at end
+            ctx.fillStyle = STONE_DARK;
+            ctx.globalAlpha = fb.intact * 0.6;
+            var colW = W * 0.008;
+            ctx.fillRect(fb.endX - colW/2, fb.endY, colW, H * 0.85 - fb.endY);
+
+            ctx.restore();
+        }
+
+        function drawStainedGlassPanel(ctx, panel) {
+            if (panel.intactness < 0.02) return;
+            ctx.save();
+            ctx.translate(panel.x, panel.y);
+
+            var pw = panel.width;
+            var ph = panel.height;
+
+            // Frame
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.6;
+
+            // Pointed top panel shape
+            ctx.beginPath();
+            ctx.moveTo(-pw/2, ph/2);
+            ctx.lineTo(-pw/2, -ph * 0.2);
+            ctx.lineTo(0, -ph/2);
+            ctx.lineTo(pw/2, -ph * 0.2);
+            ctx.lineTo(pw/2, ph/2);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Fill with color
+            ctx.fillStyle = panel.color;
+            ctx.globalAlpha = panel.intactness * 0.3;
+            ctx.fill();
+
+            // Tracery lines
+            ctx.strokeStyle = STONE_DARK;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = panel.intactness * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -ph/2);
+            ctx.lineTo(0, ph/2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-pw/2, 0);
+            ctx.lineTo(pw/2, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawSpire(ctx, spire) {
+            if (spire.intact < 0.05) return;
+            ctx.save();
+            ctx.translate(spire.x, spire.baseY);
+            ctx.rotate(spire.fallAngle);
+            ctx.globalAlpha = spire.intact * 0.8;
+
+            var sw = spire.width;
+            var sh = spire.height;
+
+            ctx.fillStyle = STONE_MID;
+            ctx.beginPath();
+            ctx.moveTo(-sw, 0);
+            ctx.lineTo(0, -sh);
+            ctx.lineTo(sw, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Cross at top
+            ctx.strokeStyle = GOLD;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha *= 0.7;
+            ctx.beginPath();
+            ctx.moveTo(0, -sh);
+            ctx.lineTo(0, -sh - sh * 0.15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-sh * 0.05, -sh - sh * 0.1);
+            ctx.lineTo(sh * 0.05, -sh - sh * 0.1);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawCracks(ctx) {
+            for (var i = 0; i < cracks.length; i++) {
+                var crack = cracks[i];
+                ctx.save();
+                ctx.strokeStyle = '#0a0808';
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = crack.alpha * 0.8;
+
+                var numVisible = Math.floor(crack.growProgress * crack.segments.length);
+                for (var s = 0; s < numVisible && s < crack.segments.length; s++) {
+                    var seg = crack.segments[s];
+                    ctx.beginPath();
+                    ctx.moveTo(seg.x1, seg.y1);
+                    ctx.lineTo(seg.x2, seg.y2);
+                    ctx.stroke();
+                }
+
+                // Lighter edge
+                ctx.strokeStyle = STONE_DARK;
+                ctx.lineWidth = 0.5;
+                ctx.globalAlpha = crack.alpha * 0.4;
+                for (var s2 = 0; s2 < numVisible && s2 < crack.segments.length; s2++) {
+                    var seg2 = crack.segments[s2];
+                    ctx.beginPath();
+                    ctx.moveTo(seg2.x1 + 1, seg2.y1 + 1);
+                    ctx.lineTo(seg2.x2 + 1, seg2.y2 + 1);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawFallingBlocks(ctx) {
+            var floorY = H * 0.85;
+            for (var i = fallingBlocks.length - 1; i >= 0; i--) {
+                var b = fallingBlocks[i];
+                if (b.life <= 0) { fallingBlocks.splice(i, 1); continue; }
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.rotate(b.rotation);
+                ctx.fillStyle = STONE_MID;
+                ctx.globalAlpha = b.life * 0.8;
+                ctx.fillRect(-b.size/2, -b.size/2, b.size, b.size);
+
+                // Darker edge
+                ctx.fillStyle = STONE_DARK;
+                ctx.globalAlpha = b.life * 0.4;
+                ctx.fillRect(-b.size/2, -b.size/2, b.size, b.size * 0.3);
+
+                ctx.restore();
+            }
+        }
+
+        function drawDustParticles(ctx) {
+            for (var i = dustParticles.length - 1; i >= 0; i--) {
+                var p = dustParticles[i];
+                if (p.life <= 0) { dustParticles.splice(i, 1); continue; }
+
+                ctx.save();
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life * 0.5;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawGlassShards(ctx) {
+            for (var i = glassShards.length - 1; i >= 0; i--) {
+                var s = glassShards[i];
+                if (s.life <= 0) { glassShards.splice(i, 1); continue; }
+
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                ctx.rotate(s.rotation);
+                ctx.fillStyle = s.color;
+                ctx.globalAlpha = s.life * 0.7;
+
+                // Triangular shard
+                ctx.beginPath();
+                ctx.moveTo(0, -s.size);
+                ctx.lineTo(s.size * 0.6, s.size * 0.5);
+                ctx.lineTo(-s.size * 0.4, s.size * 0.3);
+                ctx.closePath();
+                ctx.fill();
+
+                // Bright highlight
+                ctx.globalAlpha = s.life * 0.4;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(0, -s.size * 0.5);
+                ctx.lineTo(s.size * 0.2, 0);
+                ctx.lineTo(-s.size * 0.1, -s.size * 0.2);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function drawLightBeams(ctx) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < lightBeams.length; i++) {
+                var beam = lightBeams[i];
+                if (beam.alpha < 0.01) continue;
+
+                var bw = beam.width;
+                var angle = beam.angle;
+                var topX = beam.x;
+                var botX = beam.x + Math.sin(angle) * H;
+
+                // Parse color
+                var r = parseInt(beam.color.slice(1,3), 16);
+                var g = parseInt(beam.color.slice(3,5), 16);
+                var b = parseInt(beam.color.slice(5,7), 16);
+
+                var grad = ctx.createLinearGradient(topX, 0, botX, H);
+                grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + (beam.alpha * 0.15) + ')');
+                grad.addColorStop(0.5, 'rgba(' + r + ',' + g + ',' + b + ',' + (beam.alpha * 0.08) + ')');
+                grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(topX - bw * 0.3, 0);
+                ctx.lineTo(topX + bw * 0.3, 0);
+                ctx.lineTo(botX + bw * 2, H);
+                ctx.lineTo(botX - bw * 2, H);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawRubble(ctx) {
+            for (var i = 0; i < rubblePiles.length; i++) {
+                var rb = rubblePiles[i];
+                if (rb.alpha < 0.01) continue;
+                ctx.save();
+                ctx.fillStyle = rb.color;
+                ctx.globalAlpha = rb.alpha * 0.7;
+                // Irregular rock shape
+                ctx.beginPath();
+                ctx.moveTo(rb.x - rb.size, rb.y);
+                ctx.lineTo(rb.x - rb.size * 0.5, rb.y - rb.size * 0.8);
+                ctx.lineTo(rb.x + rb.size * 0.3, rb.y - rb.size * 0.6);
+                ctx.lineTo(rb.x + rb.size, rb.y - rb.size * 0.2);
+                ctx.lineTo(rb.x + rb.size * 0.7, rb.y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawFloor(ctx, energy) {
+            var floorY = H * 0.85;
+            ctx.save();
+
+            // Floor with perspective
+            var grad = ctx.createLinearGradient(0, floorY, 0, H);
+            grad.addColorStop(0, STONE_DARK);
+            grad.addColorStop(1, '#050508');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, floorY, W, H - floorY);
+
+            // Floor tile pattern
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = 0.5;
+            ctx.globalAlpha = 0.2 + energy * 0.1;
+            var tileSize = W * 0.04;
+            for (var tx = 0; tx < W; tx += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(tx, floorY);
+                ctx.lineTo(tx, H);
+                ctx.stroke();
+            }
+            for (var ty = floorY; ty < H; ty += tileSize * 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(0, ty);
+                ctx.lineTo(W, ty);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var text = 'CATHEDRAL OF COLLAPSE';
+            var fontSize = Math.max(14, Math.min(W * 0.035, 42));
+
+            ctx.save();
+            ctx.font = '900 ' + fontSize + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var y = H * 0.5;
+
+            // Shadow/glow
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = titleAlpha * 0.6;
+            ctx.fillText(text, W/2, y);
+
+            // Main text
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.fillText(text, W/2, y);
+
+            ctx.restore();
+        }
+
+        function drawDustCloud(ctx, intensity) {
+            if (intensity < 0.01) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            var floorY = H * 0.85;
+
+            for (var i = 0; i < 5; i++) {
+                var cx = W * (0.15 + i * 0.18);
+                var cy = floorY - H * 0.05 * intensity;
+                var r = W * 0.15 * intensity;
+
+                var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                grad.addColorStop(0, 'rgba(160,140,120,' + (intensity * 0.12) + ')');
+                grad.addColorStop(0.5, 'rgba(120,110,100,' + (intensity * 0.06) + ')');
+                grad.addColorStop(1, 'rgba(100,90,80,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // -- Update physics --
+        function updateParticles(dt) {
+            var floorY = H * 0.85;
+            var gravity = 250;
+
+            for (var i = fallingBlocks.length - 1; i >= 0; i--) {
+                var b = fallingBlocks[i];
+                b.vy += gravity * dt;
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+                b.rotation += b.rotSpeed * dt;
+                if (b.y > floorY) {
+                    b.y = floorY;
+                    b.vy = 0;
+                    b.vx = 0;
+                    b.life -= dt * 0.8;
+                    spawnDust(b.x, floorY, 2, 20);
+                }
+            }
+
+            for (var j = dustParticles.length - 1; j >= 0; j--) {
+                var p = dustParticles[j];
+                p.x += p.vx * dt;
+                p.vy += 15 * dt; // slight gravity
+                p.y += p.vy * dt;
+                p.life -= p.decay * dt;
+                p.size *= (1 - dt * 0.5);
+            }
+
+            for (var k = glassShards.length - 1; k >= 0; k--) {
+                var s = glassShards[k];
+                s.vy += gravity * 0.8 * dt;
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.rotation += s.rotSpeed * dt;
+                s.life -= s.decay * dt;
+                if (s.y > floorY) {
+                    s.y = floorY;
+                    s.vy *= -0.3;
+                    s.vx *= 0.5;
+                    s.life -= 0.1;
+                }
+            }
+
+            // Grow cracks
+            for (var c = 0; c < cracks.length; c++) {
+                var crack = cracks[c];
+                crack.alpha = lerpSmooth(crack.alpha, crack.alphaTarget, 5, dt);
+                crack.growProgress = Math.min(1, crack.growProgress + dt * 3);
+            }
+        }
+
+        // -- Init --
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            initArchitecture();
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'void';
+            collapseProgress = 0;
+            collapseTarget = 0;
+            dustIntensity = 0;
+            shakeX = 0; shakeY = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            introFade = 0;
+        }
+
+        // -- Resize --
+        function resize(width, height) {
+            W = width; H = height;
+            initArchitecture();
+        }
+
+        // -- Main render --
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            drawSky(ctx);
+
+            if (!cursor) {
+                // Idle: show intact cathedral dimly
+                collapseProgress = 0;
+                var floorY = H * 0.85;
+                drawFloor(ctx, 0);
+                for (var ip = 0; ip < pillars.length; ip++) drawPillar(ctx, pillars[ip], floorY);
+                for (var ia = 0; ia < arches.length; ia++) drawPointedArch(ctx, arches[ia]);
+                for (var ifb = 0; ifb < flyingButtresses.length; ifb++) drawFlyingButtress(ctx, flyingButtresses[ifb]);
+                drawRoseWindow(ctx);
+                for (var isp = 0; isp < spires.length; isp++) drawSpire(ctx, spires[isp]);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // -- Section transitions --
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                collapseTarget = getCollapseTarget(newSection);
+
+                // Spawn cracks on section changes with collapse
+                if (collapseTarget > collapseProgress + 0.05) {
+                    var numCracks = Math.floor((collapseTarget - collapseProgress) * 15);
+                    for (var nc = 0; nc < numCracks; nc++) {
+                        spawnCrack(
+                            W * (0.2 + Math.random() * 0.6),
+                            H * (0.15 + Math.random() * 0.6),
+                            W * (0.03 + Math.random() * 0.08),
+                            Math.random() * Math.PI * 2
+                        );
+                    }
+                }
+
+                // Flash on major collapse sections
+                if (newSection === 'collapse_1' || newSection === 'collapse_2' || newSection === 'final_collapse') {
+                    flashAlpha = 0.25;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // -- Intro fade --
+            if (sectionMood === 'void' || sectionMood === 'grandeur') {
+                introFade = Math.min(1, introFade + dt * 0.4);
+            } else {
+                introFade = 1;
+            }
+
+            // -- Collapse progress --
+            var collapseSpeed = 1.5;
+            if (sectionMood === 'final_collapse') collapseSpeed = 3;
+            if (sectionMood === 'collapse_1' || sectionMood === 'collapse_2') collapseSpeed = 2;
+            collapseProgress = lerpSmooth(collapseProgress, collapseTarget, collapseSpeed, dt);
+
+            // -- Update architectural destruction based on collapse --
+            var floorY = H * 0.85;
+            var cp = collapseProgress;
+
+            // Pillars: cracks, lean, then fall
+            for (var pi = 0; pi < pillars.length; pi++) {
+                var pillar = pillars[pi];
+                var pillarThreshold = pi / pillars.length;
+                pillar.crackTarget = Math.max(0, (cp - pillarThreshold * 0.3) * 3);
+                pillar.crackLevel = lerpSmooth(pillar.crackLevel, pillar.crackTarget, 3, dt);
+
+                // Lean when highly cracked
+                if (pillar.crackLevel > 0.7) {
+                    pillar.leanTarget = (pi % 2 === 0 ? -1 : 1) * (pillar.crackLevel - 0.7) * 0.8;
+                }
+                pillar.lean = lerpSmooth(pillar.lean, pillar.leanTarget, 2, dt);
+            }
+
+            // Arches: gap and keystone fall
+            for (var ai2 = 0; ai2 < arches.length; ai2++) {
+                var arch = arches[ai2];
+                var archThreshold = ai2 / arches.length * 0.5;
+                arch.gapTarget = Math.max(0, (cp - archThreshold - 0.2) * 2);
+                arch.gapSize = lerpSmooth(arch.gapSize, arch.gapTarget, 2, dt);
+                arch.keystoneFall = Math.max(0, (cp - archThreshold - 0.3) * 2);
+            }
+
+            // Rose window: shatter
+            if (roseWindow) {
+                roseWindow.intactness = Math.max(0, 1 - cp * 1.5);
+            }
+
+            // Flying buttresses: crumble
+            for (var fbi = 0; fbi < flyingButtresses.length; fbi++) {
+                var fb = flyingButtresses[fbi];
+                var fbThreshold = fbi / flyingButtresses.length * 0.4;
+                fb.intact = Math.max(0, 1 - (cp - fbThreshold) * 2.5);
+            }
+
+            // Stained glass: shatter
+            for (var sgi = 0; sgi < stainedGlassPanels.length; sgi++) {
+                var panel = stainedGlassPanels[sgi];
+                var panelThreshold = sgi / stainedGlassPanels.length * 0.3 + 0.1;
+                var newIntact = Math.max(0, 1 - (cp - panelThreshold) * 2);
+                // Spawn shards when shattering
+                if (newIntact < panel.intactness - 0.1 && panel.intactness > 0.1) {
+                    spawnGlassShards(panel.x, panel.y, panel.color, Math.floor((panel.intactness - newIntact) * 15));
+                }
+                panel.intactness = newIntact;
+            }
+
+            // Spires: topple
+            for (var spi2 = 0; spi2 < spires.length; spi2++) {
+                var spire = spires[spi2];
+                var spireThreshold = 0.2 + spi2 * 0.15;
+                spire.intact = Math.max(0, 1 - (cp - spireThreshold) * 3);
+                spire.fallTarget = Math.max(0, (cp - spireThreshold - 0.1) * 2);
+                spire.fallAngle = lerpSmooth(spire.fallAngle, spire.fallTarget * (spi2 % 2 === 0 ? -1 : 1) * 0.8, 2, dt);
+            }
+
+            // Light beams: grow as holes appear
+            for (var lbi = 0; lbi < lightBeams.length; lbi++) {
+                var beam = lightBeams[lbi];
+                beam.alphaTarget = Math.max(0, cp - 0.2) * 0.8;
+                if (sectionMood === 'aftermath') beam.alphaTarget = 1.0;
+                beam.alpha = lerpSmooth(beam.alpha, beam.alphaTarget, 2, dt);
+            }
+
+            // Rubble: accumulate
+            for (var rbi = 0; rbi < rubblePiles.length; rbi++) {
+                var rb = rubblePiles[rbi];
+                rb.alphaTarget = Math.max(0, cp - rbi / rubblePiles.length * 0.3);
+                rb.alpha = lerpSmooth(rb.alpha, rb.alphaTarget, 2, dt);
+            }
+
+            // Dust intensity
+            var dustTarget = 0;
+            if (sectionMood === 'collapse_1') dustTarget = 0.5 + energy * 0.3;
+            else if (sectionMood === 'collapse_2') dustTarget = 0.6 + energy * 0.4;
+            else if (sectionMood === 'final_collapse') dustTarget = 0.8 + energy * 0.2;
+            else if (sectionMood === 'storm') dustTarget = 0.3 + energy * 0.3;
+            else if (sectionMood === 'aftermath') dustTarget = 0.15;
+            else dustTarget = energy * 0.1;
+            dustIntensity = lerpSmooth(dustIntensity, dustTarget, 3, dt);
+
+            // -- Beat sync --
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Spawn effects on beats
+                if (cp > 0.1 && energy > 0.3) {
+                    // Falling blocks
+                    var numBlocks = Math.floor(energy * cp * 4);
+                    for (var nb = 0; nb < numBlocks; nb++) {
+                        spawnFallingBlock(
+                            W * (0.15 + Math.random() * 0.7),
+                            H * (0.05 + Math.random() * 0.3),
+                            W * (0.005 + Math.random() * 0.012)
+                        );
+                    }
+
+                    // Dust bursts
+                    spawnDust(
+                        W * (0.2 + Math.random() * 0.6),
+                        floorY,
+                        Math.floor(energy * cp * 8),
+                        30 + energy * 50
+                    );
+                }
+
+                // Rose window shattering on high energy
+                if (roseWindow && roseWindow.intactness > 0.1 && roseWindow.intactness < 0.8 && energy > 0.5) {
+                    spawnGlassShards(roseWindow.x, roseWindow.y, GLASS_COLORS[Math.floor(Math.random() * GLASS_COLORS.length)], Math.floor(energy * 6));
+                }
+
+                // Screen flash on high energy collapse beats
+                if (energy > 0.7 && cp > 0.3) {
+                    flashAlpha = Math.max(flashAlpha, energy * 0.12);
+                }
+
+                // Camera shake
+                if (energy > 0.4 && cp > 0.1) {
+                    shakeX = (Math.random() - 0.5) * energy * cp * 12;
+                    shakeY = (Math.random() - 0.5) * energy * cp * 8;
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+            shakeX *= Math.exp(-10 * dt);
+            shakeY *= Math.exp(-10 * dt);
+
+            // -- Title --
+            if (sectionMood === 'grandeur' || sectionMood === 'void') {
+                titleTarget = introFade * 0.8;
+            } else if (sectionMood === 'aftermath') {
+                titleTarget = 0.6;
+            } else {
+                titleTarget = 0;
+            }
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 3, dt);
+
+            // -- Update particle physics --
+            updateParticles(dt);
+
+            // -- Draw scene with camera shake --
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // Floor
+            drawFloor(ctx, energy);
+
+            // Light beams (behind architecture)
+            drawLightBeams(ctx);
+
+            // Flying buttresses (furthest back)
+            for (var dfb = 0; dfb < flyingButtresses.length; dfb++) {
+                drawFlyingButtress(ctx, flyingButtresses[dfb]);
+            }
+
+            // Pillars
+            for (var dp = 0; dp < pillars.length; dp++) {
+                drawPillar(ctx, pillars[dp], floorY);
+            }
+
+            // Arches
+            for (var da = 0; da < arches.length; da++) {
+                drawPointedArch(ctx, arches[da]);
+            }
+
+            // Stained glass panels
+            for (var dsg = 0; dsg < stainedGlassPanels.length; dsg++) {
+                drawStainedGlassPanel(ctx, stainedGlassPanels[dsg]);
+            }
+
+            // Rose window
+            drawRoseWindow(ctx);
+
+            // Spires
+            for (var dsp = 0; dsp < spires.length; dsp++) {
+                drawSpire(ctx, spires[dsp]);
+            }
+
+            // Cracks overlay
+            drawCracks(ctx);
+
+            // Rubble on floor
+            drawRubble(ctx);
+
+            // Falling blocks
+            drawFallingBlocks(ctx);
+
+            // Glass shards
+            drawGlassShards(ctx);
+
+            // Dust particles
+            drawDustParticles(ctx);
+
+            // Dust cloud overlay
+            drawDustCloud(ctx, dustIntensity);
+
+            // Beat pulse vignette
+            if (beatPulse > 0.01) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var pulseGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.7);
+                var pulseColor = sectionMood === 'aftermath' ? '200,180,120' : '80,60,40';
+                pulseGrad.addColorStop(0, 'rgba(' + pulseColor + ',' + (beatPulse * 0.06) + ')');
+                pulseGrad.addColorStop(1, 'rgba(' + pulseColor + ',0)');
+                ctx.fillStyle = pulseGrad;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // Title
+            drawTitle(ctx);
+
+            ctx.restore(); // end camera shake
+
+            // Flash (no shake)
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'Cathedral of Collapse Video',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // -- Page bootstrap --
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('cathedral-collapse-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/cathedral-of-collapse.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
