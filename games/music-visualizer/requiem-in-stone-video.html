@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requiem in Stone — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0c0a08;
+            color: #d4c8b0;
+            font-family: 'Cinzel', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(12,10,8,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c8a86e;
+            text-shadow: 0 0 30px rgba(200,168,110,0.5), 0 0 60px rgba(200,168,110,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(11px, 2vw, 16px);
+            color: rgba(212,200,176,0.45);
+            margin-bottom: 40px;
+            letter-spacing: 0.15em;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 2px solid #c8a86e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 16px 0 16px 26px;
+            border-color: transparent transparent transparent #c8a86e;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,110,0.3); }
+            50% { box-shadow: 0 0 0 20px rgba(200,168,110,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(212,200,176,0.35);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(212,200,176,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&#8592; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Requiem in Stone</div>
+        <div class="play-sub">a gothic cathedral music video</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Requiem in Stone Video Renderer ──────────────────────────────
+    window.Renderers['requiem-in-stone-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG = '#0c0a08';
+        var STONE_DARK = '#2a2420';
+        var STONE_MID = '#4a4038';
+        var STONE_LIGHT = '#6a5e52';
+        var GOLD = '#c8a86e';
+        var RUBY = '#8b2040';
+        var SAPPHIRE = '#1a3a6a';
+        var EMERALD = '#1a5a3a';
+        var AMBER = '#b8860b';
+        var WARM_GOLD = '#ffd700';
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'silence';
+        var sectionTransition = 0;
+        var time = 0;
+
+        // Cathedral geometry
+        var cathedralY = 0;      // ground line
+        var archCenterX = 0;
+        var roseWindowY = 0;
+
+        // Stone blocks state
+        var stoneBlocks = [];
+        var NUM_BLOCKS = 60;
+
+        // Gargoyles
+        var gargoyles = [];
+        var NUM_GARGOYLES = 4;
+
+        // Candles
+        var candles = [];
+        var NUM_CANDLES = 12;
+
+        // Dust particles
+        var dustParticles = [];
+        var NUM_DUST = 80;
+
+        // Stained glass shards for rose window
+        var glassShards = [];
+        var NUM_SHARDS = 24;
+
+        // Movement tracking
+        var crumbleAmount = 0;
+        var crumbleTarget = 0;
+        var reformPhase = 0;
+        var goldenLight = 0;
+        var goldenTarget = 0;
+        var flashAlpha = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var stormIntensity = 0;
+        var stormTarget = 0;
+        var introFade = 0;
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function smoothLerp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+
+        // ── Section mapping ──
+        // Song has 28 sequence entries (0-27)
+        // I.  Silence/Counterpoint: seqIdx 0-5
+        // II. Parallel harmonies (Debussy): seqIdx 6-12
+        // III. Rhythmic storm (Beethoven): seqIdx 13-20
+        // IV. Storm fades / Picardy: seqIdx 21-27
+        function mapSection(seqIdx) {
+            if (seqIdx <= 5) return 'counterpoint';
+            if (seqIdx <= 12) return 'parallels';
+            if (seqIdx <= 20) return 'storm';
+            if (seqIdx <= 25) return 'fading';
+            return 'picardy';
+        }
+
+        // ── Initialize stone blocks ──
+        function initBlocks() {
+            stoneBlocks = [];
+            for (var i = 0; i < NUM_BLOCKS; i++) {
+                var col = Math.floor(i / (NUM_BLOCKS / 6));
+                var row = i % (NUM_BLOCKS / 6);
+                stoneBlocks.push({
+                    baseX: 0, baseY: 0,  // set in resize
+                    offsetX: 0, offsetY: 0,
+                    targetOffX: 0, targetOffY: 0,
+                    w: 0, h: 0,
+                    cracked: false,
+                    crackPhase: Math.random(),
+                    col: col,
+                    row: row,
+                    shade: rand(0.8, 1.2)
+                });
+            }
+        }
+
+        function layoutBlocks() {
+            var colW = W / 6;
+            var rowH = H / 10;
+            for (var i = 0; i < stoneBlocks.length; i++) {
+                var b = stoneBlocks[i];
+                b.baseX = b.col * colW + colW * 0.05;
+                b.baseY = b.row * rowH + rowH * 0.1;
+                b.w = colW * 0.9;
+                b.h = rowH * 0.8;
+            }
+        }
+
+        // ── Initialize gargoyles ──
+        function initGargoyles() {
+            gargoyles = [];
+            for (var i = 0; i < NUM_GARGOYLES; i++) {
+                gargoyles.push({
+                    x: 0, y: 0,
+                    side: i % 2 === 0 ? -1 : 1,
+                    wingAngle: 0,
+                    wingTarget: 0,
+                    jawOpen: 0,
+                    jawTarget: 0,
+                    eyeGlow: 0,
+                    eyeTarget: 0,
+                    headTurn: 0,
+                    headTarget: 0,
+                    idx: i
+                });
+            }
+        }
+
+        function layoutGargoyles() {
+            for (var i = 0; i < gargoyles.length; i++) {
+                var g = gargoyles[i];
+                var tier = Math.floor(i / 2);
+                g.x = g.side > 0 ? W * 0.82 : W * 0.18;
+                g.y = H * (0.2 + tier * 0.25);
+            }
+        }
+
+        // ── Initialize candles ──
+        function initCandles() {
+            candles = [];
+            for (var i = 0; i < NUM_CANDLES; i++) {
+                candles.push({
+                    x: 0, y: 0,
+                    flicker: Math.random() * Math.PI * 2,
+                    flickerSpeed: 3 + Math.random() * 4,
+                    size: rand(0.7, 1.3),
+                    brightness: 0.5
+                });
+            }
+        }
+
+        function layoutCandles() {
+            for (var i = 0; i < candles.length; i++) {
+                var side = i < NUM_CANDLES / 2 ? -1 : 1;
+                var idx = i < NUM_CANDLES / 2 ? i : i - NUM_CANDLES / 2;
+                var spacing = H * 0.12;
+                candles[i].x = W * 0.5 + side * W * 0.28;
+                candles[i].y = H * 0.25 + idx * spacing;
+            }
+        }
+
+        // ── Initialize dust ──
+        function initDust() {
+            dustParticles = [];
+            for (var i = 0; i < NUM_DUST; i++) {
+                dustParticles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: rand(-10, 10),
+                    vy: rand(5, 30),
+                    size: rand(1, 3),
+                    alpha: rand(0.1, 0.5),
+                    life: 1
+                });
+            }
+        }
+
+        // ── Initialize glass shards for rose window ──
+        function initGlassShards() {
+            glassShards = [];
+            var colors = [RUBY, SAPPHIRE, EMERALD, AMBER, '#6a1a6a', '#1a4a6a', '#8b4513', GOLD];
+            for (var i = 0; i < NUM_SHARDS; i++) {
+                var angle = (i / NUM_SHARDS) * Math.PI * 2;
+                glassShards.push({
+                    angle: angle,
+                    color: colors[i % colors.length],
+                    glow: 0,
+                    glowTarget: 0
+                });
+            }
+        }
+
+        // ── Draw pointed gothic arch ──
+        function drawGothicArch(ctx, cx, cy, archW, archH, lineW) {
+            var halfW = archW / 2;
+            ctx.lineWidth = lineW || 2;
+            ctx.beginPath();
+            // Left pillar base
+            ctx.moveTo(cx - halfW, cy);
+            ctx.lineTo(cx - halfW, cy - archH * 0.6);
+            // Pointed arch (two arcs meeting at top)
+            var controlH = archH * 1.1;
+            ctx.quadraticCurveTo(cx - halfW, cy - controlH, cx, cy - archH);
+            ctx.quadraticCurveTo(cx + halfW, cy - controlH, cx + halfW, cy - archH * 0.6);
+            // Right pillar
+            ctx.lineTo(cx + halfW, cy);
+            ctx.stroke();
+        }
+
+        // ── Draw flying buttress ──
+        function drawButtress(ctx, x, y, side, height) {
+            var bw = W * 0.06;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + side * bw, y + height * 0.3);
+            ctx.lineTo(x + side * bw, y + height);
+            ctx.lineTo(x + side * bw * 0.7, y + height);
+            ctx.lineTo(x + side * bw * 0.5, y + height * 0.4);
+            ctx.lineTo(x, y + height * 0.15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // ── Draw rose window ──
+        function drawRoseWindow(ctx, cx, cy, radius, energy) {
+            // Outer ring
+            ctx.strokeStyle = STONE_LIGHT;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner ring
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.7, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Glass shards
+            for (var i = 0; i < glassShards.length; i++) {
+                var s = glassShards[i];
+                var a1 = s.angle;
+                var a2 = a1 + (Math.PI * 2 / NUM_SHARDS) * 0.85;
+
+                // Parse color for alpha
+                var glowVal = s.glow * (0.3 + energy * 0.7);
+
+                ctx.save();
+                ctx.globalAlpha = 0.2 + glowVal * 0.6;
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius * 0.95, a1, a2);
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner petal
+                ctx.globalAlpha = 0.3 + glowVal * 0.5;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius * 0.65, a1 + 0.05, a2 - 0.05);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Spokes
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = 1.5;
+            for (var j = 0; j < NUM_SHARDS; j++) {
+                var ang = (j / NUM_SHARDS) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius);
+                ctx.stroke();
+            }
+
+            // Center boss
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = 0.4 + energy * 0.4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        // ── Draw gargoyle silhouette ──
+        function drawGargoyle(ctx, g, energy) {
+            var size = Math.min(W, H) * 0.05;
+            var s = g.side;
+            var x = g.x;
+            var y = g.y;
+
+            ctx.save();
+            ctx.translate(x, y);
+            if (s < 0) ctx.scale(-1, 1);
+
+            // Body
+            ctx.fillStyle = STONE_DARK;
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = 1.5;
+
+            // Hunched body
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(size * 0.3, -size * 0.5, size * 0.6, -size * 0.3);
+            ctx.quadraticCurveTo(size * 0.8, -size * 0.1, size * 0.7, size * 0.2);
+            ctx.quadraticCurveTo(size * 0.4, size * 0.4, 0, size * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Head with jaw
+            var headX = size * 0.65;
+            var headY = -size * 0.35;
+            var headR = size * 0.18;
+            var jawAngle = g.jawOpen * 0.4;
+
+            ctx.beginPath();
+            ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Snout/jaw
+            ctx.beginPath();
+            ctx.moveTo(headX + headR * 0.5, headY);
+            ctx.lineTo(headX + headR * 1.5, headY - headR * 0.2 - jawAngle * headR);
+            ctx.lineTo(headX + headR * 1.5, headY + headR * 0.3 + jawAngle * headR);
+            ctx.lineTo(headX + headR * 0.5, headY + headR * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Eyes
+            if (g.eyeGlow > 0.05) {
+                ctx.fillStyle = 'rgba(200,168,110,' + g.eyeGlow + ')';
+                ctx.shadowColor = GOLD;
+                ctx.shadowBlur = 8 * g.eyeGlow;
+                ctx.beginPath();
+                ctx.arc(headX + headR * 0.3, headY - headR * 0.15, headR * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Wings
+            if (g.wingAngle > 0.05) {
+                var wa = g.wingAngle * Math.PI * 0.4;
+                ctx.fillStyle = 'rgba(42,36,32,0.7)';
+                ctx.strokeStyle = STONE_MID;
+                ctx.lineWidth = 1;
+
+                // Wing membrane
+                ctx.beginPath();
+                ctx.moveTo(size * 0.2, -size * 0.1);
+                var wingTipX = size * 0.2 - Math.cos(wa) * size * 0.8;
+                var wingTipY = -size * 0.1 - Math.sin(wa) * size * 0.7;
+                ctx.quadraticCurveTo(wingTipX * 0.5, wingTipY, wingTipX, wingTipY);
+                ctx.quadraticCurveTo(wingTipX * 0.7, size * 0.1, size * 0.1, size * 0.15);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Wing ribs
+                for (var r = 0; r < 3; r++) {
+                    var ribT = (r + 1) / 4;
+                    var ribX = lerp(size * 0.2, wingTipX, ribT);
+                    var ribY = lerp(-size * 0.1, wingTipY, ribT);
+                    ctx.beginPath();
+                    ctx.moveTo(size * 0.2, -size * 0.1);
+                    ctx.lineTo(ribX, ribY);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw candle ──
+        function drawCandle(ctx, c, beatP) {
+            var x = c.x;
+            var y = c.y;
+            var sz = 4 * c.size;
+            var flick = Math.sin(c.flicker) * 0.3 + 0.7;
+            var bright = c.brightness * flick;
+
+            // Candle body
+            ctx.fillStyle = STONE_LIGHT;
+            ctx.fillRect(x - sz * 0.3, y, sz * 0.6, sz * 2);
+
+            // Flame
+            if (bright > 0.1) {
+                var flameH = sz * (1.5 + beatP * 0.5) * bright;
+                var flameW = sz * 0.4;
+
+                // Outer glow
+                var grad = ctx.createRadialGradient(x, y - flameH * 0.3, 0, x, y - flameH * 0.3, flameH * 2);
+                grad.addColorStop(0, 'rgba(200,168,110,' + (bright * 0.15) + ')');
+                grad.addColorStop(1, 'rgba(200,168,110,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x - flameH * 2, y - flameH * 2.5, flameH * 4, flameH * 4);
+
+                // Flame shape
+                ctx.fillStyle = 'rgba(255,200,80,' + (bright * 0.8) + ')';
+                ctx.beginPath();
+                ctx.moveTo(x - flameW, y);
+                ctx.quadraticCurveTo(x - flameW * 0.5, y - flameH * 0.6, x, y - flameH);
+                ctx.quadraticCurveTo(x + flameW * 0.5, y - flameH * 0.6, x + flameW, y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner white
+                ctx.fillStyle = 'rgba(255,240,200,' + (bright * 0.6) + ')';
+                ctx.beginPath();
+                ctx.moveTo(x - flameW * 0.4, y);
+                ctx.quadraticCurveTo(x, y - flameH * 0.7, x + flameW * 0.4, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // ── Draw columns ──
+        function drawColumns(ctx, energy) {
+            var numCols = 8;
+            var colW = W * 0.025;
+            var colSpacing = W / (numCols + 1);
+            var colH = H * 0.65;
+            var baseY = cathedralY;
+
+            ctx.strokeStyle = STONE_MID;
+            ctx.fillStyle = STONE_DARK;
+            ctx.lineWidth = 1;
+
+            for (var i = 0; i < numCols; i++) {
+                var cx = colSpacing * (i + 1);
+                var shake = stormIntensity * Math.sin(time * 3 + i) * 3;
+
+                // Column shaft
+                ctx.fillStyle = STONE_DARK;
+                ctx.fillRect(cx - colW / 2 + shake, baseY - colH, colW, colH);
+
+                // Column capital (decorative top)
+                ctx.fillStyle = STONE_MID;
+                ctx.fillRect(cx - colW * 0.8 + shake, baseY - colH - colW * 0.4, colW * 1.6, colW * 0.4);
+
+                // Column base
+                ctx.fillRect(cx - colW * 0.7, baseY - colW * 0.3, colW * 1.4, colW * 0.3);
+
+                // Fluting lines
+                ctx.strokeStyle = 'rgba(74,64,56,0.4)';
+                for (var f = 0; f < 3; f++) {
+                    var fx = cx - colW * 0.3 + f * colW * 0.3 + shake;
+                    ctx.beginPath();
+                    ctx.moveTo(fx, baseY - colH);
+                    ctx.lineTo(fx, baseY);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // ── Draw arches ──
+        function drawArches(ctx, energy) {
+            var numArches = 4;
+            var archSpacing = W / (numArches + 1);
+            var archW = archSpacing * 0.7;
+            var archH = H * 0.35;
+
+            ctx.strokeStyle = STONE_LIGHT;
+
+            for (var i = 0; i < numArches; i++) {
+                var cx = archSpacing * (i + 1) + archSpacing * 0.5;
+                var shake = stormIntensity * Math.sin(time * 2.5 + i * 1.3) * 4;
+                drawGothicArch(ctx, cx + shake, cathedralY, archW, archH, 2.5);
+            }
+
+            // Large central arch
+            var mainShake = stormIntensity * Math.sin(time * 2) * 2;
+            ctx.strokeStyle = STONE_LIGHT;
+            ctx.lineWidth = 3;
+            drawGothicArch(ctx, W * 0.5 + mainShake, cathedralY, W * 0.35, H * 0.55, 3);
+        }
+
+        // ── Draw flying buttresses ──
+        function drawButtresses(ctx) {
+            ctx.fillStyle = STONE_DARK;
+            ctx.strokeStyle = STONE_MID;
+            ctx.lineWidth = 1.5;
+
+            var buttH = H * 0.3;
+            drawButtress(ctx, W * 0.12, H * 0.2, -1, buttH);
+            drawButtress(ctx, W * 0.88, H * 0.2, 1, buttH);
+            drawButtress(ctx, W * 0.08, H * 0.5, -1, buttH * 0.8);
+            drawButtress(ctx, W * 0.92, H * 0.5, 1, buttH * 0.8);
+        }
+
+        // ── Draw stone blocks (wall texture with crumble) ──
+        function drawStoneBlocks(ctx, dt) {
+            for (var i = 0; i < stoneBlocks.length; i++) {
+                var b = stoneBlocks[i];
+
+                // Lerp offset
+                b.offsetX = smoothLerp(b.offsetX, b.targetOffX, 3, dt);
+                b.offsetY = smoothLerp(b.offsetY, b.targetOffY, 3, dt);
+
+                var x = b.baseX + b.offsetX;
+                var y = b.baseY + b.offsetY;
+
+                // Stone shade
+                var shade = Math.floor(36 * b.shade);
+                var r = shade + 6;
+                var g = shade;
+                var bl = shade - 4;
+                ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + Math.max(0, bl) + ')';
+                ctx.globalAlpha = 0.3;
+                ctx.fillRect(x, y, b.w, b.h);
+
+                // Crack lines
+                if (b.cracked) {
+                    ctx.strokeStyle = 'rgba(12,10,8,0.6)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x + b.w * 0.3, y);
+                    ctx.lineTo(x + b.w * 0.5, y + b.h * 0.5);
+                    ctx.lineTo(x + b.w * 0.7, y + b.h);
+                    ctx.stroke();
+                }
+
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ── Draw dust particles ──
+        function drawDust(ctx, dt, intensity) {
+            for (var i = 0; i < dustParticles.length; i++) {
+                var p = dustParticles[i];
+                p.x += p.vx * dt * intensity;
+                p.y += p.vy * dt * intensity;
+                p.life -= dt * 0.1 * intensity;
+
+                if (p.y > H || p.life <= 0) {
+                    p.x = Math.random() * W;
+                    p.y = -10;
+                    p.life = 1;
+                    p.vy = rand(5, 30);
+                    p.vx = rand(-10, 10);
+                }
+
+                ctx.fillStyle = 'rgba(106,94,82,' + (p.alpha * p.life * intensity) + ')';
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(16, Math.min(W * 0.045, 56));
+            ctx.font = '900 ' + fontSize + 'px "Cinzel", serif';
+            ctx.fillStyle = GOLD;
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.shadowColor = GOLD;
+            ctx.shadowBlur = 30 * titleAlpha;
+            ctx.fillText('REQUIEM IN STONE', W / 2, H * 0.12);
+
+            ctx.font = '400 ' + (fontSize * 0.35) + 'px "Cinzel", serif';
+            ctx.fillStyle = '#d4c8b0';
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.shadowBlur = 10;
+
+            // Movement subtitle
+            var sub = '';
+            if (sectionMood === 'counterpoint') sub = 'I. Bach Counterpoint';
+            else if (sectionMood === 'parallels') sub = 'II. Debussy Parallels';
+            else if (sectionMood === 'storm') sub = 'III. Beethoven Storm';
+            else if (sectionMood === 'fading') sub = 'IV. Receding Echoes';
+            else if (sectionMood === 'picardy') sub = 'Picardy Third';
+
+            if (sub) {
+                ctx.fillText(sub, W / 2, H * 0.17);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Golden light flood (Picardy third ending) ──
+        function drawGoldenFlood(ctx) {
+            if (goldenLight < 0.01) return;
+            ctx.save();
+
+            // Radial golden light from rose window
+            var grad = ctx.createRadialGradient(
+                W / 2, roseWindowY, 0,
+                W / 2, roseWindowY, Math.max(W, H)
+            );
+            grad.addColorStop(0, 'rgba(255,215,0,' + (goldenLight * 0.4) + ')');
+            grad.addColorStop(0.3, 'rgba(200,168,110,' + (goldenLight * 0.2) + ')');
+            grad.addColorStop(0.7, 'rgba(200,168,110,' + (goldenLight * 0.05) + ')');
+            grad.addColorStop(1, 'rgba(200,168,110,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Light shafts
+            ctx.globalCompositeOperation = 'lighter';
+            var numRays = 7;
+            for (var i = 0; i < numRays; i++) {
+                var angle = -0.4 + (i / (numRays - 1)) * 0.8;
+                var rayW = W * 0.06;
+                var rayLen = H * 1.2;
+                ctx.save();
+                ctx.translate(W / 2, roseWindowY);
+                ctx.rotate(angle);
+                var rGrad = ctx.createLinearGradient(0, 0, 0, rayLen);
+                rGrad.addColorStop(0, 'rgba(255,215,0,' + (goldenLight * 0.15) + ')');
+                rGrad.addColorStop(1, 'rgba(255,215,0,0)');
+                ctx.fillStyle = rGrad;
+                ctx.fillRect(-rayW / 2, 0, rayW, rayLen);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Vignette ──
+        function drawVignette(ctx) {
+            var grad = ctx.createRadialGradient(
+                W / 2, H / 2, Math.min(W, H) * 0.3,
+                W / 2, H / 2, Math.max(W, H) * 0.7
+            );
+            grad.addColorStop(0, 'rgba(12,10,8,0)');
+            grad.addColorStop(1, 'rgba(12,10,8,0.6)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ── Floor tiles (perspective) ──
+        function drawFloor(ctx, energy) {
+            ctx.save();
+            ctx.fillStyle = '#0e0c0a';
+            ctx.fillRect(0, cathedralY, W, H - cathedralY);
+
+            // Checkered tiles in perspective
+            var tileRows = 6;
+            var tileCols = 10;
+            for (var r = 0; r < tileRows; r++) {
+                var t = (r + 1) / tileRows;
+                var y0 = cathedralY + (H - cathedralY) * (r / tileRows);
+                var y1 = cathedralY + (H - cathedralY) * ((r + 1) / tileRows);
+                var perspW = W * (0.5 + t * 0.5);
+                var startX = (W - perspW) / 2;
+
+                for (var c = 0; c < tileCols; c++) {
+                    var x0 = startX + (c / tileCols) * perspW;
+                    var x1 = startX + ((c + 1) / tileCols) * perspW;
+                    var dark = (r + c) % 2 === 0;
+                    ctx.fillStyle = dark ? 'rgba(30,26,22,0.6)' : 'rgba(50,44,38,0.4)';
+                    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            cathedralY = H * 0.78;
+            archCenterX = W / 2;
+            roseWindowY = H * 0.25;
+
+            initBlocks();
+            layoutBlocks();
+            initGargoyles();
+            layoutGargoyles();
+            initCandles();
+            layoutCandles();
+            initDust();
+            initGlassShards();
+
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'silence';
+            sectionTransition = 0;
+            time = 0;
+            crumbleAmount = 0;
+            crumbleTarget = 0;
+            reformPhase = 0;
+            goldenLight = 0;
+            goldenTarget = 0;
+            flashAlpha = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            stormIntensity = 0;
+            stormTarget = 0;
+            introFade = 0;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            cathedralY = H * 0.78;
+            archCenterX = W / 2;
+            roseWindowY = H * 0.25;
+            layoutBlocks();
+            layoutGargoyles();
+            layoutCandles();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+            time += dt;
+
+            // Background
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state: draw quiet cathedral
+                introFade = smoothLerp(introFade, 0.3, 1, dt);
+                drawFloor(ctx, 0);
+                drawColumns(ctx, 0);
+                drawArches(ctx, 0);
+                drawButtresses(ctx);
+                drawRoseWindow(ctx, W / 2, roseWindowY, Math.min(W, H) * 0.1, 0.2);
+                for (var ci = 0; ci < candles.length; ci++) {
+                    candles[ci].flicker += candles[ci].flickerSpeed * dt;
+                    candles[ci].brightness = 0.3;
+                    drawCandle(ctx, candles[ci], 0);
+                }
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldSection = sectionMood;
+                sectionMood = newSection;
+                sectionTransition = 1;
+
+                // Trigger dust burst on section change
+                for (var di = 0; di < dustParticles.length; di++) {
+                    dustParticles[di].vy = rand(20, 60);
+                    dustParticles[di].vx = rand(-30, 30);
+                    dustParticles[di].life = 1;
+                }
+
+                // Section-specific triggers
+                if (newSection === 'storm' && oldSection !== 'storm') {
+                    flashAlpha = 0.25;
+                    crumbleTarget = 0.6;
+                    stormTarget = 1;
+                    // Crack blocks
+                    for (var bi = 0; bi < stoneBlocks.length; bi++) {
+                        if (Math.random() > 0.5) stoneBlocks[bi].cracked = true;
+                    }
+                }
+
+                if (newSection === 'parallels') {
+                    crumbleTarget = 0;
+                    stormTarget = 0;
+                    // Reform blocks
+                    for (var ri = 0; ri < stoneBlocks.length; ri++) {
+                        stoneBlocks[ri].targetOffX = 0;
+                        stoneBlocks[ri].targetOffY = 0;
+                        stoneBlocks[ri].cracked = false;
+                    }
+                }
+
+                if (newSection === 'fading') {
+                    stormTarget = 0;
+                    crumbleTarget = 0.2;
+                }
+
+                if (newSection === 'picardy') {
+                    goldenTarget = 1;
+                    stormTarget = 0;
+                    crumbleTarget = 0;
+                    // Reform all blocks
+                    for (var pi = 0; pi < stoneBlocks.length; pi++) {
+                        stoneBlocks[pi].targetOffX = 0;
+                        stoneBlocks[pi].targetOffY = 0;
+                        stoneBlocks[pi].cracked = false;
+                    }
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Storm crumble: shift blocks on beats
+                if (sectionMood === 'storm') {
+                    for (var si = 0; si < stoneBlocks.length; si++) {
+                        if (Math.random() < energy * 0.4) {
+                            stoneBlocks[si].targetOffX = rand(-15, 15) * energy;
+                            stoneBlocks[si].targetOffY = rand(-5, 20) * energy;
+                            if (Math.random() > 0.6) stoneBlocks[si].cracked = true;
+                        }
+                    }
+                    flashAlpha = Math.max(flashAlpha, energy * 0.1);
+                }
+
+                // Gargoyle activation on high energy beats
+                for (var gi = 0; gi < gargoyles.length; gi++) {
+                    var g = gargoyles[gi];
+                    if (energy > 0.4) {
+                        g.wingTarget = energy * 0.8;
+                        g.jawTarget = energy * 0.6;
+                        g.eyeTarget = energy;
+                        g.headTarget = (Math.random() - 0.5) * energy;
+                    } else {
+                        g.wingTarget = 0;
+                        g.jawTarget = 0;
+                        g.eyeTarget = energy * 0.3;
+                        g.headTarget = 0;
+                    }
+                }
+
+                // Glass shard glow on beats
+                for (var gsi = 0; gsi < glassShards.length; gsi++) {
+                    glassShards[gsi].glowTarget = Math.random() < energy ? 1 : 0.2;
+                }
+
+                lastBeat = beat;
+            }
+
+            // ── Decay ──
+            beatPulse *= Math.exp(-6 * dt);
+            flashAlpha *= Math.exp(-4 * dt);
+            sectionTransition *= Math.exp(-2 * dt);
+
+            // ── Smooth transitions ──
+            introFade = smoothLerp(introFade, 1, 0.5, dt);
+            crumbleAmount = smoothLerp(crumbleAmount, crumbleTarget, 2, dt);
+            goldenLight = smoothLerp(goldenLight, goldenTarget, 0.8, dt);
+            stormIntensity = smoothLerp(stormIntensity, stormTarget, 2, dt);
+
+            // Title shows during section transitions and counterpoint
+            titleTarget = (sectionMood === 'counterpoint' || sectionTransition > 0.3) ? 1 : 0;
+            titleAlpha = smoothLerp(titleAlpha, titleTarget, 3, dt);
+
+            // ── Update gargoyles ──
+            for (var gui = 0; gui < gargoyles.length; gui++) {
+                var gg = gargoyles[gui];
+                gg.wingAngle = smoothLerp(gg.wingAngle, gg.wingTarget, 5, dt);
+                gg.jawOpen = smoothLerp(gg.jawOpen, gg.jawTarget, 8, dt);
+                gg.eyeGlow = smoothLerp(gg.eyeGlow, gg.eyeTarget, 4, dt);
+                gg.headTurn = smoothLerp(gg.headTurn, gg.headTarget, 3, dt);
+            }
+
+            // ── Update candles ──
+            for (var cli = 0; cli < candles.length; cli++) {
+                var c = candles[cli];
+                c.flicker += c.flickerSpeed * dt;
+                // Brightness follows energy and section
+                var baseBright = sectionMood === 'storm' ? 0.3 + energy * 0.4 : 0.5 + energy * 0.3;
+                if (sectionMood === 'picardy') baseBright = 0.8 + goldenLight * 0.2;
+                c.brightness = smoothLerp(c.brightness, baseBright + beatPulse * 0.3, 4, dt);
+            }
+
+            // ── Update glass shards ──
+            for (var gsi2 = 0; gsi2 < glassShards.length; gsi2++) {
+                glassShards[gsi2].glow = smoothLerp(glassShards[gsi2].glow, glassShards[gsi2].glowTarget, 4, dt);
+            }
+
+            // ── Storm screen shake ──
+            if (stormIntensity > 0.05) {
+                ctx.save();
+                var shakeX = Math.sin(time * 17) * stormIntensity * 3;
+                var shakeY = Math.cos(time * 13) * stormIntensity * 2;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            // ── Draw scene (back to front) ──
+
+            // Floor
+            drawFloor(ctx, energy);
+
+            // Stone blocks (background wall texture)
+            drawStoneBlocks(ctx, dt);
+
+            // Columns
+            drawColumns(ctx, energy);
+
+            // Flying buttresses
+            drawButtresses(ctx);
+
+            // Arches
+            drawArches(ctx, energy);
+
+            // Rose window
+            var roseR = Math.min(W, H) * (0.1 + energy * 0.02 + beatPulse * 0.01);
+            drawRoseWindow(ctx, W / 2, roseWindowY, roseR, energy);
+
+            // Gargoyles
+            for (var gdi = 0; gdi < gargoyles.length; gdi++) {
+                drawGargoyle(ctx, gargoyles[gdi], energy);
+            }
+
+            // Candles
+            for (var cdi = 0; cdi < candles.length; cdi++) {
+                drawCandle(ctx, candles[cdi], beatPulse);
+            }
+
+            // Dust particles (more during transitions and storm)
+            var dustIntensity = sectionTransition * 2 + stormIntensity * 1.5 + 0.1;
+            drawDust(ctx, dt, dustIntensity);
+
+            // Golden light flood (Picardy)
+            drawGoldenFlood(ctx);
+
+            // Title
+            drawTitle(ctx);
+
+            // Vignette
+            drawVignette(ctx);
+
+            // Restore from storm shake
+            if (stormIntensity > 0.05) {
+                ctx.restore();
+            }
+
+            // Flash
+            drawFlash(ctx);
+        }
+
+        return {
+            name: 'Requiem in Stone',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('requiem-in-stone-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/requiem-in-stone.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

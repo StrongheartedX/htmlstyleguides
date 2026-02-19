@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photosynthesis — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #1a0e08;
+            color: #fff;
+            font-family: 'Playfair Display', serif;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(26,14,8,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(22px, 5vw, 52px);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #4db34d;
+            text-shadow: 0 0 30px rgba(77,179,77,0.5), 0 0 60px rgba(77,179,77,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #4db34d;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #4db34d;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(77,179,77,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(77,179,77,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: sans-serif;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Photosynthesis</div>
+        <div class="play-sub">the inner life of a plant</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Photosynthesis Video Renderer ──────────────────────────────────
+    window.Renderers['photosynthesis-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Color Palette ──
+        var SKY_TOP = '#0b1a2e';
+        var SKY_BOTTOM = '#4a7a9b';
+        var SOIL_TOP = '#5c3a1e';
+        var SOIL_BOTTOM = '#2a1508';
+        var SOIL_LINE = '#6b4423';
+        var SEED_COLOR = '#8b6914';
+        var ROOT_COLOR = '#6b3a1a';
+        var STEM_COLOR = '#2d7a2d';
+        var LEAF_COLOR = '#3da33d';
+        var LEAF_DARK = '#1e6b1e';
+        var SUN_COLOR = '#ffd54f';
+        var SUN_GLOW = '#ffb300';
+        var CHLORO_COLOR = '#66ff66';
+        var PETAL_COLORS = ['#ff6b8a', '#ff8fab', '#ffb3c6', '#ffd54f', '#ff8a65'];
+        var PETAL_CENTER = '#ffd54f';
+
+        // ── Layout ──
+        var SOIL_Y_RATIO = 0.55;
+        var soilY = 0;
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var lastSeqIndex = -1;
+        var sectionMood = 'underground';
+        var time = 0;
+
+        // Growth state (0 to 1 for each phase)
+        var seedVisible = 0;
+        var rootGrowth = 0;
+        var stemGrowth = 0;
+        var leafGrowth = 0;
+        var sunIntensity = 0;
+        var flowerBloom = 0;
+        var fadeOut = 0;
+
+        // Targets
+        var seedTarget = 0;
+        var rootTarget = 0;
+        var stemTarget = 0;
+        var leafTarget = 0;
+        var sunTarget = 0;
+        var flowerTarget = 0;
+        var fadeTarget = 0;
+
+        // Particles
+        var chloroplasts = [];
+        var raindrops = [];
+        var sunRays = [];
+        var pollenParticles = [];
+
+        // Root system
+        var roots = [];
+        var rootsGenerated = false;
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpSmooth(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return [r, g, b];
+        }
+
+        // ── Generate root system ──
+        function generateRoots() {
+            roots = [];
+            var cx = W * 0.5;
+            var seedY = soilY + H * 0.08;
+
+            function addBranch(x, y, angle, depth, maxDepth, length) {
+                if (depth > maxDepth) return;
+                var segments = 6 + Math.floor(Math.random() * 4);
+                var points = [{x: x, y: y}];
+                var curX = x, curY = y, curAngle = angle;
+                for (var i = 0; i < segments; i++) {
+                    var segLen = length / segments;
+                    curAngle += (Math.random() - 0.5) * 0.4;
+                    curX += Math.cos(curAngle) * segLen;
+                    curY += Math.sin(curAngle) * segLen;
+                    points.push({x: curX, y: curY});
+                }
+                roots.push({
+                    points: points,
+                    thickness: Math.max(1, 3 - depth),
+                    delay: depth * 0.15 + Math.random() * 0.1
+                });
+
+                // Branch
+                if (depth < maxDepth) {
+                    var branchCount = depth === 0 ? 2 : 1;
+                    for (var b = 0; b < branchCount; b++) {
+                        var branchIdx = Math.floor(segments * (0.3 + Math.random() * 0.4));
+                        var bp = points[Math.min(branchIdx, points.length - 1)];
+                        var branchAngle = curAngle + (Math.random() - 0.5) * 1.2;
+                        addBranch(bp.x, bp.y, branchAngle, depth + 1, maxDepth, length * 0.6);
+                    }
+                }
+            }
+
+            // Main roots spreading down and out
+            var numRoots = 5;
+            for (var i = 0; i < numRoots; i++) {
+                var angle = Math.PI * 0.3 + (Math.PI * 0.4 / (numRoots - 1)) * i;
+                var rootLen = H * (0.15 + Math.random() * 0.12);
+                addBranch(cx, seedY, angle, 0, 3, rootLen);
+            }
+
+            rootsGenerated = true;
+        }
+
+        // ── Init chloroplasts ──
+        function initChloroplasts() {
+            chloroplasts = [];
+            for (var i = 0; i < 60; i++) {
+                chloroplasts.push({
+                    x: 0, y: 0,
+                    baseOffset: Math.random(),
+                    speed: 20 + Math.random() * 40,
+                    size: 2 + Math.random() * 3,
+                    alpha: 0.3 + Math.random() * 0.5,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function initRain() {
+            raindrops = [];
+            for (var i = 0; i < 40; i++) {
+                raindrops.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    speed: 200 + Math.random() * 300,
+                    length: 8 + Math.random() * 15
+                });
+            }
+        }
+
+        function initSunRays() {
+            sunRays = [];
+            for (var i = 0; i < 12; i++) {
+                sunRays.push({
+                    angle: (Math.PI / 12) * i - Math.PI * 0.1,
+                    width: 0.02 + Math.random() * 0.04,
+                    alpha: 0.1 + Math.random() * 0.15,
+                    speed: 0.1 + Math.random() * 0.2
+                });
+            }
+        }
+
+        function initPollen() {
+            pollenParticles = [];
+            for (var i = 0; i < 30; i++) {
+                pollenParticles.push({
+                    x: W * 0.3 + Math.random() * W * 0.4,
+                    y: soilY * 0.2 + Math.random() * soilY * 0.6,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: -5 - Math.random() * 15,
+                    size: 1.5 + Math.random() * 2.5,
+                    alpha: 0.3 + Math.random() * 0.4,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // ── Section mapping ──
+        // Sequence: 34 entries (0-33)
+        // 0-1: Deep Underground -> underground
+        // 2-3: Seed Stirs -> seedStir
+        // 4-5: Germination -> germination
+        // 6-7: Roots Reaching -> rootsReaching
+        // 8-9: Pushing Through Soil -> pushingUp
+        // 10-11: Rising Tension -> rising
+        // 12-13: First Light -> firstLight
+        // 14-17: Sunlight Burst -> sunlight
+        // 18-21: Growing Leaves -> leaves
+        // 22-27: Full Bloom -> bloom
+        // 28-31: Settling -> settling
+        // 32: Return to Seed -> returnSeed
+        // 33: Final Silence -> silence
+        function mapSection(seqIndex) {
+            if (seqIndex <= 1) return 'underground';
+            if (seqIndex <= 3) return 'seedStir';
+            if (seqIndex <= 5) return 'germination';
+            if (seqIndex <= 7) return 'rootsReaching';
+            if (seqIndex <= 9) return 'pushingUp';
+            if (seqIndex <= 11) return 'rising';
+            if (seqIndex <= 13) return 'firstLight';
+            if (seqIndex <= 17) return 'sunlight';
+            if (seqIndex <= 21) return 'leaves';
+            if (seqIndex <= 27) return 'bloom';
+            if (seqIndex <= 31) return 'settling';
+            if (seqIndex <= 32) return 'returnSeed';
+            return 'silence';
+        }
+
+        function setSectionTargets(section) {
+            switch (section) {
+                case 'underground':
+                    seedTarget = 0.3;
+                    rootTarget = 0; stemTarget = 0; leafTarget = 0;
+                    sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 1;
+                    break;
+                case 'seedStir':
+                    seedTarget = 0.8;
+                    rootTarget = 0.1; stemTarget = 0; leafTarget = 0;
+                    sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 1;
+                    break;
+                case 'germination':
+                    seedTarget = 1;
+                    rootTarget = 0.3; stemTarget = 0.05; leafTarget = 0;
+                    sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 0.5;
+                    break;
+                case 'rootsReaching':
+                    seedTarget = 1;
+                    rootTarget = 0.7; stemTarget = 0.15; leafTarget = 0;
+                    sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'pushingUp':
+                    seedTarget = 1;
+                    rootTarget = 0.9; stemTarget = 0.5; leafTarget = 0;
+                    sunTarget = 0.1; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'rising':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 0.8; leafTarget = 0.1;
+                    sunTarget = 0.2; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'firstLight':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 1; leafTarget = 0.3;
+                    sunTarget = 0.5; flowerTarget = 0; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'sunlight':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 1; leafTarget = 0.7;
+                    sunTarget = 0.8; flowerTarget = 0.1; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'leaves':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 1; leafTarget = 1;
+                    sunTarget = 1; flowerTarget = 0.3; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'bloom':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 1; leafTarget = 1;
+                    sunTarget = 1; flowerTarget = 1; fadeTarget = 0;
+                    titleTarget = 0;
+                    break;
+                case 'settling':
+                    seedTarget = 1;
+                    rootTarget = 1; stemTarget = 1; leafTarget = 1;
+                    sunTarget = 0.6; flowerTarget = 0.9; fadeTarget = 0.1;
+                    titleTarget = 0;
+                    break;
+                case 'returnSeed':
+                    seedTarget = 1;
+                    rootTarget = 0.8; stemTarget = 0.6; leafTarget = 0.5;
+                    sunTarget = 0.2; flowerTarget = 0.4; fadeTarget = 0.5;
+                    titleTarget = 0.5;
+                    break;
+                case 'silence':
+                    seedTarget = 0.5;
+                    rootTarget = 0.3; stemTarget = 0.2; leafTarget = 0.1;
+                    sunTarget = 0.05; flowerTarget = 0; fadeTarget = 0.9;
+                    titleTarget = 1;
+                    break;
+            }
+        }
+
+        // ── Draw sky ──
+        function drawSky(ctx, energy) {
+            var sunInf = sunIntensity;
+            var topR = lerp(11, 30 + sunInf * 60, sunInf);
+            var topG = lerp(26, 50 + sunInf * 80, sunInf);
+            var topB = lerp(46, 80 + sunInf * 60, sunInf);
+            var botR = lerp(74, 140 + sunInf * 80, sunInf);
+            var botG = lerp(122, 180 + sunInf * 40, sunInf);
+            var botB = lerp(155, 200 + sunInf * 20, sunInf);
+
+            var grad = ctx.createLinearGradient(0, 0, 0, soilY);
+            grad.addColorStop(0, 'rgb(' + Math.floor(topR) + ',' + Math.floor(topG) + ',' + Math.floor(topB) + ')');
+            grad.addColorStop(1, 'rgb(' + Math.floor(botR) + ',' + Math.floor(botG) + ',' + Math.floor(botB) + ')');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, soilY);
+        }
+
+        // ── Draw sun ──
+        function drawSun(ctx, energy) {
+            if (sunIntensity < 0.01) return;
+
+            var sunX = W * 0.78;
+            var sunY = soilY * (0.35 - sunIntensity * 0.15);
+            var sunR = W * 0.04 + sunIntensity * W * 0.03 + beatPulse * W * 0.005;
+
+            // Glow
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            var glowR = sunR * (3 + sunIntensity * 4);
+            var grad = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, glowR);
+            grad.addColorStop(0, 'rgba(255,213,79,' + (sunIntensity * 0.3) + ')');
+            grad.addColorStop(0.3, 'rgba(255,179,0,' + (sunIntensity * 0.15) + ')');
+            grad.addColorStop(1, 'rgba(255,179,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(sunX - glowR, sunY - glowR, glowR * 2, glowR * 2);
+
+            // Sun rays
+            for (var i = 0; i < sunRays.length; i++) {
+                var ray = sunRays[i];
+                var rayAngle = ray.angle + time * ray.speed;
+                var rayLen = glowR * (0.6 + energy * 0.4);
+                var rayAlpha = ray.alpha * sunIntensity * (0.7 + beatPulse * 0.3);
+
+                ctx.strokeStyle = 'rgba(255,213,79,' + rayAlpha + ')';
+                ctx.lineWidth = ray.width * W;
+                ctx.beginPath();
+                ctx.moveTo(sunX + Math.cos(rayAngle) * sunR, sunY + Math.sin(rayAngle) * sunR);
+                ctx.lineTo(sunX + Math.cos(rayAngle) * rayLen, sunY + Math.sin(rayAngle) * rayLen);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Sun disc
+            ctx.save();
+            ctx.fillStyle = SUN_COLOR;
+            ctx.shadowColor = SUN_COLOR;
+            ctx.shadowBlur = 20 * sunIntensity;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Draw soil ──
+        function drawSoil(ctx) {
+            var grad = ctx.createLinearGradient(0, soilY, 0, H);
+            grad.addColorStop(0, SOIL_TOP);
+            grad.addColorStop(0.3, SOIL_BOTTOM);
+            grad.addColorStop(1, '#1a0a02');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, soilY, W, H - soilY);
+
+            // Soil texture line
+            ctx.strokeStyle = SOIL_LINE;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (var x = 0; x < W; x += 3) {
+                var y = soilY + Math.sin(x * 0.03 + time * 0.5) * 2;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Soil speckles
+            ctx.fillStyle = 'rgba(90,55,20,0.3)';
+            var seed = 42;
+            for (var i = 0; i < 80; i++) {
+                seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+                var sx = (seed % W);
+                seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+                var sy = soilY + 10 + (seed % (H - soilY - 10));
+                ctx.fillRect(sx, sy, 2, 1);
+            }
+        }
+
+        // ── Draw seed ──
+        function drawSeed(ctx) {
+            if (seedVisible < 0.01) return;
+
+            var cx = W * 0.5;
+            var cy = soilY + H * 0.08;
+            var seedSize = 8 + seedVisible * 6;
+
+            ctx.save();
+            ctx.globalAlpha = seedVisible;
+
+            // Seed body (oval)
+            ctx.fillStyle = SEED_COLOR;
+            ctx.shadowColor = '#a07820';
+            ctx.shadowBlur = 6 * seedVisible;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, seedSize, seedSize * 0.65, Math.PI * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Seed highlight
+            ctx.fillStyle = 'rgba(200,170,80,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(cx - seedSize * 0.2, cy - seedSize * 0.15, seedSize * 0.3, seedSize * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pulse on beat
+            if (beatPulse > 0.1 && sectionMood === 'seedStir') {
+                ctx.strokeStyle = 'rgba(140,105,20,' + (beatPulse * 0.5) + ')';
+                ctx.lineWidth = 2;
+                var pulseR = seedSize + beatPulse * 15;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, pulseR, pulseR * 0.65, Math.PI * 0.1, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw roots ──
+        function drawRoots(ctx) {
+            if (rootGrowth < 0.01 || roots.length === 0) return;
+
+            ctx.save();
+            ctx.strokeStyle = ROOT_COLOR;
+            ctx.lineCap = 'round';
+
+            for (var i = 0; i < roots.length; i++) {
+                var root = roots[i];
+                var progress = Math.max(0, Math.min(1, (rootGrowth - root.delay) / (1 - root.delay)));
+                if (progress <= 0) continue;
+
+                var pts = root.points;
+                var drawCount = Math.floor(pts.length * progress);
+                if (drawCount < 2) continue;
+
+                ctx.lineWidth = root.thickness;
+                ctx.globalAlpha = 0.6 + progress * 0.4;
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (var j = 1; j < drawCount; j++) {
+                    ctx.lineTo(pts[j].x, pts[j].y);
+                }
+                // Partial last segment
+                if (drawCount < pts.length) {
+                    var frac = (pts.length * progress) - drawCount;
+                    var lx = lerp(pts[drawCount - 1].x, pts[drawCount].x, frac);
+                    var ly = lerp(pts[drawCount - 1].y, pts[drawCount].y, frac);
+                    ctx.lineTo(lx, ly);
+                }
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw stem ──
+        function drawStem(ctx, energy) {
+            if (stemGrowth < 0.01) return;
+
+            var cx = W * 0.5;
+            var seedY_pos = soilY + H * 0.08;
+            var maxStemTop = soilY * 0.18;
+            var stemTop = lerp(seedY_pos, maxStemTop, stemGrowth);
+            var stemWidth = 3 + stemGrowth * 2;
+
+            // Stem sway
+            var sway = Math.sin(time * 1.2 + energy * 2) * 5 * stemGrowth;
+
+            ctx.save();
+            ctx.strokeStyle = STEM_COLOR;
+            ctx.lineWidth = stemWidth;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = '#2d7a2d';
+            ctx.shadowBlur = 4;
+
+            // Draw stem as a curve
+            ctx.beginPath();
+            ctx.moveTo(cx, seedY_pos);
+            var midY = lerp(seedY_pos, stemTop, 0.5);
+            ctx.quadraticCurveTo(cx + sway * 0.5, midY, cx + sway, stemTop);
+            ctx.stroke();
+
+            // Node points along stem
+            if (stemGrowth > 0.3) {
+                ctx.fillStyle = '#3a8a3a';
+                var nodeCount = Math.floor(stemGrowth * 4);
+                for (var i = 1; i <= nodeCount; i++) {
+                    var t = i / (nodeCount + 1);
+                    var ny = lerp(seedY_pos, stemTop, t);
+                    var nx = cx + sway * t;
+                    if (ny < soilY) {
+                        ctx.beginPath();
+                        ctx.arc(nx, ny, 2 + stemGrowth, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            ctx.restore();
+
+            return { topX: cx + sway, topY: stemTop, sway: sway, seedY: seedY_pos };
+        }
+
+        // ── Draw leaves ──
+        function drawLeaves(ctx, stemInfo, energy) {
+            if (leafGrowth < 0.01 || !stemInfo) return;
+
+            var cx = W * 0.5;
+            var sway = stemInfo.sway;
+
+            // Leaf positions along the above-ground portion of the stem
+            var leafPairs = [
+                { t: 0.5, size: 1.0, angle: 0.3 },
+                { t: 0.35, size: 0.8, angle: -0.4 },
+                { t: 0.65, size: 0.9, angle: 0.35 },
+                { t: 0.2, size: 0.6, angle: -0.3 }
+            ];
+
+            ctx.save();
+
+            for (var i = 0; i < leafPairs.length; i++) {
+                var lp = leafPairs[i];
+                var leafProgress = Math.max(0, (leafGrowth - i * 0.2) / 0.8);
+                if (leafProgress <= 0) continue;
+                leafProgress = Math.min(1, leafProgress);
+
+                var ly = lerp(stemInfo.seedY, stemInfo.topY, lp.t);
+                if (ly > soilY) continue; // Skip underground leaves
+
+                var lx = cx + sway * lp.t;
+                var leafSize = (15 + lp.size * 20) * leafProgress;
+                var leafAngle = lp.angle + Math.sin(time * 1.5 + i) * 0.1 * leafProgress;
+
+                // Draw leaf (teardrop shape)
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.rotate(leafAngle);
+
+                // Leaf fill
+                var leafGrad = ctx.createLinearGradient(0, 0, leafSize, 0);
+                leafGrad.addColorStop(0, LEAF_DARK);
+                leafGrad.addColorStop(0.5, LEAF_COLOR);
+                leafGrad.addColorStop(1, '#50c050');
+                ctx.fillStyle = leafGrad;
+                ctx.globalAlpha = 0.7 + leafProgress * 0.3;
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(leafSize * 0.5, -leafSize * 0.35, leafSize, 0);
+                ctx.quadraticCurveTo(leafSize * 0.5, leafSize * 0.35, 0, 0);
+                ctx.fill();
+
+                // Leaf vein
+                ctx.strokeStyle = 'rgba(30,80,30,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(leafSize * 0.85, 0);
+                ctx.stroke();
+
+                // Side veins
+                for (var v = 0; v < 3; v++) {
+                    var vt = (v + 1) / 4;
+                    var vx = leafSize * vt;
+                    ctx.beginPath();
+                    ctx.moveTo(vx, 0);
+                    ctx.lineTo(vx + leafSize * 0.1, -leafSize * 0.15 * (1 - vt));
+                    ctx.moveTo(vx, 0);
+                    ctx.lineTo(vx + leafSize * 0.1, leafSize * 0.15 * (1 - vt));
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+
+                // Mirror leaf on other side
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.rotate(-leafAngle);
+                ctx.scale(-1, 1);
+
+                ctx.fillStyle = leafGrad;
+                ctx.globalAlpha = 0.7 + leafProgress * 0.3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(leafSize * 0.5, -leafSize * 0.35, leafSize, 0);
+                ctx.quadraticCurveTo(leafSize * 0.5, leafSize * 0.35, 0, 0);
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(30,80,30,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(leafSize * 0.85, 0);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw chloroplasts ──
+        function drawChloroplasts(ctx, stemInfo, energy) {
+            if (sunIntensity < 0.05 || !stemInfo || stemGrowth < 0.2) return;
+
+            var cx = W * 0.5;
+            var sway = stemInfo.sway;
+            var stemLen = Math.abs(stemInfo.topY - stemInfo.seedY);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (var i = 0; i < chloroplasts.length; i++) {
+                var p = chloroplasts[i];
+                var t = (p.baseOffset + time * p.speed * 0.005) % 1;
+
+                // Flow along stem path
+                var py = lerp(stemInfo.seedY, stemInfo.topY, t);
+                if (py > soilY && t > 0.3) continue; // Hide most below-ground particles
+
+                var px = cx + sway * t + Math.sin(p.phase + time * 2) * 8;
+                var alpha = p.alpha * sunIntensity * (0.5 + energy * 0.5);
+
+                // Only show particles on visible stem
+                if (py > stemInfo.topY - 5 && py < stemInfo.seedY + 5) {
+                    ctx.fillStyle = 'rgba(102,255,102,' + alpha + ')';
+                    ctx.beginPath();
+                    ctx.arc(px, py, p.size + beatPulse * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw flower ──
+        function drawFlower(ctx, stemInfo, energy) {
+            if (flowerBloom < 0.01 || !stemInfo) return;
+
+            var fx = stemInfo.topX;
+            var fy = stemInfo.topY;
+            var bloom = flowerBloom;
+
+            ctx.save();
+
+            // Petals
+            var petalCount = 8;
+            var petalLen = 12 + bloom * 25 + beatPulse * 5 * bloom;
+            var petalWidth = 6 + bloom * 12;
+
+            for (var i = 0; i < petalCount; i++) {
+                var angle = (Math.PI * 2 / petalCount) * i + time * 0.2;
+                var openAngle = bloom * 0.5; // Petals open outward as bloom increases
+
+                ctx.save();
+                ctx.translate(fx, fy);
+                ctx.rotate(angle);
+
+                var color = PETAL_COLORS[i % PETAL_COLORS.length];
+                var rgb = hexToRgb(color);
+                ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (0.6 + bloom * 0.4) + ')';
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 8 * bloom;
+
+                // Petal shape
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(
+                    -petalWidth * 0.4, -petalLen * 0.5,
+                    0, -petalLen
+                );
+                ctx.quadraticCurveTo(
+                    petalWidth * 0.4, -petalLen * 0.5,
+                    0, 0
+                );
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // Inner petals (smaller, offset)
+            if (bloom > 0.5) {
+                var innerBloom = (bloom - 0.5) * 2;
+                for (var j = 0; j < petalCount; j++) {
+                    var angle2 = (Math.PI * 2 / petalCount) * j + Math.PI / petalCount + time * 0.15;
+
+                    ctx.save();
+                    ctx.translate(fx, fy);
+                    ctx.rotate(angle2);
+
+                    ctx.fillStyle = 'rgba(255,200,150,' + (0.4 * innerBloom) + ')';
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(-petalWidth * 0.25, -petalLen * 0.3, 0, -petalLen * 0.6);
+                    ctx.quadraticCurveTo(petalWidth * 0.25, -petalLen * 0.3, 0, 0);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+            }
+
+            // Center
+            ctx.fillStyle = PETAL_CENTER;
+            ctx.shadowColor = '#ffd54f';
+            ctx.shadowBlur = 10 * bloom;
+            ctx.beginPath();
+            ctx.arc(fx, fy, 4 + bloom * 6 + beatPulse * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stamen dots
+            if (bloom > 0.7) {
+                var stamenBloom = (bloom - 0.7) / 0.3;
+                ctx.fillStyle = '#c17900';
+                for (var s = 0; s < 5; s++) {
+                    var sa = (Math.PI * 2 / 5) * s + time * 0.1;
+                    var sr = 3 + bloom * 4;
+                    ctx.globalAlpha = stamenBloom;
+                    ctx.beginPath();
+                    ctx.arc(fx + Math.cos(sa) * sr, fy + Math.sin(sa) * sr, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw pollen ──
+        function drawPollen(ctx, energy) {
+            if (flowerBloom < 0.5) return;
+
+            var pollenAlpha = (flowerBloom - 0.5) * 2;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (var i = 0; i < pollenParticles.length; i++) {
+                var p = pollenParticles[i];
+                var alpha = p.alpha * pollenAlpha * (0.5 + energy * 0.5);
+
+                ctx.fillStyle = 'rgba(255,213,79,' + alpha + ')';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw rain ──
+        function drawRain(ctx, energy) {
+            // Rain in early sections
+            var rainAlpha = 0;
+            if (sectionMood === 'underground' || sectionMood === 'seedStir') {
+                rainAlpha = 0.3;
+            } else if (sectionMood === 'germination' || sectionMood === 'rootsReaching') {
+                rainAlpha = 0.2;
+            } else if (sectionMood === 'pushingUp') {
+                rainAlpha = 0.1;
+            }
+            if (rainAlpha < 0.01) return;
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(150,180,220,' + rainAlpha + ')';
+            ctx.lineWidth = 1;
+
+            for (var i = 0; i < raindrops.length; i++) {
+                var d = raindrops[i];
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x - 1, d.y + d.length);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            var fontSize = Math.max(16, Math.min(W * 0.045, 52));
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 ' + fontSize + 'px "Playfair Display", serif';
+            ctx.globalAlpha = titleAlpha * 0.9;
+            ctx.fillStyle = '#4db34d';
+            ctx.shadowColor = 'rgba(77,179,77,0.5)';
+            ctx.shadowBlur = 20;
+            ctx.fillText('PHOTOSYNTHESIS', W / 2, soilY * 0.12);
+
+            // Subtitle
+            ctx.font = '400 ' + Math.floor(fontSize * 0.4) + 'px "Playfair Display", serif';
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.shadowBlur = 10;
+            ctx.fillText('the inner life of a plant', W / 2, soilY * 0.12 + fontSize * 0.8);
+
+            ctx.restore();
+        }
+
+        // ── Draw cross-section dividing line ──
+        function drawCrossSection(ctx) {
+            // Grass tufts along the surface
+            if (stemGrowth > 0.3) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(60,140,60,' + Math.min(1, stemGrowth) * 0.6 + ')';
+                ctx.lineWidth = 2;
+                var grassSeed = 99;
+                for (var i = 0; i < 30; i++) {
+                    grassSeed = (grassSeed * 1103515245 + 12345) & 0x7fffffff;
+                    var gx = (grassSeed % W);
+                    grassSeed = (grassSeed * 1103515245 + 12345) & 0x7fffffff;
+                    var gh = 5 + (grassSeed % 12) * stemGrowth;
+                    var gSway = Math.sin(time * 2 + gx * 0.05) * 3;
+                    ctx.beginPath();
+                    ctx.moveTo(gx, soilY);
+                    ctx.quadraticCurveTo(gx + gSway, soilY - gh * 0.6, gx + gSway * 1.5, soilY - gh);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // ── Draw fade overlay ──
+        function drawFade(ctx) {
+            if (fadeOut < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = fadeOut * 0.8;
+            ctx.fillStyle = '#1a0e08';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Update particles ──
+        function updateParticles(dt, energy) {
+            // Rain
+            for (var i = 0; i < raindrops.length; i++) {
+                var d = raindrops[i];
+                d.y += d.speed * dt;
+                d.x -= 15 * dt;
+                if (d.y > H) {
+                    d.y = -d.length;
+                    d.x = Math.random() * (W + 50);
+                }
+            }
+
+            // Pollen
+            for (var j = 0; j < pollenParticles.length; j++) {
+                var p = pollenParticles[j];
+                p.x += p.vx * dt + Math.sin(time * 0.8 + p.phase) * 8 * dt;
+                p.y += p.vy * dt + Math.cos(time * 0.6 + p.phase) * 5 * dt;
+                // Wrap
+                if (p.x < W * 0.15) p.x = W * 0.85;
+                if (p.x > W * 0.85) p.x = W * 0.15;
+                if (p.y < soilY * 0.05) p.y = soilY * 0.8;
+                if (p.y > soilY * 0.9) p.y = soilY * 0.1;
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            soilY = H * SOIL_Y_RATIO;
+
+            seedVisible = 0; rootGrowth = 0; stemGrowth = 0;
+            leafGrowth = 0; sunIntensity = 0; flowerBloom = 0; fadeOut = 0;
+            seedTarget = 0; rootTarget = 0; stemTarget = 0;
+            leafTarget = 0; sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
+
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'underground';
+            time = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            rootsGenerated = false;
+
+            generateRoots();
+            initChloroplasts();
+            initRain();
+            initSunRays();
+            initPollen();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            soilY = H * SOIL_Y_RATIO;
+            rootsGenerated = false;
+            generateRoots();
+            initRain();
+            initPollen();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            time += dt;
+
+            // Background fill
+            ctx.fillStyle = '#1a0e08';
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state
+                drawSky(ctx, 0);
+                drawSoil(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+                setSectionTargets(newSection);
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+                lastBeat = beat;
+            }
+            beatPulse *= Math.exp(-6 * dt);
+
+            // ── Smooth growth ──
+            var growSpeed = 2.5;
+            seedVisible = lerpSmooth(seedVisible, seedTarget, growSpeed, dt);
+            rootGrowth = lerpSmooth(rootGrowth, rootTarget, growSpeed * 0.8, dt);
+            stemGrowth = lerpSmooth(stemGrowth, stemTarget, growSpeed * 0.7, dt);
+            leafGrowth = lerpSmooth(leafGrowth, leafTarget, growSpeed * 0.6, dt);
+            sunIntensity = lerpSmooth(sunIntensity, sunTarget, growSpeed * 0.5, dt);
+            flowerBloom = lerpSmooth(flowerBloom, flowerTarget, growSpeed * 0.5, dt);
+            fadeOut = lerpSmooth(fadeOut, fadeTarget, growSpeed * 0.3, dt);
+            titleAlpha = lerpSmooth(titleAlpha, titleTarget, 3, dt);
+
+            // Update particles
+            updateParticles(dt, energy);
+
+            // Ensure roots generated
+            if (!rootsGenerated) generateRoots();
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx, energy);
+
+            // 2. Sun and rays (behind everything above ground)
+            drawSun(ctx, energy);
+
+            // 3. Rain
+            drawRain(ctx, energy);
+
+            // 4. Soil
+            drawSoil(ctx);
+
+            // 5. Roots (underground)
+            drawRoots(ctx);
+
+            // 6. Seed (underground)
+            drawSeed(ctx);
+
+            // 7. Stem
+            var stemInfo = drawStem(ctx, energy);
+
+            // 8. Leaves
+            drawLeaves(ctx, stemInfo, energy);
+
+            // 9. Chloroplasts flowing through plant
+            drawChloroplasts(ctx, stemInfo, energy);
+
+            // 10. Flower
+            drawFlower(ctx, stemInfo, energy);
+
+            // 11. Pollen
+            drawPollen(ctx, energy);
+
+            // 12. Cross section (grass tufts)
+            drawCrossSection(ctx);
+
+            // 13. Title
+            drawTitle(ctx);
+
+            // 14. Fade overlay
+            drawFade(ctx);
+        }
+
+        return {
+            name: 'Photosynthesis',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('photosynthesis-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/photosynthesis.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
