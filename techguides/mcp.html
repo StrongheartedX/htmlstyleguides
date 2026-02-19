@@ -83,7 +83,7 @@
         html {
             font-size: 16px;
             scroll-behavior: smooth;
-            scroll-padding-top: 60px;
+            scroll-padding-top: 48px;
         }
 
         body {
@@ -249,15 +249,20 @@
            STICKY JUMP NAV
            ============================================ */
 
-        .jump-nav {
+        .jump-nav-wrapper {
             position: sticky;
             top: 0;
             z-index: 100;
-            display: flex;
-            gap: var(--space-1);
-            padding: var(--space-3) var(--space-5);
             background: linear-gradient(180deg, var(--beeswax-light) 0%, var(--honey-lightest) 100%);
             border-bottom: 2px solid var(--honey-cream);
+        }
+
+        .jump-nav {
+            display: flex;
+            gap: var(--space-1);
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: var(--space-3) var(--space-6);
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             white-space: nowrap;
@@ -783,19 +788,21 @@
     </header>
 
     <!-- Sticky Jump Nav -->
-    <nav class="jump-nav">
-        <a href="#quick-reference">01 Quick Reference</a>
-        <a href="#architecture">02 Architecture</a>
-        <a href="#getting-started">03 Getting Started</a>
-        <a href="#tools">04 Tools</a>
-        <a href="#resources">05 Resources</a>
-        <a href="#prompts">06 Prompts</a>
-        <a href="#transports">07 Transports</a>
-        <a href="#building-servers">08 Building Servers</a>
-        <a href="#building-clients">09 Building Clients</a>
-        <a href="#mcp-vs-alternatives">10 Alternatives</a>
-        <a href="#ecosystem">11 Ecosystem</a>
-    </nav>
+    <div class="jump-nav-wrapper">
+        <nav class="jump-nav">
+            <a href="#quick-reference">01 Quick Reference</a>
+            <a href="#architecture">02 Architecture</a>
+            <a href="#getting-started">03 Getting Started</a>
+            <a href="#tools">04 Tools</a>
+            <a href="#resources">05 Resources</a>
+            <a href="#prompts">06 Prompts</a>
+            <a href="#transports">07 Transports</a>
+            <a href="#building-servers">08 Building Servers</a>
+            <a href="#building-clients">09 Building Clients</a>
+            <a href="#mcp-vs-alternatives">10 Alternatives</a>
+            <a href="#ecosystem">11 Ecosystem</a>
+        </nav>
+    </div>
 
     <div class="container">
 
@@ -1158,7 +1165,7 @@
 <span class="comment"># Create an MCP server with a name</span>
 mcp = FastMCP(<span class="string">"weather"</span>)
 
-<span class="keyword">@mcp.tool()</span>
+<span class="keyword">@mcp.tool</span>
 <span class="keyword">def</span> get_weather(location: <span class="keyword">str</span>) -> <span class="keyword">str</span>:
     <span class="string">"""Get current weather for a location."""</span>
     <span class="comment"># Your real implementation here</span>
@@ -1173,6 +1180,11 @@ mcp = FastMCP(<span class="string">"weather"</span>)
 <span class="keyword">def</span> review_code(code: <span class="keyword">str</span>) -> <span class="keyword">str</span>:
     <span class="string">"""Review the given code for issues."""</span>
     <span class="keyword">return</span> <span class="string">f"Please review this code:\n\n{code}"</span></code></pre>
+
+                    <div class="alert alert-info">
+                        <div class="alert-title">Decorator syntax</div>
+                        <p>In FastMCP 2+, <code>@mcp.tool</code> works without parentheses — they're optional. Use <code>@mcp.tool(name="custom_name")</code> only when you need to override the function name or pass other options.</p>
+                    </div>
 
                     <p>Run the server locally with stdio transport:</p>
                     <pre><code>mcp dev server.py</code></pre>
@@ -1205,6 +1217,11 @@ server.tool(
 
 <span class="keyword">const</span> transport = <span class="keyword">new</span> StdioServerTransport();
 <span class="keyword">await</span> server.connect(transport);</code></pre>
+
+                    <div class="alert alert-warning">
+                        <div class="alert-title">TypeScript imports use .js extensions</div>
+                        <p>Even though your source files are <code>.ts</code>, MCP SDK imports must use <code>.js</code> extensions (e.g., <code>"/server/mcp.js"</code>). This is a TypeScript ESM requirement — the compiler resolves <code>.js</code> imports to their <code>.ts</code> sources automatically.</p>
+                    </div>
                 </div>
 
                 <div class="subsection">
@@ -1240,13 +1257,54 @@ server.tool(
   <span class="string">"mcpServers"</span>: {
     <span class="string">"weather"</span>: {
       <span class="string">"command"</span>: <span class="string">"python"</span>,
-      <span class="string">"args"</span>: [<span class="string">"server.py"</span>]
+      <span class="string">"args"</span>: [<span class="string">"server.py"</span>],
+      <span class="string">"env"</span>: {
+        <span class="string">"API_KEY"</span>: <span class="string">"${WEATHER_KEY:-sk-default}"</span>
+      }
     }
   }
 }</code></pre>
 
+                    <div class="alert alert-info">
+                        <div class="alert-title">Variable expansion</div>
+                        <p>The <code>.mcp.json</code> format supports shell-style variable expansion: <code>${VAR}</code> uses the environment variable, and <code>${VAR:-default}</code> provides a fallback value if unset.</p>
+                    </div>
+
                     <p>Or add via the CLI:</p>
-                    <pre><code>claude mcp add weather python server.py</code></pre>
+                    <pre><code><span class="comment"># Basic: add a stdio server</span>
+claude mcp add weather python server.py
+
+<span class="comment"># With environment variables</span>
+claude mcp add weather --env WEATHER_KEY=sk-123 python server.py
+
+<span class="comment"># Scoped: project-only (default) or user-wide</span>
+claude mcp add weather --scope user python server.py
+
+<span class="comment"># HTTP transport (Streamable HTTP or SSE)</span>
+claude mcp add weather --transport http https://example.com/mcp</code></pre>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Configure VS Code</h3>
+                    <p>VS Code supports MCP servers through a workspace-level config file.</p>
+
+                    <span class="code-label">.vscode/mcp.json</span>
+                    <pre><code>{
+  <span class="string">"servers"</span>: {
+    <span class="string">"weather"</span>: {
+      <span class="string">"command"</span>: <span class="string">"python"</span>,
+      <span class="string">"args"</span>: [<span class="string">"server.py"</span>],
+      <span class="string">"env"</span>: {
+        <span class="string">"API_KEY"</span>: <span class="string">"${WEATHER_KEY}"</span>
+      }
+    }
+  }
+}</code></pre>
+
+                    <div class="alert alert-info">
+                        <div class="alert-title">VS Code vs Claude Code format</div>
+                        <p>Note the different root key: VS Code uses <code>"servers"</code> while Claude Code uses <code>"mcpServers"</code>. Both support the same <code>command</code>/<code>args</code>/<code>env</code> structure.</p>
+                    </div>
                 </div>
 
                 <div class="subsection">
@@ -2160,6 +2218,25 @@ MCP-Protocol-Version: 2025-03-26
   }
 }</code></pre>
 
+                    <span class="code-label">TypeScript — Express + StreamableHTTPServerTransport</span>
+                    <pre><code><span class="keyword">import</span> express <span class="keyword">from</span> <span class="string">"express"</span>;
+<span class="keyword">import</span> { McpServer } <span class="keyword">from</span> <span class="string">"@modelcontextprotocol/sdk/server/mcp.js"</span>;
+<span class="keyword">import</span> { StreamableHTTPServerTransport } <span class="keyword">from</span>
+  <span class="string">"@modelcontextprotocol/sdk/server/streamableHttp.js"</span>;
+
+<span class="keyword">const</span> app = express();
+app.use(express.json());
+
+app.all(<span class="string">"/mcp"</span>, <span class="keyword">async</span> (req, res) => {
+  <span class="keyword">const</span> server = <span class="keyword">new</span> McpServer({ name: <span class="string">"remote"</span>, version: <span class="string">"1.0.0"</span> });
+  <span class="comment">// Register tools on `server` here...</span>
+  <span class="keyword">const</span> transport = <span class="keyword">new</span> StreamableHTTPServerTransport({ sessionIdGenerator: <span class="keyword">undefined</span> });
+  <span class="keyword">await</span> server.connect(transport);
+  <span class="keyword">await</span> transport.handleRequest(req, res, req.body);
+});
+
+app.listen(3000);</code></pre>
+
                     <p><strong>Best for:</strong> Remote servers, multi-tenant platforms, cloud services, cross-network integrations where multiple clients connect to the same server.</p>
                 </div>
 
@@ -2319,7 +2396,7 @@ MCP-Protocol-Version: 2025-03-26
 
                 <div class="subsection">
                     <h3 class="subsection-title">Python with FastMCP</h3>
-                    <p>FastMCP is the high-level Python framework for building MCP servers. Decorators map directly to MCP primitives — <code>@mcp.tool()</code> for tools, <code>@mcp.resource()</code> for resources, and <code>@mcp.prompt()</code> for prompts.</p>
+                    <p>FastMCP is the high-level Python framework for building MCP servers. Decorators map directly to MCP primitives — <code>@mcp.tool</code> for tools, <code>@mcp.resource()</code> for resources, and <code>@mcp.prompt()</code> for prompts.</p>
 
                     <span class="code-label">server.py</span>
                     <pre><code><span class="keyword">from</span> mcp.server.fastmcp <span class="keyword">import</span> FastMCP
@@ -2327,7 +2404,7 @@ MCP-Protocol-Version: 2025-03-26
 mcp = FastMCP(<span class="string">"my-server"</span>)
 
 <span class="comment"># Tools — model-controlled actions</span>
-@mcp.tool()
+@mcp.tool
 <span class="keyword">def</span> calculate(expression: str) -> str:
     <span class="string">"""Evaluate a math expression."""</span>
     <span class="keyword">return</span> str(eval(expression))
@@ -2356,10 +2433,10 @@ mcp = FastMCP(<span class="string">"my-server"</span>)
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><code>@mcp.tool()</code></td>
+                                    <td><code>@mcp.tool</code></td>
                                     <td>Tool</td>
                                     <td>Model-controlled</td>
-                                    <td>Type hints become the JSON Schema for tool arguments</td>
+                                    <td>Type hints become the JSON Schema. Parens optional since FastMCP 2+</td>
                                 </tr>
                                 <tr>
                                     <td><code>@mcp.resource()</code></td>
@@ -2428,25 +2505,38 @@ server.tool(
                     <h3 class="subsection-title">Server Lifecycle</h3>
                     <p>Production servers need proper startup and shutdown handling. Both SDKs support lifecycle hooks for resource management.</p>
 
-                    <span class="code-label">Python — Lifespan management</span>
+                    <span class="code-label">Python — Lifespan management with typed state</span>
                     <pre><code><span class="keyword">from</span> contextlib <span class="keyword">import</span> asynccontextmanager
+<span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> AppState:
+    db: Database
+    cache: Redis
 
 @asynccontextmanager
 <span class="keyword">async def</span> lifespan(server):
     <span class="comment"># Startup: initialize connections, load config</span>
     db = <span class="keyword">await</span> Database.connect(<span class="string">"postgres://..."</span>)
+    cache = <span class="keyword">await</span> Redis.connect(<span class="string">"redis://..."</span>)
     <span class="keyword">try</span>:
-        <span class="keyword">yield</span> {<span class="string">"db"</span>: db}
+        <span class="keyword">yield</span> AppState(db=db, cache=cache)
     <span class="keyword">finally</span>:
         <span class="comment"># Shutdown: clean up resources</span>
+        <span class="keyword">await</span> cache.close()
         <span class="keyword">await</span> db.close()
 
 mcp = FastMCP(<span class="string">"my-server"</span>, lifespan=lifespan)
 
-@mcp.tool()
+<span class="keyword">@mcp.tool</span>
 <span class="keyword">async def</span> query(ctx: Context, sql: str) -> str:
-    db = ctx.request_context.lifespan_context[<span class="string">"db"</span>]
-    <span class="keyword">return</span> str(<span class="keyword">await</span> db.execute(sql))</code></pre>
+    state: AppState = ctx.request_context.lifespan_context
+    <span class="keyword">return</span> str(<span class="keyword">await</span> state.db.execute(sql))</code></pre>
+
+                    <div class="alert alert-info">
+                        <div class="alert-title">Typed vs dict lifespan</div>
+                        <p>You can <code>yield</code> a plain dict like <code>{"db": db}</code> for simple cases. A <code>@dataclass</code> gives you autocomplete and type checking — recommended when managing multiple resources.</p>
+                    </div>
 
                     <div class="table-container">
                         <table>
@@ -2503,7 +2593,7 @@ mcp = FastMCP(<span class="string">"my-server"</span>, lifespan=lifespan)
                     </div>
 
                     <span class="code-label">Python — Tool error (visible to LLM)</span>
-                    <pre><code>@mcp.tool()
+                    <pre><code>@mcp.tool
 <span class="keyword">def</span> get_file(path: str) -> str:
     <span class="keyword">try</span>:
         <span class="keyword">return</span> Path(path).read_text()
@@ -3217,6 +3307,11 @@ npx @modelcontextprotocol/inspector
                     </div>
 
                     <div class="alert alert-warning">
+                        <div class="alert-title">The reality of MCP auth today</div>
+                        <p>In surveyed MCP servers, 53% use static secrets (API keys, tokens) and only 8.5% implement OAuth. Most servers rely on environment variables for credentials — quick to set up but hard to rotate. For production HTTP servers, OAuth 2.1 with PKCE is the spec-recommended approach.</p>
+                    </div>
+
+                    <div class="alert alert-warning">
                         <div class="alert-title">Never trust tool annotations from unverified servers</div>
                         <p>Tool annotations like <code>readOnlyHint</code> and <code>destructiveHint</code> are self-reported by the server. A malicious server can claim a destructive tool is read-only. Host applications must enforce their own safety policies and treat annotations from unverified servers as untrusted hints, not security guarantees.</p>
                     </div>
@@ -3254,6 +3349,86 @@ npx @modelcontextprotocol/inspector
                         <p>A typical development setup might connect Claude Desktop to a filesystem server (for code context), a GitHub server (for issues and PRs), and a database server (for schema inspection) -- all running simultaneously as separate processes. The host manages routing and the model sees a unified set of tools from all connected servers.</p>
                     </div>
                 </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">JSON-RPC Error Codes &amp; Retry Strategy</h3>
+                    <p>When protocol errors occur, the error code tells you whether retrying is safe.</p>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Meaning</th>
+                                    <th>Retry?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>-32700</code></td>
+                                    <td>Parse error — malformed JSON</td>
+                                    <td>No — fix the request</td>
+                                </tr>
+                                <tr>
+                                    <td><code>-32600</code></td>
+                                    <td>Invalid request — missing required fields</td>
+                                    <td>No — fix the request</td>
+                                </tr>
+                                <tr>
+                                    <td><code>-32601</code></td>
+                                    <td>Method not found — unknown tool or method name</td>
+                                    <td>No — check tool list</td>
+                                </tr>
+                                <tr>
+                                    <td><code>-32602</code></td>
+                                    <td>Invalid params — wrong argument types or missing required args</td>
+                                    <td>No — fix arguments</td>
+                                </tr>
+                                <tr>
+                                    <td><code>-32603</code></td>
+                                    <td>Internal error — server crashed or unexpected failure</td>
+                                    <td>Yes — with backoff</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Middleware Pipeline</h3>
+                    <p>Production HTTP servers benefit from a middleware stack around MCP tool handlers. Process requests through layers before they reach your tool logic.</p>
+
+                    <span class="code-label">Middleware ordering (outside → inside)</span>
+                    <pre><code><span class="comment">Request flow:</span>
+
+┌─────────────────────────────────────────┐
+│  <span class="keyword">1. Authentication</span>                      │
+│  Verify OAuth token / API key           │
+│  ┌─────────────────────────────────────┐│
+│  │  <span class="keyword">2. Rate Limiting</span>                   ││
+│  │  Per-session + per-tool limits      ││
+│  │  ┌─────────────────────────────────┐││
+│  │  │  <span class="keyword">3. Audit Logging</span>               │││
+│  │  │  Log tool name, args, caller    │││
+│  │  │  ┌─────────────────────────────┐│││
+│  │  │  │  <span class="keyword">4. Circuit Breaker</span>         ││││
+│  │  │  │  Skip if backend is down    ││││
+│  │  │  │  ┌─────────────────────────┐││││
+│  │  │  │  │  <span class="string">Tool Handler</span>          │││││
+│  │  │  │  └─────────────────────────┘││││
+│  │  │  └─────────────────────────────┘│││
+│  │  └─────────────────────────────────┘││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘</code></pre>
+
+                    <div class="command-grid">
+                        <div class="command-card">
+                            <h4>Circuit Breaker States</h4>
+                            <p><strong>Closed</strong> → requests pass through normally. After N consecutive failures → <strong>Open</strong> (all requests fail immediately). After a timeout → <strong>Half-Open</strong> (one probe request allowed). If probe succeeds → back to Closed.</p>
+                            <code>Closed</code> → <code>Open</code> → <code>Half-Open</code> → <code>Closed</code>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -3271,18 +3446,20 @@ npx @modelcontextprotocol/inspector
         const navLinks = document.querySelectorAll('.jump-nav a');
 
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    navLinks.forEach(link => link.classList.remove('active'));
-                    const activeLink = document.querySelector(`.jump-nav a[href="#${entry.target.id}"]`);
-                    if (activeLink) {
-                        activeLink.classList.add('active');
-                        activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-                    }
-                }
-            });
+            // Find the topmost currently-intersecting section
+            const visible = entries
+                .filter(e => e.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            if (visible.length === 0) return;
+            const topSection = visible[0].target;
+            navLinks.forEach(link => link.classList.remove('active'));
+            const activeLink = document.querySelector(`.jump-nav a[href="#${topSection.id}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+                activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+            }
         }, {
-            rootMargin: '-80px 0px -60% 0px',
+            rootMargin: '-48px 0px -50% 0px',
             threshold: 0
         });
 
