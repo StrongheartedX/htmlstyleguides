@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Roller Arcade — Casino Vegas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Abril+Fatface&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Casino Vegas Palette */
+            --felt-green: #2d6a32;
+            --felt-dark: #1e4a23;
+            --felt-light: #3a8442;
+            --gold: #d4a017;
+            --gold-light: #f0c84d;
+            --gold-dark: #a67c00;
+            --brass: #b5882a;
+            --neon-pink: #ff2d7b;
+            --neon-blue: #00d4ff;
+            --neon-yellow: #ffe234;
+            --neon-green: #39ff14;
+            --velvet-red: #8b1a2b;
+            --velvet-deep: #5c0e1a;
+            --deep-purple: #1a0a2e;
+            --night-black: #0c0612;
+            --chrome: #c0c0c0;
+            --chrome-dark: #888888;
+            --card-white: #f8f6f0;
+            --card-cream: #ede8d8;
+            --suit-red: #cc1122;
+            --suit-black: #1a1a1a;
+            --text-light: #e8e0d4;
+            --text-dim: rgba(232, 224, 212, 0.6);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --space-3xl: 64px;
+            --space-4xl: 96px;
+
+            /* Typography */
+            --font-display: 'Abril Fatface', serif;
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+
+            /* Effects */
+            --neon-pink-glow: 0 0 7px #ff2d7b, 0 0 10px #ff2d7b, 0 0 21px #ff2d7b, 0 0 42px #ff2d7b;
+            --neon-blue-glow: 0 0 7px #00d4ff, 0 0 10px #00d4ff, 0 0 21px #00d4ff, 0 0 42px #00d4ff;
+            --neon-yellow-glow: 0 0 7px #ffe234, 0 0 10px #ffe234, 0 0 21px #ffe234;
+            --neon-green-glow: 0 0 7px #39ff14, 0 0 10px #39ff14, 0 0 21px #39ff14;
+            --gold-glow: 0 0 10px rgba(212, 160, 23, 0.4), 0 0 20px rgba(212, 160, 23, 0.2);
+            --shadow-luxury: 0 4px 24px rgba(0, 0, 0, 0.5);
+            --gold-gradient: linear-gradient(135deg, #a67c00, #d4a017, #f0c84d, #d4a017, #a67c00);
+            --chrome-gradient: linear-gradient(135deg, #888, #c0c0c0, #e8e8e8, #c0c0c0, #888);
+
+            /* Transitions */
+            --transition-smooth: 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--text-light);
+            background: var(--night-black);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Casino floor pattern background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(45, 106, 50, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 30%, rgba(26, 10, 46, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 26, 43, 0.06) 0%, transparent 50%),
+                repeating-conic-gradient(
+                    rgba(212, 160, 23, 0.02) 0deg 10deg,
+                    transparent 10deg 20deg
+                );
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes marquee-scroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+
+        @keyframes neon-flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                opacity: 1;
+                text-shadow:
+                    0 0 7px #ff2d7b,
+                    0 0 10px #ff2d7b,
+                    0 0 21px #ff2d7b,
+                    0 0 42px #ff2d7b;
+            }
+            20%, 24%, 55% {
+                opacity: 0.85;
+                text-shadow:
+                    0 0 4px #ff2d7b,
+                    0 0 7px #ff2d7b;
+            }
+        }
+
+        @keyframes suit-float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(3deg); }
+            50% { transform: translateY(-4px) rotate(-2deg); }
+            75% { transform: translateY(-10px) rotate(1deg); }
+        }
+
+        @keyframes gold-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes chip-spin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        /* ==================== BACK LINK ==================== */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gold);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: var(--space-sm) var(--space-lg);
+            border: 1px solid var(--gold-dark);
+            background: rgba(26, 10, 46, 0.6);
+            transition: all var(--transition-smooth);
+            margin-bottom: var(--space-xl);
+        }
+
+        .back-link::before {
+            content: '\2190  ';
+        }
+
+        .back-link:hover {
+            background: rgba(212, 160, 23, 0.15);
+            border-color: var(--gold-light);
+            box-shadow: var(--gold-glow);
+            color: var(--gold-light);
+        }
+
+        /* ==================== HEADER — Casino Grand Entrance ==================== */
+        .header {
+            text-align: center;
+            padding: var(--space-4xl) var(--space-xl) var(--space-3xl);
+            position: relative;
+            background:
+                linear-gradient(180deg,
+                    rgba(26, 10, 46, 0.9) 0%,
+                    rgba(12, 6, 18, 0.95) 100%
+                );
+            border: 2px solid transparent;
+            border-image: var(--gold-gradient) 1;
+            overflow: hidden;
+        }
+
+        /* Inner gold rule */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 160, 23, 0.3);
+            pointer-events: none;
+        }
+
+        .header-suits {
+            font-size: 1.5rem;
+            letter-spacing: 0.6em;
+            margin-bottom: var(--space-lg);
+            color: var(--gold);
+        }
+
+        .header-suits .red {
+            color: var(--suit-red);
+        }
+
+        .header-suits span {
+            display: inline-block;
+            animation: suit-float 4s ease-in-out infinite;
+        }
+
+        .header-suits span:nth-child(2) { animation-delay: 0.5s; }
+        .header-suits span:nth-child(3) { animation-delay: 1s; }
+        .header-suits span:nth-child(4) { animation-delay: 1.5s; }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 6.5rem);
+            font-weight: 400;
+            line-height: 1;
+            background: var(--gold-gradient);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gold-shimmer 6s linear infinite;
+            margin-bottom: var(--space-lg);
+            letter-spacing: 0.04em;
+        }
+
+        .header-tagline {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 400;
+            color: var(--neon-pink);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            animation: neon-flicker 8s infinite;
+            margin-bottom: var(--space-lg);
+        }
+
+        .header-sub {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+            max-width: 50ch;
+            margin: 0 auto;
+        }
+
+        /* Marquee light border at bottom of header */
+        .marquee-border {
+            height: 4px;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--neon-yellow) 0px,
+                    var(--neon-yellow) 10px,
+                    transparent 10px,
+                    transparent 20px
+                );
+            background-size: 40px 4px;
+            animation: marquee-scroll 1s linear infinite;
+        }
+
+        /* Floating suit decorations in header */
+        .header-decor-left,
+        .header-decor-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 6rem;
+            opacity: 0.06;
+            color: var(--gold);
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .header-decor-left {
+            left: var(--space-xl);
+        }
+
+        .header-decor-right {
+            right: var(--space-xl);
+        }
+
+        /* ==================== SECTION STYLING ==================== */
+        .games-section {
+            padding: var(--space-3xl) 0;
+            position: relative;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-2xl);
+            position: relative;
+            padding-left: var(--space-2xl);
+        }
+
+        .section-suit {
+            position: absolute;
+            top: -4px;
+            left: 0;
+            font-size: 2rem;
+            color: var(--gold);
+            opacity: 0.7;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-sm);
+        }
+
+        .section-header h2::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 2px;
+            background: var(--gold-gradient);
+            margin-top: var(--space-sm);
+        }
+
+        .section-intro {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            max-width: 60ch;
+            line-height: 1.7;
+        }
+
+        /* Gold divider between sections */
+        .gold-divider {
+            height: 2px;
+            background: var(--gold-gradient);
+            margin: 0;
+            position: relative;
+        }
+
+        .gold-divider::before {
+            content: '\2666';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--night-black);
+            color: var(--gold);
+            padding: 0 var(--space-md);
+            font-size: 1rem;
+        }
+
+        /* ==================== GAME CARDS GRID ==================== */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--space-xl);
+        }
+
+        .game-card {
+            background:
+                linear-gradient(135deg,
+                    rgba(26, 10, 46, 0.95) 0%,
+                    rgba(12, 6, 18, 0.98) 100%
+                );
+            border: 2px solid transparent;
+            border-image: var(--gold-gradient) 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-smooth);
+            box-shadow: var(--shadow-luxury);
+            overflow: hidden;
+        }
+
+        /* Inner gold rule on cards */
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 1px solid rgba(212, 160, 23, 0.15);
+            pointer-events: none;
+            z-index: 1;
+            transition: border-color var(--transition-smooth);
+        }
+
+        .game-card:hover {
+            transform: translateY(-6px);
+            box-shadow:
+                var(--shadow-luxury),
+                0 0 30px rgba(212, 160, 23, 0.15);
+        }
+
+        .game-card:hover::before {
+            border-color: rgba(212, 160, 23, 0.35);
+        }
+
+        /* Neon accent bar at top of card */
+        .game-card-accent {
+            height: 3px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .game-card-accent-pink {
+            background: var(--neon-pink);
+            box-shadow: 0 0 8px rgba(255, 45, 123, 0.5);
+        }
+        .game-card-accent-blue {
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+        }
+        .game-card-accent-green {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+        }
+        .game-card-accent-yellow {
+            background: var(--neon-yellow);
+            box-shadow: 0 0 8px rgba(255, 226, 52, 0.5);
+        }
+        .game-card-accent-red {
+            background: var(--suit-red);
+            box-shadow: 0 0 8px rgba(204, 17, 34, 0.5);
+        }
+        .game-card-accent-gold {
+            background: var(--gold);
+            box-shadow: 0 0 8px rgba(212, 160, 23, 0.5);
+        }
+        .game-card-accent-purple {
+            background: #9b59b6;
+            box-shadow: 0 0 8px rgba(155, 89, 182, 0.5);
+        }
+        .game-card-accent-cyan {
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Suit decoration on card */
+        .card-suit-decor {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            font-size: 2.5rem;
+            opacity: 0.08;
+            color: var(--gold);
+            z-index: 0;
+            transition: opacity var(--transition-smooth);
+            line-height: 1;
+        }
+
+        .card-suit-decor.red {
+            color: var(--suit-red);
+        }
+
+        .game-card:hover .card-suit-decor {
+            opacity: 0.15;
+        }
+
+        .game-card-body {
+            padding: var(--space-lg) var(--space-lg) var(--space-md);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 2;
+        }
+
+        .game-card-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--gold-light);
+            margin-bottom: var(--space-sm);
+            letter-spacing: 0.03em;
+        }
+
+        .game-card-description {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            line-height: 1.7;
+            margin-bottom: var(--space-md);
+            flex: 1;
+        }
+
+        /* Tags / badges */
+        .game-card-tags {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-md);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px var(--space-sm);
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 2px;
+            transition: all var(--transition-smooth);
+        }
+
+        .badge-neon-pink {
+            background: rgba(255, 45, 123, 0.15);
+            color: var(--neon-pink);
+            border: 1px solid rgba(255, 45, 123, 0.3);
+        }
+
+        .badge-neon-blue {
+            background: rgba(0, 212, 255, 0.12);
+            color: var(--neon-blue);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .badge-neon-green {
+            background: rgba(57, 255, 20, 0.1);
+            color: var(--neon-green);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+        }
+
+        .badge-neon-yellow {
+            background: rgba(255, 226, 52, 0.1);
+            color: var(--neon-yellow);
+            border: 1px solid rgba(255, 226, 52, 0.3);
+        }
+
+        .badge-gold {
+            background: rgba(212, 160, 23, 0.12);
+            color: var(--gold);
+            border: 1px solid rgba(212, 160, 23, 0.3);
+        }
+
+        .badge-velvet {
+            background: rgba(139, 26, 43, 0.2);
+            color: #e8556a;
+            border: 1px solid rgba(139, 26, 43, 0.4);
+        }
+
+        .badge-purple {
+            background: rgba(155, 89, 182, 0.15);
+            color: #c49de0;
+            border: 1px solid rgba(155, 89, 182, 0.3);
+        }
+
+        .badge-outline {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid rgba(232, 224, 212, 0.15);
+        }
+
+        /* Card footer */
+        .game-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md) var(--space-lg);
+            border-top: 1px solid rgba(212, 160, 23, 0.15);
+            position: relative;
+            z-index: 2;
+        }
+
+        .style-badge {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-dim);
+        }
+
+        .style-badge::before {
+            content: '\2666 ';
+            color: var(--gold-dark);
+        }
+
+        /* Play button — velvet red with gold text */
+        .btn-play {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-decoration: none;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--velvet-deep) 0%, var(--velvet-red) 50%, #a52035 100%);
+            color: var(--gold-light);
+            border: 1px solid var(--gold-dark);
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            position: relative;
+        }
+
+        .btn-play:hover {
+            background: linear-gradient(135deg, var(--velvet-red) 0%, #a52035 50%, #c4283e 100%);
+            box-shadow:
+                0 0 15px rgba(139, 26, 43, 0.5),
+                0 0 4px rgba(212, 160, 23, 0.3);
+            border-color: var(--gold);
+            color: var(--gold-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-play:active {
+            transform: translateY(1px);
+        }
+
+        /* ==================== COMING SOON CARD ==================== */
+        .coming-soon-card {
+            border: 2px dashed rgba(212, 160, 23, 0.25);
+            background: rgba(26, 10, 46, 0.4);
+            padding: var(--space-2xl);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 280px;
+            position: relative;
+        }
+
+        .coming-soon-card .coming-soon-text {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .coming-soon-card .coming-soon-sub {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-top: var(--space-sm);
+            letter-spacing: 0.06em;
+        }
+
+        .coming-soon-card .coming-soon-suits {
+            margin-top: var(--space-md);
+            font-size: 1.2rem;
+            letter-spacing: 0.4em;
+            color: var(--gold-dark);
+            opacity: 0.5;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            padding: var(--space-3xl) 0;
+            position: relative;
+            overflow: hidden;
+            margin-top: var(--space-2xl);
+            background:
+                linear-gradient(180deg,
+                    rgba(26, 10, 46, 0.6) 0%,
+                    rgba(12, 6, 18, 0.9) 100%
+                );
+            border-top: 2px solid transparent;
+            border-image: var(--gold-gradient) 1;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 160, 23, 0.12);
+            pointer-events: none;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            background: var(--gold-gradient);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gold-shimmer 6s linear infinite;
+            letter-spacing: 0.04em;
+        }
+
+        .footer-sub {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-top: var(--space-xs);
+        }
+
+        .footer-suits {
+            color: var(--gold-dark);
+            letter-spacing: 0.4em;
+            font-size: 0.9rem;
+            opacity: 0.5;
+            margin-top: var(--space-sm);
+        }
+
+        .footer-quote {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-style: italic;
+            color: var(--text-dim);
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        .footer-attribution {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: rgba(232, 224, 212, 0.35);
+            margin-top: var(--space-sm);
+            text-align: right;
+            letter-spacing: 0.08em;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            .header {
+                padding: var(--space-3xl) var(--space-md) var(--space-2xl);
+            }
+
+            .header h1 {
+                font-size: clamp(2.5rem, 12vw, 4rem);
+            }
+
+            .header-tagline {
+                font-size: 1rem;
+            }
+
+            .header-decor-left,
+            .header-decor-right {
+                display: none;
+            }
+
+            .section-header h2 {
+                font-size: 1.7rem;
+            }
+
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+
+            .game-card-title {
+                font-size: 1.25rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: var(--space-lg);
+                text-align: center;
+            }
+
+            .footer-quote {
+                text-align: center;
+            }
+
+            .footer-attribution {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header — Grand Casino Entrance -->
+    <header class="header">
+        <div class="header-decor-left">&#9824;</div>
+        <div class="header-decor-right">&#9829;</div>
+        <div class="container">
+            <a href="../index.html" class="back-link">Home</a>
+            <div class="header-suits">
+                <span>&#9824;</span>
+                <span class="red">&#9829;</span>
+                <span>&#9830;</span>
+                <span class="red">&#9827;</span>
+            </div>
+            <h1>HIGH ROLLER ARCADE</h1>
+            <p class="header-tagline">Place Your Bets</p>
+            <p class="header-sub">Browser games styled with CSS design systems. No frameworks, no installs -- just open and play.</p>
+        </div>
+    </header>
+
+    <!-- Marquee Light Border -->
+    <div class="marquee-border"></div>
+
+    <!-- The Floor (Arcade Games) -->
+    <main class="games-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-suit">&#9824;</span>
+                <h2>The Floor</h2>
+                <p class="section-intro">Each game is a self-contained HTML file built with vanilla JS and styled using one of our CSS design systems. No frameworks, no installs -- just open and play.</p>
+            </div>
+
+            <div class="games-grid">
+
+                <!-- Cathedral Breakout -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-red"></div>
+                    <span class="card-suit-decor red">&#9829;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Cathedral Breakout</h3>
+                        <p class="game-card-description">Shatter stained glass windows across five cathedral levels. Collect gem powerups, chain combos, and watch the light pour through.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-velvet">Stained Glass</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">5 Levels</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Stained Glass</span>
+                        <a href="stained-glass-breakout.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Retro Typing Arena -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-green"></div>
+                    <span class="card-suit-decor">&#9824;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Retro Typing Arena</h3>
+                        <p class="game-card-description">Type your way through a CRT that's about to explode. Synthwave grid, screen shake, RGB split, combo fanfares, and ASCII art boss battles across four intense game modes.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-green">Retro CRT</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">4 Modes</span>
+                            <span class="badge badge-outline">Boss Battles</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Synthwave</span>
+                        <a href="retro-typing-arena.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Stitch Puzzle -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-gold"></div>
+                    <span class="card-suit-decor red">&#9830;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Stitch Puzzle</h3>
+                        <p class="game-card-description">Solve cross-stitch nonogram puzzles on Aida cloth. Use row and column clues to deduce which cells to fill, revealing embroidery motifs like hearts, butterflies, and cottages.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-gold">Embroidery</span>
+                            <span class="badge badge-outline">Nonogram</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">13 Puzzles</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Embroidery</span>
+                        <a href="embroidery-stitch-puzzle.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Survivors Arena -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-pink"></div>
+                    <span class="card-suit-decor">&#9827;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Survivors Arena</h3>
+                        <p class="game-card-description">Five themed survivor arenas: Gothic, Cyberpunk, Cosmic, Forest, and Squad. Auto-attack enemies, level up with new weapons, and hold out as long as you can.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-pink">5 Arenas</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">Roguelite</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Multi-Theme</span>
+                        <a href="survivors/index.html" class="btn-play">Choose Arena</a>
+                    </div>
+                </div>
+
+                <!-- Bubble Gauntlet -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-cyan"></div>
+                    <span class="card-suit-decor red">&#9829;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Bubble Gauntlet</h3>
+                        <p class="game-card-description">Swim through columns of sea creatures in this aquatic flappy shooter. Fire bubbles, dodge lightning, and ride the current as deep-sea enemies close in.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-blue">Aquatic</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">Flappy Shooter</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Glassmorphism</span>
+                        <a href="bubble-gauntlet/index.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Bubble Trouble -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-purple"></div>
+                    <span class="card-suit-decor">&#9824;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Bubble Trouble</h3>
+                        <p class="game-card-description">Pop bouncing bubbles by shooting harpoons upward. Each hit splits them into smaller, faster ones. Clear all bubbles before time runs out across 12 increasingly chaotic levels.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-purple">Psychedelic</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">12 Levels</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Psychedelic</span>
+                        <a href="bubble-trouble/index.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Flappy Invaders -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-blue"></div>
+                    <span class="card-suit-decor red">&#9830;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Flappy Invaders</h3>
+                        <p class="game-card-description">Flappy Bird meets Space Invaders. Tap to flap through alien columns, auto-firing bullets to blast gaps. Armored enemies, power-ups, and enemy fire ramp up across endless waves.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-blue">Space</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Arcade</span>
+                            <span class="badge badge-outline">Endless</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Neon Retro</span>
+                        <a href="flappy-invaders/index.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+                <!-- Coming Soon -->
+                <div class="coming-soon-card">
+                    <span class="coming-soon-text">More Coming</span>
+                    <span class="coming-soon-sub">New games drop regularly</span>
+                    <span class="coming-soon-suits">&#9824; &#9829; &#9830; &#9827;</span>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Gold Divider -->
+    <div class="gold-divider"></div>
+
+    <!-- The Lounge (Studio / Creative Tools) -->
+    <section class="games-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-suit">&#9830;</span>
+                <h2>The Lounge</h2>
+                <p class="section-intro">Creative tools and virtual instruments -- compose music, play keyboards, and make noise. Same zero-install philosophy, styled with CSS design systems.</p>
+            </div>
+
+            <div class="games-grid">
+
+                <!-- Audio Tracker -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-yellow"></div>
+                    <span class="card-suit-decor">&#9827;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Audio Tracker</h3>
+                        <p class="game-card-description">Compose chiptune and 16-bit music in a FamiTracker-inspired browser sequencer. Piano keyboard input, 9 instrument presets, export to JSON for embedding in any game.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-yellow">Chiptune</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">Sequencer</span>
+                            <span class="badge badge-outline">Tool</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">FamiTracker</span>
+                        <a href="audio-tracker/index.html" class="btn-play">Open</a>
+                    </div>
+                </div>
+
+                <!-- Music Visualizer -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-pink"></div>
+                    <span class="card-suit-decor red">&#9829;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Music Visualizer</h3>
+                        <p class="game-card-description">Canvas visualizer synced to the chiptune library. Pick a song and renderer -- particle fields, scrolling waveforms, or spectrum rings pulse with every note.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-neon-pink">57 Songs</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">9 Renderers</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Pluggable Renderers</span>
+                        <a href="music-visualizer/index.html" class="btn-play">Launch</a>
+                    </div>
+                </div>
+
+                <!-- Music Videos -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-gold"></div>
+                    <span class="card-suit-decor">&#9824;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Music Videos</h3>
+                        <p class="game-card-description">Stick figure music videos synced to chiptune beats. Canvas-rendered dance clubs, pole dancers with faux-3D foreshortening, and beat-synced chaos -- all styled through a Cassette Futurism VHS interface.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-gold">Cassette Futurism</span>
+                            <span class="badge badge-outline">Canvas</span>
+                            <span class="badge badge-outline">Beat Sync</span>
+                            <span class="badge badge-outline">1 Video</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">VHS Tape Deck</span>
+                        <a href="music-visualizer/music-videos/index.html" class="btn-play">Watch</a>
+                    </div>
+                </div>
+
+                <!-- Cathedral Organ -->
+                <div class="game-card">
+                    <div class="game-card-accent game-card-accent-purple"></div>
+                    <span class="card-suit-decor red">&#9830;</span>
+                    <div class="game-card-body">
+                        <h3 class="game-card-title">Cathedral Organ</h3>
+                        <p class="game-card-description">Play a virtual organ with a gothic cathedral aesthetic. Keys light up during song playback, decorative pipes glow with each note, and flickering candle sconces set the mood.</p>
+                        <div class="game-card-tags">
+                            <span class="badge badge-purple">Gothic</span>
+                            <span class="badge badge-outline">Web Audio</span>
+                            <span class="badge badge-outline">Virtual Instrument</span>
+                            <span class="badge badge-outline">Tool</span>
+                        </div>
+                    </div>
+                    <div class="game-card-footer">
+                        <span class="style-badge">Gothic Cathedral</span>
+                        <a href="audio-tracker/organ.html" class="btn-play">Play</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Marquee Light Border -->
+    <div class="marquee-border"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <p class="footer-logo">High Roller Arcade</p>
+                    <p class="footer-sub">HTML Style Guide Casino</p>
+                    <p class="footer-suits">&#9824; &#9829; &#9830; &#9827;</p>
+                </div>
+                <div>
+                    <p class="footer-quote">"The gambling known as business looks<br>with austere disfavor upon the business<br>known as gambling."</p>
+                    <p class="footer-attribution">-- Ambrose Bierce</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
