@@ -41,7 +41,7 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | dark-folio | Claude Code | |
 | darkroom | | The Decisive Moment |
 | day-of-the-dead | | |
-| de-stijl | | |
+| de-stijl | HTML & CSS | |
 | denim | | The Rivet |
 | dos-bios | curl & wget | |
 | editorial | | |
