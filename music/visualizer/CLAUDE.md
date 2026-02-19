@@ -114,8 +114,10 @@ window.Renderers['my-video'] = (function() { ... })();
 // In init():
 var figH = H * 0.3;
 var groundY = H * 0.78;
-var a = StickFight.create({ x: W * 0.35, y: groundY, figH: figH, facing: 1, color: '#8898c8' });
-var b = StickFight.create({ x: W * 0.65, y: groundY, figH: figH, facing: -1, color: '#c09070' });
+var center = W * 0.5;
+var spread = Math.min(figH * 1.5, W * 0.15);  // figH-primary, W as safety cap
+var a = StickFight.create({ x: center - spread, y: groundY, figH: figH, facing: 1, color: '#8898c8' });
+var b = StickFight.create({ x: center + spread, y: groundY, figH: figH, facing: -1, color: '#c09070' });
 
 // On beat:
 StickFight.setPose(a, 'lunge');
@@ -249,17 +251,46 @@ The engine draws the blade (silver) with a guard crossbar (figure color). For at
 - **Scene-specific drawing** (hair, clothing, faces, glow effects) stays in the video renderer — the engine just draws the skeleton.
 - **Position movement**: update `fig.x` directly in your renderer (the engine doesn't move figures laterally).
 
+### Positioning — Think in Body Lengths, Not Screen Fractions
+
+**NEVER** position figures using `W * fraction` (e.g., `x: W * 0.3`). On wide monitors, figures end up impossibly far apart relative to their body size and attack reach.
+
+**ALWAYS** position figures relative to `figH` (body lengths) from a center point:
+
+```js
+// GOOD — spacing scales with figure size
+var center = W * 0.5;
+var spread = Math.min(figH * 2.0, W * 0.2);  // figH drives, W caps for tiny screens
+fig.x = center - spread;
+
+// BAD — breaks on ultrawide
+fig.x = W * 0.3;
+```
+
+This applies to:
+- **Initial figure positions** — center ± `figH * N`
+- **Arena/clamp bounds** — max half-width from center as `figH * N`
+- **Movement speeds** — `figH * 1.5 * dt` not `200 * dt`
+- **Spawn offsets** — `arenaEdge - figH * 0.5` not `arenaEdge - 50`
+- **Approach/hang distances** — `attackRange + figH * 0.5` not `attackRange + 60`
+
+Use `Math.min(figH * factor, W * fraction)` so layout works on both narrow and ultrawide screens. The `resize()` handler must use the same formula as `init()`.
+
 ### Videos Using the Engine
 
 | Video | Pattern |
 |-------|---------|
-| `fencing-match-in-a-thunderstorm-video.html` | 2 armed figures, pose choreography + denouement ragdoll |
-
-### Future Sessions (not yet implemented)
-
-- **Combat system**: `StickFight.attack(attacker, moveName, target)` — hit detection, reactions
-- **Gore & effects**: `StickFight.updateEffects(dt)` / `drawEffects(ctx)` — blood particles, dismemberment
-- Remaining ~20 stick figure videos to be refactored to use the engine
+| `fencing-match-in-a-thunderstorm-video.html` | 2 armed fencers, pose choreography + ragdoll |
+| `through-the-fire-and-flames-video.html` | 2 warriors + dragon, full combat + gore |
+| `system-infection-video.html` | Hero vs enemy waves, arena combat + boss fights |
+| `the-duel-at-worlds-end-video.html` | 2 musicians on cliff, performance poses |
+| `tavern-brawl-crescendo-video.html` | Patron pairs, waltz → brawl choreography |
+| `hollow-choir-ascendant-video.html` | Ritual procession figures |
+| `wap-video.html` | Pole + floor dancers, club performance |
+| `survivors-*-video.html` (4 videos) | Single survivor figure, poses only |
+| `classical-runner-overture-video.html` | Runner figure, poses only |
+| `long-december-video.html` | Figures with poses only |
+| `the-divas-aria-video.html` | Performance figures |
 
 ## Embeddability
 
