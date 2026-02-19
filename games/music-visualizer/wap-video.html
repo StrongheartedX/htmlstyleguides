@@ -150,14 +150,15 @@
         // Joints: head, neck, lShoulder, rShoulder, lElbow, rElbow, lHand, rHand, hip, lKnee, rKnee, lAnkle, rAnkle
         // Bone sizes relative to figure height
         var BONE = {
-            headR: 0.09,
-            neck: 0.08,
-            shoulder: 0.14,
-            upperArm: 0.13,
-            forearm: 0.12,
-            torso: 0.22,
-            thigh: 0.18,
-            shin: 0.17
+            headR: 0.08,
+            neck: 0.07,
+            shoulder: 0.11,   // narrower shoulders
+            hipWidth: 0.13,   // wider hips than shoulders
+            upperArm: 0.12,
+            forearm: 0.11,
+            torso: 0.23,
+            thigh: 0.19,
+            shin: 0.18
         };
 
         // ── Pose Parameters ──
@@ -300,19 +301,20 @@
 
             // Ankle positions (splits widen them)
             var splitW = params.splits * figH * 0.25;
-            var lAnkle = { x: -b.shoulder * 0.3 - splitW + leanOff, y: 0 };
-            var rAnkle = { x: b.shoulder * 0.3 + splitW + leanOff, y: 0 };
+            var hw = b.hipWidth; // wider hip reference for legs
+            var lAnkle = { x: -hw * 0.3 - splitW + leanOff, y: 0 };
+            var rAnkle = { x: hw * 0.3 + splitW + leanOff, y: 0 };
 
             // Knees
             var kneeY = -b.shin + bounceOff + params.splits * b.shin * 0.5;
             var kickOff = params.kick * figH * 0.15;
             var lKnee, rKnee;
             if (params.kickSide > 0) {
-                lKnee = { x: -b.shoulder * 0.15 - splitW * 0.5 + leanOff, y: kneeY };
-                rKnee = { x: b.shoulder * 0.15 + splitW * 0.5 + kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
+                lKnee = { x: -hw * 0.2 - splitW * 0.5 + leanOff, y: kneeY };
+                rKnee = { x: hw * 0.2 + splitW * 0.5 + kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
             } else {
-                lKnee = { x: -b.shoulder * 0.15 - splitW * 0.5 - kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
-                rKnee = { x: b.shoulder * 0.15 + splitW * 0.5 + leanOff, y: kneeY };
+                lKnee = { x: -hw * 0.2 - splitW * 0.5 - kickOff * 0.7 + leanOff, y: kneeY - kickOff * 0.3 };
+                rKnee = { x: hw * 0.2 + splitW * 0.5 + leanOff, y: kneeY };
             }
 
             // Hip
@@ -387,7 +389,7 @@
         function drawFigure(ctx, joints, color, alpha, scaleX, params) {
             scaleX = scaleX || 1;
             params = params || {};
-            var lw = Math.max(3, W * 0.004);
+            var lw = 3;  // fixed width — no viewport scaling
             var hx = joints.head.x * scaleX;
             var hy = joints.head.y;
             var hr = joints.headR;
@@ -410,8 +412,20 @@
                 ctx.stroke();
             }
 
-            // Torso
-            line(joints.neck, joints.hip);
+            // Torso — hourglass curve (narrower waist, wider hips)
+            var waistY = (joints.neck.y + joints.hip.y) * 0.55;  // waist slightly above midpoint
+            var waistX = (joints.neck.x + joints.hip.x) * 0.5 * scaleX;
+            var neckSX = joints.neck.x * scaleX;
+            var hipSX = joints.hip.x * scaleX;
+            var hipSpread = hr * 0.8;  // how wide hips flare
+            ctx.beginPath();
+            ctx.moveTo(neckSX, joints.neck.y);
+            ctx.quadraticCurveTo(waistX - hipSpread * 0.2 * scaleX, waistY, hipSX - hipSpread * scaleX, joints.hip.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(neckSX, joints.neck.y);
+            ctx.quadraticCurveTo(waistX + hipSpread * 0.2 * scaleX, waistY, hipSX + hipSpread * scaleX, joints.hip.y);
+            ctx.stroke();
             // Shoulders
             line(joints.lShoulder, joints.rShoulder);
             // Left arm
@@ -471,36 +485,43 @@
             ctx.quadraticCurveTo(hx + hr * 0.15, hy + hr * 0.35, hx + hr * 0.35, hy + hr * 0.15);
             ctx.stroke();
 
-            // ── Hair ──
-            ctx.lineWidth = Math.max(2, lw * 0.8);
-            ctx.shadowBlur = 8;
+            // ── Hair (long, flowing, feminine) ──
+            ctx.lineWidth = Math.max(1.5, lw * 0.7);
+            ctx.shadowBlur = 6;
 
-            // Hair direction: lean + headbang influence the base angle
-            var hairBaseAngle = -Math.PI * 0.5; // straight up
             var lean = params.lean || 0;
             var headBang = params.headBang || 0;
             var whip = params.hairWhip || 0;
             var whipDir = params.hairWhipDir || 1;
-            // Hair flows opposite to lean/movement
-            var hairAngle = hairBaseAngle - lean * 0.6 - headBang * 0.8 + whip * whipDir * 1.8;
 
-            var numStrands = 5;
-            var hairLen = hr * (1.6 + whip * 1.2);  // longer during whips
+            // Hair flows DOWN by default (gravity), with movement influence
+            var hairSwing = -lean * 0.4 - headBang * 0.6 + whip * whipDir * 2.2;
+
+            var numStrands = 8;
+            var baseHairLen = hr * (2.5 + whip * 1.8);  // long flowing hair
 
             for (var si = 0; si < numStrands; si++) {
-                var spread = (si / (numStrands - 1) - 0.5) * 1.2;  // -0.6 to 0.6
-                var strandAngle = hairAngle + spread * 0.8;
-                var strandLen = hairLen * (0.7 + Math.abs(spread) * 0.6);
+                var t = si / (numStrands - 1);  // 0 to 1
+                var spread = (t - 0.5) * 2.0;   // -1 to 1
 
-                // Wavy strand using quadratic curve
-                var startX = hx + Math.cos(strandAngle + Math.PI * 0.5) * hr * 0.4 * spread;
-                var startY = hy - hr * 0.6;
-                var endX = startX + Math.cos(strandAngle) * strandLen;
-                var endY = startY + Math.sin(strandAngle) * strandLen;
-                var cpX = (startX + endX) / 2 + Math.sin(strandAngle) * strandLen * 0.3;
-                var cpY = (startY + endY) / 2 - Math.cos(strandAngle) * strandLen * 0.3;
+                // Strands start around crown of head
+                var startAngle = -Math.PI * 0.5 + spread * 0.9; // arc across top
+                var startX = hx + Math.cos(startAngle) * hr * 0.85;
+                var startY = hy + Math.sin(startAngle) * hr * 0.7;
 
-                ctx.globalAlpha = alpha * (0.5 + (1 - Math.abs(spread)) * 0.5);
+                // Longer in the back/sides, shorter in front
+                var strandLen = baseHairLen * (0.6 + Math.abs(spread) * 0.5);
+
+                // Hair falls down with gravity + swing
+                var fallAngle = Math.PI * 0.5 + spread * 0.3 + hairSwing;
+                var endX = startX + Math.sin(fallAngle) * strandLen;
+                var endY = startY + Math.cos(fallAngle * 0.5 + 0.5) * strandLen;
+
+                // Flowing curve control point (creates that swoopy hair look)
+                var cpX = startX + Math.sin(fallAngle) * strandLen * 0.4 + hairSwing * hr * 0.8;
+                var cpY = startY + strandLen * 0.5;
+
+                ctx.globalAlpha = alpha * (0.35 + (1 - Math.abs(spread) * 0.6) * 0.65);
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
                 ctx.quadraticCurveTo(cpX, cpY, endX, endY);
@@ -765,7 +786,7 @@
         // ── Poles ──
         function drawPole(ctx, x) {
             var poleTop = floorY - poleH;
-            var lw = Math.max(2, W * 0.003);
+            var lw = 3;
 
             ctx.save();
             ctx.strokeStyle = 'rgba(200,200,220,0.6)';
@@ -789,7 +810,7 @@
 
         // ── Stage floor ──
         function drawFloor(ctx) {
-            var lw = Math.max(1, W * 0.002);
+            var lw = 2;
             ctx.save();
             ctx.strokeStyle = 'rgba(255,255,255,0.15)';
             ctx.lineWidth = lw;
