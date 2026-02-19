@@ -84,13 +84,18 @@ window.Visualizer = (function () {
             var ev = events[e];
             if (!ev) continue;
             if (ev.n != null && ev.r != null) {
-              // Compact event format: {r: row, n: note, i: instrument}
+              // Compact event format: {r, n, i, d, v}
               if (ev.n > 0 && ev.r < pat.len) {
-                dense[ev.r] = [ev.n, ev.i != null ? ev.i : 0];
+                var cell = [ev.n, ev.i != null ? ev.i : 0, ev.d || 1];
+                if (ev.v != null) cell.push(ev.v);
+                dense[ev.r] = cell;
               }
             } else if (ev.note != null) {
               // Tracker-native format: positional, index e IS the row
-              dense[e] = [ev.note, ev.inst != null ? ev.inst : 0];
+              var dur = ev.duration || ev.d || 1;
+              var cell2 = [ev.note, ev.inst != null ? ev.inst : 0, dur];
+              if (ev.v != null) cell2.push(ev.v);
+              dense[e] = cell2;
             }
           }
           pat.ch.push(dense);
@@ -104,7 +109,7 @@ window.Visualizer = (function () {
    * Build a song object in the exact format ChipPlayer expects:
    * - seq[] array, bpm, rpb
    * - instruments with short keys (a, d, s, r, vol, wave, etc.)
-   * - patterns with len and ch[channel][row] = [midi, instIdx] | null
+   * - patterns with len and ch[channel][row] = [midi, instIdx, duration, velocity?] | null
    */
   function buildChipPlayerSong(raw) {
     var s = JSON.parse(JSON.stringify(raw));
@@ -139,11 +144,18 @@ window.Visualizer = (function () {
             var ev = events[e];
             if (!ev) continue;
             if (ev.n != null && ev.r != null) {
-              // Compact event: {r, n, i}
-              if (ev.n > 0 && ev.r < pat.len) dense[ev.r] = [ev.n, ev.i != null ? ev.i : 0];
+              // Compact event: {r, n, i, d, v}
+              if (ev.n > 0 && ev.r < pat.len) {
+                var cell = [ev.n, ev.i != null ? ev.i : 0, ev.d || 1];
+                if (ev.v != null) cell.push(ev.v);
+                dense[ev.r] = cell;
+              }
             } else if (ev.note != null) {
               // Tracker-native: positional
-              dense[e] = [ev.note, ev.inst != null ? ev.inst : 0];
+              var dur = ev.duration || ev.d || 1;
+              var cell2 = [ev.note, ev.inst != null ? ev.inst : 0, dur];
+              if (ev.v != null) cell2.push(ev.v);
+              dense[e] = cell2;
             }
           }
           pat.ch.push(dense);
@@ -178,6 +190,10 @@ window.Visualizer = (function () {
 
     var totalRows = 0;
 
+    // Track active held notes per channel: { note, remainingRows }
+    var activeNotes = new Array(numChannels);
+    for (var ai = 0; ai < numChannels; ai++) activeNotes[ai] = null;
+
     for (var si = 0; si < s.seq.length; si++) {
       var seqRow = s.seq[si];
       var patIdx = seqRow[0];
@@ -205,6 +221,8 @@ window.Visualizer = (function () {
           if (cell && cell[0] > 0) {
             var midi = cell[0];
             var instIdx = cell[1] || 0;
+            var dur = cell[2] || 1;
+            var vel = cell[3];
             var inst = s.instruments[instIdx] || s.instruments[0];
             if (midi < minMidi) minMidi = midi;
             if (midi > maxMidi) maxMidi = midi;
@@ -213,17 +231,40 @@ window.Visualizer = (function () {
             if (inst && inst.wave) {
               chWaveTypes[ch][inst.wave] = (chWaveTypes[ch][inst.wave] || 0) + 1;
             }
-            density++;
-            rowPitches.push(midi);
-            rowNotes.push({
+            var baseVol = inst ? (inst.volume != null ? inst.volume : inst.vol != null ? inst.vol : 0.8) : 0.8;
+            var noteObj = {
               midi: midi,
               freq: midiToFreq(midi),
               instrument: instIdx,
               wave: inst ? inst.wave : "square",
-              vol: inst ? (inst.volume != null ? inst.volume : inst.vol != null ? inst.vol : 0.8) : 0.8,
-              channel: ch
-            });
+              vol: vel != null ? baseVol * vel / 15 : baseVol,
+              channel: ch,
+              held: false
+            };
+            density++;
+            rowPitches.push(midi);
+            rowNotes.push(noteObj);
+            // Track held note if duration > 1
+            activeNotes[ch] = dur > 1 ? { note: noteObj, remainingRows: dur - 1 } : null;
+          } else if (activeNotes[ch] && activeNotes[ch].remainingRows > 0) {
+            // Sustained note from a previous row — still audibly playing
+            var held = activeNotes[ch].note;
+            var heldObj = {
+              midi: held.midi,
+              freq: held.freq,
+              instrument: held.instrument,
+              wave: held.wave,
+              vol: held.vol,
+              channel: ch,
+              held: true
+            };
+            density++;
+            rowPitches.push(held.midi);
+            rowNotes.push(heldObj);
+            activeNotes[ch].remainingRows--;
+            if (activeNotes[ch].remainingRows <= 0) activeNotes[ch] = null;
           } else {
+            activeNotes[ch] = null;
             rowNotes.push(null);
           }
         }
@@ -416,6 +457,7 @@ window.Visualizer = (function () {
           wave: n.wave,
           vol: n.vol,
           channel: n.channel,
+          held: !!n.held,
           normalized: (n.midi - analysis.pitchRange.min) / analysis.pitchRange.span
         });
       } else {

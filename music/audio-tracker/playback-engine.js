@@ -50,8 +50,9 @@ var ChipPlayer = (function () {
 
   // ---- Playback note ----
 
-  function playNote(midi, inst, time, durationRows) {
+  function playNote(midi, inst, time, durationRows, velocity) {
     var vol = inst.vol !== undefined ? inst.vol : 0.8;
+    if (velocity != null) vol *= velocity / 15;
     var a = inst.a || 0.01, d = inst.d || 0.1;
     var s = inst.s !== undefined ? inst.s : 0.6, r = inst.r || 0.1;
     var rows = durationRows || 1;
@@ -140,7 +141,8 @@ var ChipPlayer = (function () {
       var midi = cell[0];
       var inst = song.instruments[cell[1]] || song.instruments[0];
       var dur = cell[2] || 1;
-      playNote(midi, inst, time, dur);
+      var vel = cell[3];
+      playNote(midi, inst, time, dur, vel);
     }
   }
 
@@ -215,7 +217,9 @@ var ChipPlayer = (function () {
               var events = pat.channels[c];
               for (var e = 0; e < events.length; e++) {
                 var ev = events[e];
-                dense[ev.r] = ev.d && ev.d > 1 ? [ev.n, ev.i, ev.d] : [ev.n, ev.i];
+                var cell = [ev.n, ev.i, ev.d || 1];
+                if (ev.v != null) cell.push(ev.v);
+                dense[ev.r] = cell;
               }
               pat.ch.push(dense);
             }
