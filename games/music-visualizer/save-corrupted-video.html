@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Corrupted (Recovering...) Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a12;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,10,18,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #00cc66;
+            text-shadow: 0 0 30px rgba(0,204,102,0.6), 0 0 60px rgba(0,204,102,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #00cc66;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #00cc66;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,204,102,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0,204,102,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Save Corrupted</div>
+        <div class="play-sub">Recovering...</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Save Corrupted Video Renderer ─────────────────────────────────
+    window.Renderers['save-corrupted-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Pixel grid ──
+        var PX = 8;           // pixel block size (recalculated on resize)
+        var COLS = 0, ROWS = 0;
+        var grid = [];        // current pixel grid [row][col] = {r,g,b}
+        var targetGrid = [];  // target scene pixels
+        var gridProgress = []; // per-cell repair progress 0..1
+
+        // ── Scene layers ──
+        var sceneBuilt = false;
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var recoveryPercent = 0;
+        var recoveryTarget = 0;
+        var glitchIntensity = 1.0;
+        var rowDisplacements = [];
+        var channelSepX = 0;
+        var channelSepY = 0;
+        var noiseBlocks = [];
+        var garbledChars = [];
+        var screenTearY = -1;
+        var blackoutAlpha = 0;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+        var endingCorruption = 0;
+        var flashAlpha = 0;
+        var scanlineOffset = 0;
+        var lastSeqIndex = -1;
+        var phase = 'corruption'; // corruption, emerging, reconstruction, restored, padPeak, glitchReturn, end
+
+        // ── Garbled text pool ──
+        var GARBLED = '01?#@$%&*!=<>{}[]|/\\~^:;ERROR_CORRUPT_0xFFDATA_LOST_NULL_SEGFAULT';
+        var HEX = '0123456789ABCDEF';
+
+        // ── Color palettes ──
+        var CORRUPT_COLORS = [
+            '#ff0040', '#ff00ff', '#00ffff', '#ffff00', '#ff8800',
+            '#8800ff', '#00ff00', '#ff4444', '#4444ff', '#ffffff'
+        ];
+
+        // Clean scene palette
+        var SKY_TOP = [40, 120, 200];
+        var SKY_BOT = [120, 180, 240];
+        var GRASS_TOP = [40, 160, 60];
+        var GRASS_BOT = [30, 120, 40];
+        var TRUNK = [100, 70, 40];
+        var LEAVES = [30, 140, 50];
+        var CHAR_BODY = [60, 80, 200];
+        var CHAR_SKIN = [240, 200, 160];
+        var CHAR_HAIR = [80, 50, 30];
+        var SUN_COL = [255, 240, 100];
+        var CLOUD_COL = [240, 245, 255];
+        var FLOWER_COLORS = [[255, 80, 80], [255, 180, 40], [200, 80, 255], [255, 255, 100]];
+        var WATER_COL = [60, 140, 220];
+        var WATER_LIGHT = [100, 180, 255];
+
+        // ── Helpers ──
+        function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpColor(c1, c2, t) {
+            return [
+                Math.round(lerp(c1[0], c2[0], t)),
+                Math.round(lerp(c1[1], c2[1], t)),
+                Math.round(lerp(c1[2], c2[2], t))
+            ];
+        }
+        function hexToRgb(hex) {
+            return [
+                parseInt(hex.slice(1,3), 16),
+                parseInt(hex.slice(3,5), 16),
+                parseInt(hex.slice(5,7), 16)
+            ];
+        }
+        function rgbStr(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+        function rgbaStr(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+        // ── Build the target "clean" game scene ──
+        function buildScene() {
+            targetGrid = [];
+            for (var r = 0; r < ROWS; r++) {
+                targetGrid[r] = [];
+                for (var c = 0; c < COLS; c++) {
+                    var yRatio = r / ROWS;
+                    var xRatio = c / COLS;
+
+                    // Sky (top 55%)
+                    if (yRatio < 0.55) {
+                        var skyT = yRatio / 0.55;
+                        targetGrid[r][c] = lerpColor(SKY_TOP, SKY_BOT, skyT);
+                    }
+                    // Grass (bottom 45%)
+                    else {
+                        var grassT = (yRatio - 0.55) / 0.45;
+                        targetGrid[r][c] = lerpColor(GRASS_TOP, GRASS_BOT, grassT);
+                    }
+                }
+            }
+
+            // Sun (upper right)
+            var sunCR = Math.floor(COLS * 0.8);
+            var sunRR = Math.floor(ROWS * 0.12);
+            var sunRad = Math.max(2, Math.floor(Math.min(COLS, ROWS) * 0.06));
+            for (var sr = sunRR - sunRad; sr <= sunRR + sunRad; sr++) {
+                for (var sc = sunCR - sunRad; sc <= sunCR + sunRad; sc++) {
+                    if (sr >= 0 && sr < ROWS && sc >= 0 && sc < COLS) {
+                        var dx = sc - sunCR, dy = sr - sunRR;
+                        if (dx * dx + dy * dy <= sunRad * sunRad) {
+                            targetGrid[sr][sc] = SUN_COL.slice();
+                        }
+                    }
+                }
+            }
+
+            // Clouds
+            drawPixelCloud(Math.floor(COLS * 0.15), Math.floor(ROWS * 0.08), Math.max(3, Math.floor(COLS * 0.08)));
+            drawPixelCloud(Math.floor(COLS * 0.55), Math.floor(ROWS * 0.15), Math.max(2, Math.floor(COLS * 0.06)));
+            drawPixelCloud(Math.floor(COLS * 0.35), Math.floor(ROWS * 0.05), Math.max(2, Math.floor(COLS * 0.05)));
+
+            // Mountains in background
+            var mountainBase = Math.floor(ROWS * 0.55);
+            drawPixelMountain(Math.floor(COLS * 0.2), mountainBase, Math.floor(ROWS * 0.18), [100, 120, 150]);
+            drawPixelMountain(Math.floor(COLS * 0.45), mountainBase, Math.floor(ROWS * 0.22), [80, 100, 130]);
+            drawPixelMountain(Math.floor(COLS * 0.75), mountainBase, Math.floor(ROWS * 0.15), [110, 130, 160]);
+
+            // Water/pond
+            var pondCX = Math.floor(COLS * 0.65);
+            var pondCY = Math.floor(ROWS * 0.72);
+            var pondRX = Math.max(3, Math.floor(COLS * 0.08));
+            var pondRY = Math.max(2, Math.floor(ROWS * 0.04));
+            for (var pr = pondCY - pondRY; pr <= pondCY + pondRY; pr++) {
+                for (var pc = pondCX - pondRX; pc <= pondCX + pondRX; pc++) {
+                    if (pr >= 0 && pr < ROWS && pc >= 0 && pc < COLS) {
+                        var pdx = (pc - pondCX) / pondRX;
+                        var pdy = (pr - pondCY) / pondRY;
+                        if (pdx * pdx + pdy * pdy <= 1) {
+                            targetGrid[pr][pc] = (pr % 2 === 0) ? WATER_COL.slice() : WATER_LIGHT.slice();
+                        }
+                    }
+                }
+            }
+
+            // Tree
+            var treeX = Math.floor(COLS * 0.3);
+            var treeBase = Math.floor(ROWS * 0.55);
+            var trunkH = Math.max(3, Math.floor(ROWS * 0.12));
+            var trunkW = Math.max(1, Math.floor(COLS * 0.015));
+            for (var tr = treeBase - trunkH; tr < treeBase; tr++) {
+                for (var tc = treeX - trunkW; tc <= treeX + trunkW; tc++) {
+                    if (tr >= 0 && tr < ROWS && tc >= 0 && tc < COLS) {
+                        targetGrid[tr][tc] = TRUNK.slice();
+                    }
+                }
+            }
+            // Canopy
+            var canopyR = Math.max(3, Math.floor(Math.min(COLS, ROWS) * 0.07));
+            var canopyCY = treeBase - trunkH - canopyR + 1;
+            for (var cr2 = canopyCY - canopyR; cr2 <= canopyCY + canopyR; cr2++) {
+                for (var cc = treeX - canopyR; cc <= treeX + canopyR; cc++) {
+                    if (cr2 >= 0 && cr2 < ROWS && cc >= 0 && cc < COLS) {
+                        var cdx = cc - treeX, cdy = cr2 - canopyCY;
+                        if (cdx * cdx + cdy * cdy <= canopyR * canopyR) {
+                            var shade = (Math.random() > 0.3) ? LEAVES : [20, 110, 35];
+                            targetGrid[cr2][cc] = shade.slice();
+                        }
+                    }
+                }
+            }
+
+            // Second smaller tree
+            var tree2X = Math.floor(COLS * 0.82);
+            var tree2Base = Math.floor(ROWS * 0.55);
+            var trunk2H = Math.max(2, Math.floor(ROWS * 0.08));
+            for (var t2r = tree2Base - trunk2H; t2r < tree2Base; t2r++) {
+                if (t2r >= 0 && t2r < ROWS && tree2X >= 0 && tree2X < COLS) {
+                    targetGrid[t2r][tree2X] = TRUNK.slice();
+                }
+            }
+            var canopy2R = Math.max(2, Math.floor(Math.min(COLS, ROWS) * 0.04));
+            var canopy2CY = tree2Base - trunk2H - canopy2R + 1;
+            for (var c2r = canopy2CY - canopy2R; c2r <= canopy2CY + canopy2R; c2r++) {
+                for (var c2c = tree2X - canopy2R; c2c <= tree2X + canopy2R; c2c++) {
+                    if (c2r >= 0 && c2r < ROWS && c2c >= 0 && c2c < COLS) {
+                        var c2dx = c2c - tree2X, c2dy = c2r - canopy2CY;
+                        if (c2dx * c2dx + c2dy * c2dy <= canopy2R * canopy2R) {
+                            targetGrid[c2r][c2c] = (Math.random() > 0.3) ? LEAVES.slice() : [20, 110, 35];
+                        }
+                    }
+                }
+            }
+
+            // Flowers on grass
+            for (var fi = 0; fi < 12; fi++) {
+                var fx = randInt(2, COLS - 3);
+                var fy = randInt(Math.floor(ROWS * 0.6), ROWS - 2);
+                if (fy < ROWS && fx < COLS) {
+                    var fc = FLOWER_COLORS[fi % FLOWER_COLORS.length];
+                    targetGrid[fy][fx] = fc.slice();
+                    if (fy - 1 >= 0) targetGrid[fy - 1][fx] = [40, 160, 60]; // stem
+                }
+            }
+
+            // Character (center-left)
+            var charX = Math.floor(COLS * 0.48);
+            var charBase = Math.floor(ROWS * 0.55);
+            // Legs
+            if (charBase < ROWS && charX - 1 >= 0 && charX + 1 < COLS) {
+                targetGrid[charBase][charX - 1] = CHAR_BODY.slice();
+                targetGrid[charBase][charX + 1] = CHAR_BODY.slice();
+            }
+            // Body
+            for (var bi = 1; bi <= 3; bi++) {
+                var brow = charBase - bi;
+                if (brow >= 0 && charX >= 0 && charX < COLS) {
+                    targetGrid[brow][charX] = CHAR_BODY.slice();
+                }
+            }
+            // Arms
+            var armRow = charBase - 2;
+            if (armRow >= 0) {
+                if (charX - 2 >= 0) targetGrid[armRow][charX - 2] = CHAR_SKIN.slice();
+                if (charX + 2 < COLS) targetGrid[armRow][charX + 2] = CHAR_SKIN.slice();
+                if (charX - 1 >= 0) targetGrid[armRow][charX - 1] = CHAR_BODY.slice();
+                if (charX + 1 < COLS) targetGrid[armRow][charX + 1] = CHAR_BODY.slice();
+            }
+            // Head
+            var headRow = charBase - 4;
+            if (headRow >= 0 && charX >= 0 && charX < COLS) {
+                targetGrid[headRow][charX] = CHAR_SKIN.slice();
+                if (charX - 1 >= 0) targetGrid[headRow][charX - 1] = CHAR_SKIN.slice();
+                if (charX + 1 < COLS) targetGrid[headRow][charX + 1] = CHAR_SKIN.slice();
+            }
+            // Hair
+            var hairRow = charBase - 5;
+            if (hairRow >= 0) {
+                if (charX >= 0 && charX < COLS) targetGrid[hairRow][charX] = CHAR_HAIR.slice();
+                if (charX - 1 >= 0) targetGrid[hairRow][charX - 1] = CHAR_HAIR.slice();
+                if (charX + 1 < COLS) targetGrid[hairRow][charX + 1] = CHAR_HAIR.slice();
+            }
+
+            // Path
+            var pathY = Math.floor(ROWS * 0.65);
+            for (var px = Math.floor(COLS * 0.1); px < Math.floor(COLS * 0.9); px++) {
+                var pathRow = pathY + Math.round(Math.sin(px * 0.15) * 1);
+                if (pathRow >= 0 && pathRow < ROWS && px >= 0 && px < COLS) {
+                    targetGrid[pathRow][px] = [180, 160, 120];
+                    if (pathRow + 1 < ROWS) targetGrid[pathRow + 1][px] = [160, 140, 100];
+                }
+            }
+
+            sceneBuilt = true;
+        }
+
+        function drawPixelCloud(cx, cy, w) {
+            var h = Math.max(1, Math.floor(w * 0.4));
+            for (var r = cy - h; r <= cy + h; r++) {
+                for (var c = cx - w; c <= cx + w; c++) {
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        var dx2 = (c - cx) / w;
+                        var dy2 = (r - cy) / h;
+                        if (dx2 * dx2 + dy2 * dy2 <= 1) {
+                            targetGrid[r][c] = CLOUD_COL.slice();
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawPixelMountain(peakX, baseY, height, color) {
+            for (var mr = baseY - height; mr < baseY; mr++) {
+                if (mr < 0) continue;
+                var progress = (baseY - mr) / height;
+                var halfW = Math.floor((1 - progress) * height * 0.8);
+                for (var mc = peakX - halfW; mc <= peakX + halfW; mc++) {
+                    if (mc >= 0 && mc < COLS && mr < ROWS) {
+                        var shade = [
+                            Math.min(255, color[0] + Math.floor(progress * 30)),
+                            Math.min(255, color[1] + Math.floor(progress * 30)),
+                            Math.min(255, color[2] + Math.floor(progress * 30))
+                        ];
+                        targetGrid[mr][mc] = shade;
+                    }
+                }
+            }
+        }
+
+        // ── Initialize grids with noise ──
+        function initGrids() {
+            COLS = Math.floor(W / PX);
+            ROWS = Math.floor(H / PX);
+            grid = [];
+            gridProgress = [];
+            rowDisplacements = [];
+            for (var r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                gridProgress[r] = [];
+                rowDisplacements[r] = 0;
+                for (var c = 0; c < COLS; c++) {
+                    grid[r][c] = hexToRgb(CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)]);
+                    gridProgress[r][c] = 0;
+                }
+            }
+            buildScene();
+            initGarbledText();
+            initNoiseBlocks();
+        }
+
+        function initGarbledText() {
+            garbledChars = [];
+            var count = Math.floor(COLS * ROWS * 0.03);
+            for (var i = 0; i < count; i++) {
+                garbledChars.push({
+                    x: randInt(0, COLS - 1),
+                    y: randInt(0, ROWS - 1),
+                    ch: GARBLED[randInt(0, GARBLED.length - 1)],
+                    color: CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)],
+                    life: 1
+                });
+            }
+        }
+
+        function initNoiseBlocks() {
+            noiseBlocks = [];
+            for (var i = 0; i < 20; i++) {
+                noiseBlocks.push({
+                    x: randInt(0, COLS - 4),
+                    y: randInt(0, ROWS - 3),
+                    w: randInt(2, 8),
+                    h: randInt(1, 4),
+                    color: CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)],
+                    life: 1
+                });
+            }
+        }
+
+        // ── Section mapping ──
+        // 0-5: corruption, 6-7: fragment, 8-11: emerging, 12-15: reconstruction,
+        // 16-19: nearlyThere, 20-23: restored, 24-35: padPeak, 36-39: glitchReturn, 40: end, 41: silence
+        function mapPhase(seqIndex) {
+            if (seqIndex <= 5) return 'corruption';
+            if (seqIndex <= 7) return 'fragment';
+            if (seqIndex <= 11) return 'emerging';
+            if (seqIndex <= 15) return 'reconstruction';
+            if (seqIndex <= 19) return 'nearlyThere';
+            if (seqIndex <= 23) return 'restored';
+            if (seqIndex <= 35) return 'padPeak';
+            if (seqIndex <= 39) return 'glitchReturn';
+            return 'end';
+        }
+
+        function phaseToRecovery(p) {
+            switch(p) {
+                case 'corruption': return 0.0;
+                case 'fragment': return 0.12;
+                case 'emerging': return 0.30;
+                case 'reconstruction': return 0.55;
+                case 'nearlyThere': return 0.80;
+                case 'restored': return 0.95;
+                case 'padPeak': return 1.0;
+                case 'glitchReturn': return 0.5;
+                case 'end': return 0.0;
+                default: return 0.0;
+            }
+        }
+
+        function phaseToGlitch(p) {
+            switch(p) {
+                case 'corruption': return 1.0;
+                case 'fragment': return 0.8;
+                case 'emerging': return 0.55;
+                case 'reconstruction': return 0.3;
+                case 'nearlyThere': return 0.12;
+                case 'restored': return 0.03;
+                case 'padPeak': return 0.0;
+                case 'glitchReturn': return 0.7;
+                case 'end': return 1.0;
+                default: return 1.0;
+            }
+        }
+
+        // ── Repair logic: cells snap to target based on recoveryPercent ──
+        function updateGridRepair(dt) {
+            var totalCells = ROWS * COLS;
+            var targetRepaired = Math.floor(recoveryPercent * totalCells);
+
+            // Incrementally repair cells toward target
+            // Repair from center outward in a spiral-ish pattern for visual interest
+            var repairSpeed = 0.08 * dt * 60; // cells per frame adjustment
+            for (var r = 0; r < ROWS; r++) {
+                for (var c = 0; c < COLS; c++) {
+                    // Priority: cells closer to a "repair wave" center
+                    var cx = COLS / 2, cy = ROWS / 2;
+                    var dist = Math.sqrt((c - cx) * (c - cx) + (r - cy) * (r - cy));
+                    var maxDist = Math.sqrt(cx * cx + cy * cy);
+                    var cellThreshold = (1 - dist / maxDist) * 0.3 + recoveryPercent * 0.9;
+
+                    // Add some randomness for organic feel
+                    var noise = (Math.sin(r * 7.3 + c * 11.7) * 0.5 + 0.5) * 0.2;
+                    cellThreshold += noise;
+
+                    var target = cellThreshold > (1 - recoveryPercent) ? 1 : 0;
+
+                    // During glitch return, some cells revert
+                    if (phase === 'glitchReturn' || phase === 'end') {
+                        var corruptChance = (1 - recoveryPercent) * 0.02;
+                        if (Math.random() < corruptChance) target = 0;
+                    }
+
+                    // Lerp progress
+                    gridProgress[r][c] += (target - gridProgress[r][c]) * repairSpeed;
+                    gridProgress[r][c] = Math.max(0, Math.min(1, gridProgress[r][c]));
+
+                    // Blend grid color
+                    if (sceneBuilt && targetGrid[r] && targetGrid[r][c]) {
+                        var corrupted = hexToRgb(CORRUPT_COLORS[Math.abs((r * 13 + c * 7 + Math.floor(beatPulse * 3)) % CORRUPT_COLORS.length)]);
+                        var clean = targetGrid[r][c];
+                        var t = gridProgress[r][c];
+                        grid[r][c] = lerpColor(corrupted, clean, t);
+                    }
+                }
+            }
+        }
+
+        // ── Draw ──
+        function drawGrid(ctx) {
+            for (var r = 0; r < ROWS; r++) {
+                var disp = Math.round(rowDisplacements[r]);
+                for (var c = 0; c < COLS; c++) {
+                    var drawC = c + disp;
+                    if (drawC < 0 || drawC >= COLS) continue;
+                    var color = grid[r][c];
+                    if (!color) continue;
+
+                    var px = drawC * PX;
+                    var py = r * PX;
+
+                    // Channel separation effect
+                    if (Math.abs(channelSepX) > 0.5 || Math.abs(channelSepY) > 0.5) {
+                        // Red channel offset
+                        ctx.fillStyle = 'rgba(' + color[0] + ',0,0,0.7)';
+                        ctx.fillRect(px + channelSepX, py + channelSepY, PX, PX);
+                        // Blue channel offset
+                        ctx.fillStyle = 'rgba(0,0,' + color[2] + ',0.7)';
+                        ctx.fillRect(px - channelSepX, py - channelSepY, PX, PX);
+                        // Green channel center
+                        ctx.fillStyle = 'rgba(0,' + color[1] + ',0,0.7)';
+                        ctx.fillRect(px, py, PX, PX);
+                    } else {
+                        ctx.fillStyle = rgbStr(color);
+                        ctx.fillRect(px, py, PX, PX);
+                    }
+                }
+            }
+        }
+
+        function drawNoiseBlocks(ctx) {
+            for (var i = 0; i < noiseBlocks.length; i++) {
+                var b = noiseBlocks[i];
+                if (b.life <= 0) continue;
+                ctx.globalAlpha = b.life * glitchIntensity;
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x * PX, b.y * PX, b.w * PX, b.h * PX);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawGarbledText(ctx) {
+            if (glitchIntensity < 0.05) return;
+            var fontSize = Math.max(8, PX * 1.2);
+            ctx.font = '700 ' + fontSize + 'px "JetBrains Mono", monospace';
+            ctx.textBaseline = 'top';
+            for (var i = 0; i < garbledChars.length; i++) {
+                var g = garbledChars[i];
+                if (g.life <= 0) continue;
+                ctx.globalAlpha = g.life * glitchIntensity * 0.8;
+                ctx.fillStyle = g.color;
+                ctx.fillText(g.ch, g.x * PX, g.y * PX);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawScreenTear(ctx) {
+            if (screenTearY < 0 || glitchIntensity < 0.1) return;
+            var tearH = randInt(2, 6) * PX;
+            ctx.save();
+            ctx.globalAlpha = glitchIntensity * 0.6;
+            // Duplicate a strip with offset
+            var offset = (Math.random() - 0.5) * W * 0.15 * glitchIntensity;
+            try {
+                var imgData = ctx.getImageData(0, screenTearY, W, tearH);
+                ctx.putImageData(imgData, offset, screenTearY);
+            } catch(e) { /* ignore security errors */ }
+            ctx.restore();
+        }
+
+        function drawRecoveryBar(ctx) {
+            var barW = W * 0.5;
+            var barH = 18;
+            var barX = (W - barW) / 2;
+            var barY = H - 50;
+
+            // Background
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
+
+            // Progress fill
+            var pct = Math.max(0, Math.min(1, recoveryPercent));
+            var fillColor;
+            if (pct < 0.5) {
+                fillColor = lerpColor([255, 60, 60], [255, 200, 40], pct * 2);
+            } else {
+                fillColor = lerpColor([255, 200, 40], [0, 220, 100], (pct - 0.5) * 2);
+            }
+
+            // Glitch the bar itself
+            if (glitchIntensity > 0.3) {
+                var jitter = (Math.random() - 0.5) * 4 * glitchIntensity;
+                barX += jitter;
+            }
+
+            ctx.fillStyle = rgbStr(fillColor);
+            ctx.fillRect(barX, barY, barW * pct, barH);
+
+            // Border
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barW, barH);
+
+            // Percentage text
+            var pctText = Math.floor(pct * 100) + '%';
+            if (glitchIntensity > 0.5) {
+                // Garble the text
+                var chars = pctText.split('');
+                for (var i = 0; i < chars.length; i++) {
+                    if (Math.random() < glitchIntensity * 0.5) {
+                        chars[i] = HEX[randInt(0, 15)];
+                    }
+                }
+                pctText = chars.join('');
+            }
+            ctx.font = '700 14px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = rgbStr(fillColor);
+            ctx.shadowBlur = 8;
+            ctx.fillText(pctText, W / 2, barY + barH / 2);
+            ctx.shadowBlur = 0;
+            ctx.textAlign = 'start';
+
+            // Status text
+            var status = 'RECOVERING...';
+            if (phase === 'padPeak') status = 'SAVE RESTORED';
+            else if (phase === 'glitchReturn') status = 'WARNING: CORRUPTION DETECTED';
+            else if (phase === 'end') status = 'SAVE CORRUPTED';
+            else if (phase === 'corruption') status = 'ERROR: READING SAVE DATA...';
+            else if (phase === 'fragment') status = 'FRAGMENTS FOUND...';
+
+            if (glitchIntensity > 0.6) {
+                var sChars = status.split('');
+                for (var si = 0; si < sChars.length; si++) {
+                    if (Math.random() < glitchIntensity * 0.4) {
+                        sChars[si] = GARBLED[randInt(0, GARBLED.length - 1)];
+                    }
+                }
+                status = sChars.join('');
+            }
+
+            ctx.font = '400 11px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText(status, W / 2, barY - 12);
+            ctx.textAlign = 'start';
+        }
+
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = titleAlpha;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(16, Math.min(W * 0.04, 52));
+            ctx.font = '700 ' + fontSize + 'px "JetBrains Mono", monospace';
+
+            var text = 'SAVE RESTORED';
+            var y = H * 0.18;
+
+            // Glow
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = '#00ff88';
+            ctx.fillText(text, W / 2, y);
+
+            // White core
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = titleAlpha * 0.8;
+            ctx.fillText(text, W / 2, y);
+
+            ctx.restore();
+        }
+
+        function drawScanlines(ctx) {
+            ctx.save();
+            ctx.globalAlpha = 0.04 + glitchIntensity * 0.06;
+            ctx.fillStyle = '#000';
+            for (var y = 0; y < H; y += 3) {
+                ctx.fillRect(0, y, W, 1);
+            }
+            ctx.restore();
+        }
+
+        function drawVignette(ctx) {
+            var grad = ctx.createRadialGradient(W/2, H/2, W * 0.3, W/2, H/2, W * 0.8);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        function drawBlackout(ctx) {
+            if (blackoutAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = blackoutAlpha;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            PX = Math.max(4, Math.floor(Math.min(W, H) / 80));
+            initGrids();
+            lastBeat = -1;
+            beatPulse = 0;
+            recoveryPercent = 0;
+            recoveryTarget = 0;
+            glitchIntensity = 1.0;
+            channelSepX = 0;
+            channelSepY = 0;
+            screenTearY = -1;
+            blackoutAlpha = 0;
+            titleAlpha = 0;
+            titleTarget = 0;
+            endingCorruption = 0;
+            flashAlpha = 0;
+            scanlineOffset = 0;
+            lastSeqIndex = -1;
+            phase = 'corruption';
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            PX = Math.max(4, Math.floor(Math.min(W, H) / 80));
+            initGrids();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Background
+            ctx.fillStyle = '#0a0a12';
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: show corrupted static
+                glitchIntensity = 1.0;
+                recoveryPercent = 0;
+                // Randomize some grid cells for animation
+                for (var ir = 0; ir < 10; ir++) {
+                    var rr = randInt(0, ROWS - 1);
+                    var rc = randInt(0, COLS - 1);
+                    if (grid[rr]) grid[rr][rc] = hexToRgb(CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)]);
+                }
+                drawGrid(ctx);
+                drawScanlines(ctx);
+                drawVignette(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Phase transitions ──
+            var newPhase = mapPhase(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                var oldPhase = phase;
+                phase = newPhase;
+
+                // Flash on major transitions
+                if (oldPhase !== newPhase) {
+                    if (newPhase === 'padPeak' && oldPhase !== 'padPeak') flashAlpha = 0.4;
+                    if (newPhase === 'glitchReturn') flashAlpha = 0.3;
+                    if (newPhase === 'end') flashAlpha = 0.6;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Update targets ──
+            recoveryTarget = phaseToRecovery(phase);
+            var glitchTarget = phaseToGlitch(phase);
+
+            // For glitchReturn, increase corruption over time within the phase
+            if (phase === 'glitchReturn') {
+                var glitchProgress = (seqIdx - 36) / 4;
+                recoveryTarget = lerp(0.8, 0.0, glitchProgress);
+                glitchTarget = lerp(0.3, 1.0, glitchProgress);
+            }
+
+            // Smooth lerp
+            var recoverSpeed = (phase === 'glitchReturn' || phase === 'end') ? 1.5 : 0.8;
+            recoveryPercent += (recoveryTarget - recoveryPercent) * (1 - Math.exp(-recoverSpeed * dt));
+            glitchIntensity += (glitchTarget - glitchIntensity) * (1 - Math.exp(-2 * dt));
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Randomize garbled text
+                for (var gi = 0; gi < garbledChars.length; gi++) {
+                    if (Math.random() < glitchIntensity * 0.6) {
+                        garbledChars[gi].x = randInt(0, COLS - 1);
+                        garbledChars[gi].y = randInt(0, ROWS - 1);
+                        garbledChars[gi].ch = GARBLED[randInt(0, GARBLED.length - 1)];
+                        garbledChars[gi].color = CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)];
+                        garbledChars[gi].life = glitchIntensity;
+                    } else {
+                        garbledChars[gi].life *= 0.7;
+                    }
+                }
+
+                // Row displacements on beat
+                for (var ri = 0; ri < ROWS; ri++) {
+                    if (Math.random() < glitchIntensity * 0.3) {
+                        rowDisplacements[ri] = (Math.random() - 0.5) * COLS * 0.3 * glitchIntensity;
+                    }
+                }
+
+                // Noise blocks
+                for (var ni = 0; ni < noiseBlocks.length; ni++) {
+                    if (Math.random() < glitchIntensity * 0.5) {
+                        noiseBlocks[ni].x = randInt(0, COLS - 4);
+                        noiseBlocks[ni].y = randInt(0, ROWS - 3);
+                        noiseBlocks[ni].w = randInt(2, Math.max(3, Math.floor(8 * glitchIntensity)));
+                        noiseBlocks[ni].h = randInt(1, Math.max(2, Math.floor(4 * glitchIntensity)));
+                        noiseBlocks[ni].color = CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)];
+                        noiseBlocks[ni].life = glitchIntensity;
+                    }
+                }
+
+                // Screen tear
+                if (Math.random() < glitchIntensity * 0.4) {
+                    screenTearY = Math.random() * H;
+                } else {
+                    screenTearY = -1;
+                }
+
+                // Channel separation burst
+                if (glitchIntensity > 0.3) {
+                    channelSepX = (Math.random() - 0.5) * PX * 3 * glitchIntensity;
+                    channelSepY = (Math.random() - 0.5) * PX * 2 * glitchIntensity;
+                }
+
+                // Flash on high energy corrupted beats
+                if (energy > 0.6 && glitchIntensity > 0.5) {
+                    flashAlpha = Math.max(flashAlpha, 0.1 * glitchIntensity);
+                }
+
+                lastBeat = beat;
+            }
+
+            // Decay
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-6 * dt);
+
+            // Decay row displacements
+            for (var dr = 0; dr < ROWS; dr++) {
+                rowDisplacements[dr] *= Math.exp(-4 * dt);
+            }
+
+            // Decay channel separation
+            channelSepX *= Math.exp(-5 * dt);
+            channelSepY *= Math.exp(-5 * dt);
+
+            // Decay noise block life
+            for (var nbi = 0; nbi < noiseBlocks.length; nbi++) {
+                noiseBlocks[nbi].life *= Math.exp(-3 * dt);
+            }
+
+            // ── Title ──
+            titleTarget = (phase === 'padPeak') ? 1 : 0;
+            titleAlpha += (titleTarget - titleAlpha) * (1 - Math.exp(-3 * dt));
+
+            // ── Blackout for end ──
+            if (phase === 'end') {
+                blackoutAlpha += (1 - blackoutAlpha) * (1 - Math.exp(-2 * dt));
+            } else {
+                blackoutAlpha *= Math.exp(-4 * dt);
+            }
+
+            // ── Update grid ──
+            updateGridRepair(dt);
+
+            // ── During corruption phases, keep randomizing unrepaired cells ──
+            if (glitchIntensity > 0.1) {
+                var numRandomize = Math.floor(COLS * ROWS * glitchIntensity * 0.02);
+                for (var rn = 0; rn < numRandomize; rn++) {
+                    var rr2 = randInt(0, ROWS - 1);
+                    var rc2 = randInt(0, COLS - 1);
+                    if (gridProgress[rr2] && gridProgress[rr2][rc2] < 0.5) {
+                        grid[rr2][rc2] = hexToRgb(CORRUPT_COLORS[randInt(0, CORRUPT_COLORS.length - 1)]);
+                    }
+                }
+            }
+
+            // ── During glitch return, actively corrupt repaired cells ──
+            if (phase === 'glitchReturn' || phase === 'end') {
+                var corruptCount = Math.floor(COLS * ROWS * (1 - recoveryPercent) * 0.03);
+                for (var ci = 0; ci < corruptCount; ci++) {
+                    var cr = randInt(0, ROWS - 1);
+                    var cc = randInt(0, COLS - 1);
+                    if (gridProgress[cr] && gridProgress[cr][cc] > 0.3) {
+                        gridProgress[cr][cc] -= 0.05;
+                        if (gridProgress[cr][cc] < 0) gridProgress[cr][cc] = 0;
+                    }
+                }
+            }
+
+            // ── Draw layers ──
+            drawGrid(ctx);
+            drawNoiseBlocks(ctx);
+            drawGarbledText(ctx);
+            drawScreenTear(ctx);
+            drawScanlines(ctx);
+            drawTitle(ctx);
+            drawRecoveryBar(ctx);
+            drawVignette(ctx);
+            drawFlash(ctx);
+            drawBlackout(ctx);
+        }
+
+        return {
+            name: 'Save Corrupted (Recovering...)',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('save-corrupted-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/save-corrupted.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
