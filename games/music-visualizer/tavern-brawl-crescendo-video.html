@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tavern Brawl Crescendo — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #1a0e06;
+            color: #fff;
+            font-family: 'MedievalSharp', 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(26,14,6,0.92);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(20px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #e8a832;
+            text-shadow: 0 0 30px rgba(232,168,50,0.6), 0 0 60px rgba(232,168,50,0.3);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,220,160,0.5);
+            margin-bottom: 40px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #e8a832;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #e8a832;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(232,168,50,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(232,168,50,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,220,160,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,220,160,0.8); }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">&larr; Visualizer</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Tavern Brawl Crescendo</div>
+        <div class="play-sub">a pixel-art tavern scene</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script>
+    // ── Tavern Brawl Crescendo Video Renderer ──────────────────────────
+    window.Renderers['tavern-brawl-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var COL = {
+            wallDark:   '#2a1508',
+            wallMid:    '#3d2010',
+            wallLight:  '#5a3318',
+            beam:       '#4a2a12',
+            floor:      '#3a2010',
+            floorDark:  '#2a1508',
+            bar:        '#5a3318',
+            barTop:     '#7a4a20',
+            candle:     '#e8a832',
+            candleGlow: '#ffcc44',
+            flame:      '#ff8800',
+            flameHot:   '#ffdd66',
+            ale:        '#cc8822',
+            aleLight:   '#eebb44',
+            skin:       '#d4a574',
+            skinDark:   '#b8845a',
+            white:      '#ffffff',
+            impact:     '#ffee88',
+            dust:       '#c8a878',
+            star:       '#ffdd44'
+        };
+
+        var PATRON_COLORS = ['#cc4444', '#4488cc', '#44aa44', '#aa44aa', '#cc8844', '#44aaaa', '#aa8844', '#8844aa'];
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var shakeX = 0, shakeY = 0;
+        var shakeIntensity = 0;
+        var sectionMood = 'intro'; // intro, waltz, disturbance, escalation, buildup, brawl, peak, stunned, sheepish, ending, silent
+        var lastSeqIndex = -1;
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Tavern geometry
+        var floorY = 0;
+        var ceilingY = 0;
+        var barX = 0;
+        var barW = 0;
+
+        // ── Patrons (stick figures that waltz in pairs) ──
+        var patrons = [];
+        var NUM_PAIRS = 4;
+
+        // ── Flying objects ──
+        var flyingObjects = []; // {type:'mug'|'chair'|'table', x, y, vx, vy, rot, rotSpeed, life}
+
+        // ── Dust clouds ──
+        var dustClouds = []; // {x, y, r, alpha, dr}
+
+        // ── Impact stars ──
+        var impactStars = []; // {x, y, alpha, size, angle}
+
+        // ── Candle flickering ──
+        var candleFlicker = [0, 0, 0, 0, 0]; // random flicker values for 5 candles
+
+        // ── Patron creation ──
+        function createPatron(x, y, colorIdx, pairId, isLeader) {
+            return {
+                baseX: x,
+                baseY: y,
+                x: x,
+                y: y,
+                color: PATRON_COLORS[colorIdx % PATRON_COLORS.length],
+                pairId: pairId,
+                isLeader: isLeader,
+                waltzPhase: pairId * Math.PI * 0.5,
+                waltzRadius: 20 + Math.random() * 15,
+                armAngle: 0,
+                legPhase: 0,
+                bounce: 0,
+                headTilt: 0,
+                throwTimer: 0,      // > 0 means throwing something
+                throwArm: 0,        // 0-1, arm raised to throw
+                hitStun: 0,         // > 0 means stunned (stars over head)
+                sheepish: 0,        // 0-1, how embarrassed
+                figH: 0
+            };
+        }
+
+        function initPatrons() {
+            patrons = [];
+            var spacing = W * 0.7 / (NUM_PAIRS + 1);
+            var startX = W * 0.15;
+            for (var i = 0; i < NUM_PAIRS; i++) {
+                var cx = startX + spacing * (i + 1);
+                var cy = floorY - 5;
+                patrons.push(createPatron(cx - 15, cy, i * 2, i, true));
+                patrons.push(createPatron(cx + 15, cy, i * 2 + 1, i, false));
+            }
+        }
+
+        // ── Section mapping ──
+        function mapSection(seqIdx) {
+            if (seqIdx <= 0) return 'intro';
+            if (seqIdx <= 8) return 'waltz';
+            if (seqIdx <= 12) return 'disturbance';
+            if (seqIdx <= 16) return 'escalation';
+            if (seqIdx <= 18) return 'buildup';
+            if (seqIdx <= 24) return 'brawl';
+            if (seqIdx <= 30) return 'peak';
+            if (seqIdx <= 36) return 'sheepish';
+            if (seqIdx <= 37) return 'ending';
+            return 'silent';
+        }
+
+        function getMoodIntensity() {
+            switch (sectionMood) {
+                case 'intro': return 0;
+                case 'waltz': return 0.1;
+                case 'disturbance': return 0.3;
+                case 'escalation': return 0.5;
+                case 'buildup': return 0.7;
+                case 'brawl': return 0.85;
+                case 'peak': return 1.0;
+                case 'stunned': return 0.2;
+                case 'sheepish': return 0.05;
+                case 'ending': return 0.02;
+                default: return 0;
+            }
+        }
+
+        // ── Lerp ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(cur, tgt, speed, dt) { return cur + (tgt - cur) * (1 - Math.exp(-speed * dt)); }
+
+        // ── Draw tavern interior ──
+        function drawTavern(ctx, energy) {
+            // Back wall
+            var grad = ctx.createLinearGradient(0, ceilingY, 0, floorY);
+            grad.addColorStop(0, COL.wallDark);
+            grad.addColorStop(0.5, COL.wallMid);
+            grad.addColorStop(1, COL.wallLight);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, ceilingY, W, floorY - ceilingY);
+
+            // Horizontal wood planks on wall
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 1;
+            var plankH = (floorY - ceilingY) / 8;
+            for (var i = 0; i <= 8; i++) {
+                var py = ceilingY + i * plankH;
+                ctx.beginPath();
+                ctx.moveTo(0, py);
+                ctx.lineTo(W, py);
+                ctx.stroke();
+            }
+
+            // Vertical beams
+            ctx.fillStyle = COL.beam;
+            var beamW = W * 0.025;
+            for (var b = 0; b < 5; b++) {
+                var bx = W * (b / 4);
+                ctx.fillRect(bx - beamW / 2, ceilingY, beamW, floorY - ceilingY);
+                // Beam highlight
+                ctx.fillStyle = 'rgba(255,200,100,0.05)';
+                ctx.fillRect(bx - beamW / 4, ceilingY, beamW / 4, floorY - ceilingY);
+                ctx.fillStyle = COL.beam;
+            }
+
+            // Ceiling beam (horizontal)
+            ctx.fillStyle = COL.beam;
+            ctx.fillRect(0, ceilingY, W, H * 0.025);
+
+            // Floor
+            var floorGrad = ctx.createLinearGradient(0, floorY, 0, H);
+            floorGrad.addColorStop(0, COL.floor);
+            floorGrad.addColorStop(1, COL.floorDark);
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, floorY, W, H - floorY);
+
+            // Floor planks
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            var floorPlankW = W / 12;
+            for (var fp = 0; fp <= 12; fp++) {
+                var fx = fp * floorPlankW;
+                ctx.beginPath();
+                ctx.moveTo(fx, floorY);
+                ctx.lineTo(fx, H);
+                ctx.stroke();
+            }
+        }
+
+        // ── Draw bar counter ──
+        function drawBar(ctx) {
+            var bH = (floorY - ceilingY) * 0.35;
+            var bY = floorY - bH;
+
+            // Bar body
+            ctx.fillStyle = COL.bar;
+            ctx.fillRect(barX, bY, barW, bH);
+
+            // Bar top
+            ctx.fillStyle = COL.barTop;
+            ctx.fillRect(barX - 4, bY - 6, barW + 8, 10);
+
+            // Bar top shine
+            ctx.fillStyle = 'rgba(255,200,100,0.1)';
+            ctx.fillRect(barX, bY - 5, barW, 4);
+
+            // Shelves behind bar (on wall)
+            ctx.fillStyle = COL.beam;
+            var shelfY1 = ceilingY + (bY - ceilingY) * 0.3;
+            var shelfY2 = ceilingY + (bY - ceilingY) * 0.6;
+            ctx.fillRect(barX + 5, shelfY1, barW - 10, 4);
+            ctx.fillRect(barX + 5, shelfY2, barW - 10, 4);
+
+            // Bottles on shelves
+            var bottleColors = ['#448844', '#884444', '#886644', '#444488', '#888844'];
+            for (var s = 0; s < 2; s++) {
+                var sy = s === 0 ? shelfY1 : shelfY2;
+                for (var bi = 0; bi < 5; bi++) {
+                    var bx = barX + 12 + bi * (barW - 24) / 5;
+                    ctx.fillStyle = bottleColors[bi];
+                    ctx.fillRect(bx, sy - 16, 6, 16);
+                    ctx.fillRect(bx + 1, sy - 20, 4, 5);
+                }
+            }
+
+            // Mugs on bar top
+            for (var m = 0; m < 3; m++) {
+                var mx = barX + 15 + m * (barW - 30) / 3;
+                drawMug(ctx, mx, bY - 8, 8);
+            }
+        }
+
+        // ── Draw mug ──
+        function drawMug(ctx, x, y, size) {
+            ctx.fillStyle = COL.ale;
+            ctx.fillRect(x - size / 2, y - size, size, size);
+            // Handle
+            ctx.strokeStyle = COL.ale;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x + size / 2 + 3, y - size / 2, size / 3, -Math.PI / 2, Math.PI / 2);
+            ctx.stroke();
+            // Foam
+            ctx.fillStyle = COL.aleLight;
+            ctx.fillRect(x - size / 2 - 1, y - size - 3, size + 2, 4);
+        }
+
+        // ── Draw chandelier with candles ──
+        function drawChandelier(ctx, time) {
+            var cx = W * 0.5;
+            var cy = ceilingY + H * 0.06;
+            var chanW = W * 0.25;
+            var numCandles = 5;
+
+            // Chain from ceiling
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, ceilingY);
+            ctx.lineTo(cx, cy);
+            ctx.stroke();
+
+            // Horizontal bar
+            ctx.fillStyle = COL.beam;
+            ctx.fillRect(cx - chanW / 2, cy, chanW, 5);
+
+            // Candles
+            for (var i = 0; i < numCandles; i++) {
+                var candleX = cx - chanW / 2 + (chanW / (numCandles - 1)) * i;
+                var flicker = candleFlicker[i];
+
+                // Candle body
+                ctx.fillStyle = '#ddc088';
+                ctx.fillRect(candleX - 3, cy - 12, 6, 14);
+
+                // Flame glow (large, soft)
+                var glowR = 25 + flicker * 8;
+                var glowGrad = ctx.createRadialGradient(candleX, cy - 16, 0, candleX, cy - 16, glowR);
+                glowGrad.addColorStop(0, 'rgba(255,200,60,0.15)');
+                glowGrad.addColorStop(1, 'rgba(255,200,60,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(candleX, cy - 16, glowR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Flame
+                ctx.fillStyle = COL.flame;
+                ctx.beginPath();
+                ctx.ellipse(candleX + flicker * 2, cy - 18, 3 + flicker, 6 + flicker * 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Flame hot center
+                ctx.fillStyle = COL.flameHot;
+                ctx.beginPath();
+                ctx.ellipse(candleX + flicker, cy - 17, 1.5, 3 + flicker, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Ambient glow on scene from chandelier
+            var ambGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.4);
+            ambGrad.addColorStop(0, 'rgba(255,200,80,0.06)');
+            ambGrad.addColorStop(1, 'rgba(255,200,80,0)');
+            ctx.fillStyle = ambGrad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // ── Draw tables ──
+        var tables = [];
+        function initTables() {
+            tables = [
+                { x: W * 0.2, y: floorY, w: W * 0.08, h: (floorY - ceilingY) * 0.2, flipped: false, flipAngle: 0 },
+                { x: W * 0.45, y: floorY, w: W * 0.08, h: (floorY - ceilingY) * 0.2, flipped: false, flipAngle: 0 },
+                { x: W * 0.65, y: floorY, w: W * 0.08, h: (floorY - ceilingY) * 0.2, flipped: false, flipAngle: 0 }
+            ];
+        }
+
+        function drawTable(ctx, t) {
+            ctx.save();
+            ctx.translate(t.x, t.y);
+            if (t.flipped) {
+                ctx.rotate(t.flipAngle);
+            }
+            // Legs
+            ctx.fillStyle = COL.beam;
+            ctx.fillRect(-t.w / 2, -t.h, 4, t.h);
+            ctx.fillRect(t.w / 2 - 4, -t.h, 4, t.h);
+            // Top
+            ctx.fillStyle = COL.barTop;
+            ctx.fillRect(-t.w / 2 - 3, -t.h - 4, t.w + 6, 6);
+            ctx.restore();
+        }
+
+        // ── Draw stick figure patron ──
+        function drawPatron(ctx, p) {
+            var fh = p.figH;
+            var headR = fh * 0.07;
+            var x = p.x;
+            var y = p.y;
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Body proportions
+            var neckY = -fh * 0.82;
+            var hipY = -fh * 0.4;
+            var kneeY = -fh * 0.18;
+            var footY = 0;
+            var shoulderW = fh * 0.1;
+
+            // Bounce
+            var bounce = Math.sin(p.legPhase) * p.bounce;
+            neckY += bounce;
+            hipY += bounce;
+
+            // Head tilt
+            var headX = Math.sin(p.headTilt) * headR * 0.5;
+            var headY = neckY - fh * 0.06 - headR;
+
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 4;
+
+            // Hit stun effect - draw stars
+            if (p.hitStun > 0) {
+                ctx.save();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = COL.star;
+                ctx.globalAlpha = Math.min(1, p.hitStun);
+                for (var si = 0; si < 3; si++) {
+                    var sa = (si / 3) * Math.PI * 2 + p.hitStun * 3;
+                    var sr = headR * 1.8;
+                    drawStar(ctx, headX + Math.cos(sa) * sr, headY + Math.sin(sa) * sr - 5, 4, 5);
+                }
+                ctx.restore();
+            }
+
+            // Sheepish blush
+            if (p.sheepish > 0.1) {
+                ctx.save();
+                ctx.globalAlpha = p.sheepish * 0.4;
+                ctx.fillStyle = '#ff6666';
+                ctx.beginPath();
+                ctx.arc(headX - headR * 0.4, headY + headR * 0.2, headR * 0.25, 0, Math.PI * 2);
+                ctx.arc(headX + headR * 0.4, headY + headR * 0.2, headR * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Face - simple dots for eyes
+            ctx.fillStyle = p.color;
+            var eyeSize = headR * 0.12;
+            ctx.beginPath();
+            ctx.arc(headX - headR * 0.25, headY - headR * 0.1, eyeSize, 0, Math.PI * 2);
+            ctx.arc(headX + headR * 0.25, headY - headR * 0.1, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth varies by mood
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            if (p.sheepish > 0.3) {
+                // Nervous smile
+                ctx.moveTo(headX - headR * 0.2, headY + headR * 0.25);
+                ctx.lineTo(headX + headR * 0.2, headY + headR * 0.25);
+            } else if (p.hitStun > 0) {
+                // O-mouth (stunned)
+                ctx.arc(headX, headY + headR * 0.2, headR * 0.12, 0, Math.PI * 2);
+            } else if (p.throwTimer > 0) {
+                // Angry
+                ctx.moveTo(headX - headR * 0.2, headY + headR * 0.15);
+                ctx.lineTo(headX, headY + headR * 0.25);
+                ctx.lineTo(headX + headR * 0.2, headY + headR * 0.15);
+            } else {
+                // Happy smile
+                ctx.arc(headX, headY + headR * 0.15, headR * 0.2, 0, Math.PI);
+            }
+            ctx.stroke();
+            ctx.lineWidth = 2.5;
+
+            // Neck
+            ctx.beginPath();
+            ctx.moveTo(headX, headY + headR);
+            ctx.lineTo(0, neckY);
+            ctx.stroke();
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(0, neckY);
+            ctx.lineTo(0, hipY);
+            ctx.stroke();
+
+            // Arms
+            var lArmAngle, rArmAngle;
+            if (p.throwArm > 0.1 && p.throwTimer > 0) {
+                // One arm back to throw
+                lArmAngle = -Math.PI * 0.3 - p.throwArm * Math.PI * 0.4;
+                rArmAngle = Math.PI * 0.3;
+            } else {
+                // Waltz arms
+                lArmAngle = p.armAngle;
+                rArmAngle = -p.armAngle * 0.5 + Math.PI * 0.15;
+            }
+
+            var elbowLen = fh * 0.14;
+            var forearmLen = fh * 0.13;
+
+            // Left arm
+            var lElbowX = -shoulderW + Math.sin(lArmAngle) * elbowLen;
+            var lElbowY = neckY + Math.cos(lArmAngle) * elbowLen;
+            var lHandX = lElbowX + Math.sin(lArmAngle + 0.4) * forearmLen;
+            var lHandY = lElbowY + Math.cos(lArmAngle + 0.4) * forearmLen;
+
+            ctx.beginPath();
+            ctx.moveTo(-shoulderW, neckY);
+            ctx.lineTo(lElbowX, lElbowY);
+            ctx.lineTo(lHandX, lHandY);
+            ctx.stroke();
+
+            // Right arm
+            var rElbowX = shoulderW + Math.sin(rArmAngle) * elbowLen;
+            var rElbowY = neckY + Math.cos(rArmAngle) * elbowLen;
+            var rHandX = rElbowX + Math.sin(rArmAngle + 0.4) * forearmLen;
+            var rHandY = rElbowY + Math.cos(rArmAngle + 0.4) * forearmLen;
+
+            ctx.beginPath();
+            ctx.moveTo(shoulderW, neckY);
+            ctx.lineTo(rElbowX, rElbowY);
+            ctx.lineTo(rHandX, rHandY);
+            ctx.stroke();
+
+            // Legs with waltz step
+            var legSpread = Math.sin(p.legPhase) * fh * 0.06;
+
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(-fh * 0.04 - legSpread, kneeY);
+            ctx.lineTo(-fh * 0.02 - legSpread * 0.5, footY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, hipY);
+            ctx.lineTo(fh * 0.04 + legSpread, kneeY);
+            ctx.lineTo(fh * 0.02 + legSpread * 0.5, footY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ── Draw star shape ──
+        function drawStar(ctx, x, y, r, points) {
+            points = points || 5;
+            ctx.beginPath();
+            for (var i = 0; i < points * 2; i++) {
+                var a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+                var rad = i % 2 === 0 ? r : r * 0.4;
+                if (i === 0) ctx.moveTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+                else ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // ── Draw flying objects ──
+        function drawFlyingObject(ctx, obj) {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rot);
+
+            if (obj.type === 'mug') {
+                drawMug(ctx, 0, 0, 8);
+            } else if (obj.type === 'chair') {
+                ctx.strokeStyle = COL.barTop;
+                ctx.lineWidth = 3;
+                // Seat
+                ctx.strokeRect(-10, -5, 20, 3);
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(-8, -2); ctx.lineTo(-10, 12); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(8, -2); ctx.lineTo(10, 12); ctx.stroke();
+                // Back
+                ctx.beginPath();
+                ctx.moveTo(-8, -5); ctx.lineTo(-8, -18); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(8, -5); ctx.lineTo(8, -18); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-8, -18); ctx.lineTo(8, -18); ctx.stroke();
+            } else if (obj.type === 'table') {
+                ctx.fillStyle = COL.barTop;
+                ctx.fillRect(-15, -3, 30, 5);
+                ctx.fillStyle = COL.beam;
+                ctx.fillRect(-12, 2, 3, 15);
+                ctx.fillRect(9, 2, 3, 15);
+            }
+
+            ctx.restore();
+        }
+
+        // ── Draw dust cloud ──
+        function drawDustCloud(ctx, cloud) {
+            ctx.save();
+            ctx.globalAlpha = cloud.alpha;
+            ctx.fillStyle = COL.dust;
+            ctx.beginPath();
+            ctx.arc(cloud.x, cloud.y, cloud.r, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner lighter spot
+            ctx.globalAlpha = cloud.alpha * 0.5;
+            ctx.fillStyle = '#e8d0b0';
+            ctx.beginPath();
+            ctx.arc(cloud.x + cloud.r * 0.2, cloud.y - cloud.r * 0.2, cloud.r * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ── Spawn flying object ──
+        function spawnFlyingObject(type) {
+            var startX = W * 0.15 + Math.random() * W * 0.7;
+            var startY = floorY - H * 0.15 - Math.random() * H * 0.3;
+            var angle = (Math.random() - 0.5) * Math.PI * 0.6 - Math.PI / 2;
+            var speed = 150 + Math.random() * 250;
+            flyingObjects.push({
+                type: type,
+                x: startX,
+                y: startY,
+                vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1),
+                vy: -speed * 0.5 - Math.random() * 100,
+                rot: 0,
+                rotSpeed: (Math.random() - 0.5) * 8,
+                life: 2.5 + Math.random()
+            });
+        }
+
+        // ── Spawn dust cloud ──
+        function spawnDust(x, y) {
+            dustClouds.push({
+                x: x + (Math.random() - 0.5) * 30,
+                y: y + (Math.random() - 0.5) * 20,
+                r: 8 + Math.random() * 15,
+                alpha: 0.4 + Math.random() * 0.3,
+                dr: 15 + Math.random() * 10
+            });
+        }
+
+        // ── Spawn impact star ──
+        function spawnImpactStar(x, y) {
+            impactStars.push({
+                x: x,
+                y: y,
+                alpha: 1,
+                size: 6 + Math.random() * 8,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+
+        // ── Draw title ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+
+            ctx.save();
+            var fontSize = Math.max(16, Math.min(W * 0.035, 42));
+            ctx.font = '700 ' + fontSize + 'px "MedievalSharp", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.globalAlpha = titleAlpha;
+
+            var y = ceilingY + (floorY - ceilingY) * 0.15;
+
+            // Glow
+            ctx.shadowColor = COL.candleGlow;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = COL.candle;
+            ctx.fillText('TAVERN BRAWL CRESCENDO', W / 2, y);
+
+            // Second pass for brightness
+            ctx.shadowBlur = 60;
+            ctx.globalAlpha = titleAlpha * 0.5;
+            ctx.fillText('TAVERN BRAWL CRESCENDO', W / 2, y);
+
+            ctx.restore();
+        }
+
+        // ── Draw impact flash ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = COL.impact;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            ceilingY = H * 0.08;
+            floorY = H * 0.78;
+            barX = W * 0.82;
+            barW = W * 0.16;
+
+            initPatrons();
+            initTables();
+            flyingObjects = [];
+            dustClouds = [];
+            impactStars = [];
+            lastBeat = -1;
+            beatPulse = 0;
+            flashAlpha = 0;
+            shakeIntensity = 0;
+            shakeX = 0;
+            shakeY = 0;
+            lastSeqIndex = -1;
+            sectionMood = 'intro';
+            titleAlpha = 0;
+            titleTarget = 0;
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            ceilingY = H * 0.08;
+            floorY = H * 0.78;
+            barX = W * 0.82;
+            barW = W * 0.16;
+
+            initPatrons();
+            initTables();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+
+            // Update candle flicker
+            for (var cf = 0; cf < candleFlicker.length; cf++) {
+                candleFlicker[cf] = lerpExp(candleFlicker[cf], (Math.random() - 0.5) * 2, 8, dt);
+            }
+
+            // Background
+            ctx.fillStyle = COL.wallDark;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle: draw static tavern
+                drawTavern(ctx, 0);
+                drawChandelier(ctx, 0);
+                for (var ti = 0; ti < tables.length; ti++) drawTable(ctx, tables[ti]);
+                drawBar(ctx);
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+            var intensity = getMoodIntensity();
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                sectionMood = newSection;
+
+                // Flash on big transitions
+                if (newSection === 'brawl' || newSection === 'peak') {
+                    flashAlpha = 0.3;
+                }
+
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat pulse ──
+            if (beat !== lastBeat) {
+                beatPulse = 1;
+
+                // Spawn objects based on section
+                if (sectionMood === 'disturbance' && Math.random() > 0.7) {
+                    spawnFlyingObject('mug');
+                }
+                if (sectionMood === 'escalation') {
+                    if (Math.random() > 0.5) spawnFlyingObject('mug');
+                    if (Math.random() > 0.7) spawnFlyingObject('chair');
+                }
+                if (sectionMood === 'buildup') {
+                    spawnFlyingObject(Math.random() > 0.5 ? 'mug' : 'chair');
+                    if (Math.random() > 0.6) spawnFlyingObject('chair');
+                }
+                if (sectionMood === 'brawl') {
+                    spawnFlyingObject('mug');
+                    spawnFlyingObject(Math.random() > 0.4 ? 'chair' : 'mug');
+                    if (Math.random() > 0.5) spawnFlyingObject('table');
+                    // Dust clouds
+                    spawnDust(W * 0.2 + Math.random() * W * 0.6, floorY - 20);
+                }
+                if (sectionMood === 'peak') {
+                    spawnFlyingObject('mug');
+                    spawnFlyingObject('chair');
+                    spawnFlyingObject(Math.random() > 0.3 ? 'table' : 'mug');
+                    spawnFlyingObject('mug');
+                    spawnDust(W * 0.1 + Math.random() * W * 0.8, floorY - 30);
+                    spawnDust(W * 0.1 + Math.random() * W * 0.8, floorY - 10);
+                    // Impact stars
+                    spawnImpactStar(W * 0.1 + Math.random() * W * 0.8, floorY - H * 0.1 - Math.random() * H * 0.3);
+                    flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.1);
+                }
+
+                // Table flipping in brawl
+                if ((sectionMood === 'brawl' || sectionMood === 'peak') && Math.random() > 0.6) {
+                    for (var tfi = 0; tfi < tables.length; tfi++) {
+                        if (!tables[tfi].flipped && Math.random() > 0.5) {
+                            tables[tfi].flipped = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Reset tables in sheepish section
+                if (sectionMood === 'sheepish' || sectionMood === 'ending') {
+                    for (var tri = 0; tri < tables.length; tri++) {
+                        tables[tri].flipped = false;
+                        tables[tri].flipAngle = 0;
+                    }
+                }
+
+                // Patron behaviors on beat
+                for (var pi = 0; pi < patrons.length; pi++) {
+                    var pat = patrons[pi];
+
+                    if (sectionMood === 'brawl' || sectionMood === 'peak') {
+                        if (Math.random() > 0.4) {
+                            pat.throwTimer = 0.5;
+                            pat.throwArm = 1;
+                        }
+                        if (Math.random() > 0.5) {
+                            pat.hitStun = 1.5;
+                            spawnImpactStar(pat.x, pat.y - pat.figH * 0.5);
+                        }
+                    } else if (sectionMood === 'escalation' || sectionMood === 'buildup') {
+                        if (Math.random() > 0.7) {
+                            pat.throwTimer = 0.4;
+                            pat.throwArm = 0.8;
+                        }
+                    }
+                }
+
+                lastBeat = beat;
+            }
+
+            beatPulse *= Math.exp(-8 * dt);
+            flashAlpha *= Math.exp(-5 * dt);
+
+            // ── Screen shake ──
+            var shakeTarget = 0;
+            if (sectionMood === 'brawl') shakeTarget = 3 + energy * 4;
+            if (sectionMood === 'peak') shakeTarget = 6 + energy * 8;
+            shakeIntensity = lerpExp(shakeIntensity, shakeTarget, 6, dt);
+            shakeX = (Math.random() - 0.5) * shakeIntensity;
+            shakeY = (Math.random() - 0.5) * shakeIntensity;
+
+            // ── Title ──
+            if (sectionMood === 'brawl' || sectionMood === 'peak') {
+                titleTarget = 1;
+            } else if (sectionMood === 'buildup') {
+                titleTarget = 0.5;
+            } else {
+                titleTarget = 0;
+            }
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 4, dt);
+
+            // ── Update patrons ──
+            var waltzSpeed = 2.5;
+            var brawlMode = sectionMood === 'brawl' || sectionMood === 'peak' || sectionMood === 'buildup';
+            var sheepishMode = sectionMood === 'sheepish' || sectionMood === 'ending';
+
+            for (var ui = 0; ui < patrons.length; ui++) {
+                var p = patrons[ui];
+                p.figH = H * 0.28;
+
+                // Waltz movement
+                p.waltzPhase += waltzSpeed * dt;
+
+                if (sheepishMode) {
+                    // Sheepish: slower, tighter waltz
+                    p.sheepish = lerpExp(p.sheepish, 1, 2, dt);
+                    var slowFactor = 0.4;
+                    var pairOffset = p.isLeader ? 0 : Math.PI;
+                    p.x = lerpExp(p.x, p.baseX + Math.cos(p.waltzPhase * slowFactor + pairOffset) * p.waltzRadius * 0.5, 3, dt);
+                    p.y = lerpExp(p.y, p.baseY, 3, dt);
+                    p.bounce = lerpExp(p.bounce, 2, 4, dt);
+                    p.legPhase += 2 * dt;
+                    p.armAngle = lerpExp(p.armAngle, Math.sin(p.waltzPhase * slowFactor) * 0.2, 3, dt);
+                    p.headTilt = lerpExp(p.headTilt, Math.sin(p.waltzPhase * slowFactor * 0.5) * 0.1, 3, dt);
+                } else if (brawlMode) {
+                    // Brawl: chaotic movement
+                    p.sheepish = 0;
+                    var chaos = intensity;
+                    p.x = p.baseX + Math.sin(p.waltzPhase * 3 + ui) * p.waltzRadius * chaos * 2;
+                    p.y = p.baseY + Math.cos(p.waltzPhase * 2.5 + ui * 0.7) * 10 * chaos;
+                    p.bounce = 5 * chaos;
+                    p.legPhase += 8 * chaos * dt;
+                    p.armAngle = Math.sin(p.waltzPhase * 4 + ui) * 1.2 * chaos;
+                    p.headTilt = Math.sin(p.waltzPhase * 3) * 0.5 * chaos;
+                } else {
+                    // Normal waltz
+                    p.sheepish = lerpExp(p.sheepish, 0, 2, dt);
+                    var pairOff = p.isLeader ? 0 : Math.PI;
+                    p.x = p.baseX + Math.cos(p.waltzPhase + pairOff) * p.waltzRadius;
+                    p.y = p.baseY;
+                    p.bounce = lerpExp(p.bounce, 3, 4, dt);
+                    p.legPhase += 3 * dt;
+                    p.armAngle = Math.sin(p.waltzPhase * 0.5) * 0.4;
+                    p.headTilt = Math.sin(p.waltzPhase * 0.3) * 0.15;
+                }
+
+                // Decay timers
+                p.throwTimer = Math.max(0, p.throwTimer - dt);
+                p.throwArm = lerpExp(p.throwArm, p.throwTimer > 0 ? 1 : 0, 8, dt);
+                p.hitStun = Math.max(0, p.hitStun - dt * 0.7);
+            }
+
+            // ── Update flying objects ──
+            for (var fi = flyingObjects.length - 1; fi >= 0; fi--) {
+                var obj = flyingObjects[fi];
+                obj.x += obj.vx * dt;
+                obj.y += obj.vy * dt;
+                obj.vy += 300 * dt; // gravity
+                obj.rot += obj.rotSpeed * dt;
+                obj.life -= dt;
+
+                // Bounce off floor
+                if (obj.y > floorY - 5) {
+                    obj.y = floorY - 5;
+                    obj.vy = -Math.abs(obj.vy) * 0.4;
+                    obj.vx *= 0.7;
+                    if (Math.abs(obj.vy) > 30) {
+                        spawnDust(obj.x, floorY);
+                    }
+                }
+
+                if (obj.life <= 0 || obj.x < -50 || obj.x > W + 50) {
+                    flyingObjects.splice(fi, 1);
+                }
+            }
+
+            // ── Update dust clouds ──
+            for (var di = dustClouds.length - 1; di >= 0; di--) {
+                var dc = dustClouds[di];
+                dc.r += dc.dr * dt;
+                dc.alpha -= dt * 0.4;
+                dc.y -= 15 * dt;
+                if (dc.alpha <= 0) {
+                    dustClouds.splice(di, 1);
+                }
+            }
+
+            // ── Update impact stars ──
+            for (var si = impactStars.length - 1; si >= 0; si--) {
+                var star = impactStars[si];
+                star.alpha -= dt * 1.5;
+                star.size += dt * 5;
+                if (star.alpha <= 0) {
+                    impactStars.splice(si, 1);
+                }
+            }
+
+            // ── Update table flip angles ──
+            for (var tui = 0; tui < tables.length; tui++) {
+                var tbl = tables[tui];
+                var flipTarget = tbl.flipped ? (Math.PI * 0.4 + Math.sin(tui + beatPulse) * 0.1) : 0;
+                tbl.flipAngle = lerpExp(tbl.flipAngle, flipTarget, 6, dt);
+            }
+
+            // ═══════════════════════════════════════════
+            // ── DRAW SCENE ──
+            // ═══════════════════════════════════════════
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // Tavern background
+            drawTavern(ctx, energy);
+
+            // Chandelier
+            drawChandelier(ctx, cursor.elapsed);
+
+            // Warm ambient glow that pulses with beat
+            var warmGlow = ctx.createRadialGradient(W * 0.5, floorY * 0.5, 0, W * 0.5, floorY * 0.5, W * 0.6);
+            warmGlow.addColorStop(0, 'rgba(255,180,60,' + (0.02 + beatPulse * 0.03 + energy * 0.02) + ')');
+            warmGlow.addColorStop(1, 'rgba(255,180,60,0)');
+            ctx.fillStyle = warmGlow;
+            ctx.fillRect(0, 0, W, H);
+
+            // Tables
+            for (var dti = 0; dti < tables.length; dti++) {
+                drawTable(ctx, tables[dti]);
+            }
+
+            // Bar
+            drawBar(ctx);
+
+            // Dust clouds (behind patrons)
+            for (var dci = 0; dci < dustClouds.length; dci++) {
+                drawDustCloud(ctx, dustClouds[dci]);
+            }
+
+            // Patrons
+            for (var dpi = 0; dpi < patrons.length; dpi++) {
+                drawPatron(ctx, patrons[dpi]);
+            }
+
+            // Flying objects (in front of patrons)
+            for (var foi = 0; foi < flyingObjects.length; foi++) {
+                drawFlyingObject(ctx, flyingObjects[foi]);
+            }
+
+            // Impact stars
+            ctx.fillStyle = COL.star;
+            for (var isi = 0; isi < impactStars.length; isi++) {
+                var is = impactStars[isi];
+                ctx.save();
+                ctx.globalAlpha = is.alpha;
+                ctx.translate(is.x, is.y);
+                ctx.rotate(is.angle);
+                drawStar(ctx, 0, 0, is.size, 4);
+                ctx.restore();
+            }
+
+            // Title
+            drawTitle(ctx);
+
+            ctx.restore(); // end shake transform
+
+            // Flash overlay (not affected by shake)
+            drawFlash(ctx);
+
+            // Vignette
+            var vigGrad = ctx.createRadialGradient(W / 2, H / 2, W * 0.25, W / 2, H / 2, W * 0.75);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        return {
+            name: 'Tavern Brawl Crescendo',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('tavern-brawl-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/tavern-brawl-crescendo.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
