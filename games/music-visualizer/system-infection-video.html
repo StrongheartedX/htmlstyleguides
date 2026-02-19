@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Infection — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a0c;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #viz-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+        .play-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            background: rgba(10,10,12,0.94);
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        .play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .play-title {
+            font-size: clamp(16px, 4vw, 40px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #44aadd;
+            text-shadow: 0 0 30px rgba(68,136,204,0.4), 0 0 60px rgba(68,136,204,0.2);
+            margin-bottom: 12px;
+        }
+        .play-sub {
+            font-size: clamp(12px, 2vw, 18px);
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 40px;
+        }
+        .play-btn {
+            width: 80px; height: 80px;
+            border: 3px solid #4488cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .play-btn::after {
+            content: '';
+            display: block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 18px 0 18px 30px;
+            border-color: transparent transparent transparent #4488cc;
+            margin-left: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(68,136,204,0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(68,136,204,0); }
+        }
+        .back-link {
+            position: fixed;
+            top: 12px; left: 12px;
+            z-index: 30;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.4);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <a href="music-videos/index.html" class="back-link">&larr; Music Videos</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">System Infection</div>
+        <div class="play-sub">stickdeath arena battle</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>
+    <script>
+    // ── System Infection Video Renderer ──────────────────────────────
+    window.Renderers['system-infection-video'] = (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Palette ──
+        var BG_COLOR = '#0a0a0c';
+        var GROUND_COLOR = '#161620';
+        var GROUND_LINE_COLOR = '#2a2a3a';
+        var HERO_COLOR = '#4488cc';
+        var ENEMY_COLORS = ['#cc4444', '#cc6644', '#cc5533', '#bb3333', '#dd5555'];
+        var SPOTLIGHT_COLOR = 'rgba(68,136,204,';
+        var CROWD_COLOR = '#0c0c14';
+
+        // Key change palette (Eb minor, patterns 23-24)
+        var KEY_CHANGE_HERO = '#3388aa';
+        var KEY_CHANGE_GROUND = '#141420';
+        var KEY_CHANGE_SPOTLIGHT = 'rgba(50,120,170,';
+
+        // ── Layout ──
+        var GROUND_Y_RATIO = 0.78;
+        var groundY = 0;
+        var arenaLeft = 0;
+        var arenaRight = 0;
+
+        // ── State ──
+        var lastBeat = -1;
+        var beatPulse = 0;
+        var lastSeqIndex = -1;
+        var section = 'intro';
+
+        // Screen shake
+        var shakeX = 0, shakeY = 0;
+        var shakeIntensity = 0;
+
+        // Slow-motion
+        var slowMoFactor = 1;
+        var slowMoTimer = 0;
+
+        // Hero glow (for breakdown)
+        var heroGlow = 0;
+        var heroGlowTarget = 0;
+
+        // Spotlight
+        var spotlightAlpha = 0;
+        var spotlightTarget = 0;
+
+        // Title
+        var titleAlpha = 0;
+        var titleTarget = 0;
+
+        // Screen pulse (heartbeat in breakdown)
+        var screenPulse = 0;
+
+        // Key change blend
+        var keyChangeBlend = 0;
+
+        // ── Figures ──
+        var hero = null;
+        var activeFigs = [];   // enemies currently fighting
+        var deadFigs = [];     // ragdolled/dead enemies still drawn
+        var allFigs = [];      // hero + active enemies for updateAll
+
+        // Enemy AI state
+        var enemyTimers = [];  // per-enemy attack cooldown
+
+        // Wave management
+        var waveEnemies = 0;
+        var waveSpawned = 0;
+        var spawnTimer = 0;
+        var spawnInterval = 1.5;
+        var currentWaveHP = 100;
+        var currentWaveSwords = false;
+        var currentWaveFigHMult = 1;
+
+        // Combo tracking for signature moves
+        var signatureComboQueue = [];
+        var signatureTimer = 0;
+
+        // Beat-synced attack queue for hero
+        var heroAttackQueue = [];
+        var heroAttackCooldown = 0;
+
+        // Boss ref
+        var boss = null;
+        var bossDefeated = false;
+
+        // Intro animation
+        var introDropY = -200;
+        var introDropDone = false;
+
+        // Outro
+        var outroAlpha = 0;
+        var outroStarted = false;
+
+        // Crowd silhouettes
+        var crowdBumps = [];
+
+        // ── Helpers ──
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function lerpExp(current, target, speed, dt) {
+            return current + (target - current) * (1 - Math.exp(-speed * dt));
+        }
+        function rand(min, max) { return min + Math.random() * (max - min); }
+        function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+        function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        // ── Section mapping ──
+        function mapSection(seqIndex) {
+            if (seqIndex <= 3) return 'intro';
+            if (seqIndex <= 7) return 'verse1';
+            if (seqIndex <= 11) return 'chorus1';
+            if (seqIndex === 12) return 'bridge';
+            if (seqIndex <= 15) return 'verse2';
+            if (seqIndex <= 18) return 'chorus2';
+            if (seqIndex <= 22) return 'breakdown';
+            if (seqIndex <= 24) return 'final_chorus';
+            return 'outro';
+        }
+
+        // ── Arena drawing ──
+        function drawArena(ctx, energy) {
+            // Background
+            var bgCol = keyChangeBlend > 0.1 ? KEY_CHANGE_GROUND : BG_COLOR;
+            ctx.fillStyle = bgCol;
+            ctx.fillRect(0, 0, W, H);
+
+            // Screen pulse (breakdown heartbeat)
+            if (screenPulse > 0.01) {
+                ctx.save();
+                ctx.globalAlpha = screenPulse * 0.08;
+                ctx.fillStyle = '#cc2222';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // Crowd silhouettes along top
+            ctx.save();
+            ctx.fillStyle = CROWD_COLOR;
+            for (var i = 0; i < crowdBumps.length; i++) {
+                var b = crowdBumps[i];
+                var bounceOff = beatPulse * 3 * (i % 2 === 0 ? 1 : -1);
+                ctx.beginPath();
+                ctx.ellipse(b.x, b.y + bounceOff, b.w, b.h, 0, Math.PI, 0);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Spotlights
+            if (spotlightAlpha > 0.01) {
+                var spotColor = keyChangeBlend > 0.5 ? KEY_CHANGE_SPOTLIGHT : SPOTLIGHT_COLOR;
+                // Center spotlight on hero
+                var heroX = hero ? hero.x : W * 0.5;
+                ctx.save();
+                var grad = ctx.createRadialGradient(heroX, 0, 10, heroX, groundY, W * 0.25);
+                grad.addColorStop(0, spotColor + (spotlightAlpha * 0.3) + ')');
+                grad.addColorStop(0.6, spotColor + (spotlightAlpha * 0.08) + ')');
+                grad.addColorStop(1, spotColor + '0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(heroX - W * 0.2, 0);
+                ctx.lineTo(heroX - W * 0.35, groundY);
+                ctx.lineTo(heroX + W * 0.35, groundY);
+                ctx.lineTo(heroX + W * 0.2, 0);
+                ctx.fill();
+                ctx.restore();
+
+                // Side spotlights during combat
+                if (section !== 'intro' && section !== 'outro') {
+                    ctx.save();
+                    var sideAlpha = spotlightAlpha * 0.15;
+                    ctx.fillStyle = 'rgba(200,80,40,' + sideAlpha + ')';
+                    var grad2 = ctx.createRadialGradient(W * 0.1, 0, 5, W * 0.1, groundY, W * 0.15);
+                    grad2.addColorStop(0, 'rgba(200,80,40,' + sideAlpha + ')');
+                    grad2.addColorStop(1, 'rgba(200,80,40,0)');
+                    ctx.fillStyle = grad2;
+                    ctx.fillRect(0, 0, W * 0.3, groundY);
+
+                    var grad3 = ctx.createRadialGradient(W * 0.9, 0, 5, W * 0.9, groundY, W * 0.15);
+                    grad3.addColorStop(0, 'rgba(200,80,40,' + sideAlpha + ')');
+                    grad3.addColorStop(1, 'rgba(200,80,40,0)');
+                    ctx.fillStyle = grad3;
+                    ctx.fillRect(W * 0.7, 0, W * 0.3, groundY);
+                    ctx.restore();
+                }
+            }
+
+            // Ground
+            ctx.fillStyle = GROUND_COLOR;
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Ground line
+            ctx.strokeStyle = GROUND_LINE_COLOR;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(W, groundY);
+            ctx.stroke();
+
+            // Ground reflection shimmer
+            var shimmer = 0.01 + energy * 0.03 + beatPulse * 0.02;
+            var gGrad = ctx.createLinearGradient(0, groundY, 0, groundY + (H - groundY) * 0.3);
+            gGrad.addColorStop(0, 'rgba(68,136,204,' + shimmer + ')');
+            gGrad.addColorStop(1, 'rgba(68,136,204,0)');
+            ctx.fillStyle = gGrad;
+            ctx.fillRect(0, groundY, W, (H - groundY) * 0.3);
+
+            // Arena cracks (verse2+)
+            if (section === 'verse2' || section === 'chorus2' || section === 'breakdown' || section === 'final_chorus') {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(80,30,30,0.3)';
+                ctx.lineWidth = 1;
+                var crackCount = section === 'breakdown' ? 8 : 4;
+                for (var ci = 0; ci < crackCount; ci++) {
+                    var cx = W * (0.1 + ci * 0.1);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, groundY);
+                    for (var cj = 0; cj < 5; cj++) {
+                        cx += rand(-15, 15);
+                        ctx.lineTo(cx, groundY + cj * 8);
+                    }
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // ── Hero glow effect (breakdown) ──
+        function drawHeroGlow(ctx) {
+            if (heroGlow < 0.05 || !hero || hero.mode === 'ragdoll') return;
+            ctx.save();
+            ctx.shadowColor = HERO_COLOR;
+            ctx.shadowBlur = 20 + heroGlow * 40;
+            ctx.globalAlpha = heroGlow * 0.4;
+            ctx.strokeStyle = HERO_COLOR;
+            ctx.lineWidth = 6;
+            // Draw a glow outline around hero position
+            var joints = StickFight.computeJoints(hero);
+            ctx.beginPath();
+            ctx.arc(hero.x + joints.head.x, hero.y + joints.head.y, joints.headR + 8, 0, Math.PI * 2);
+            ctx.stroke();
+            // Body glow line
+            ctx.beginPath();
+            ctx.moveTo(hero.x + joints.hip.x, hero.y + joints.hip.y);
+            ctx.lineTo(hero.x + joints.neck.x, hero.y + joints.neck.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ── Title drawing ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = titleAlpha;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            var fontSize = Math.max(14, Math.min(W * 0.035, 42));
+            ctx.font = '700 ' + fontSize + 'px "JetBrains Mono", monospace';
+            ctx.shadowColor = HERO_COLOR;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#4488cc';
+            ctx.fillText('SYSTEM INFECTION', W * 0.5, H * 0.1);
+
+            ctx.font = '400 ' + (fontSize * 0.45) + 'px "JetBrains Mono", monospace';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = 'rgba(180,190,220,0.5)';
+            ctx.fillText('ARENA BATTLE', W * 0.5, H * 0.1 + fontSize * 1.1);
+            ctx.restore();
+        }
+
+        // ── Spawn enemies ──
+        function spawnEnemy(hp, hasSword, figHMult, isBoss) {
+            var side = Math.random() < 0.5 ? -1 : 1;
+            var spawnX = side < 0 ? arenaLeft - 50 : arenaRight + 50;
+            var figH = H * 0.28 * (figHMult || 1);
+            if (isBoss) figH = H * 0.42;
+
+            var fig = StickFight.create({
+                x: spawnX,
+                y: groundY,
+                figH: figH,
+                facing: side < 0 ? 1 : -1,
+                color: isBoss ? '#ff6622' : pickRandom(ENEMY_COLORS),
+                poseSpeed: 8,
+                hp: hp || 100
+            });
+
+            if (hasSword) {
+                fig.params.swordLen = 0.3;
+                fig.targets.swordLen = 0.3;
+            }
+
+            fig._walkTarget = hero ? hero.x + rand(-80, 80) : W * 0.5;
+            fig._isBoss = isBoss || false;
+
+            StickFight.setPose(fig, 'guard');
+            activeFigs.push(fig);
+            enemyTimers.push({ cooldown: rand(0.5, 1.5), fig: fig });
+            return fig;
+        }
+
+        // ── Start a wave of enemies ──
+        function startWave(count, hp, swords, figHMult) {
+            waveEnemies = count;
+            waveSpawned = 0;
+            spawnTimer = 0;
+            spawnInterval = Math.max(0.3, 1.5 - count * 0.1);
+            currentWaveHP = hp || 100;
+            currentWaveSwords = swords || false;
+            currentWaveFigHMult = figHMult || 1;
+        }
+
+        // ── Enemy AI ──
+        function updateEnemyAI(dt) {
+            for (var i = 0; i < activeFigs.length; i++) {
+                var enemy = activeFigs[i];
+                if (enemy.mode === 'ragdoll' || enemy.hp <= 0) continue;
+
+                // Walk toward hero
+                var distToHero = hero.x - enemy.x;
+                var absDist = Math.abs(distToHero);
+                var faceDir = distToHero > 0 ? 1 : -1;
+                enemy.facing = faceDir;
+
+                var attackRange = enemy.figH * 0.4;
+                if (enemy.params.swordLen > 0) attackRange = enemy.figH * 0.55;
+
+                if (absDist > attackRange) {
+                    // Walk toward hero
+                    var walkSpeed = enemy._isBoss ? 80 : 120;
+                    enemy.x += faceDir * walkSpeed * dt;
+                    if (!enemy.attacking) {
+                        StickFight.setPose(enemy, 'idle');
+                        StickFight.setTarget(enemy, 'legSpread', 0.2 + Math.sin(performance.now() * 0.005 + i) * 0.05);
+                    }
+                } else {
+                    // In range — attack on cooldown
+                    var timer = enemyTimers[i];
+                    if (timer) {
+                        timer.cooldown -= dt;
+                        if (timer.cooldown <= 0 && !enemy.attacking) {
+                            var moves = ['punch_r', 'punch_l', 'kick_high'];
+                            if (enemy.params.swordLen > 0) {
+                                moves.push('slash', 'lunge');
+                            }
+                            var moveName = pickRandom(moves);
+                            StickFight.attack(enemy, moveName, hero);
+                            timer.cooldown = rand(0.6, 2.0);
+                            if (enemy._isBoss) timer.cooldown = rand(0.4, 1.0);
+                        } else if (!enemy.attacking) {
+                            // Idle guard while waiting
+                            StickFight.setPose(enemy, 'guard');
+                            // Sometimes block
+                            if (hero.attacking && Math.random() < 0.2) {
+                                StickFight.setPose(enemy, 'block');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Hero attack on beat ──
+        function heroAttackOnBeat(energy) {
+            if (!hero || hero.mode === 'ragdoll') return;
+            if (heroAttackCooldown > 0) return;
+            if (activeFigs.length === 0) return;
+
+            // Find nearest alive enemy
+            var nearest = null;
+            var nearDist = Infinity;
+            for (var i = 0; i < activeFigs.length; i++) {
+                var e = activeFigs[i];
+                if (e.mode === 'ragdoll' || e.hp <= 0) continue;
+                var d = Math.abs(e.x - hero.x);
+                if (d < nearDist) {
+                    nearDist = d;
+                    nearest = e;
+                }
+            }
+
+            if (!nearest) return;
+
+            // Face the enemy
+            hero.facing = nearest.x > hero.x ? 1 : -1;
+
+            // Walk toward if too far
+            var attackRange = hero.figH * 0.45;
+            if (hero.params.swordLen > 0) attackRange = hero.figH * 0.6;
+            if (nearDist > attackRange) {
+                hero.x += hero.facing * 150 * (1 / 60);
+            }
+
+            // Pick a move
+            var moves = ['punch_r', 'punch_l', 'kick_high'];
+            if (hero.params.swordLen > 0) {
+                moves.push('slash', 'lunge');
+            }
+            var moveName;
+            if (energy > 0.7) {
+                moveName = hero.params.swordLen > 0 ? 'slash' : 'kick_high';
+            } else {
+                moveName = pickRandom(moves);
+            }
+
+            StickFight.attack(hero, moveName, nearest);
+            heroAttackCooldown = 0.15;
+        }
+
+        // ── Signature combo: rapid punch_r, punch_l, kick_high ──
+        function triggerSignatureCombo() {
+            signatureComboQueue = ['punch_r', 'punch_l', 'kick_high'];
+            signatureTimer = 0;
+        }
+
+        function updateSignatureCombo(dt) {
+            if (signatureComboQueue.length === 0) return;
+            signatureTimer -= dt;
+            if (signatureTimer > 0) return;
+
+            if (!hero || hero.mode === 'ragdoll') {
+                signatureComboQueue = [];
+                return;
+            }
+
+            // Find target
+            var nearest = null;
+            var nearDist = Infinity;
+            for (var i = 0; i < activeFigs.length; i++) {
+                var e = activeFigs[i];
+                if (e.mode === 'ragdoll' || e.hp <= 0) continue;
+                var d = Math.abs(e.x - hero.x);
+                if (d < nearDist) { nearDist = d; nearest = e; }
+            }
+
+            if (!nearest) {
+                signatureComboQueue = [];
+                return;
+            }
+
+            hero.facing = nearest.x > hero.x ? 1 : -1;
+
+            if (!hero.attacking) {
+                var move = signatureComboQueue.shift();
+                StickFight.attack(hero, move, nearest);
+                signatureTimer = 0.18;
+                heroAttackCooldown = 0.25;
+
+                // Blood on combo hits
+                StickFight.spawnBlood(nearest.x, nearest.y - nearest.figH * 0.4,
+                    8, hero.facing * 150, -100);
+                shakeIntensity = Math.max(shakeIntensity, 4);
+            }
+        }
+
+        // ── Clean up dead enemies ──
+        function cleanupDead() {
+            // Move dead from active to dead
+            for (var i = activeFigs.length - 1; i >= 0; i--) {
+                var fig = activeFigs[i];
+                if (fig.hp <= 0 && fig.mode === 'ragdoll') {
+                    deadFigs.push(fig);
+                    activeFigs.splice(i, 1);
+                    enemyTimers.splice(i, 1);
+                }
+            }
+
+            // Remove settled dead that are old
+            for (var j = deadFigs.length - 1; j >= 0; j--) {
+                if (deadFigs[j].ragdoll && deadFigs[j].ragdoll.settled) {
+                    deadFigs[j]._settleAge = (deadFigs[j]._settleAge || 0) + 1 / 60;
+                    if (deadFigs[j]._settleAge > 8) {
+                        deadFigs.splice(j, 1);
+                    }
+                }
+            }
+        }
+
+        // ── Wave spawning ──
+        function updateSpawning(dt) {
+            if (waveSpawned >= waveEnemies) return;
+
+            spawnTimer += dt;
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+                spawnEnemy(currentWaveHP, currentWaveSwords, currentWaveFigHMult, false);
+                waveSpawned++;
+            }
+        }
+
+        // ── Section choreography ──
+        function onSectionChange(newSection, seqIdx) {
+            section = newSection;
+
+            if (section === 'intro') {
+                spotlightTarget = 0.5;
+                titleTarget = 1;
+                introDropDone = false;
+                introDropY = -200;
+            }
+
+            if (section === 'verse1') {
+                titleTarget = 0;
+                spotlightTarget = 1;
+                startWave(3, 60, false, 1);
+            }
+
+            if (section === 'chorus1') {
+                startWave(6, 50, true, 1);
+                // Give hero a sword
+                hero.params.swordLen = 0.3;
+                hero.targets.swordLen = 0.3;
+            }
+
+            if (section === 'bridge') {
+                // Brief pause
+                spotlightTarget = 0.7;
+            }
+
+            if (section === 'verse2') {
+                startWave(4, 150, true, 1.15);
+                spotlightTarget = 1;
+            }
+
+            if (section === 'chorus2') {
+                startWave(8, 80, true, 1.1);
+            }
+
+            if (section === 'breakdown') {
+                // Different handling per sub-pattern, done in beat logic
+                spotlightTarget = 0.3;
+                heroGlowTarget = 0;
+            }
+
+            if (section === 'final_chorus') {
+                spotlightTarget = 1;
+                keyChangeBlend = 0;
+                // Spawn boss
+                if (!boss || boss.hp <= 0) {
+                    boss = spawnEnemy(300, true, 1.5, true);
+                    bossDefeated = false;
+                }
+            }
+
+            if (section === 'outro') {
+                titleTarget = 0;
+                outroStarted = true;
+            }
+        }
+
+        // ── Per-beat choreography ──
+        function onBeat(beat, energy, seqIdx) {
+            beatPulse = 1;
+
+            // Breakdown sub-patterns
+            if (section === 'breakdown') {
+                if (seqIdx === 19) {
+                    // Stillness — idle breathing
+                    StickFight.setPose(hero, 'idle');
+                    heroGlowTarget = 0;
+                    spotlightTarget = 0.3;
+                } else if (seqIdx === 20) {
+                    // New enemies slowly emerge
+                    if (beat % 8 === 0 && activeFigs.length < 4) {
+                        spawnEnemy(100, true, 1.1, false);
+                    }
+                    // Heartbeat pulse
+                    if (beat % 4 === 0) {
+                        screenPulse = 0.8;
+                    }
+                    heroGlowTarget = 0.3;
+                } else if (seqIdx === 21) {
+                    // Hero glows, screen rumbles
+                    heroGlowTarget = 0.8 + Math.sin(beat * 0.5) * 0.2;
+                    if (beat % 2 === 0) {
+                        shakeIntensity = Math.max(shakeIntensity, 2 + energy * 3);
+                    }
+                    spotlightTarget = 0.6;
+                } else if (seqIdx === 22) {
+                    // ABSOLUTE CARNAGE
+                    heroGlowTarget = 1;
+                    spotlightTarget = 1;
+
+                    // Spawn enemies constantly
+                    if (activeFigs.length < 6) {
+                        spawnEnemy(40, false, 1, false);
+                    }
+
+                    // Attack every beat
+                    heroAttackOnBeat(1.0);
+
+                    // Flung deaths
+                    for (var i = activeFigs.length - 1; i >= 0; i--) {
+                        var e = activeFigs[i];
+                        if (e.hp <= 0 && e.mode !== 'ragdoll') {
+                            StickFight.applyDeath(e, 'flung', groundY);
+                            StickFight.spawnBlood(e.x, e.y - e.figH * 0.4,
+                                20, hero.facing * 200, -200);
+                            // Sometimes detach limbs
+                            if (Math.random() < 0.5) {
+                                var limbs = ['armR', 'armL', 'legR', 'legL', 'head'];
+                                StickFight.detachLimb(e, pickRandom(limbs), groundY);
+                            }
+                        }
+                    }
+
+                    shakeIntensity = Math.max(shakeIntensity, 5 + energy * 5);
+                }
+                return;
+            }
+
+            // Normal sections — hero attacks on beat
+            if (section === 'verse1' || section === 'verse2') {
+                if (beat % 4 === 0) {
+                    heroAttackOnBeat(energy);
+                }
+            }
+
+            if (section === 'chorus1' || section === 'chorus2') {
+                if (beat % 2 === 0) {
+                    heroAttackOnBeat(energy);
+                }
+                // Signature combo on high energy beats every 16 beats
+                if (beat % 16 === 0 && energy > 0.5) {
+                    triggerSignatureCombo();
+                }
+            }
+
+            if (section === 'final_chorus') {
+                // Key change blend
+                keyChangeBlend = lerpExp(keyChangeBlend, 1, 3, 1 / 60);
+
+                if (beat % 2 === 0) {
+                    heroAttackOnBeat(energy);
+                }
+
+                // Signature combo
+                if (beat % 12 === 0 && energy > 0.4) {
+                    triggerSignatureCombo();
+                }
+
+                // Check boss defeat
+                if (boss && boss.hp <= 0 && !bossDefeated) {
+                    bossDefeated = true;
+                    // Slow-motion for last hit
+                    slowMoFactor = 0.2;
+                    slowMoTimer = 1.5;
+                    StickFight.applyDeath(boss, 'dramatic', groundY);
+                    StickFight.spawnBlood(boss.x, boss.y - boss.figH * 0.4,
+                        30, hero.facing * 300, -250);
+                    shakeIntensity = 10;
+                }
+            }
+
+            // Blood on any combat hit
+            if (section !== 'intro' && section !== 'outro' && section !== 'breakdown') {
+                for (var k = 0; k < activeFigs.length; k++) {
+                    var fig = activeFigs[k];
+                    if (fig.hp <= 0 && fig.mode !== 'ragdoll') {
+                        if (energy > 0.6) {
+                            StickFight.applyDeath(fig, 'flung', groundY);
+                        } else {
+                            StickFight.applyDeath(fig, 'collapse', groundY);
+                        }
+                        StickFight.spawnBlood(fig.x, fig.y - fig.figH * 0.4,
+                            12, hero.facing * 150, -120);
+                        shakeIntensity = Math.max(shakeIntensity, 3 + energy * 4);
+                    }
+                }
+            }
+        }
+
+        // ── Init crowd bumps ──
+        function initCrowd() {
+            crowdBumps = [];
+            var count = Math.floor(W / 20);
+            for (var i = 0; i < count; i++) {
+                crowdBumps.push({
+                    x: i * 20 + rand(-5, 5),
+                    y: rand(10, 35),
+                    w: rand(8, 14),
+                    h: rand(10, 20)
+                });
+            }
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+            groundY = H * GROUND_Y_RATIO;
+            arenaLeft = W * 0.05;
+            arenaRight = W * 0.95;
+
+            var figH = H * 0.3;
+            hero = StickFight.create({
+                x: W * 0.5,
+                y: groundY,
+                figH: figH,
+                facing: 1,
+                color: HERO_COLOR,
+                poseSpeed: 12,
+                hp: 99999
+            });
+            StickFight.setPose(hero, 'guard');
+
+            activeFigs = [];
+            deadFigs = [];
+            enemyTimers = [];
+            boss = null;
+            bossDefeated = false;
+
+            lastBeat = -1;
+            beatPulse = 0;
+            lastSeqIndex = -1;
+            section = 'intro';
+            shakeIntensity = 0;
+            shakeX = 0; shakeY = 0;
+            slowMoFactor = 1;
+            slowMoTimer = 0;
+            heroGlow = 0;
+            heroGlowTarget = 0;
+            spotlightAlpha = 0;
+            spotlightTarget = 0.5;
+            titleAlpha = 0;
+            titleTarget = 1;
+            screenPulse = 0;
+            keyChangeBlend = 0;
+            introDropDone = false;
+            introDropY = -200;
+            outroAlpha = 0;
+            outroStarted = false;
+            signatureComboQueue = [];
+            signatureTimer = 0;
+            heroAttackCooldown = 0;
+            waveEnemies = 0;
+            waveSpawned = 0;
+
+            initCrowd();
+        }
+
+        // ── Resize ──
+        function resize(width, height) {
+            W = width; H = height;
+            groundY = H * GROUND_Y_RATIO;
+            arenaLeft = W * 0.05;
+            arenaRight = W * 0.95;
+            if (hero) { hero.figH = H * 0.3; hero.y = groundY; }
+            initCrowd();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+
+            // Apply slow-motion
+            if (slowMoTimer > 0) {
+                slowMoTimer -= dt;
+                if (slowMoTimer <= 0) {
+                    slowMoFactor = 1;
+                } else {
+                    slowMoFactor = lerpExp(slowMoFactor, 1, 0.5, dt);
+                }
+                dt *= slowMoFactor;
+            }
+
+            // Clear
+            ctx.fillStyle = BG_COLOR;
+            ctx.fillRect(0, 0, W, H);
+
+            if (!cursor) {
+                // Idle state
+                drawArena(ctx, 0);
+                if (hero) {
+                    StickFight.updateAll([hero], dt);
+                    StickFight.drawAll(ctx, [hero]);
+                }
+                return;
+            }
+
+            var beat = cursor.beat;
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // ── Section transitions ──
+            var newSection = mapSection(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                if (newSection !== section) {
+                    onSectionChange(newSection, seqIdx);
+                }
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Beat detection ──
+            if (beat !== lastBeat) {
+                onBeat(beat, energy, seqIdx);
+            }
+            lastBeat = beat;
+
+            // ── Decay timers ──
+            beatPulse *= Math.exp(-8 * dt);
+            shakeIntensity *= Math.exp(-6 * dt);
+            screenPulse *= Math.exp(-4 * dt);
+            heroAttackCooldown = Math.max(0, heroAttackCooldown - dt);
+
+            // Lerp targets
+            spotlightAlpha = lerpExp(spotlightAlpha, spotlightTarget, 3, dt);
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+            heroGlow = lerpExp(heroGlow, heroGlowTarget, 4, dt);
+            if (section === 'final_chorus') {
+                keyChangeBlend = lerpExp(keyChangeBlend, 1, 2, dt);
+            } else {
+                keyChangeBlend = lerpExp(keyChangeBlend, 0, 3, dt);
+            }
+
+            // Screen shake
+            if (shakeIntensity > 0.1) {
+                shakeX = (Math.random() - 0.5) * shakeIntensity * 2;
+                shakeY = (Math.random() - 0.5) * shakeIntensity * 2;
+            } else {
+                shakeX = 0; shakeY = 0;
+            }
+
+            // ── Intro drop animation ──
+            if (section === 'intro' && !introDropDone) {
+                var dropProgress = Math.min(1, (cursor.elapsed || 0) / 2);
+                introDropY = lerp(-200, 0, dropProgress * dropProgress);
+                hero.y = groundY + introDropY;
+                if (dropProgress >= 1) {
+                    introDropDone = true;
+                    hero.y = groundY;
+                    shakeIntensity = 5;
+                }
+            } else if (hero) {
+                hero.y = groundY;
+            }
+
+            // ── Spawning ──
+            updateSpawning(dt);
+
+            // ── Enemy AI ──
+            updateEnemyAI(dt);
+
+            // ── Signature combo ──
+            updateSignatureCombo(dt);
+
+            // ── Clamp hero to arena ──
+            if (hero) {
+                if (hero.x < arenaLeft + 30) hero.x = arenaLeft + 30;
+                if (hero.x > arenaRight - 30) hero.x = arenaRight - 30;
+
+                // Hero idle bounce when not attacking
+                if (!hero.attacking && section !== 'breakdown') {
+                    var idleBounce = Math.sin(cursor.elapsed * 3) * 0.03;
+                    StickFight.setTarget(hero, 'bounce', idleBounce);
+                }
+            }
+
+            // ── Update all figures ──
+            allFigs = [hero];
+            for (var ai = 0; ai < activeFigs.length; ai++) {
+                allFigs.push(activeFigs[ai]);
+            }
+            StickFight.updateAll(allFigs, dt);
+            StickFight.updateAll(deadFigs, dt);
+
+            // Gore effects
+            StickFight.updateEffects(dt, groundY);
+
+            // Clean up
+            cleanupDead();
+
+            // ── Outro fade to black ──
+            if (outroStarted) {
+                outroAlpha = lerpExp(outroAlpha, 1, 1.5, dt);
+
+                // Boss dramatic death
+                if (boss && boss.mode !== 'ragdoll' && boss._dramaticTimer === undefined) {
+                    StickFight.applyDeath(boss, 'dramatic', groundY);
+                }
+            }
+
+            // ── Draw scene ──
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            // 1. Arena background
+            drawArena(ctx, energy);
+
+            // 2. Dead figures (underneath)
+            StickFight.drawAll(ctx, deadFigs);
+
+            // 3. Gore effects (blood, limbs)
+            StickFight.drawEffects(ctx);
+
+            // 4. Active enemies
+            StickFight.drawAll(ctx, activeFigs);
+
+            // 5. Hero
+            StickFight.drawAll(ctx, [hero]);
+
+            // 6. Hero glow overlay
+            drawHeroGlow(ctx);
+
+            // 7. Title
+            drawTitle(ctx);
+
+            ctx.restore();
+
+            // 8. Outro blackout (outside shake transform)
+            if (outroAlpha > 0.01) {
+                ctx.save();
+                ctx.globalAlpha = outroAlpha;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+        }
+
+        return {
+            name: 'System Infection',
+            init: init,
+            render: render,
+            resize: resize
+        };
+    })();
+
+    // ── Page bootstrap ──
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('system-infection-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/system-infection.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
