@@ -21,7 +21,7 @@ const Audio = (() => {
     masterGain.gain.value = 0.4;
     masterGain.connect(actx.destination);
     musicGain = actx.createGain();
-    musicGain.gain.value = 0.12;
+    musicGain.gain.value = 0.04;
     musicGain.connect(actx.destination);
     startAmbient();
   }
@@ -156,7 +156,7 @@ const Audio = (() => {
   function toggleMute() {
     muted = !muted;
     if(masterGain) masterGain.gain.value = muted ? 0 : 0.4;
-    if(musicGain) musicGain.gain.value = muted ? 0 : 0.12;
+    if(musicGain) musicGain.gain.value = muted ? 0 : 0.04;
     return muted;
   }
 
