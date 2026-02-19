@@ -94,7 +94,7 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | rococo | | |
 | rts-hud | Terminal Emulators | |
 | scandi-cozy | | |
-| sketch | | The First Line |
+| sketch | Context Management | The First Line |
 | solarpunk | Ansible | |
 | stained-glass | PKI & Certificates | |
 | streamline-moderne | | The Express |

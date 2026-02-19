@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Management for AI Coding Agents -- Tech Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           SKETCH -- CONTEXT MANAGEMENT TECH GUIDE
+           Notebook / hand-drawn aesthetic
+           Paper + Ink + Crayon + Marker
+           ============================================ */
+
+        :root {
+            /* Typography */
+            --font-display: 'Caveat', cursive;
+            --font-handwritten: 'Patrick Hand', cursive;
+            --font-body: 'Nunito', -apple-system, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+            --space-9: 96px;
+
+            /* Notebook Paper Colors */
+            --paper: #fdf8f3;
+            --paper-lines: #c5d4e8;
+            --paper-margin: #f5c6c6;
+            --paper-dark: #f0e6d8;
+
+            /* Ink & Pencil */
+            --ink-dark: #2d3436;
+            --ink-medium: #4a5568;
+            --ink-light: #718096;
+            --pencil: #6b6b6b;
+
+            /* Marker/Highlighter Colors */
+            --marker-yellow: #fff176;
+            --marker-pink: #f8bbd9;
+            --marker-blue: #81d4fa;
+            --marker-green: #c5e1a5;
+            --marker-orange: #ffcc80;
+            --marker-purple: #e1bee7;
+
+            /* Crayon Colors */
+            --crayon-red: #e74c3c;
+            --crayon-blue: #3498db;
+            --crayon-green: #27ae60;
+            --crayon-purple: #9b59b6;
+            --crayon-orange: #e67e22;
+            --crayon-teal: #1abc9c;
+
+            /* Sticky Note Colors */
+            --sticky-yellow: #fff9c4;
+            --sticky-pink: #fce4ec;
+            --sticky-blue: #e3f2fd;
+            --sticky-green: #e8f5e9;
+
+            /* Misc */
+            --border-sketch: 2px solid var(--ink-dark);
+            --shadow-sketch: 3px 3px 0 var(--ink-dark);
+            --line-height: 1.7;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 17px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 60px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: var(--line-height);
+            color: var(--ink-dark);
+            background-color: var(--paper);
+            background-image:
+                linear-gradient(var(--paper-lines) 1px, transparent 1px);
+            background-size: 100% 28px;
+            background-position: 0 60px;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* Red Margin Line */
+        body::before {
+            content: '';
+            position: fixed;
+            left: 60px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--paper-margin);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            body::before {
+                left: 20px;
+            }
+        }
+
+        /* Notebook Holes */
+        .notebook-holes {
+            position: fixed;
+            left: 30px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 80px;
+            z-index: 51;
+            pointer-events: none;
+        }
+
+        .notebook-hole {
+            width: 20px;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            border: 2px solid #bbb;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .notebook-holes {
+                display: none;
+            }
+        }
+
+        /* Container */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: var(--space-7) var(--space-6);
+            padding-left: 80px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-5) var(--space-4);
+                padding-left: 40px;
+            }
+        }
+
+        /* ============================================
+           BACK LINK
+           ============================================ */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            color: var(--crayon-blue);
+            text-decoration: none;
+            padding: var(--space-2) var(--space-4);
+            border: 2px dashed var(--crayon-blue);
+            border-radius: 8px 12px 10px 14px / 12px 8px 14px 10px;
+            margin-bottom: var(--space-5);
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: var(--sticky-blue);
+            transform: rotate(-1deg);
+        }
+
+        /* ============================================
+           HEADER / MASTHEAD
+           ============================================ */
+        .masthead {
+            text-align: center;
+            padding: var(--space-7) var(--space-4) var(--space-6);
+            margin-bottom: var(--space-5);
+            position: relative;
+        }
+
+        .masthead h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 8vw, 4.5rem);
+            font-weight: 700;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-3);
+            letter-spacing: -0.02em;
+            position: relative;
+            display: inline-block;
+        }
+
+        .masthead h1::after {
+            content: '';
+            position: absolute;
+            left: -10px;
+            right: -10px;
+            bottom: 5px;
+            height: 12px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12'%3E%3Cpath d='M0 8 Q25 2 50 8 T100 8 T150 8 T200 8' stroke='%23e74c3c' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+            background-size: auto 100%;
+        }
+
+        .masthead-tagline {
+            font-family: var(--font-handwritten);
+            font-size: 1.4rem;
+            color: var(--ink-medium);
+            margin-bottom: var(--space-4);
+        }
+
+        .masthead-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+        }
+
+        .masthead-divider::before,
+        .masthead-divider::after {
+            content: '';
+            width: 80px;
+            height: 3px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 3'%3E%3Cpath d='M0 1.5 Q20 0 40 1.5 T80 1.5' stroke='%232d3436' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat;
+            background-size: contain;
+        }
+
+        .masthead-doodles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .doodle {
+            position: absolute;
+            opacity: 0.6;
+        }
+
+        .doodle-star { font-size: 2rem; color: var(--crayon-orange); }
+        .doodle-arrow { font-size: 1.5rem; color: var(--crayon-blue); }
+
+        /* ============================================
+           STICKY JUMP NAV
+           ============================================ */
+        .jump-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            white-space: nowrap;
+            padding: var(--space-3) var(--space-2);
+            background: var(--paper);
+            border-bottom: 3px solid var(--ink-dark);
+            border-top: 3px solid var(--ink-dark);
+            margin-bottom: var(--space-7);
+            scrollbar-width: thin;
+        }
+
+        .jump-nav::before {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 3'%3E%3Cpath d='M0 1.5 Q50 0 100 1.5 T200 1.5 T300 1.5 T400 1.5' stroke='%23c5d4e8' stroke-width='2' fill='none'/%3E%3C/svg%3E") repeat-x;
+            background-size: auto 100%;
+        }
+
+        .jump-nav a {
+            font-family: var(--font-handwritten);
+            font-size: 0.9rem;
+            color: var(--ink-dark);
+            text-decoration: none;
+            padding: var(--space-1) var(--space-3);
+            border: 2px solid var(--ink-dark);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            background: var(--paper);
+            transition: all 0.15s;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .jump-nav a:hover {
+            background: var(--marker-yellow);
+            transform: translateY(-2px);
+        }
+
+        .jump-nav a:nth-child(2n) { border-radius: 10px 6px 0 0; }
+        .jump-nav a:nth-child(3n) { border-radius: 6px 12px 0 0; }
+
+        @media (max-width: 768px) {
+            .jump-nav {
+                gap: var(--space-1);
+                padding: var(--space-2) var(--space-1);
+            }
+            .jump-nav a {
+                font-size: 0.8rem;
+                padding: var(--space-1) var(--space-2);
+            }
+        }
+
+        /* ============================================
+           SECTIONS
+           ============================================ */
+        .section {
+            margin-bottom: var(--space-8);
+            padding-bottom: var(--space-7);
+            position: relative;
+        }
+
+        .section::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 3'%3E%3Cpath d='M0 1.5 Q50 0 100 1.5 T200 1.5 T300 1.5 T400 1.5' stroke='%23c5d4e8' stroke-width='2' fill='none'/%3E%3C/svg%3E") repeat-x;
+            background-size: auto 100%;
+        }
+
+        .section-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .section-label {
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--crayon-red);
+            margin-bottom: var(--space-2);
+            display: inline-block;
+            position: relative;
+        }
+
+        .section-label::before {
+            content: '';
+            position: absolute;
+            inset: -6px -12px;
+            border: 2px solid var(--crayon-red);
+            border-radius: 50% 45% 55% 48%;
+            transform: rotate(-3deg);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--ink-dark);
+            position: relative;
+            display: inline-block;
+            margin-top: var(--space-3);
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            right: -4px;
+            bottom: 4px;
+            height: 40%;
+            background: var(--marker-yellow);
+            z-index: -1;
+            transform: rotate(-0.5deg);
+        }
+
+        .section-description {
+            font-family: var(--font-handwritten);
+            font-size: 1.2rem;
+            color: var(--ink-medium);
+            margin-top: var(--space-3);
+            max-width: 60ch;
+        }
+
+        /* ============================================
+           SUBSECTIONS
+           ============================================ */
+        .subsection {
+            margin-bottom: var(--space-6);
+        }
+
+        .subsection-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-4);
+            position: relative;
+            display: inline-block;
+        }
+
+        .subsection-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -2px;
+            height: 6px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6'%3E%3Cpath d='M0 3 Q12 0 25 3 T50 3 T75 3 T100 3' stroke='%23e74c3c' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+            background-size: auto 100%;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        p {
+            margin-bottom: var(--space-4);
+            max-width: 65ch;
+        }
+
+        .lead {
+            font-family: var(--font-handwritten);
+            font-size: 1.25rem;
+            line-height: 1.6;
+            color: var(--ink-medium);
+        }
+
+        strong {
+            color: var(--ink-dark);
+            font-weight: 700;
+        }
+
+        /* Highlighter text effects */
+        .highlight {
+            background: linear-gradient(180deg, transparent 55%, var(--marker-yellow) 55%, var(--marker-yellow) 90%, transparent 90%);
+            padding: 0 4px;
+        }
+
+        .highlight-pink {
+            background: linear-gradient(180deg, transparent 55%, var(--marker-pink) 55%, var(--marker-pink) 90%, transparent 90%);
+            padding: 0 4px;
+        }
+
+        .highlight-blue {
+            background: linear-gradient(180deg, transparent 55%, var(--marker-blue) 55%, var(--marker-blue) 90%, transparent 90%);
+            padding: 0 4px;
+        }
+
+        .highlight-green {
+            background: linear-gradient(180deg, transparent 55%, var(--marker-green) 55%, var(--marker-green) 90%, transparent 90%);
+            padding: 0 4px;
+        }
+
+        .highlight-orange {
+            background: linear-gradient(180deg, transparent 55%, var(--marker-orange) 55%, var(--marker-orange) 90%, transparent 90%);
+            padding: 0 4px;
+        }
+
+        /* ============================================
+           CODE BLOCKS
+           ============================================ */
+        pre {
+            background: var(--ink-dark);
+            color: #e8e8e8;
+            padding: var(--space-5);
+            margin: var(--space-4) 0;
+            border: 3px solid var(--ink-dark);
+            border-radius: 8px 12px 10px 14px / 12px 8px 14px 10px;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            transform: rotate(-0.5deg);
+            position: relative;
+        }
+
+        pre::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 16px;
+            width: 50px;
+            height: 16px;
+            background: rgba(200, 200, 200, 0.5);
+            transform: rotate(1deg);
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: inherit;
+            border: none;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            background: var(--paper-dark);
+            color: var(--ink-dark);
+            padding: 2px 6px;
+            border: 1px solid var(--ink-light);
+            border-radius: 4px;
+        }
+
+        /* Code syntax highlighting colors */
+        .code-comment { color: #718096; font-style: italic; }
+        .code-keyword { color: var(--marker-blue); }
+        .code-string { color: var(--marker-green); }
+        .code-path { color: var(--marker-orange); }
+        .code-flag { color: var(--marker-pink); }
+
+        /* ============================================
+           TABLES
+           ============================================ */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: var(--space-4) 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border: 2px solid var(--ink-dark);
+            border-radius: 8px 12px 10px 14px / 12px 8px 14px 10px;
+            overflow: hidden;
+        }
+
+        th {
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            font-weight: normal;
+            text-align: left;
+            padding: var(--space-3) var(--space-4);
+            background: var(--marker-yellow);
+            color: var(--ink-dark);
+            border-bottom: 2px solid var(--ink-dark);
+        }
+
+        td {
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 2px dashed var(--paper-lines);
+            font-family: var(--font-body);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(197, 212, 232, 0.1);
+        }
+
+        td code {
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        /* ============================================
+           STICKY NOTE CALLOUTS (ALERTS)
+           ============================================ */
+        .sticky-note {
+            padding: var(--space-5);
+            margin: var(--space-5) 0;
+            position: relative;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.12);
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .sticky-note::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 20px;
+            background: rgba(200, 200, 200, 0.6);
+        }
+
+        .sticky-note-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+            color: var(--ink-dark);
+        }
+
+        .sticky-yellow {
+            background: var(--sticky-yellow);
+            transform: rotate(-1deg);
+        }
+
+        .sticky-pink {
+            background: var(--sticky-pink);
+            transform: rotate(1deg);
+        }
+
+        .sticky-blue {
+            background: var(--sticky-blue);
+            transform: rotate(-0.5deg);
+        }
+
+        .sticky-green {
+            background: var(--sticky-green);
+            transform: rotate(0.8deg);
+        }
+
+        .sticky-note ul {
+            list-style: none;
+            padding-left: var(--space-2);
+        }
+
+        .sticky-note li {
+            position: relative;
+            padding-left: var(--space-5);
+            margin-bottom: var(--space-2);
+        }
+
+        .sticky-note li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 16px;
+            height: 16px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1 L10 6 L15 6 L11 9 L13 15 L8 11 L3 15 L5 9 L1 6 L6 6 Z' stroke='%23e67e22' stroke-width='1.5' fill='%23ffcc80'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+        }
+
+        /* ============================================
+           COMMAND GRID
+           ============================================ */
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+            margin: var(--space-5) 0;
+        }
+
+        @media (max-width: 768px) {
+            .command-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .command-card {
+            background: #fff;
+            border: 2px solid var(--ink-dark);
+            border-radius: 10px 15px 12px 18px / 15px 10px 18px 12px;
+            padding: var(--space-4);
+            box-shadow: 4px 4px 0 var(--ink-dark);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .command-card:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--ink-dark);
+        }
+
+        .command-card-title {
+            font-family: var(--font-handwritten);
+            font-size: 1.05rem;
+            color: var(--ink-dark);
+            margin-bottom: var(--space-2);
+        }
+
+        .command-card pre {
+            transform: none;
+            margin: 0;
+            padding: var(--space-3);
+            font-size: 0.8rem;
+            box-shadow: none;
+        }
+
+        .command-card pre::before {
+            display: none;
+        }
+
+        /* ============================================
+           DOODLE LISTS
+           ============================================ */
+        ul.doodle-list {
+            list-style: none;
+            padding-left: var(--space-4);
+        }
+
+        ul.doodle-list li {
+            position: relative;
+            padding-left: var(--space-5);
+            margin-bottom: var(--space-3);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        ul.doodle-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1 L10 6 L15 6 L11 9 L13 15 L8 11 L3 15 L5 9 L1 6 L6 6 Z' stroke='%23e67e22' stroke-width='1.5' fill='%23ffcc80'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+        }
+
+        /* ============================================
+           BADGES / TAGS
+           ============================================ */
+        .tag {
+            font-family: var(--font-handwritten);
+            font-size: 0.88rem;
+            padding: 2px var(--space-3);
+            border: 2px solid var(--ink-dark);
+            border-radius: 12px 8px 14px 10px / 8px 12px 10px 14px;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        .tag-shared { background: var(--marker-green); }
+        .tag-personal { background: var(--marker-blue); }
+        .tag-auto { background: var(--marker-purple); }
+        .tag-new { background: var(--marker-orange); }
+
+        /* ============================================
+           DIAGRAM / BUDGET VISUAL
+           ============================================ */
+        .budget-bar {
+            display: flex;
+            height: 40px;
+            border: 3px solid var(--ink-dark);
+            border-radius: 8px 12px 10px 14px / 12px 8px 14px 10px;
+            overflow: hidden;
+            margin: var(--space-4) 0;
+            box-shadow: 3px 3px 0 var(--ink-dark);
+        }
+
+        .budget-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-handwritten);
+            font-size: 0.8rem;
+            color: var(--ink-dark);
+            padding: 0 var(--space-2);
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 2px dashed var(--ink-dark);
+        }
+
+        .budget-segment:last-child {
+            border-right: none;
+        }
+
+        /* ============================================
+           EXAMPLE PANEL
+           ============================================ */
+        .example-panel {
+            background: #fff;
+            border: 2px solid var(--ink-dark);
+            border-radius: 10px 15px 12px 18px / 15px 10px 18px 12px;
+            padding: var(--space-5);
+            margin: var(--space-4) 0;
+            box-shadow: 4px 4px 0 var(--ink-dark);
+        }
+
+        .example-panel-title {
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            color: var(--crayon-red);
+            margin-bottom: var(--space-3);
+        }
+
+        /* ============================================
+           DOODLE DECORATIONS
+           ============================================ */
+        .doodle-star-large {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 2 L24 14 L38 14 L27 22 L31 36 L20 28 L9 36 L13 22 L2 14 L16 14 Z' stroke='%23e67e22' stroke-width='2' fill='%23ffcc80'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
+
+        .wiggle { animation: wiggle 3s ease-in-out infinite; }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .site-footer {
+            text-align: center;
+            padding: var(--space-8) 0 var(--space-6);
+            margin-top: var(--space-7);
+            position: relative;
+        }
+
+        .site-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 4'%3E%3Cpath d='M0 2 Q25 0 50 2 T100 2 T150 2 T200 2' stroke='%232d3436' stroke-width='2' fill='none'/%3E%3C/svg%3E") repeat-x;
+            background-size: auto 100%;
+        }
+
+        .site-footer a {
+            font-family: var(--font-handwritten);
+            font-size: 1.1rem;
+            color: var(--crayon-blue);
+            text-decoration: none;
+            border-bottom: 2px dashed var(--crayon-blue);
+            padding-bottom: 2px;
+        }
+
+        .site-footer a:hover {
+            color: var(--crayon-red);
+            border-color: var(--crayon-red);
+        }
+
+        .site-footer p {
+            font-family: var(--font-handwritten);
+            font-size: 1rem;
+            color: var(--ink-light);
+            margin: var(--space-3) auto 0;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .subsection-title {
+                font-size: 1.5rem;
+            }
+
+            pre {
+                transform: none;
+                font-size: 0.8rem;
+                padding: var(--space-4);
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: var(--space-2) var(--space-3);
+            }
+
+            .command-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .budget-bar {
+                height: auto;
+                flex-direction: column;
+            }
+
+            .budget-segment {
+                border-right: none;
+                border-bottom: 2px dashed var(--ink-dark);
+                padding: var(--space-2);
+            }
+
+            .budget-segment:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notebook Holes -->
+    <div class="notebook-holes">
+        <div class="notebook-hole"></div>
+        <div class="notebook-hole"></div>
+        <div class="notebook-hole"></div>
+        <div class="notebook-hole"></div>
+        <div class="notebook-hole"></div>
+        <div class="notebook-hole"></div>
+    </div>
+
+    <div class="container">
+        <!-- Back Link -->
+        <a href="index.html" class="back-link">&larr; Tech Guides</a>
+
+        <!-- Header -->
+        <header class="masthead">
+            <div class="masthead-doodles">
+                <span class="doodle doodle-star" style="top: 15px; left: 8%;">*</span>
+                <span class="doodle doodle-star" style="top: 35px; right: 12%;">*</span>
+                <span class="doodle doodle-arrow" style="bottom: 25px; left: 4%;">~></span>
+                <span class="doodle doodle-star" style="bottom: 40px; right: 6%;">*</span>
+            </div>
+            <h1>Context Management</h1>
+            <p class="masthead-tagline">Configuring AI coding agents to understand your codebase</p>
+            <div class="masthead-divider">
+                <span class="doodle-star-large"></span>
+            </div>
+        </header>
+
+        <!-- Sticky Jump Nav -->
+        <nav class="jump-nav">
+            <a href="#quick-ref">Quick Ref</a>
+            <a href="#why-context">Why It Matters</a>
+            <a href="#config-files">Config Files</a>
+            <a href="#modular-arch">Modular Arch</a>
+            <a href="#multi-tool">Multi-Tool</a>
+            <a href="#progressive">Progressive</a>
+            <a href="#memory">Memory</a>
+            <a href="#llm-docs">LLM Docs</a>
+            <a href="#anti-patterns">Anti-Patterns</a>
+            <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+
+        <!-- ================================================
+             SECTION 01: QUICK REFERENCE
+             ================================================ -->
+        <section id="quick-ref" class="section">
+            <div class="section-header">
+                <p class="section-label">01</p>
+                <h2 class="section-title">Quick Reference</h2>
+                <p class="section-description">Everything you need at a glance. Pin this page.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Key Files</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Location</th>
+                                <th>Purpose</th>
+                                <th>Shared?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>CLAUDE.md</code></td>
+                                <td><code>./CLAUDE.md</code> or <code>./.claude/CLAUDE.md</code></td>
+                                <td>Team project instructions for Claude Code</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>.claude/rules/*.md</code></td>
+                                <td><code>./.claude/rules/</code></td>
+                                <td>Modular topic-specific rules</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>CLAUDE.local.md</code></td>
+                                <td><code>./CLAUDE.local.md</code></td>
+                                <td>Personal project preferences</td>
+                                <td><span class="tag tag-personal">Just you</span></td>
+                            </tr>
+                            <tr>
+                                <td>User <code>CLAUDE.md</code></td>
+                                <td><code>~/.claude/CLAUDE.md</code></td>
+                                <td>Personal all-project preferences</td>
+                                <td><span class="tag tag-personal">Just you</span></td>
+                            </tr>
+                            <tr>
+                                <td>User rules</td>
+                                <td><code>~/.claude/rules/*.md</code></td>
+                                <td>Personal modular rules</td>
+                                <td><span class="tag tag-personal">Just you</span></td>
+                            </tr>
+                            <tr>
+                                <td>Auto memory</td>
+                                <td><code>~/.claude/projects/&lt;proj&gt;/memory/</code></td>
+                                <td>Claude's own notes about your project</td>
+                                <td><span class="tag tag-auto">Just you</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>AGENTS.md</code></td>
+                                <td><code>./AGENTS.md</code></td>
+                                <td>OpenAI Codex CLI instructions</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>GEMINI.md</code></td>
+                                <td><code>./GEMINI.md</code></td>
+                                <td>Google Gemini CLI instructions</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>.cursorrules</code></td>
+                                <td><code>./.cursor/rules/*.mdc</code></td>
+                                <td>Cursor IDE rules</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>copilot-instructions.md</code></td>
+                                <td><code>./.github/copilot-instructions.md</code></td>
+                                <td>GitHub Copilot workspace instructions</td>
+                                <td><span class="tag tag-shared">Via git</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Golden Rules</h3>
+                <div class="sticky-note sticky-yellow">
+                    <div class="sticky-note-title">The Five Commandments of Context</div>
+                    <ul>
+                        <li><strong>Keep root CLAUDE.md under 200 lines.</strong> If it scrolls, it is too long. Move details into <code>.claude/rules/</code> topic files.</li>
+                        <li><strong>Put specifics in modular rule files.</strong> One file per concern: testing, deployment, code style, API conventions.</li>
+                        <li><strong>Delete any instruction the agent already follows.</strong> If Claude already writes TypeScript with strict mode, do not tell it to. Redundant instructions waste tokens and add noise.</li>
+                        <li><strong>Old or wrong context is worse than no context.</strong> Stale build commands, renamed directories, deprecated APIs -- these actively cause mistakes. Audit quarterly.</li>
+                        <li><strong>Use hooks for enforcement, not instructions for requests.</strong> If a rule must always be followed (linting, formatting), make it a pre-commit hook, not a polite suggestion in CLAUDE.md.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Quick Commands</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Bootstrap a new project</div>
+                        <pre><code>claude /init</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Add a modular rule</div>
+                        <pre><code>mkdir -p .claude/rules
+cat &gt; .claude/rules/testing.md &lt;&lt;'EOF'
+---
+paths: ["tests/**", "src/**/*.test.*"]
+---
+# Testing Rules
+- Use pytest for all tests
+- Fixtures go in conftest.py
+EOF</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Check what Claude sees</div>
+                        <pre><code># In Claude Code, ask:
+"Show me your system prompt"
+"What instructions do you have?"</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Audit context size</div>
+                        <pre><code>wc -l CLAUDE.md .claude/rules/*.md
+# Target: &lt;200 root, &lt;100 per rule</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 02: WHY CONTEXT MATTERS
+             ================================================ -->
+        <section id="why-context" class="section">
+            <div class="section-header">
+                <p class="section-label">02</p>
+                <h2 class="section-title">Why Context Matters</h2>
+                <p class="section-description">Context is a finite resource. Spend it wisely or drown in noise.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Token Economics</h3>
+                <p>Every line of your <code>CLAUDE.md</code> is reprocessed with <strong>every single message</strong> in a conversation. A 500-line config file consumed at the start of each turn is not free -- it costs real tokens and real attention.</p>
+
+                <p>Current context window sizes shape what is possible:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Context Window</th>
+                                <th>Practical Budget for Config</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Claude Opus / Sonnet</td>
+                                <td>200K tokens</td>
+                                <td>~2-5K tokens (1-3%)</td>
+                            </tr>
+                            <tr>
+                                <td>GPT-4o</td>
+                                <td>128K tokens</td>
+                                <td>~2-4K tokens (2-3%)</td>
+                            </tr>
+                            <tr>
+                                <td>Gemini 2.5 Pro</td>
+                                <td>1M tokens</td>
+                                <td>~2-5K tokens (still small!)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>Even with a 1M-token window, the <strong>practical budget for instructions is the same</strong>. Larger windows do not mean you should write longer config files. The model's attention degrades with length regardless of capacity.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Attention Problem</h3>
+                <p>Large language models do not read config files the way humans read manuals. There is no "careful sequential reading." Instead, instructions compete for attention weight. When your CLAUDE.md is 500 lines, important rules get lost in the noise -- the model gives each line roughly equal weight, and critical instructions become needles in a haystack.</p>
+
+                <div class="sticky-note sticky-pink">
+                    <div class="sticky-note-title">The Litmus Test</div>
+                    <p>For every line in your config, ask: <strong>"Would removing this cause the agent to make mistakes?"</strong></p>
+                    <p style="margin-top: 8px;">If the answer is no, delete it. The agent already knows it, or it does not matter enough to spend context on.</p>
+                </div>
+
+                <p>A lean 50-line <code>CLAUDE.md</code> consistently outperforms a 500-line one. The shorter file has higher signal density -- every line matters, so the model pays attention to every line.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Quality vs. Quantity</h3>
+                <p>Think of your context configuration like a <span class="highlight">resume, not an autobiography</span>. The best resumes are one page. The best CLAUDE.md files are under 200 lines. They include only what the agent cannot infer from the code itself.</p>
+
+                <ul class="doodle-list">
+                    <li><strong>Good:</strong> "Run <code>pnpm test</code> before committing" (agent cannot guess your package manager)</li>
+                    <li><strong>Good:</strong> "Use snake_case for Python variables" (only if your codebase mixes styles)</li>
+                    <li><strong>Bad:</strong> "Write clean, maintainable code" (the agent already does this)</li>
+                    <li><strong>Bad:</strong> "Use descriptive variable names" (standard practice, no need to state)</li>
+                    <li><strong>Bad:</strong> "Follow PEP 8" (Claude already knows PEP 8)</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Context Budget</h3>
+                <p>Everything competes for the same context window. Here is a rough breakdown of what fills it during a typical Claude Code session:</p>
+
+                <div class="budget-bar">
+                    <div class="budget-segment" style="flex: 3; background: var(--marker-blue);">System prompt</div>
+                    <div class="budget-segment" style="flex: 2; background: var(--marker-yellow);">CLAUDE.md + rules</div>
+                    <div class="budget-segment" style="flex: 1; background: var(--marker-purple);">Memory</div>
+                    <div class="budget-segment" style="flex: 1; background: var(--marker-green);">Skills</div>
+                    <div class="budget-segment" style="flex: 10; background: var(--marker-orange);">Conversation + tool use</div>
+                    <div class="budget-segment" style="flex: 5; background: var(--marker-pink);">File contents</div>
+                </div>
+
+                <p>The "Conversation + tool use" segment grows with every message. The more tokens you consume with static config, the fewer you have for actual work. Bloated config means shorter effective conversations before the context window fills up.</p>
+
+                <div class="sticky-note sticky-blue">
+                    <div class="sticky-note-title">Cost Implications</div>
+                    <p>Bloated context is not just an attention problem -- it is a cost problem. If your CLAUDE.md adds 3,000 extra tokens and you send 100 messages per session, that is <strong>300,000 wasted input tokens per session</strong>. At scale, this adds up fast.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 03: CONFIG FILES
+             ================================================ -->
+        <section id="config-files" class="section">
+            <div class="section-header">
+                <p class="section-label">03</p>
+                <h2 class="section-title">Config Files</h2>
+                <p class="section-description">CLAUDE.md and its ecosystem: how files are discovered, loaded, and prioritized.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">How Discovery Works</h3>
+                <p>Claude Code reads <code>CLAUDE.md</code> files <strong>recursively up the directory tree</strong> from your current working directory to the filesystem root. This means a monorepo can have layered config:</p>
+
+                <pre><code>/
+  CLAUDE.md                  &larr; loaded (ancestor)
+  mycompany/
+    CLAUDE.md                &larr; loaded (ancestor)
+    myproject/
+      CLAUDE.md              &larr; loaded (project root = cwd)
+      .claude/
+        CLAUDE.md            &larr; loaded (alternate location)
+        rules/
+          testing.md         &larr; loaded (project rule)
+          deployment.md      &larr; loaded (project rule)
+      frontend/
+        CLAUDE.md            &larr; loaded on demand (child)
+      backend/
+        CLAUDE.md            &larr; loaded on demand (child)</code></pre>
+
+                <p><strong>Ancestor directory</strong> files (above cwd) are loaded in full at launch. <strong>Child directory</strong> files (below cwd) are loaded on demand when Claude reads files in those subtrees. This means your <code>frontend/CLAUDE.md</code> only takes effect when Claude is actually working in that directory.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Priority Order</h3>
+                <p>When instructions conflict, higher specificity wins. The full priority chain from lowest to highest:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th>Source</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1 (lowest)</td>
+                                <td>Managed policy (enterprise settings)</td>
+                                <td>Organization</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td><code>~/.claude/CLAUDE.md</code> (user global)</td>
+                                <td>All projects</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td><code>~/.claude/rules/*.md</code> (user rules)</td>
+                                <td>All projects</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td><code>./CLAUDE.md</code> (project root)</td>
+                                <td>This repo</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td><code>./.claude/rules/*.md</code> (project rules)</td>
+                                <td>This repo</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td><code>./CLAUDE.local.md</code></td>
+                                <td>This repo, just you</td>
+                            </tr>
+                            <tr>
+                                <td>7 (highest)</td>
+                                <td>Auto memory (<code>~/.claude/projects/</code>)</td>
+                                <td>This repo, just you</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>In practice, this means your <code>CLAUDE.local.md</code> can override team conventions for your personal workflow, and Claude's own learned memory takes highest priority since it reflects the most recent corrections.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The 200-Line Limit</h3>
+                <p>There is no hard character limit on <code>CLAUDE.md</code>, but <span class="highlight-pink">200 lines is the practical ceiling</span> for your root config. Beyond that, signal degrades. Here is what belongs in root and what does not:</p>
+
+                <div class="command-grid">
+                    <div class="example-panel">
+                        <div class="example-panel-title">Include in CLAUDE.md</div>
+                        <ul class="doodle-list">
+                            <li>Build and test commands (<code>pnpm test</code>, <code>cargo build</code>)</li>
+                            <li>Repo-specific style rules that deviate from language defaults</li>
+                            <li>Architecture decisions the agent needs to know</li>
+                            <li>Known gotchas and workarounds</li>
+                            <li>File naming conventions</li>
+                            <li>Deployment patterns</li>
+                        </ul>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-panel-title">Do NOT include in CLAUDE.md</div>
+                        <ul class="doodle-list">
+                            <li>Things Claude infers from reading the code</li>
+                            <li>Standard language conventions (PEP 8, Go formatting)</li>
+                            <li>Tutorials or explanations of concepts</li>
+                            <li>Changelogs or version history</li>
+                            <li>Generic advice ("write clean code")</li>
+                            <li>Copy-pasted documentation from external tools</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">@imports</h3>
+                <p>CLAUDE.md supports an <code>@import</code> syntax to pull in content from other files using relative paths. This keeps your root file lean while referencing detailed docs:</p>
+
+                <pre><code># CLAUDE.md
+
+## Build
+Run `pnpm build` to compile. Run `pnpm test` to test.
+
+## Architecture
+@docs/architecture.md
+
+## API Conventions
+@docs/api-conventions.md
+
+## Style
+- Use kebab-case for files
+- Components in PascalCase
+- See .claude/rules/ for language-specific rules</code></pre>
+
+                <p>Imports resolve relative paths from the file containing the <code>@</code> directive. There is a <strong>maximum depth of 5 hops</strong> to prevent circular references. Each imported file counts against your context budget, so keep them focused.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Modular Rules with YAML Frontmatter</h3>
+                <p>Files in <code>.claude/rules/</code> can include YAML frontmatter with a <code>paths</code> field. This scopes the rule so it only activates when Claude is working with matching files:</p>
+
+                <pre><code># .claude/rules/frontend-testing.md
+---
+paths: ["src/components/**", "src/hooks/**", "**/*.test.tsx"]
+---
+# Frontend Testing Rules
+
+- Use React Testing Library, never Enzyme
+- Test user behavior, not implementation details
+- Mock API calls with msw
+- Every component needs at least one render test</code></pre>
+
+                <pre><code># .claude/rules/database.md
+---
+paths: ["src/db/**", "migrations/**", "*.sql"]
+---
+# Database Rules
+
+- All migrations must be reversible
+- Use parameterized queries, never string interpolation
+- Index any column used in WHERE clauses</code></pre>
+
+                <p>Path-scoped rules load only when relevant files are being worked on, which keeps the effective context lean even if you have dozens of rule files.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Bootstrapping with /init</h3>
+                <p>The <code>/init</code> command in Claude Code analyzes your repository and generates a starter <code>CLAUDE.md</code>. It inspects your package manager, test runner, directory structure, and existing configuration to produce a focused initial config.</p>
+
+                <pre><code># In Claude Code, run:
+/init
+
+# Claude will:
+# 1. Scan your repo structure
+# 2. Detect build tools, test frameworks, linters
+# 3. Generate a ~30-50 line CLAUDE.md
+# 4. Ask you to review and customize</code></pre>
+
+                <div class="sticky-note sticky-green">
+                    <div class="sticky-note-title">Pro Tip</div>
+                    <p>Run <code>/init</code> even on existing projects. Compare its output to your current CLAUDE.md. If <code>/init</code> produces something shorter that works just as well, your original was probably too verbose.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Example: Well-Structured CLAUDE.md</h3>
+                <p>Here is what a clean, effective root config looks like for a real project:</p>
+
+                <pre><code># CLAUDE.md
+
+## Build &amp; Test
+- `pnpm install` -- install deps
+- `pnpm dev` -- start dev server (port 3000)
+- `pnpm test` -- run vitest (no watch mode in CI)
+- `pnpm lint` -- eslint + prettier check
+
+## Stack
+Next.js 14 (App Router), TypeScript strict, Tailwind, Prisma + Postgres
+
+## Structure
+src/app/          -- routes (App Router)
+src/components/   -- shared React components
+src/lib/          -- utilities and helpers
+src/db/           -- Prisma schema and queries
+tests/            -- integration tests (Playwright)
+
+## Conventions
+- File names: kebab-case
+- Components: PascalCase, one per file
+- Server actions in `actions.ts` files adjacent to routes
+- Prefer server components; add "use client" only when needed
+
+## Gotchas
+- Auth middleware in `src/middleware.ts` -- do not rename
+- `NEXT_PUBLIC_` prefix required for client env vars
+- Prisma generates types on `pnpm install` -- re-run after schema changes</code></pre>
+
+                <p>That is roughly 25 lines. Everything Claude needs, nothing Claude can figure out on its own. No tutorials, no generic advice, no explaining what Next.js is.</p>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 04: MODULAR CONTEXT ARCHITECTURE
+             ================================================ -->
+        <section id="modular-arch" class="section">
+            <div class="section-header">
+                <p class="section-label">04</p>
+                <h2 class="section-title">Modular Context Architecture</h2>
+                <p class="section-description">Structure your project knowledge like your code: layered, scoped, and discoverable.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Recursive Reading Model</h3>
+                <p>Claude Code reads <code>CLAUDE.md</code> files <strong>recursively up the directory tree</strong> from your current working directory all the way to <code>/</code>. Files closer to where you are working take precedence over files higher up. Child-directory CLAUDE.md files are loaded <span class="highlight">lazily</span> -- only when Claude reads files inside those subtrees.</p>
+
+                <p>Here is the loading model in practice. Suppose you launch Claude Code inside <code>myproject/src/api/</code>:</p>
+
+                <pre><code><span class="code-comment"># Loaded at launch (ancestors of cwd):</span>
+<span class="code-path">/myproject/CLAUDE.md</span>             <span class="code-comment"># project-wide rules</span>
+<span class="code-path">/myproject/src/CLAUDE.md</span>         <span class="code-comment"># source-level conventions</span>
+<span class="code-path">/myproject/src/api/CLAUDE.md</span>     <span class="code-comment"># API-specific patterns (cwd)</span>
+
+<span class="code-comment"># Loaded on demand (when Claude explores these directories):</span>
+<span class="code-path">/myproject/tests/CLAUDE.md</span>       <span class="code-comment"># only if Claude reads test files</span>
+<span class="code-path">/myproject/frontend/CLAUDE.md</span>    <span class="code-comment"># only if Claude reads frontend files</span></code></pre>
+
+                <p>This means you get <strong>zero-cost specificity</strong>. You can scatter dozens of CLAUDE.md files throughout your repo and they will not bloat context until Claude actually needs them. The lazy loading is what makes this system scalable.</p>
+
+                <div class="sticky-note sticky-yellow">
+                    <div class="sticky-note-title">Key Principle</div>
+                    <p>Child CLAUDE.md files are <strong>FREE until accessed</strong>. Use them liberally to provide module-level context. A 50-directory monorepo with 20 CLAUDE.md files costs the same as one with 1, until Claude enters those directories.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Full-Stack Monorepo Example</h3>
+                <p>Here is what a well-structured monorepo looks like with full context layering. Every CLAUDE.md file has a specific scope and purpose:</p>
+
+                <pre><code>myproject/
+├── <span class="code-path">CLAUDE.md</span>                    <span class="code-comment"># Project-wide: git workflow, CI, naming</span>
+├── <span class="code-path">.claude/</span>
+│   ├── <span class="code-path">CLAUDE.md</span>               <span class="code-comment"># Alternative location (same as root)</span>
+│   └── <span class="code-path">rules/</span>
+│       ├── <span class="code-path">code-style.md</span>       <span class="code-comment"># Unconditional: applies everywhere</span>
+│       ├── <span class="code-path">security.md</span>         <span class="code-comment"># Unconditional: auth patterns</span>
+│       └── <span class="code-path">api-endpoints.md</span>    <span class="code-comment"># Path-scoped (see frontmatter below)</span>
+│           <span class="code-comment"># ---</span>
+│           <span class="code-comment"># paths:</span>
+│           <span class="code-comment">#   - "src/api/**/*.ts"</span>
+│           <span class="code-comment"># ---</span>
+├── <span class="code-path">CLAUDE.local.md</span>              <span class="code-comment"># Personal: my sandbox URLs, test data</span>
+│
+├── <span class="code-path">frontend/</span>
+│   ├── <span class="code-path">CLAUDE.md</span>               <span class="code-comment"># React patterns, component conventions</span>
+│   ├── src/
+│   │   └── components/
+│   │       └── <span class="code-path">CLAUDE.md</span>       <span class="code-comment"># Component naming, prop patterns</span>
+│   └── tests/
+│       └── <span class="code-path">CLAUDE.md</span>           <span class="code-comment"># Frontend test conventions (vitest)</span>
+│
+├── <span class="code-path">backend/</span>
+│   ├── <span class="code-path">CLAUDE.md</span>               <span class="code-comment"># Express patterns, middleware conventions</span>
+│   ├── src/
+│   │   ├── routes/
+│   │   │   └── <span class="code-path">CLAUDE.md</span>       <span class="code-comment"># Route naming, validation patterns</span>
+│   │   └── models/
+│   │       └── <span class="code-path">CLAUDE.md</span>       <span class="code-comment"># Schema conventions, migration rules</span>
+│   └── tests/
+│       └── <span class="code-path">CLAUDE.md</span>           <span class="code-comment"># Backend test conventions (jest)</span>
+│
+└── <span class="code-path">shared/</span>
+    └── <span class="code-path">CLAUDE.md</span>               <span class="code-comment"># Shared types, utility conventions</span></code></pre>
+
+                <p>Notice the pattern: the root file is project-wide, each top-level directory owns its domain, and deeply nested files handle specialized concerns. Claude only ever loads what it needs.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Example Root CLAUDE.md</h3>
+                <p>The root file should be <span class="highlight-pink">short, focused, and universally applicable</span>. If an instruction does not apply to every file in the repo, it does not belong here.</p>
+
+                <div class="example-panel">
+                    <div class="example-panel-title">myproject/CLAUDE.md (~20 lines)</div>
+                    <pre><code><span class="code-comment"># MyProject</span>
+
+<span class="code-comment">## Build &amp; Test</span>
+- `pnpm install` -- install all workspaces
+- `pnpm build` -- build all packages
+- `pnpm test` -- run all tests
+- `pnpm lint` -- eslint + prettier check
+
+<span class="code-comment">## Git Workflow</span>
+- Branch from main, PR required for merge
+- Commit messages: conventional commits (feat:, fix:, chore:)
+- All PRs need passing CI before merge
+
+<span class="code-comment">## Architecture</span>
+- Monorepo: frontend/ (React), backend/ (Express), shared/ (types)
+- Frontend and backend import from shared/ -- never cross-import
+- See subdirectory CLAUDE.md files for module-specific conventions</code></pre>
+                </div>
+
+                <p>That is it. Twenty lines. Build commands, git workflow, and the one architectural constraint that matters everywhere (no cross-imports). Everything else lives in subdirectory files or <code>.claude/rules/</code>.</p>
+
+                <div class="sticky-note sticky-pink">
+                    <div class="sticky-note-title">Root CLAUDE.md Litmus Test</div>
+                    <p>If it does not apply to <strong>EVERY file</strong> in the repo, move it down. API validation rules do not belong in root -- they belong in <code>backend/src/routes/CLAUDE.md</code> or a path-scoped rule.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Example Subdirectory CLAUDE.md</h3>
+                <p>Subdirectory files are scoped to their module. They can assume the parent context is already loaded and focus on what is different or specific to their directory.</p>
+
+                <div class="example-panel">
+                    <div class="example-panel-title">backend/CLAUDE.md (~15 lines)</div>
+                    <pre><code><span class="code-comment"># Backend (Express + TypeScript)</span>
+
+<span class="code-comment">## Patterns</span>
+- All routes in src/routes/, one file per resource
+- Middleware chain: auth -> validate -> handler -> error
+- Database queries in src/models/, never in route handlers
+
+<span class="code-comment">## Testing</span>
+- Jest with supertest for API endpoints
+- Test files mirror src/ structure in tests/
+- Mock external services, never hit real APIs in tests</code></pre>
+                </div>
+
+                <div class="example-panel">
+                    <div class="example-panel-title">frontend/src/components/CLAUDE.md (~12 lines)</div>
+                    <pre><code><span class="code-comment"># React Components</span>
+
+<span class="code-comment">## Naming</span>
+- PascalCase for component files and exports
+- Props interface: ComponentNameProps
+- One component per file, co-locate styles
+
+<span class="code-comment">## Patterns</span>
+- Prefer server components; add "use client" only when needed
+- Custom hooks in adjacent hooks/ directory
+- Barrel exports via index.ts per feature folder</code></pre>
+                </div>
+
+                <p>Each file is lean -- 10-15 lines of highly specific instructions. Claude only loads these when it enters the relevant directory, so they are essentially free context until needed.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The .claude/rules/ System</h3>
+                <p>For cross-cutting concerns that do not map cleanly to a single directory, use <code>.claude/rules/</code>. Each file in this directory is a modular rule that can be either <strong>unconditional</strong> (applies always) or <strong>path-scoped</strong> (applies only to matching files).</p>
+
+                <p><strong>Unconditional rules</strong> have no <code>paths:</code> frontmatter and apply everywhere:</p>
+
+                <div class="example-panel">
+                    <div class="example-panel-title">.claude/rules/code-style.md (unconditional)</div>
+                    <pre><code><span class="code-comment"># Code Style</span>
+- Use 2-space indentation for TypeScript, 4-space for Python
+- Prefer const over let; never use var
+- No default exports except for pages and layouts
+- Import order: stdlib -> external -> internal -> relative</code></pre>
+                </div>
+
+                <p><strong>Path-scoped rules</strong> include YAML frontmatter with <code>paths:</code> globs. They only activate when Claude works with files matching those patterns:</p>
+
+                <div class="example-panel">
+                    <div class="example-panel-title">.claude/rules/api-endpoints.md (path-scoped)</div>
+                    <pre><code><span class="code-keyword">---</span>
+<span class="code-flag">paths:</span>
+  <span class="code-string">- "src/api/**/*.ts"</span>
+  <span class="code-string">- "src/routes/**/*.ts"</span>
+<span class="code-keyword">---</span>
+<span class="code-comment"># API Development Rules</span>
+
+- All endpoints must validate input with zod schemas
+- Return standard error format: { error: string, code: number }
+- Include OpenAPI JSDoc comments on all public endpoints
+- Rate limiting middleware required on all public routes
+- Use async/await, never raw Promise chains</code></pre>
+                </div>
+
+                <p>Path scoping supports <strong>glob patterns</strong>, brace expansion (<code>*.{ts,tsx}</code>), and recursive matching (<code>**</code>). You can organize rules into subdirectories within <code>.claude/rules/</code> -- they are discovered recursively.</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>What It Matches</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>"src/**/*.ts"</code></td>
+                                <td>All TypeScript files under src/</td>
+                            </tr>
+                            <tr>
+                                <td><code>"*.{ts,tsx}"</code></td>
+                                <td>All TS/TSX files at any level</td>
+                            </tr>
+                            <tr>
+                                <td><code>"tests/**"</code></td>
+                                <td>Everything in tests/ directory</td>
+                            </tr>
+                            <tr>
+                                <td><code>"src/api/**/*.ts"</code></td>
+                                <td>TypeScript files specifically in src/api/</td>
+                            </tr>
+                            <tr>
+                                <td><code>"**/*.test.*"</code></td>
+                                <td>All test files regardless of location</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Symlinks and Sharing</h3>
+                <p>If you maintain multiple projects with shared conventions, you can use <strong>symlinks</strong> in <code>.claude/rules/</code> to point to a central rule library:</p>
+
+                <pre><code><span class="code-comment"># Central rule library (e.g., in a shared-configs repo)</span>
+~/shared-rules/
+├── typescript-style.md
+├── security-patterns.md
+└── testing-conventions.md
+
+<span class="code-comment"># Symlink into each project</span>
+cd myproject/.claude/rules/
+ln -s ~/shared-rules/typescript-style.md .
+ln -s ~/shared-rules/security-patterns.md .
+
+<span class="code-comment"># Or symlink the whole directory</span>
+ln -s ~/shared-rules/ .claude/rules/shared/</code></pre>
+
+                <p>This keeps your team's conventions in one canonical location while each project inherits them through symlinks. Changes to the source propagate instantly.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The @import System</h3>
+                <p>Instead of copying content into CLAUDE.md, use <code>@import</code> to reference existing documentation. This is ideal when you already have well-maintained docs that Claude should follow:</p>
+
+                <pre><code><span class="code-comment"># CLAUDE.md</span>
+
+<span class="code-comment">## Build</span>
+Run `pnpm build` to compile all packages.
+
+<span class="code-comment">## Architecture</span>
+<span class="code-keyword">@docs/architecture.md</span>
+
+<span class="code-comment">## API Reference</span>
+<span class="code-keyword">@docs/api-conventions.md</span>
+
+<span class="code-comment">## Database</span>
+<span class="code-keyword">@docs/database-schema.md</span></code></pre>
+
+                <p>Key rules for imports:</p>
+                <ul class="doodle-list">
+                    <li>Paths are resolved <strong>relative to the file</strong> containing the <code>@</code> directive</li>
+                    <li><strong>Maximum depth of 5 hops</strong> to prevent circular references (imports can import, up to 5 levels deep)</li>
+                    <li>Imported content counts against your context budget, so keep referenced files focused</li>
+                    <li>Use imports to avoid duplicating docs you already maintain -- do not create files just for importing</li>
+                </ul>
+
+                <div class="sticky-note sticky-green">
+                    <div class="sticky-note-title">Import vs. Copy</div>
+                    <p>If a doc changes frequently and is maintained by another team, <strong>@import it</strong>. If it is stable and you own it, consider inlining the key points. Imports always pull the latest version, which is both a strength and a risk.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 05: MULTI-TOOL LANDSCAPE
+             ================================================ -->
+        <section id="multi-tool" class="section">
+            <div class="section-header">
+                <p class="section-label">05</p>
+                <h2 class="section-title">Multi-Tool Landscape</h2>
+                <p class="section-description">Every AI coding agent has its own config system. Here is how they all compare.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Comparison Matrix</h3>
+                <p>The AI coding agent space has fragmented into multiple config file formats. This table compares every major tool as of early 2026:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Config File</th>
+                                <th>Location</th>
+                                <th>Format</th>
+                                <th>Hierarchy</th>
+                                <th>Size Limit</th>
+                                <th>Import</th>
+                                <th>Glob Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Claude Code</strong></td>
+                                <td><code>CLAUDE.md</code></td>
+                                <td>Any directory</td>
+                                <td>Markdown</td>
+                                <td>5+ levels</td>
+                                <td>None (soft ~200 lines)</td>
+                                <td><code>@import</code></td>
+                                <td><code>paths:</code> YAML</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Codex CLI</strong></td>
+                                <td><code>AGENTS.md</code></td>
+                                <td>Any directory</td>
+                                <td>Markdown</td>
+                                <td>Recursive up</td>
+                                <td>32KB</td>
+                                <td>None</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Gemini CLI</strong></td>
+                                <td><code>GEMINI.md</code></td>
+                                <td>Any directory</td>
+                                <td>Markdown</td>
+                                <td>Recursive up</td>
+                                <td>None specified</td>
+                                <td><code>context.fileName</code></td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cursor</strong></td>
+                                <td><code>.cursor/rules/*.mdc</code></td>
+                                <td><code>.cursor/</code></td>
+                                <td>MDC (YAML+MD)</td>
+                                <td>Flat</td>
+                                <td>None specified</td>
+                                <td><code>@file</code></td>
+                                <td><code>globs:</code> YAML</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Windsurf</strong></td>
+                                <td><code>.windsurf/rules/*.md</code></td>
+                                <td><code>.windsurf/</code></td>
+                                <td>Markdown</td>
+                                <td>Flat</td>
+                                <td>12K chars total</td>
+                                <td>None</td>
+                                <td><code>trigger:</code> YAML</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Aider</strong></td>
+                                <td><code>.aider.conf.yml</code></td>
+                                <td>Root + home</td>
+                                <td>YAML</td>
+                                <td>2 levels</td>
+                                <td>None specified</td>
+                                <td><code>read:</code> key</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><strong>GitHub Copilot</strong></td>
+                                <td><code>copilot-instructions.md</code></td>
+                                <td><code>.github/</code></td>
+                                <td>Markdown</td>
+                                <td>Flat</td>
+                                <td>~2 pages</td>
+                                <td>None</td>
+                                <td><code>applyTo:</code> YAML</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Claude Code</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">The deepest hierarchy, the richest feature set</div>
+                    <ul class="doodle-list">
+                        <li><strong>5+ hierarchy levels:</strong> user global, user rules, project root, project rules, subdirectories, local overrides, auto memory</li>
+                        <li><strong>@imports:</strong> pull in existing documentation without copying (max depth 5)</li>
+                        <li><strong>.claude/rules/</strong> with <code>paths:</code> frontmatter for file-type scoping</li>
+                        <li><strong>Auto memory:</strong> Claude stores project-specific learnings in <code>~/.claude/projects/</code></li>
+                        <li><strong>Skills &amp; hooks:</strong> reusable prompt templates and lifecycle automation</li>
+                        <li><strong>Subagents:</strong> isolated context windows for delegated tasks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Codex CLI (OpenAI)</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">The vendor-neutral open standard</div>
+                    <ul class="doodle-list">
+                        <li><strong>AGENTS.md:</strong> open standard under the Linux Foundation, intentionally vendor-neutral</li>
+                        <li><strong>Recursive discovery:</strong> reads AGENTS.md files up the directory tree, similar to CLAUDE.md</li>
+                        <li><strong>Override files:</strong> local override mechanism for personal preferences</li>
+                        <li><strong>32KB hard limit:</strong> per-file size cap enforced by the tool</li>
+                        <li><strong>No import system:</strong> each file must be self-contained</li>
+                        <li><strong>Simplest format:</strong> plain Markdown, no frontmatter, no special syntax</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Gemini CLI (Google)</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">The most flexible cross-tool reader</div>
+                    <ul class="doodle-list">
+                        <li><strong>GEMINI.md:</strong> native config format, recursive up the directory tree</li>
+                        <li><strong>context.fileName:</strong> can be configured to read <em>other tools' files</em> (CLAUDE.md, AGENTS.md, .cursorrules)</li>
+                        <li><strong>/memory show:</strong> built-in debugging command to inspect loaded context</li>
+                        <li><strong>Cross-tool aware:</strong> designed from the start to coexist with other agents</li>
+                        <li><strong>No glob scoping:</strong> all rules apply unconditionally (as of early 2026)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Cursor</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">Four activation modes for fine-grained control</div>
+                    <ul class="doodle-list">
+                        <li><strong>.cursor/rules/*.mdc:</strong> MDC format (YAML frontmatter + Markdown body)</li>
+                        <li><strong>4 activation modes:</strong> Always (always loaded), Auto-Attach (by glob), Agent (model decides), Manual (user invokes)</li>
+                        <li><strong>globs: frontmatter:</strong> file pattern matching, similar to Claude's paths: but with different activation semantics</li>
+                        <li><strong>@file references:</strong> inline file content into rules</li>
+                        <li><strong>Flat hierarchy:</strong> no recursive directory scanning, all rules in one location</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Windsurf</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">Cascade Memories and strict limits</div>
+                    <ul class="doodle-list">
+                        <li><strong>.windsurf/rules/*.md:</strong> Markdown files with YAML frontmatter</li>
+                        <li><strong>Cascade Memories:</strong> auto-generated context from past interactions (similar to Claude's auto memory)</li>
+                        <li><strong>12K character total limit:</strong> all rules combined cannot exceed this -- the strictest budget of any tool</li>
+                        <li><strong>trigger: frontmatter:</strong> activation conditions including glob patterns and manual triggers</li>
+                        <li><strong>Flat hierarchy:</strong> no recursive scanning, all rules in the .windsurf/ directory</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Aider</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">YAML config with multi-model support</div>
+                    <ul class="doodle-list">
+                        <li><strong>.aider.conf.yml:</strong> YAML format, not Markdown -- the only major tool using structured config</li>
+                        <li><strong>read: key:</strong> can reference any file to include as context, making it highly flexible for imports</li>
+                        <li><strong>Multi-model tiers:</strong> configure different models for different tasks (architect, editor, weak-model)</li>
+                        <li><strong>Built-in lint/test:</strong> <code>lint-cmd</code> and <code>test-cmd</code> keys run checks automatically after edits</li>
+                        <li><strong>2-level hierarchy:</strong> home directory config + project-level config, merged at runtime</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">GitHub Copilot</h3>
+                <div class="example-panel">
+                    <div class="example-panel-title">Integrated into the GitHub ecosystem</div>
+                    <ul class="doodle-list">
+                        <li><strong>.github/copilot-instructions.md:</strong> single file in the .github/ directory</li>
+                        <li><strong>applyTo: frontmatter:</strong> file pattern matching for scoped instructions</li>
+                        <li><strong>excludeAgent:</strong> opt specific agents out of certain rules</li>
+                        <li><strong>~2 page soft limit:</strong> beyond this, instructions are truncated or ignored</li>
+                        <li><strong>Flat hierarchy:</strong> no recursive scanning, just the one file (plus VS Code settings)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Cross-Tool Compatibility</h3>
+                <p>Most teams use multiple AI tools. Here is which tools can read which other tools' config files natively:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reader</th>
+                                <th>Can Natively Read</th>
+                                <th>How</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Gemini CLI</strong></td>
+                                <td>CLAUDE.md, AGENTS.md, .cursorrules, any file</td>
+                                <td><code>context.fileName</code> config</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Aider</strong></td>
+                                <td>Any file (CLAUDE.md, AGENTS.md, etc.)</td>
+                                <td><code>read:</code> key in .aider.conf.yml</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Claude Code</strong></td>
+                                <td>Only CLAUDE.md + .claude/rules/</td>
+                                <td>Native discovery</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Codex CLI</strong></td>
+                                <td>Only AGENTS.md</td>
+                                <td>Native discovery</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cursor</strong></td>
+                                <td>Only .cursor/rules/*.mdc</td>
+                                <td>Native discovery</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Multi-Tool Strategies</h3>
+                <p>If your team uses multiple AI coding agents, you need a strategy for sharing context without maintaining duplicate files. Here are the proven approaches:</p>
+
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Symlink Approach</div>
+                        <pre><code><span class="code-comment"># Maintain one source of truth</span>
+ln -s CLAUDE.md AGENTS.md
+ln -s CLAUDE.md GEMINI.md
+
+<span class="code-comment"># All three tools read the same file</span></code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Shared Base + Imports</div>
+                        <pre><code><span class="code-comment"># CLAUDE.md</span>
+@docs/shared-context.md
+<span class="code-comment"># Claude-specific rules below...</span>
+
+<span class="code-comment"># .aider.conf.yml</span>
+read: [docs/shared-context.md]</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Gemini Reads All</div>
+                        <pre><code><span class="code-comment"># .gemini/settings.json</span>
+{
+  "context": {
+    "fileName": ["CLAUDE.md"]
+  }
+}
+<span class="code-comment"># Gemini inherits Claude's config</span></code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">AGENTS.md as Common Denominator</div>
+                        <pre><code><span class="code-comment"># AGENTS.md is the open standard</span>
+<span class="code-comment"># Many tools are adding support</span>
+<span class="code-comment"># Use it as the shared base,</span>
+<span class="code-comment"># add tool-specific files as needed</span></code></pre>
+                    </div>
+                </div>
+
+                <div class="sticky-note sticky-blue">
+                    <div class="sticky-note-title">Practical Advice</div>
+                    <p>Start with <strong>CLAUDE.md as your primary</strong> (it has the richest feature set), then symlink to AGENTS.md and GEMINI.md. Tool-specific rules go in their native format. This gives you one source of truth with per-tool extensions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 06: PROGRESSIVE DISCLOSURE
+             ================================================ -->
+        <section id="progressive" class="section">
+            <div class="section-header">
+                <p class="section-label">06</p>
+                <h2 class="section-title">Progressive Disclosure</h2>
+                <p class="section-description">Getting the right information at the right time. Not everything needs to load at startup.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Problem</h3>
+                <p>Loading every instruction at startup is wasteful. A frontend developer editing React components does not need backend database migration rules in context. A developer writing tests does not need deployment conventions cluttering the prompt.</p>
+
+                <p>The solution is <span class="highlight">progressive disclosure</span>: context that arrives precisely when needed, not before. Claude Code offers a full stack of mechanisms for this, from static file-based rules to dynamic runtime hooks.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Solution Stack</h3>
+                <p>Context injection mechanisms, ordered from <strong>static</strong> (always available, file-based) to <strong>dynamic</strong> (runtime, computed):</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">1. Path-Scoped Rules</h3>
+                <p>The simplest form of progressive disclosure. Rules in <code>.claude/rules/</code> with <code>paths:</code> frontmatter only activate when Claude works with matching files. Zero overhead when irrelevant.</p>
+
+                <pre><code><span class="code-comment"># .claude/rules/react-components.md</span>
+<span class="code-keyword">---</span>
+<span class="code-flag">paths:</span>
+  <span class="code-string">- "src/components/**/*.tsx"</span>
+  <span class="code-string">- "src/hooks/**/*.ts"</span>
+<span class="code-keyword">---</span>
+<span class="code-comment"># React Component Rules</span>
+- Server components by default; "use client" only when needed
+- Props interface named ComponentNameProps
+- Co-locate styles, tests, and stories with components</code></pre>
+
+                <p>These rules are invisible to Claude until it opens a file matching the glob pattern. You can have 50 path-scoped rules with zero startup cost.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">2. Subdirectory CLAUDE.md</h3>
+                <p>Lazy-loaded when Claude explores that area of the codebase. Perfect for module-level documentation that is too detailed for root config but too important to omit entirely.</p>
+
+                <pre><code><span class="code-comment"># backend/src/models/CLAUDE.md</span>
+<span class="code-comment"># Only loaded when Claude reads files in backend/src/models/</span>
+
+<span class="code-comment"># Database Models</span>
+- Prisma schema in prisma/schema.prisma
+- Every model needs createdAt and updatedAt timestamps
+- Soft deletes: use deletedAt field, never hard delete
+- Migration naming: YYYYMMDD_description.sql</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">3. @imports</h3>
+                <p>Referenced documentation pulled in on demand. Use this when you already maintain comprehensive docs and want Claude to follow them without duplicating content.</p>
+
+                <pre><code><span class="code-comment"># CLAUDE.md</span>
+<span class="code-comment">## API Design</span>
+<span class="code-keyword">@docs/api-style-guide.md</span>
+
+<span class="code-comment">## Database Conventions</span>
+<span class="code-keyword">@docs/database-patterns.md</span></code></pre>
+
+                <p>The imported files are resolved and injected when CLAUDE.md is loaded. Keep imported files focused -- a 500-line API doc pulls its entire weight into context.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">4. Skills</h3>
+                <p>Reusable prompt templates that inject task-specific context on demand. Skills are Markdown files in <code>.claude/skills/</code> that can preprocess shell commands using <code>!</code> backtick syntax to pull in live data:</p>
+
+                <pre><code><span class="code-comment"># .claude/skills/pr-summary.md</span>
+<span class="code-keyword">---</span>
+<span class="code-flag">name:</span> <span class="code-string">pr-summary</span>
+<span class="code-flag">context:</span> <span class="code-string">fork</span>
+<span class="code-flag">agent:</span> <span class="code-string">Explore</span>
+<span class="code-keyword">---</span>
+<span class="code-comment">## PR Context</span>
+- Diff: <span class="code-keyword">!</span>`gh pr diff`
+- Comments: <span class="code-keyword">!</span>`gh pr view --comments`
+
+<span class="code-comment">## Task</span>
+Summarize this PR: what changed, why, and any risks.</code></pre>
+
+                <p>Skills are invoked explicitly (via slash commands or the skills menu), so they carry no cost until triggered. The <code>!</code> backtick syntax runs shell commands at invocation time and injects the output, giving Claude live context about the current state of things.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">5. Hooks</h3>
+                <p>Deterministic lifecycle automation that runs at specific points during a Claude Code session. Unlike instructions (which are suggestions), hooks are <strong>enforced</strong> -- they run every time, regardless of what the model decides.</p>
+
+                <pre><code><span class="code-comment">// .claude/settings.json</span>
+{
+  <span class="code-string">"hooks"</span>: {
+    <span class="code-string">"PostToolUse"</span>: [{
+      <span class="code-string">"matcher"</span>: <span class="code-string">"Edit|Write"</span>,
+      <span class="code-string">"hooks"</span>: [{
+        <span class="code-string">"type"</span>: <span class="code-string">"command"</span>,
+        <span class="code-string">"command"</span>: <span class="code-string">"npx eslint --fix $CLAUDE_FILE_PATH"</span>
+      }]
+    }]
+  }
+}</code></pre>
+
+                <p>Available hook points in the lifecycle:</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hook</th>
+                                <th>When It Fires</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>SessionStart</code></td>
+                                <td>When a Claude Code session begins</td>
+                                <td>Inject environment context, check prerequisites</td>
+                            </tr>
+                            <tr>
+                                <td><code>PreToolUse</code></td>
+                                <td>Before Claude runs any tool</td>
+                                <td>Block dangerous operations, validate inputs</td>
+                            </tr>
+                            <tr>
+                                <td><code>PostToolUse</code></td>
+                                <td>After Claude runs a tool</td>
+                                <td>Run linters after edits, auto-format files</td>
+                            </tr>
+                            <tr>
+                                <td><code>UserPromptSubmit</code></td>
+                                <td>When the user sends a message</td>
+                                <td>Augment prompts with project context, inject timestamps</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>The <code>matcher</code> field uses regex to filter which tools trigger the hook. <code>"Edit|Write"</code> fires on file edits. <code>"Bash"</code> fires on shell commands. Omitting the matcher fires on every tool use.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">6. Subagents</h3>
+                <p>Isolated context windows for delegated tasks. Subagents run in a <strong>forked context</strong> with a restricted tool set, which means they do not pollute the main conversation's context window.</p>
+
+                <pre><code><span class="code-comment"># .claude/skills/security-reviewer.md</span>
+<span class="code-keyword">---</span>
+<span class="code-flag">name:</span> <span class="code-string">security-reviewer</span>
+<span class="code-flag">tools:</span> <span class="code-string">Read, Grep, Glob</span>
+<span class="code-flag">model:</span> <span class="code-string">haiku</span>
+<span class="code-keyword">---</span>
+Review the specified files for OWASP Top 10 vulnerabilities.
+Focus on: injection, broken auth, sensitive data exposure,
+XXE, broken access control, security misconfiguration.
+
+Report findings as a numbered list with severity (High/Medium/Low)
+and the specific file + line number.</code></pre>
+
+                <p>Subagents are ideal for specialized tasks that need deep focus: security review, documentation generation, test writing. They can use a smaller model (like Haiku) for cost efficiency, and their results are summarized back to the main conversation.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Decision Guide</h3>
+
+                <div class="sticky-note sticky-yellow" style="transform: rotate(-0.5deg);">
+                    <div class="sticky-note-title">When to Use What</div>
+                    <ul>
+                        <li><strong>Always relevant to all files?</strong> Put it in root CLAUDE.md</li>
+                        <li><strong>Relevant to a specific file type?</strong> Path-scoped rule in <code>.claude/rules/</code></li>
+                        <li><strong>Relevant to a specific module?</strong> Subdirectory CLAUDE.md</li>
+                        <li><strong>Relevant to a specific task?</strong> Skill with <code>!</code>backtick preprocessing</li>
+                        <li><strong>Must be enforced every time?</strong> Hook (not an instruction)</li>
+                        <li><strong>Needs deep focus in isolation?</strong> Subagent with restricted tools</li>
+                    </ul>
+                </div>
+
+                <p>The general rule: <span class="highlight-green">start static, go dynamic only when you need to</span>. Most projects only need CLAUDE.md + a few path-scoped rules. Add skills and hooks when your workflow demands them. Subagents are for advanced use cases with clear delegation boundaries.</p>
+
+                <div class="sticky-note sticky-pink" style="transform: rotate(1.2deg);">
+                    <div class="sticky-note-title">The Progressive Disclosure Mantra</div>
+                    <p>If it is always relevant -- <strong>CLAUDE.md</strong>. If it is file-type relevant -- <strong>path-scoped rule</strong>. If it is task-relevant -- <strong>skill</strong>. If it must be enforced -- <strong>hook</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 07: MEMORY & SESSIONS
+             ================================================ -->
+        <section id="memory" class="section">
+            <div class="section-header">
+                <p class="section-label">07</p>
+                <h2 class="section-title">Memory &amp; Sessions</h2>
+                <p class="section-description">Auto-memory system and session persistence. How Claude remembers across conversations.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Auto Memory Location</h3>
+                <pre><code><span class="code-path">~/.claude/projects/&lt;project&gt;/memory/</span>
+<span class="code-comment">├──</span> <span class="code-keyword">MEMORY.md</span>          <span class="code-comment"># Index -- first 200 lines loaded every session</span>
+<span class="code-comment">├──</span> <span class="code-string">debugging.md</span>       <span class="code-comment"># Detailed notes (loaded on demand)</span>
+<span class="code-comment">├──</span> <span class="code-string">api-conventions.md</span> <span class="code-comment"># API decisions (loaded on demand)</span>
+<span class="code-comment">└──</span> <span class="code-string">patterns.md</span>        <span class="code-comment"># Code patterns discovered</span></code></pre>
+
+                <ul class="doodle-list">
+                    <li><code>&lt;project&gt;</code> path derived from git repo root &mdash; all subdirs share one memory dir</li>
+                    <li>First <strong>200 lines</strong> of MEMORY.md injected into system prompt at session start</li>
+                    <li>Topic files are <strong>NOT</strong> loaded at startup &mdash; Claude reads them on demand</li>
+                    <li>Claude reads AND writes memory files during sessions (live updates)</li>
+                    <li>Git worktrees get separate memory directories</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">What Claude Saves Automatically</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Project Patterns</div>
+                        <p style="font-size: 0.9rem; margin: 0;">Build commands, test conventions, code style preferences, package manager choices</p>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Debugging Insights</div>
+                        <p style="font-size: 0.9rem; margin: 0;">Solutions to tricky problems, root causes of recurring errors, workarounds discovered</p>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Architecture Notes</div>
+                        <p style="font-size: 0.9rem; margin: 0;">Key files, module relationships, abstraction layers, data flow patterns</p>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">User Preferences</div>
+                        <p style="font-size: 0.9rem; margin: 0;">Communication style, workflow habits, tool choices, naming conventions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Managing Memory</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">Open memory in editor</div>
+                        <pre><code>/memory</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Tell Claude directly</div>
+                        <pre><code>"remember that we use pnpm, not npm"</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Force auto-memory on</div>
+                        <pre><code><span class="code-flag">CLAUDE_CODE_DISABLE_AUTO_MEMORY</span>=<span class="code-string">0</span></code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Force auto-memory off</div>
+                        <pre><code><span class="code-flag">CLAUDE_CODE_DISABLE_AUTO_MEMORY</span>=<span class="code-string">1</span></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">MEMORY.md Best Practices</h3>
+                <div class="sticky-note sticky-yellow" style="transform: rotate(-0.8deg);">
+                    <div class="sticky-note-title">The 200-Line Index</div>
+                    <ul>
+                        <li><strong>Keep it under 200 lines</strong> &mdash; that is the hard cutoff for auto-loading</li>
+                        <li><strong>Use it as an INDEX</strong> &mdash; link to topic files for details</li>
+                        <li><strong>Organize semantically</strong> by topic, not chronologically</li>
+                        <li><strong>Topic files can be any length</strong> &mdash; they are loaded on demand</li>
+                        <li><strong>Do not duplicate CLAUDE.md</strong> &mdash; memory is for discovered patterns, not prescribed rules</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Session Lifecycle</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Phase</th>
+                                <th>What Happens</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Session start</strong></td>
+                                <td>Loads all ancestor <code>CLAUDE.md</code> files + <code>.claude/rules/</code> + first 200 lines of <code>MEMORY.md</code> + skill descriptions</td>
+                            </tr>
+                            <tr>
+                                <td><strong>During session</strong></td>
+                                <td>Lazy-loads child <code>CLAUDE.md</code> files when entering subdirs. Reads topic memory files on demand.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Compaction</strong></td>
+                                <td>When context gets large, earlier messages are compressed to make room. Critical instructions survive because they are in config, not conversation.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Session end</strong></td>
+                                <td>Memory files may be updated with new discoveries. No conversation history persists across sessions.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sticky-note sticky-blue" style="transform: rotate(0.6deg);">
+                    <div class="sticky-note-title">Why Compaction Matters for Config</div>
+                    <p>When compaction kicks in, your conversation history gets summarized &mdash; but your <code>CLAUDE.md</code> and rules are re-injected fresh. This is why persistent instructions belong in config files, not in "remember this" messages.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 08: LLM DOCS VS HUMAN DOCS
+             ================================================ -->
+        <section id="llm-docs" class="section">
+            <div class="section-header">
+                <p class="section-label">08</p>
+                <h2 class="section-title">LLM Docs vs Human Docs</h2>
+                <p class="section-description">Writing instructions for machines vs humans. They are not the same audience.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Core Principle</h3>
+                <p><code>CLAUDE.md</code> is for the LLM agent. <code>README.md</code> is for human developers. They have <span class="highlight-pink">different audiences, different formats, different goals</span>.</p>
+
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">LLM Instructions (CLAUDE.md)</div>
+                        <ul class="doodle-list" style="margin-top: 8px;">
+                            <li><strong>Imperative:</strong> "Use 2-space indentation"</li>
+                            <li><strong>Specific:</strong> "Run <code>pnpm test -- --watch</code>"</li>
+                            <li><strong>Structured:</strong> Headers, bullets, code blocks</li>
+                            <li><strong>Concise:</strong> Every line pays rent</li>
+                            <li><strong>Actionable:</strong> "If X, do Y" patterns</li>
+                        </ul>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Human Docs (README.md)</div>
+                        <ul class="doodle-list" style="margin-top: 8px;">
+                            <li><strong>Descriptive:</strong> Explain why, not just what</li>
+                            <li><strong>Narrative:</strong> Onboarding flow, guides</li>
+                            <li><strong>Visual:</strong> Screenshots, diagrams</li>
+                            <li><strong>Comprehensive:</strong> Edge cases, rationale</li>
+                            <li><strong>Historical:</strong> Cover decisions, context</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Side-by-Side Comparison</h3>
+
+                <div class="example-panel" style="border-color: var(--crayon-red);">
+                    <div class="example-panel-title">BAD &mdash; Human-style in CLAUDE.md</div>
+                    <pre><code><span class="code-comment">## Authentication</span>
+<span class="code-comment">Our authentication system uses JWT tokens with refresh</span>
+<span class="code-comment">token rotation. We chose this approach in Q3 2024 after</span>
+<span class="code-comment">evaluating OAuth2, SAML, and session-based auth. The</span>
+<span class="code-comment">decision was driven by our microservices architecture...</span></code></pre>
+                </div>
+
+                <div class="example-panel" style="border-color: var(--crayon-green);">
+                    <div class="example-panel-title" style="color: var(--crayon-green);">GOOD &mdash; LLM-style in CLAUDE.md</div>
+                    <pre><code><span class="code-keyword">## Auth</span>
+<span class="code-flag">-</span> JWT + refresh token rotation
+<span class="code-flag">-</span> Auth middleware: <span class="code-path">src/middleware/auth.ts</span>
+<span class="code-flag">-</span> Token refresh endpoint: <span class="code-string">POST /api/auth/refresh</span>
+<span class="code-flag">-</span> Never store tokens in localStorage -- use httpOnly cookies</code></pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">When to Link vs Inline</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>When to Use</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Inline</strong></td>
+                                <td>Commands, conventions, patterns Claude needs every session</td>
+                                <td><code>Always use pnpm, never npm</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>@import / link</strong></td>
+                                <td>API docs, architecture docs, schema descriptions</td>
+                                <td><code>See @docs/api.md for endpoints</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Do not include</strong></td>
+                                <td>Changelogs, migration history, design rationale</td>
+                                <td>Keep in README.md or wiki only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The EMPHASIS Trick</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(-1.2deg);">
+                    <div class="sticky-note-title">Weight Your Words</div>
+                    <p>Use <strong>"IMPORTANT:"</strong> or <strong>"YOU MUST"</strong> for critical rules. Claude weighs these tokens more heavily during instruction following. Reserve them for rules that truly matter &mdash; overuse dilutes their power.</p>
+                </div>
+
+                <pre><code><span class="code-comment"># Normal instruction</span>
+<span class="code-flag">-</span> Use 2-space indentation in TypeScript files
+
+<span class="code-comment"># High-priority instruction</span>
+<span class="code-keyword">IMPORTANT:</span> Never commit .env files or expose API keys in code.
+<span class="code-keyword">YOU MUST</span> run <span class="code-string">`pnpm lint`</span> before committing any changes.</code></pre>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 09: ANTI-PATTERNS
+             ================================================ -->
+        <section id="anti-patterns" class="section">
+            <div class="section-header">
+                <p class="section-label">09</p>
+                <h2 class="section-title">Anti-Patterns</h2>
+                <p class="section-description">The danger zone. These mistakes will rot your context quality over time.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">1. The Monolith</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(-0.8deg);">
+                    <div class="sticky-note-title">1000+ line root CLAUDE.md with everything</div>
+                    <p>One massive file that covers testing, deployment, API conventions, code style, architecture, and your team's lunch preferences. Claude has to parse all of it every turn, even when editing a CSS file.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Split by concern into <code>.claude/rules/</code> and subdirectory <code>CLAUDE.md</code> files. The root file should be an index, not an encyclopedia.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">2. The Museum</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(1deg);">
+                    <div class="sticky-note-title">Config referencing old APIs, deprecated tools, removed files</div>
+                    <p>"Use <code>webpack.config.js</code> for bundling" &mdash; but you switched to Vite six months ago. Claude follows stale instructions with confidence, producing code that does not work.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Treat <code>CLAUDE.md</code> as living code &mdash; update it on the same PR as the change it references.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">3. The Duplicator</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(-0.5deg);">
+                    <div class="sticky-note-title">Same rules in CLAUDE.md AND in linter config</div>
+                    <p>"Always use semicolons" in CLAUDE.md, plus an ESLint rule that enforces it. Now you have two sources of truth. When the linter rule changes, the CLAUDE.md instruction becomes a lie.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Trust your linters. Only document what tools cannot enforce. Use hooks for the rest.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">4. The Encyclopedia</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(0.7deg);">
+                    <div class="sticky-note-title">Full API docs, architecture docs, schemas inlined in CLAUDE.md</div>
+                    <p>You pasted your entire OpenAPI spec into CLAUDE.md because "Claude needs to know the API." Now every message costs 10x more tokens and Claude's attention is diluted across 2000 lines of endpoint definitions.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Use @imports or reference links. <code>"See @docs/api.md for endpoint details"</code> &mdash; Claude will read it when it needs it.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">5. The Accumulator</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(-1.1deg);">
+                    <div class="sticky-note-title">Config that only grows, never shrinks</div>
+                    <p>Every sprint adds new rules. Nobody removes old ones. After a year, your CLAUDE.md is a geological record of every decision ever made, including ones that were reversed two quarters ago.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Review quarterly. For each line ask: "Would removing this cause mistakes?" If no, delete it.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">6. The Mirror</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(0.4deg);">
+                    <div class="sticky-note-title">Duplicating info obvious from the code</div>
+                    <p>Documenting every function signature, type definition, and module export in CLAUDE.md. Claude can <em>read your code</em>. It does not need you to transcribe it into config.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Document intent, conventions, and non-obvious relationships. Let the code speak for itself on structure.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">7. The Personality</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(-0.6deg);">
+                    <div class="sticky-note-title">"Act as a senior engineer. Be thorough. Think step by step."</div>
+                    <p>Generic personality prompts that waste tokens without changing behavior. Claude already reasons carefully, already writes production-quality code, already thinks before acting.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Replace vague personality instructions with concrete rules. "Use dependency injection" beats "think like a senior architect."</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">8. The Task Leak</h3>
+                <div class="sticky-note sticky-pink" style="transform: rotate(0.9deg);">
+                    <div class="sticky-note-title">Sprint-specific instructions in persistent files</div>
+                    <p>"We are currently migrating from REST to GraphQL, so all new endpoints should be..." This belongs in the conversation or a temporary ticket, not in a config file that persists after the migration is complete.</p>
+                    <p style="margin-top: 12px;"><strong>Fix:</strong> Task context belongs in the conversation, not config files. When the migration is done, the instruction becomes The Museum.</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Context Rot Audit</h3>
+                <div class="sticky-note sticky-green" style="transform: rotate(-0.5deg);">
+                    <div class="sticky-note-title">Monthly Audit Checklist</div>
+                    <ul>
+                        <li><strong>Root CLAUDE.md under 200 lines?</strong> If not, split into rule files.</li>
+                        <li><strong>All build commands current?</strong> Try running them.</li>
+                        <li><strong>All file paths still exist?</strong> Grep for referenced paths.</li>
+                        <li><strong>No references to deprecated APIs?</strong> Search for old package names.</li>
+                        <li><strong>No duplicate rules?</strong> Check if linters already enforce them.</li>
+                        <li><strong>Config reviewed this quarter?</strong> Put it on the team calendar.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             SECTION 10: TROUBLESHOOTING
+             ================================================ -->
+        <section id="troubleshooting" class="section">
+            <div class="section-header">
+                <p class="section-label">10</p>
+                <h2 class="section-title">Troubleshooting</h2>
+                <p class="section-description">When context goes wrong. Symptoms, causes, and fixes.</p>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Common Symptoms &amp; Fixes</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symptom</th>
+                                <th>Likely Cause</th>
+                                <th>Fix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Claude ignores specific rules</td>
+                                <td>Rule buried in long config</td>
+                                <td>Move to top of file or use <code>IMPORTANT:</code> prefix</td>
+                            </tr>
+                            <tr>
+                                <td>Claude follows rule early but not late in session</td>
+                                <td>Session context rot / compaction</td>
+                                <td>Start fresh session, keep config lean</td>
+                            </tr>
+                            <tr>
+                                <td>Same question, different answers each time</td>
+                                <td>Contradicting instructions across files</td>
+                                <td>Audit for conflicts across all CLAUDE.md files</td>
+                            </tr>
+                            <tr>
+                                <td>Claude makes obvious style mistakes</td>
+                                <td>Missing or stale style rules</td>
+                                <td>Add specific rules or trust linter hooks</td>
+                            </tr>
+                            <tr>
+                                <td>High token usage, slow responses</td>
+                                <td>Bloated config + memory files</td>
+                                <td>Audit and trim all context files</td>
+                            </tr>
+                            <tr>
+                                <td>Claude does not know project patterns</td>
+                                <td>Missing or too-general CLAUDE.md</td>
+                                <td>Add specific build/test/deploy commands</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">Debugging Commands</h3>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-card-title">See loaded memory files</div>
+                        <pre><code>/memory</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Check context usage</div>
+                        <pre><code>/context</code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Check root config length</div>
+                        <pre><code>wc -l CLAUDE.md
+<span class="code-comment"># Target: under 200 lines</span></code></pre>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-card-title">Find all context files</div>
+                        <pre><code>find . -name "CLAUDE.md" | head -20
+find .claude/rules -name "*.md" 2>/dev/null</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Nuclear Option</h3>
+                <p>When context is thoroughly confused and Claude keeps making the same mistakes despite correct config:</p>
+
+                <div class="sticky-note sticky-pink" style="transform: rotate(0.5deg);">
+                    <div class="sticky-note-title">Full Context Reset</div>
+                    <ul>
+                        <li><strong>Start a fresh session</strong> &mdash; <code>/clear</code> or open a new terminal window</li>
+                        <li><strong>Review and clean all CLAUDE.md files</strong> &mdash; remove stale rules, fix wrong paths</li>
+                        <li><strong>Clear auto-memory if corrupted</strong> &mdash; delete topic files with wrong patterns</li>
+                        <li><strong>Rebuild context incrementally</strong> &mdash; add rules back one at a time, testing each</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3 class="subsection-title">The Context Engineering Mindset</h3>
+                <div class="sticky-note sticky-yellow" style="transform: rotate(-0.7deg);">
+                    <div class="sticky-note-title">A Garden, Not a Monument</div>
+                    <p>Context engineering is not a one-time setup. It is an ongoing practice &mdash; like maintaining a garden. <span class="highlight-green">Prune what is dead, water what is growing, and never let the weeds take over.</span></p>
+                    <p style="margin-top: 12px;">The best <code>CLAUDE.md</code> files are <strong>short</strong>, <strong>specific</strong>, and <strong>always current</strong>. They earn every line by preventing real mistakes. Everything else is noise.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <p>Context Management for AI Coding Agents &mdash; A <a href="index.html">Tech Guides</a> reference</p>
+            <p style="font-size: 0.8rem; margin-top: 8px; color: var(--ink-light);">Sketch design system &middot; Notebook aesthetic</p>
+        </footer>
+    </div>
+</body>
+</html>
