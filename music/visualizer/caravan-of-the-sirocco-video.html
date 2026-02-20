@@ -35,9 +35,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Caravan of the Sirocco Video Renderer ──────────────────────────
-    window.Renderers['caravan-sirocco-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -68,7 +69,6 @@
         var scene = 'dawn'; // dawn, midday, sandstorm, oasis, night, clear
         var sceneBlend = 0;
         var lastSeqIndex = -1;
-        var lastBeat = -1;
         var beatPulse = 0;
         var elapsed = 0;
         var introFade = 0;
@@ -599,6 +599,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             if (!cursor) {
                 // Idle state
@@ -642,8 +643,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 camelBobTarget += Math.PI * 0.5;
                 lanternSwingTarget = (Math.random() - 0.5) * 2;
 
@@ -651,9 +651,7 @@
                 if ((scene === 'sandstorm' || scene === 'breaking') && energy > 0.6) {
                     flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.08);
                 }
-                lastBeat = beat;
             }
-            beatPulse *= Math.exp(-6 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Smooth animations ──
@@ -751,12 +749,12 @@
             ctx.fill();
         }
 
-        return {
-            name: 'Caravan of the Sirocco Video',
+        BaseRenderer('caravan-sirocco-video', 'Caravan of the Sirocco Video', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -35,9 +35,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Dialectic of the Ramen Video Renderer --
-    window.Renderers['dialectic-ramen-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -63,7 +64,6 @@
         var GREEN_ONION = '#7cb342';
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'steam';
@@ -647,8 +647,6 @@
             initNoodles();
             initToppings();
             initNeonSigns();
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             noodleSwirlAngle = 0;
@@ -682,6 +680,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG;
@@ -727,8 +726,7 @@
             sectionProgress += dt;
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Chopstick tap on beat
                 chopstickTapPulse = 0.5 + energy * 0.5;
@@ -765,12 +763,8 @@
                     flashAlpha = Math.max(flashAlpha, 0.05 + energy * 0.08);
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             chopstickTapPulse *= Math.exp(-10 * dt);
-
-            lastBeat = beat;
 
             // -- Continuous updates --
             brothLevel = lerpExp(brothLevel, brothTarget, 1.5, dt);
@@ -832,12 +826,11 @@
             }
         }
 
-        return {
-            name: 'Dialectic of the Ramen Video',
+        BaseRenderer('dialectic-ramen-video', 'Dialectic of the Ramen Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

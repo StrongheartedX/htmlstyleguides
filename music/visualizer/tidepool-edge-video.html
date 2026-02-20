@@ -40,9 +40,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Tidepool at the Edge of the World — Video Renderer ──
-    window.Renderers['tidepool-edge-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -74,7 +75,6 @@
         };
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var sectionMood = 'shore';
         var lastSeqIndex = -1;
@@ -134,7 +134,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             sectionMood = 'shore';
             lastSeqIndex = -1;
@@ -739,6 +738,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             elapsed += dt;
             wavePhase += dt * 1.2;
@@ -769,8 +769,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Add ripples to random tidepools on beats
                 if (tidepools.length > 0 && (sectionMood === 'tidepool' || sectionMood === 'colors')) {
@@ -794,11 +793,7 @@
                         alpha: 0.4
                     });
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
 
             // ── Section-specific targets ──
             switch (sectionMood) {
@@ -892,12 +887,11 @@
             }
         }
 
-        return {
-            name: 'Tidepool at the Edge of the World',
+        BaseRenderer('tidepool-edge-video', 'Tidepool at the Edge of the World', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

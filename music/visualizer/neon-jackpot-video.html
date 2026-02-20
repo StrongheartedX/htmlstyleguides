@@ -37,9 +37,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Neon Jackpot Video Renderer ─────────────────────────────────
-    window.Renderers['neon-jackpot-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -59,7 +60,6 @@
         var DAWN_ORANGE = '#ff8844';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var currentScene = 0;
@@ -2804,8 +2804,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             currentScene = 0;
@@ -2916,6 +2914,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Protect engine context state from any leaks within scenes
             ctx.save();
@@ -2959,12 +2958,9 @@
             sceneTime += dt;
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 coinSpin += 0.3 + energy * 1.2;
-                lastBeat = beat;
             }
-            beatPulse *= Math.exp(-7 * dt);
 
             // ── Coin physics ──
             coinAngle += coinSpin * dt;
@@ -3026,12 +3022,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Neon Jackpot',
+        BaseRenderer('neon-jackpot-video', 'Neon Jackpot', {
+            beatDecay: 7,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

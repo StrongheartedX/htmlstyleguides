@@ -37,9 +37,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── The Diva's Aria Video Renderer ─────────────────────────────────
-    window.Renderers['divas-aria-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -65,7 +66,6 @@
         // ── State ──
         var stageY = 0;
         var audienceTop = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var lastSeqIndex = -1;
@@ -654,7 +654,6 @@
             audienceTop = H * AUDIENCE_TOP_RATIO;
 
             lightTrails = [];
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -703,6 +702,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             drawBackground(ctx);
 
@@ -735,8 +735,7 @@
             curtainY = lerpSmooth(curtainY, curtainTarget, 1.2, dt);
 
             // ── Beat detection ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 spotPhase += 0.5 + Math.random() * 0.5;
 
                 // Spotbeam retarget
@@ -749,9 +748,6 @@
                     flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.1);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Section-dependent behavior ──
@@ -926,12 +922,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: "The Diva's Aria - Fifth Element Tribute",
+        BaseRenderer('divas-aria-video', "The Diva's Aria - Fifth Element Tribute", {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -35,16 +35,16 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- The Coin's Journey Video Renderer --
-    window.Renderers['coins-journey-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
         var analysis = null;
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var scene = 0; // 0=mint, 1=pocket, 2=vending, 3=busker, 4=well
@@ -740,7 +740,6 @@
             coinSpin = 0;
             coinBounce = 0;
             coinShine = 0.5;
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             scene = 0;
@@ -767,6 +766,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = SCENE_COLORS[scene].bg;
@@ -808,12 +808,9 @@
             }
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 coinSpin += 0.5 + energy * 1.5;
-                lastBeat = beat;
             }
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-4 * dt);
             sceneTransition *= Math.exp(-3 * dt);
 
@@ -845,12 +842,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: "The Coin's Journey",
+        BaseRenderer('coins-journey-video', "The Coin's Journey", {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

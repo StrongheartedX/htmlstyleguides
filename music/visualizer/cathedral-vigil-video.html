@@ -35,9 +35,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Cathedral Vigil Video Renderer --
-    window.Renderers['cathedral-vigil-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -60,7 +61,6 @@
         ];
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var sectionMood = 'intro';
         var lastSeqIndex = -1;
@@ -550,7 +550,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             introFadeIn = 0;
@@ -583,6 +582,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             drawBackground(ctx, 0);
@@ -625,8 +625,7 @@
             }
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Light candles progressively
                 if (sectionMood === 'intro') {
@@ -639,8 +638,6 @@
                     candlesLitTarget = CANDLE_ROWS * CANDLES_PER_ROW;
                 }
             }
-            beatPulse *= Math.exp(-6 * dt);
-            lastBeat = beat;
 
             // Candles lit count
             candlesLit = lerpSmooth(candlesLit, candlesLitTarget, 3, dt);
@@ -732,12 +729,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Cathedral Vigil',
+        BaseRenderer('cathedral-vigil-video', 'Cathedral Vigil', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

@@ -35,9 +35,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Bazaar of the Midnight Sun Video Renderer ──────────────────────
-    window.Renderers['bazaar-midnight-sun-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -58,7 +59,6 @@
 
         // ── State ──
         var horizonY = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var introFadeIn = 0;
@@ -743,8 +743,6 @@
             initSpicePyramids();
             initStars();
             initAurora();
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             introFadeIn = 0;
@@ -772,6 +770,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = GROUND_COLOR;
@@ -823,16 +822,12 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 // Flash on dance beats
                 if ((sectionMood === 'dance' || sectionMood === 'haggling') && energy > 0.6) {
                     flashAlpha = 0.08 + energy * 0.06;
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // ── Title ──
@@ -902,12 +897,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Bazaar of the Midnight Sun',
+        BaseRenderer('bazaar-midnight-sun-video', 'Bazaar of the Midnight Sun', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -38,9 +38,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Requiem in Stone Video Renderer ──────────────────────────────
-    window.Renderers['requiem-in-stone-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -59,7 +60,6 @@
         var WARM_GOLD = '#ffd700';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var sectionMood = 'silence';
@@ -736,8 +736,6 @@
             layoutCandles();
             initDust();
             initGlassShards();
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'silence';
@@ -772,6 +770,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             time += dt;
 
             // Background
@@ -856,8 +855,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Storm crumble: shift blocks on beats
                 if (sectionMood === 'storm') {
@@ -891,12 +889,9 @@
                 for (var gsi = 0; gsi < glassShards.length; gsi++) {
                     glassShards[gsi].glowTarget = Math.random() < energy ? 1 : 0.2;
                 }
-
-                lastBeat = beat;
             }
 
             // ── Decay ──
-            beatPulse *= Math.exp(-6 * dt);
             flashAlpha *= Math.exp(-4 * dt);
             sectionTransition *= Math.exp(-2 * dt);
 
@@ -995,12 +990,12 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Requiem in Stone',
+        BaseRenderer('requiem-in-stone-video', 'Requiem in Stone', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

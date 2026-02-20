@@ -41,9 +41,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Survivors: Neon District Video Renderer ───────────────────────
-    window.Renderers['survivors-neon-district'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -64,7 +65,6 @@
 
         // ── State ──
         var groundY = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var globalTime = 0;
@@ -249,8 +249,6 @@
             initHoloAds();
             initRain();
             initEnemies();
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             globalTime = 0;
@@ -891,6 +889,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -943,8 +942,7 @@
             introFade = Math.min(1, introFade + dt * 0.5);
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Attack on beats during high energy
                 if (energy > 0.3) {
@@ -980,11 +978,7 @@
                 if ((sectionMood === 'drop' || sectionMood === 'fill') && energy > 0.5) {
                     flashAlpha = Math.max(flashAlpha, 0.1 + energy * 0.1);
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             survivor.attackFlash *= Math.exp(-10 * dt);
 
@@ -1091,12 +1085,11 @@
             }
         }
 
-        return {
-            name: 'Survivors: Neon District',
+        BaseRenderer('survivors-neon-district', 'Survivors: Neon District', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

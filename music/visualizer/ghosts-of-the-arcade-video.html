@@ -42,9 +42,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Ghosts of the Arcade Video Renderer ──────────────────────────
-    window.Renderers['ghosts-arcade-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -61,7 +62,6 @@
         var CABINET_COLORS = [CYAN, MAGENTA, GREEN, BLUE, AMBER];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var time = 0;
@@ -736,7 +736,6 @@
             W = width; H = height;
             analysis = anal;
             time = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -769,6 +768,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             time += dt;
             scanlineOffset = (scanlineOffset + dt * 30) % 3;
 
@@ -812,8 +812,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Cabinet flicker on beat
                 var flickerCab = Math.floor(Math.random() * cabinets.length);
@@ -835,11 +834,7 @@
                     ghosts[gi].vx += (Math.random() - 0.5) * 40 * energy;
                     ghosts[gi].vy += (Math.random() - 0.5) * 20 * energy;
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // ── Section-specific state updates ──
@@ -1139,12 +1134,11 @@
             }
         }
 
-        return {
-            name: 'Ghosts of the Arcade Video',
+        BaseRenderer('ghosts-arcade-video', 'Ghosts of the Arcade Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

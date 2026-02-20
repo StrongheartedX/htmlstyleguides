@@ -42,9 +42,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Cradle of the Colossus Video Renderer ──────────────────────────
-    window.Renderers['cradle-colossus-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -63,7 +64,6 @@
         var DUST_COLOR = '#8a7a60';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var tremor = 0;
         var tremorTarget = 0;
@@ -843,7 +843,6 @@
             initRockDebris();
 
             // Reset state
-            lastBeat = -1;
             beatPulse = 0;
             tremor = 0;
             tremorTarget = 0;
@@ -896,6 +895,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var time = cursor ? cursor.elapsed : 0;
 
             // Background
@@ -1055,8 +1055,7 @@
             runeGlow = lerpExp(runeGlow, runeTarget, 4, dt);
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Beat-sync tremor burst
                 if (sectionMood === 'rising' || sectionMood === 'shadow') {
@@ -1071,9 +1070,6 @@
                     runeGlow = Math.min(1, runeGlow + 0.1);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-6 * dt);
             flashAlpha *= Math.exp(-4 * dt);
 
             // ── Draw scene (back to front) ──
@@ -1124,12 +1120,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Cradle of the Colossus',
+        BaseRenderer('cradle-colossus-video', 'Cradle of the Colossus', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

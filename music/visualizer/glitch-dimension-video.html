@@ -40,9 +40,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Glitch Dimension Video Renderer ─────────────────────────────
-    window.Renderers['glitch-dimension-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -56,7 +57,6 @@
         var WHITE    = [255, 255, 255];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'void';
@@ -656,7 +656,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             sectionMood = 'void';
@@ -686,6 +685,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
             scanlineOffset += dt * 30;
@@ -786,8 +786,7 @@
             titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
 
             // ── Beat events ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Beat-synced spawns
                 var intensity = corruptionLevel;
@@ -824,11 +823,7 @@
 
                 // Title glitch spikes
                 titleGlitch = intensity > 0.3 ? intensity * 3 : 0;
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
             titleGlitch *= Math.exp(-10 * dt);
 
@@ -903,12 +898,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Glitch Dimension Video',
+        BaseRenderer('glitch-dimension-video', 'Glitch Dimension Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

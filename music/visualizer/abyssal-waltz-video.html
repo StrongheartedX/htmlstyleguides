@@ -32,9 +32,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Abyssal Waltz Video Renderer ──────────────────────────────────
-    window.Renderers['abyssal-waltz-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -54,7 +55,6 @@
         var PAL_KEYS = Object.keys(PALETTE);
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var time = 0;
         var sectionName = 'void';
@@ -673,7 +673,6 @@
 
             particles = [];
             sonarRings = [];
-            lastBeat = -1;
             beatPulse = 0;
             time = 0;
             sectionName = 'void';
@@ -722,6 +721,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             time += dt;
 
             // Background
@@ -781,8 +781,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Sonar rings on beats in certain sections
                 if (sectionName === 'void' || sectionName === 'stirring' || sectionName === 'return' || sectionName === 'fade') {
@@ -800,11 +799,7 @@
                         flashAlpha = Math.max(flashAlpha, 0.08);
                     }
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-6 * dt);
             flashAlpha *= Math.exp(-4 * dt);
 
             // ── Title ──
@@ -885,12 +880,12 @@
             ctx.drawImage(vignetteCanvas, 0, 0);
         }
 
-        return {
-            name: 'Abyssal Waltz Video',
+        BaseRenderer('abyssal-waltz-video', 'Abyssal Waltz Video', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

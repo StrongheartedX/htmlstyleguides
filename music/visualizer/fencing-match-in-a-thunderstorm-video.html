@@ -38,9 +38,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Fencing Match in a Thunderstorm Video Renderer ──────────────
-    window.Renderers['fencing-thunderstorm-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -62,7 +63,6 @@
         var roofY = 0;
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var lastSeqIndex = -1;
@@ -631,7 +631,6 @@
 
             lightningBolts = [];
             sparks = [];
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             shakeIntensity = 0;
@@ -662,6 +661,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = SKY_TOP;
@@ -699,8 +699,7 @@
 
             // ── Beat detection ──
             var isClash = false;
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Choreograph fencer moves
                 isClash = choreographBeat(beat, energy, seqIdx);
@@ -734,10 +733,7 @@
                 }
             }
 
-            lastBeat = beat;
-
             // ── Decay ──
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             lightningFreeze *= Math.exp(-3 * dt);
             shakeIntensity *= Math.exp(-6 * dt);
@@ -825,12 +821,11 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Fencing Match in a Thunderstorm',
+        BaseRenderer('fencing-thunderstorm-video', 'Fencing Match in a Thunderstorm', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

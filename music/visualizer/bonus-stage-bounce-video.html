@@ -48,9 +48,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Bonus Stage Bounce Video Renderer ──────────────────────────────
-    window.Renderers['bonus-stage-bounce-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -80,7 +81,6 @@
         ];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var score = 0;
@@ -517,7 +517,6 @@
             timer = 99;
             comboCount = 0;
             comboTimer = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -541,6 +540,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var pal = STAGE_PALETTES[stageIndex % STAGE_PALETTES.length];
 
             // Background
@@ -595,8 +595,7 @@
             }
 
             // ── Beat handling ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 comboTimer = Math.max(0, comboTimer - 0.3);
 
                 // Spawn items on beats
@@ -648,12 +647,9 @@
 
                 // Timer ticks
                 timer = Math.max(0, 99 - (cursor.elapsed || 0) * 0.5);
-
-                lastBeat = beat;
             }
 
             // ── Decay ──
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
             titleAlpha = Math.max(0, titleAlpha - dt * 0.8);
             comboTimer = Math.max(0, comboTimer - dt);
@@ -861,12 +857,11 @@
             drawScanlines(ctx);
         }
 
-        return {
-            name: 'Bonus Stage Bounce Video',
+        BaseRenderer('bonus-stage-bounce-video', 'Bonus Stage Bounce Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

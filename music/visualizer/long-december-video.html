@@ -36,9 +36,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Long December Video Renderer --
-    window.Renderers['long-december-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -56,7 +57,6 @@
         var LAMP_GLOW = '#f5c860';
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var sectionMood = 'intro'; // intro, verse, chorus, interlude, bridge, finalchorus, outro
@@ -668,8 +668,6 @@
             figureLegPhase = 0;
             figureVisible = false;
             walkerFig = null; // lazy-init on first draw
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'intro';
@@ -700,6 +698,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var groundY = H * 0.78;
 
             // -- Idle state --
@@ -748,8 +747,7 @@
             dawnProgress = Math.max(0, (scenePhase - 3) / 1.0);
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Footstep on beat
                 if (figureVisible && figureSpeed > 5) {
@@ -767,11 +765,7 @@
                         }
                     }
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-6 * dt);
 
             // -- Title logic --
             titleTarget = (sectionMood === 'chorus' || sectionMood === 'finalchorus') ? 1 : 0;
@@ -867,12 +861,12 @@
             ctx.fillRect(0, 0, W, H);
         }
 
-        return {
-            name: 'Long December Winter Cityscape',
+        BaseRenderer('long-december-video', 'Long December Winter Cityscape', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

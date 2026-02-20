@@ -38,9 +38,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── System Infection Video Renderer ──────────────────────────────
-    window.Renderers['system-infection-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -67,7 +68,6 @@
         var arenaRight = 0;
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var section = 'intro';
@@ -1027,8 +1027,6 @@
             boss = null;
             bossDefeated = false;
             finalChorusBeats = 0;
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             section = 'intro';
@@ -1081,6 +1079,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Apply slow-motion
             if (slowMoTimer > 0) {
@@ -1121,13 +1120,11 @@
             }
 
             // ── Beat detection ──
-            if (beat !== lastBeat) {
+            if (frameData.beatChanged) {
                 onBeat(beat, energy, seqIdx);
             }
-            lastBeat = beat;
 
             // ── Decay timers ──
-            beatPulse *= Math.exp(-8 * dt);
             shakeIntensity *= Math.exp(-6 * dt);
             screenPulse *= Math.exp(-4 * dt);
 
@@ -1252,12 +1249,11 @@
             }
         }
 
-        return {
-            name: 'System Infection',
+        BaseRenderer('system-infection-video', 'System Infection', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -39,9 +39,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Romantic Dissonance Video Renderer ─────────────────────────────
-    window.Renderers['romantic-dissonance-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -57,7 +58,6 @@
         var COLD_BG = { r: 12, g: 5, b: 18 };
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var time = 0;
@@ -668,7 +668,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             time = 0;
@@ -706,6 +705,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             time += dt;
 
@@ -800,8 +800,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 chandelierSwingSpeed += 0.3 * energy;
 
                 // Flash on heavy beats in chorus/climax
@@ -828,12 +827,8 @@
                     }
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             dividerWobble *= Math.exp(-3 * dt);
-
-            lastBeat = beat;
 
             // ── Smooth state transitions ──
             mergeAmount = lerpExp(mergeAmount, mergeTarget, 2, dt);
@@ -912,12 +907,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Romantic Dissonance',
+        BaseRenderer('romantic-dissonance-video', 'Romantic Dissonance', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

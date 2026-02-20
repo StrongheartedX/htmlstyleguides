@@ -36,9 +36,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── WAP Video Renderer ──────────────────────────────────────────
-    window.Renderers['wap-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -64,7 +65,6 @@
         var floorY = 0;
         var poleH = 0;
         var poleX1 = 0, poleX2 = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var spotlightPhase = 0;
@@ -408,7 +408,7 @@
             fig.orbitAngle += fig.orbitSpeed * energy * speedMult * dt;
 
             // Slide target changes on beats
-            if (beat !== lastBeat) {
+            if (frameData.beatChanged) {
                 if (sectionMood === 'hook' || sectionMood === 'build') {
                     fig.slideTarget = 0.2 + Math.random() * 0.6;
                     fig.hangMode = Math.random() > 0.5;
@@ -501,7 +501,7 @@
 
         // ── Floor dancer compute & draw ──
         function updateFloorDancer(fig, dt, beat, energy) {
-            if (beat !== lastBeat) {
+            if (frameData.beatChanged) {
                 fig.moveBeatCounter++;
 
                 // Splits snap-back: hold 4 beats then SNAP up in 1
@@ -893,8 +893,6 @@
             initBeams();
             initParticles();
             initCrowd();
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             spotlightPhase = 0;
@@ -929,6 +927,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG;
@@ -992,8 +991,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 spotlightPhase += 0.7 + Math.random() * 0.6;
 
                 // Flash on hook beats
@@ -1016,8 +1014,6 @@
                     }
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // ── Title ──
@@ -1034,8 +1030,6 @@
                     updateFloorDancer(fig, dt, beat, energy);
                 }
             }
-
-            lastBeat = beat;
 
             // ── Update club elements ──
             updateParticles(dt, energy);
@@ -1088,12 +1082,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'WAP Stick Figure Video',
+        BaseRenderer('wap-video', 'WAP Stick Figure Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

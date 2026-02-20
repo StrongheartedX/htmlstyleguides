@@ -34,9 +34,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Sonata in C (Dissolving) Video Renderer --
-    window.Renderers['sonata-dissolving'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -66,7 +67,6 @@
         var WATERCOLORS = ['rose', 'lavender', 'aqua', 'peach', 'sage'];
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var elapsedTime = 0;
         var lastSeqIndex = -1;
@@ -810,7 +810,6 @@
             analysis = anal;
             dissolution = 0;
             targetDissolution = 0;
-            lastBeat = -1;
             beatPulse = 0;
             elapsedTime = 0;
             lastSeqIndex = -1;
@@ -838,6 +837,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             elapsedTime += dt;
 
@@ -870,11 +870,8 @@
             dissolution += (targetDissolution - dissolution) * (1 - Math.exp(-dissSpeed * dt));
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
-                lastBeat = beat;
+            if (frameData.beatChanged) {
             }
-            beatPulse *= Math.exp(-6 * dt);
 
             var d = dissolution;
             var time = elapsedTime;
@@ -932,12 +929,12 @@
             }
         }
 
-        return {
-            name: 'Sonata in C (Dissolving)',
+        BaseRenderer('sonata-dissolving', 'Sonata in C (Dissolving)', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

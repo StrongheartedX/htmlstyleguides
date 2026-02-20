@@ -40,9 +40,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Oasis of the Forgotten King — Video Renderer ──────────────────
-    window.Renderers['oasis-forgotten-king-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -74,7 +75,6 @@
         };
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var totalTime = 0;
@@ -799,7 +799,6 @@
             W = width; H = height;
             analysis = anal;
             totalTime = 0;
-            lastBeat = -1;
             lastSeqIndex = -1;
             scene = 'desert';
             prevScene = 'desert';
@@ -828,6 +827,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             totalTime += dt;
 
@@ -848,11 +848,8 @@
             var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
-                lastBeat = beat;
+            if (frameData.beatChanged) {
             }
-            beatPulse *= Math.exp(-6 * dt);
 
             // ── Scene transitions ──
             var newScene = mapScene(seqIdx);
@@ -1046,12 +1043,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Oasis of the Forgotten King',
+        BaseRenderer('oasis-forgotten-king-video', 'Oasis of the Forgotten King', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

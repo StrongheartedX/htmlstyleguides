@@ -37,9 +37,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Survivors: Gothic Cathedral Video Renderer ─────────────────
-    window.Renderers['survivors-gothic-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -62,7 +63,6 @@
         var GLASS_COLORS = [RUBY, EMERALD, SAPPHIRE, AMBER, PURPLE];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'intro';
@@ -875,7 +875,6 @@
             W = width; H = height;
             analysis = anal;
             time = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -927,6 +926,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             time += dt;
 
             // ── Background ──
@@ -974,8 +974,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Spawn enemies on beats
                 if (sectionMood === 'verse' || sectionMood === 'chorus') {
@@ -1012,12 +1011,9 @@
                 if (sectionMood === 'chorus' && energy > 0.6) {
                     flashAlpha = Math.max(flashAlpha, 0.1 + energy * 0.08);
                 }
-
-                lastBeat = beat;
             }
 
             // ── Decay ──
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Weapon swing animation ──
@@ -1152,12 +1148,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Survivors: Gothic Cathedral',
+        BaseRenderer('survivors-gothic-video', 'Survivors: Gothic Cathedral', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

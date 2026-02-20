@@ -34,9 +34,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Hacking the Mainframe Video Renderer ──────────────────────────
-    window.Renderers['hacking-mainframe-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -52,7 +53,6 @@
         var WHITE = '#ffffff';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'recon';
@@ -815,7 +815,6 @@
             initTerminal();
             initCrypt();
             packets = [];
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             sectionMood = 'recon';
@@ -848,6 +847,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             elapsed += dt;
 
@@ -932,8 +932,7 @@
             }
 
             // ── Beat events ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Add terminal line on each beat
                 var newLine = CODE_SNIPPETS[Math.floor(Math.random() * CODE_SNIPPETS.length)];
@@ -1023,10 +1022,7 @@
                 }
             }
 
-            lastBeat = beat;
-
             // ── Decay ──
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
             sectionFlash *= Math.exp(-5 * dt);
             firewallFlash *= Math.exp(-4 * dt);
@@ -1135,12 +1131,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Hacking the Mainframe Video',
+        BaseRenderer('hacking-mainframe-video', 'Hacking the Mainframe Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

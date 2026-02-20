@@ -39,9 +39,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Voyage of the Paper Lantern Video Renderer --
-    window.Renderers['voyage-paper-lantern-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -64,7 +65,6 @@
 
         // -- State --
         var waterY = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var scene = 'adrift';  // adrift, bamboo, rapids, waterfall, stillpool, nightmarket, rivermouth, sea
@@ -866,8 +866,6 @@
             lanternX = W * 0.5;
             lanternY = waterY - 30;
             lanternGlowRadius = Math.min(W, H) * 0.15;
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             scene = 'adrift';
@@ -901,6 +899,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Clear
             ctx.fillStyle = SKY_DARK;
@@ -936,11 +935,8 @@
             }
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
-                lastBeat = beat;
+            if (frameData.beatChanged) {
             }
-            beatPulse *= Math.exp(-8 * dt);
 
             // -- Scroll --
             var scrollSpeed = 30;
@@ -1037,12 +1033,11 @@
             drawFade(ctx);
         }
 
-        return {
-            name: 'Voyage of the Paper Lantern',
+        BaseRenderer('voyage-paper-lantern-video', 'Voyage of the Paper Lantern', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

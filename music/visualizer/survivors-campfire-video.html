@@ -40,9 +40,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Survivors: Campfire Rest Video Renderer ─────────────────────
-    window.Renderers['campfire-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -60,7 +61,6 @@
         var SILHOUETTE = '#08090c';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var time = 0;
         var groundY = 0;
@@ -644,7 +644,6 @@
             fireX = W * 0.5;
             fireBaseY = groundY;
             time = 0;
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'intro';
@@ -675,6 +674,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             time += dt;
 
             // Background
@@ -703,8 +703,7 @@
             }
 
             // Beat handling
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Twinkle stars on beats
                 flashRandomStars(3 + Math.floor(energy * 8));
@@ -729,12 +728,9 @@
                         }
                     }
                 }
-
-                lastBeat = beat;
             }
 
             // Decay beat pulse
-            beatPulse *= Math.exp(-5 * dt);
 
             // Update head bob phases and StickFight figures
             for (var ui = 0; ui < figureMeta.length; ui++) {
@@ -796,12 +792,12 @@
             updateAndDrawEmbers(ctx, dt, energy);
         }
 
-        return {
-            name: 'Survivors: Campfire Rest',
+        BaseRenderer('campfire-video', 'Survivors: Campfire Rest', {
+            beatDecay: 5,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

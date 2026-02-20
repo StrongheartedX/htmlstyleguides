@@ -36,9 +36,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Orbital Lounge Video Renderer ─────────────────────────────────
-    window.Renderers['orbital-lounge-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -64,7 +65,6 @@
 
         // ── State ──
         var floorY = 0, ceilingY = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var sectionMood = 'intro'; // intro, groove, solo, head, coda, outro
@@ -727,7 +727,6 @@
             smokeParticles = [];
             starRotation = 0;
             earthPhase = 0;
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'intro';
@@ -750,6 +749,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG_DEEP;
@@ -792,8 +792,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Spawn smoke puffs from instruments on beat
                 var smokeCount = Math.floor(1 + energy * 3);
@@ -802,11 +801,7 @@
                     var sy = floorY - (floorY - ceilingY) * (0.3 + Math.random() * 0.3);
                     spawnSmoke(sx, sy, (Math.random() - 0.5) * 5, -5 - energy * 10, 2 + Math.random() * 4);
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-6 * dt);
 
             // ── Ambient flicker ──
             ambientFlicker = Math.sin(elapsed * 3.7) * 0.3 + Math.sin(elapsed * 7.3) * 0.2;
@@ -869,12 +864,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Orbital Lounge Jazz Club',
+        BaseRenderer('orbital-lounge-video', 'Orbital Lounge Jazz Club', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

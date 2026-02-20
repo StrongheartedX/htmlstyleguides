@@ -39,9 +39,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Monastery of the Morning Mist Video Renderer ──────────────
-    window.Renderers['monastery-morning-mist-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -77,7 +78,6 @@
         };
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var bellPulse = 0;
         var sectionMood = 'mist';
@@ -746,7 +746,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             bellPulse = 0;
             sectionMood = 'mist';
@@ -777,6 +776,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var time = 0;
 
             // ── Idle state ──
@@ -904,8 +904,7 @@
             titleAlpha = lerpSmooth(titleAlpha, titleTarget, 2.5, dt);
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Bell pulse on temple bell notes (check ch1 for bell instrument)
                 var notes = frameData.currentNotes;
@@ -917,9 +916,6 @@
                     beatPulse = Math.min(1.5, beatPulse + 0.5);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-5 * dt);
             bellPulse *= Math.exp(-3 * dt);
 
             // ── Draw scene (back to front) ──
@@ -967,12 +963,12 @@
             drawOverlay(ctx);
         }
 
-        return {
-            name: 'Monastery of the Morning Mist',
+        BaseRenderer('monastery-morning-mist-video', 'Monastery of the Morning Mist', {
+            beatDecay: 5,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

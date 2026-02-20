@@ -44,9 +44,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Segfault Uprising Video Renderer ────────────────────────────────
-    window.Renderers['segfault-uprising-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -63,7 +64,6 @@
         var PURPLE = '#cc00ff';
 
         // ── Timing state ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMode = 'intro';
@@ -711,7 +711,6 @@
             analysis = anal;
 
             elapsed = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             sectionMode = 'intro';
@@ -747,6 +746,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var notes = frameData.currentNotes;
 
             elapsed += dt;
@@ -834,8 +834,7 @@
             }
 
             // ── Beat events ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Shockwave on every downbeat
                 var isDownbeat = (beat % 4 === 0);
@@ -898,12 +897,9 @@
                 if (sectionMode === 'breakdown' && beat % 2 === 0) {
                     spawnTear(true);
                 }
-
-                lastBeat = beat;
             }
 
             // ── Decay / interpolation ──
-            beatPulse *= Math.exp(-10 * dt);
             flashAlpha *= Math.exp(-6 * dt);
             sectionFlash *= Math.exp(-5 * dt);
             lastEnergy = lerpExp(lastEnergy, energy, 8, dt);
@@ -998,12 +994,12 @@
             }
         }
 
-        return {
-            name: 'Segfault Uprising',
+        BaseRenderer('segfault-uprising-video', 'Segfault Uprising', {
+            beatDecay: 10,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

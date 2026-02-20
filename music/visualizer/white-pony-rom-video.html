@@ -37,9 +37,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- White Pony ROM Video Renderer --
-    window.Renderers['white-pony-rom-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -51,7 +52,6 @@
         var UNDERWATER_BG = [6, 20, 28];
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var sectionMood = 'intro'; // intro, verse, prechorus, chorus, bridge, underwater, finalchorus, outro
         var sectionEnergy = 0;
@@ -689,7 +689,6 @@
             analysis = anal;
             globalTime = 0;
             scrollX = 0;
-            lastBeat = -1;
             beatPulse = 0;
             sectionMood = 'intro';
             introFadeIn = 0;
@@ -728,6 +727,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -829,8 +829,7 @@
             horseSpeed = lerpSmooth(horseSpeed, horseSpeedTarget, 4, dt);
 
             // -- Beat detection --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Horse frame advance
                 if (horseSpeed > 0.8) {
@@ -856,10 +855,7 @@
                     }
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
-            lastBeat = beat;
 
             // -- Scroll landscape --
             scrollX += horseSpeed * dt * 0.1;
@@ -916,12 +912,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'White Pony ROM Video',
+        BaseRenderer('white-pony-rom-video', 'White Pony ROM Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

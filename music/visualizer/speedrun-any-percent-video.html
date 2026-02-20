@@ -49,9 +49,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Speedrun Any% Video Renderer --
-    window.Renderers['speedrun-any-percent-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -97,7 +98,6 @@
 
         // -- State --
         var scene = 'title';
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var flashColor = '#ffffff';
@@ -739,7 +739,7 @@
             // Boss HP drain over boss section
             if (!bossDefeated) {
                 // HP decreases with energy bursts
-                if (beat !== lastBeat && energy > 0.4) {
+                if (frameData.beatChanged && energy > 0.4) {
                     bossHP = Math.max(0, bossHP - 0.03 - energy * 0.04);
                     bossHitFlash = 0.5;
                     heroAttackFrame = 0.3;
@@ -1085,7 +1085,6 @@
             W = width; H = height;
             analysis = anal;
             elapsed = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             shakeX = 0; shakeY = 0;
@@ -1134,6 +1133,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             elapsed += dt;
 
@@ -1192,8 +1192,7 @@
             }
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Screen shake in boss scene
                 if (scene === 'boss' && energy > 0.5) {
@@ -1202,9 +1201,6 @@
                     shakeY = (Math.random() - 0.5) * shakeAmt;
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // Decay screen shake
@@ -1261,12 +1257,11 @@
             drawTimer(ctx);
         }
 
-        return {
-            name: 'Speedrun Any% Video',
+        BaseRenderer('speedrun-any-percent-video', 'Speedrun Any% Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

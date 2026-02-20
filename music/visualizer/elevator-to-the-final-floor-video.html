@@ -37,9 +37,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Elevator to the Final Floor Video Renderer ─────────────────────
-    window.Renderers['elevator-final-floor-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -677,7 +678,6 @@
             currentFloor = 0;
             targetFloor = 0;
             floorDisplay = 0;
-            lastBeat = -1;
             beatPulse = 0;
             dingAlpha = 0;
             dingRingRadius = 0;
@@ -712,6 +712,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG_DARK;
@@ -777,7 +778,6 @@
             }
 
             // ── Update state ──
-            beatPulse *= 0.9;
             mechanicalClick *= 0.85;
 
             // Floor display smooth scrolling
@@ -922,12 +922,13 @@
             }
         }
 
-        return {
-            name: 'Elevator to the Final Floor Video',
+        BaseRenderer('elevator-final-floor-video', 'Elevator to the Final Floor Video', {
+            beatDecay: 0.9,
+            expDecay: false,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -34,9 +34,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Kitchen Timer Fugue Video Renderer ────────────────────────────
-    window.Renderers['kitchen-timer-fugue-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -74,7 +75,6 @@
         // ── State ──
         var counterY = 0;
         var tileTop = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var lastSeqIndex = -1;
@@ -161,8 +161,6 @@
             analysis = anal;
             counterY = H * COUNTER_Y_RATIO;
             tileTop = H * TILE_TOP_RATIO;
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -733,6 +731,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background gradient
             var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
@@ -805,8 +804,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 knifeFlash = 0.8;
 
                 // Timer countdown ticks
@@ -842,11 +840,7 @@
                 if ((sectionMood === 'stretto-chaos' || sectionMood === 'finale') && energy > 0.5) {
                     flashAlpha = 0.1 + energy * 0.1;
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             knifeFlash *= Math.exp(-10 * dt);
             dingFlash *= Math.exp(-3 * dt);
             flashAlpha *= Math.exp(-6 * dt);
@@ -980,12 +974,11 @@
             }
         }
 
-        return {
-            name: 'Kitchen Timer Fugue Video',
+        BaseRenderer('kitchen-timer-fugue-video', 'Kitchen Timer Fugue Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

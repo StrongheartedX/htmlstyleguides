@@ -48,9 +48,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Through the Fire and Flames Video Renderer ─────────────────────
-    window.Renderers['ttfaf-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -75,7 +76,6 @@
         };
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'keyboard-intro';
@@ -1228,7 +1228,6 @@
             W = width; H = height;
             analysis = anal;
             globalTime = 0;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             sectionMood = 'keyboard-intro';
@@ -1312,6 +1311,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -1358,8 +1358,7 @@
             }
 
             // ── Beat detection ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Flash on strong beats in intense sections
                 if ((sectionMood === 'chorus' || sectionMood === 'finale') && energy > 0.5) {
@@ -1376,8 +1375,6 @@
             flashAlpha *= Math.exp(-8 * dt);
             shakeAmount *= Math.exp(-6 * dt);
 
-            lastBeat = beat;
-
             // ── Dragon breath management ──
             if (dragon.breathActive) {
                 dragon.breathTimer += dt;
@@ -1387,7 +1384,7 @@
                 dragon.headAngle = Math.sin(globalTime * 2) * 0.3;
             }
             // Re-trigger breath on chorus beats
-            if ((sectionMood === 'chorus' || sectionMood === 'finale') && beat !== lastBeat && Math.random() > 0.7) {
+            if ((sectionMood === 'chorus' || sectionMood === 'finale') && frameData.beatChanged && Math.random() > 0.7) {
                 dragon.breathActive = true;
                 dragon.breathTimer = 0;
             }
@@ -1526,12 +1523,12 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Through the Fire and Flames',
+        BaseRenderer('ttfaf-video', 'Through the Fire and Flames', {
+            beatDecay: 10,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

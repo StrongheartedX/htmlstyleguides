@@ -48,9 +48,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Cyber-Cathedral Requiem Video Renderer ────────────────────────
-    window.Renderers['cyber-cathedral-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -65,7 +66,6 @@
         var NEON_GLOW = [CYAN, MAGENTA, '#8800ff', ELECTRIC_BLUE, '#00ff88'];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'intro';
@@ -818,8 +818,6 @@
             initParticles();
             initGlass();
             initDataStreams();
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             sectionMood = 'intro';
@@ -855,6 +853,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -908,17 +907,13 @@
             sceneTransition = lerpExp(sceneTransition, 1, 3, dt);
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 buttressGlow = 1;
 
                 if (sectionMood === 'chorus' && energy > 0.4) {
                     flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.08);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-8 * dt);
             buttressGlow *= Math.exp(-4 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
@@ -986,12 +981,11 @@
             drawShutdown(ctx);
         }
 
-        return {
-            name: 'Cyber-Cathedral Requiem Video',
+        BaseRenderer('cyber-cathedral-video', 'Cyber-Cathedral Requiem Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

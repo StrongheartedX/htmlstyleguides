@@ -40,9 +40,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Recursive Disagreement Video Renderer ─────────────────────────
-    window.Renderers['recursive-disagreement-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -57,7 +58,6 @@
         var WHITE = '#ffffff';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var shakeX = 0, shakeY = 0;
         var lastSeqIndex = -1;
@@ -616,7 +616,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             shakeX = 0; shakeY = 0;
             lastSeqIndex = -1;
@@ -642,6 +641,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG;
@@ -695,8 +695,7 @@
             }
 
             // ── Beat handling ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 spawnBeatText(energy);
 
                 // Screen shake on high-energy beats
@@ -719,10 +718,7 @@
                 }
             }
 
-            lastBeat = beat;
-
             // ── Decay ──
-            beatPulse *= Math.exp(-8 * dt);
             shakeX *= Math.exp(-10 * dt);
             shakeY *= Math.exp(-10 * dt);
             flashAlpha *= Math.exp(-5 * dt);
@@ -912,12 +908,11 @@
             }
         }
 
-        return {
-            name: 'Recursive Disagreement',
+        BaseRenderer('recursive-disagreement-video', 'Recursive Disagreement', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

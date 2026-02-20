@@ -35,9 +35,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Save Corrupted Video Renderer ─────────────────────────────────
-    window.Renderers['save-corrupted-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -54,7 +55,6 @@
         var sceneBuilt = false;
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var recoveryPercent = 0;
         var recoveryTarget = 0;
@@ -687,7 +687,6 @@
             analysis = anal;
             PX = Math.max(4, Math.floor(Math.min(W, H) / 80));
             initGrids();
-            lastBeat = -1;
             beatPulse = 0;
             recoveryPercent = 0;
             recoveryTarget = 0;
@@ -717,6 +716,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = '#0a0a12';
@@ -775,8 +775,7 @@
             glitchIntensity += (glitchTarget - glitchIntensity) * (1 - Math.exp(-2 * dt));
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Randomize garbled text
                 for (var gi = 0; gi < garbledChars.length; gi++) {
@@ -827,12 +826,9 @@
                 if (energy > 0.6 && glitchIntensity > 0.5) {
                     flashAlpha = Math.max(flashAlpha, 0.1 * glitchIntensity);
                 }
-
-                lastBeat = beat;
             }
 
             // Decay
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // Decay row displacements
@@ -901,12 +897,11 @@
             drawBlackout(ctx);
         }
 
-        return {
-            name: 'Save Corrupted (Recovering...)',
+        BaseRenderer('save-corrupted-video', 'Save Corrupted (Recovering...)', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

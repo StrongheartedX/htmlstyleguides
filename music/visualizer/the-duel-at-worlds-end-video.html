@@ -40,9 +40,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── The Duel at World's End — Video Renderer ──────────────────────
-    window.Renderers['duel-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -58,7 +59,6 @@
         var COLOR_STAR = '#ffffff';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var globalTime = 0;
@@ -680,7 +680,6 @@
             cliffGap = 0;
             cliffLeftWidth = 0.35;
             cliffRightWidth = 0.35;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             globalTime = 0;
@@ -732,6 +731,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -771,8 +771,7 @@
             }
 
             // ── Beat detection ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // ── Bolt spawning ──
                 if (sectionMood === 'exchange' || sectionMood === 'escalation' || sectionMood === 'virtuosic') {
@@ -840,10 +839,7 @@
                 }
             }
 
-            lastBeat = beat;
-
             // ── Update beat pulse & flash ──
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-6 * dt);
 
             // ── Update bolts ──
@@ -984,7 +980,7 @@
                 cliffY = lerpExp(cliffY, -H, 0.3, dt);
 
                 // Purple bolts between them while falling
-                if (beat !== lastBeat || Math.random() > 0.9) {
+                if (frameData.beatChanged || Math.random() > 0.9) {
                     if (Math.random() > 0.5) {
                         addBolt(
                             figA.x, figA.y + figA.fallY - H * 0.03,
@@ -1086,12 +1082,11 @@
             }
         }
 
-        return {
-            name: 'The Duel at World\'s End',
+        BaseRenderer('duel-video', "The Duel at World's End", {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

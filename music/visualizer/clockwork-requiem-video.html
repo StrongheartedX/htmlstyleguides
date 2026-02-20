@@ -34,9 +34,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Clockwork Requiem Video Renderer ──────────────────────────────
-    window.Renderers['clockwork-requiem-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -53,7 +54,6 @@
         var PATINA = '#5a8a6a';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var globalTime = 0;
         var lastSeqIndex = -1;
@@ -650,7 +650,6 @@
             sparks = [];
             oilDrops = [];
             dustMotes = [];
-            lastBeat = -1;
             beatPulse = 0;
             globalTime = 0;
             lastSeqIndex = -1;
@@ -682,6 +681,7 @@
             var ctx = frameData.ctx;
             var dt = Math.min(frameData.dt || 1/60, 0.1);
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -719,8 +719,7 @@
             degradation = lerpSmooth(degradation, degradationTarget, 0.5, dt);
 
             // ── Beat detection ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Emit sparks at gear mesh points on beats
                 if (sectionMood !== 'silence' && sectionMood !== 'finalTick') {
@@ -743,11 +742,7 @@
                 if (energy < 0.4 || degradation > 0.3) {
                     emitDust(Math.random() * W, Math.random() * H);
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
 
             // ── Title visibility ──
             // Show title during intro, bridge, and final sections
@@ -900,12 +895,11 @@
             }
         }
 
-        return {
-            name: 'Clockwork Requiem',
+        BaseRenderer('clockwork-requiem-video', 'Clockwork Requiem', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

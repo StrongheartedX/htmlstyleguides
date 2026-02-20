@@ -36,9 +36,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── The Lighthouse Keeper Video Renderer ──────────────────────────
-    window.Renderers['lighthouse-keeper-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -60,7 +61,6 @@
         var LIGHTNING_WHITE = [255, 255, 255];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var beamAngle = 0;
@@ -156,8 +156,6 @@
                     twinkleSpeed: 1 + Math.random() * 3
                 });
             }
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             beamAngle = 0;
@@ -755,6 +753,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // ── Idle state ──
             if (!cursor) {
@@ -913,8 +912,7 @@
             introFade = Math.min(1, introFade + dt * 0.5);
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Lightning during storm sections on high-energy beats
                 if ((sectionMood === 'storm' || sectionMood === 'stormReturn') && energy > 0.5) {
@@ -928,9 +926,6 @@
                     flashAlpha = Math.max(flashAlpha, 0.08);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-6 * dt);
             flashAlpha *= Math.exp(-8 * dt);
 
             // ── Beam rotation ──
@@ -981,12 +976,12 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'The Lighthouse Keeper',
+        BaseRenderer('lighthouse-keeper-video', 'The Lighthouse Keeper', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -41,9 +41,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Cathedral of Collapse Video Renderer --
-    window.Renderers['cathedral-collapse-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -63,7 +64,6 @@
         var GOLD = '#c8a050';
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var lastSeqIndex = -1;
@@ -983,7 +983,6 @@
             W = width; H = height;
             analysis = anal;
             initArchitecture();
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             lastSeqIndex = -1;
@@ -1008,6 +1007,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             drawSky(ctx);
@@ -1155,8 +1155,7 @@
             dustIntensity = lerpSmooth(dustIntensity, dustTarget, 3, dt);
 
             // -- Beat sync --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Spawn effects on beats
                 if (cp > 0.1 && energy > 0.3) {
@@ -1194,11 +1193,7 @@
                     shakeX = (Math.random() - 0.5) * energy * cp * 12;
                     shakeY = (Math.random() - 0.5) * energy * cp * 8;
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             shakeX *= Math.exp(-10 * dt);
             shakeY *= Math.exp(-10 * dt);
@@ -1294,12 +1289,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Cathedral of Collapse Video',
+        BaseRenderer('cathedral-collapse-video', 'Cathedral of Collapse Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

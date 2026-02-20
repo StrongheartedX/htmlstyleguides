@@ -39,9 +39,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Last Transmission from Voyager Video Renderer ──────────────
-    window.Renderers['last-transmission-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -58,7 +59,6 @@
         var VOID_PURPLE = '#1a1030';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var totalTime = 0;
         var lastSeqIndex = -1;
@@ -668,7 +668,6 @@
 
             initStars();
             signalWaves = [];
-            lastBeat = -1;
             beatPulse = 0;
             totalTime = 0;
             lastSeqIndex = -1;
@@ -702,6 +701,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             totalTime += dt;
 
@@ -737,8 +737,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 antennaPulse = 1;
 
                 // Emit signal wave from antenna on beat
@@ -746,11 +745,7 @@
                     var antY = voyagerY - Math.min(W, H) * 0.0015 * 40;
                     emitSignal(voyagerX, antY, signalStrength);
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-6 * dt);
             antennaPulse *= Math.exp(-8 * dt);
 
             // ── Section-driven state updates ──
@@ -832,12 +827,12 @@
             }
         }
 
-        return {
-            name: 'Last Transmission from Voyager',
+        BaseRenderer('last-transmission-video', 'Last Transmission from Voyager', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

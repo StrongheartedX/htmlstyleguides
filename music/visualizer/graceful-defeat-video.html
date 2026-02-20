@@ -36,9 +36,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Graceful Defeat Video Renderer ─────────────────────────────────
-    window.Renderers['graceful-defeat-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -56,7 +57,6 @@
         var BOARD_DARK = '#4a4352';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var titleAlpha = 0;
@@ -700,7 +700,6 @@
             petals = [];
             captureFlashes = [];
             clockTicks = [];
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             titleAlpha = 0;
@@ -731,6 +730,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG;
@@ -790,8 +790,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Clock tick on every beat
                 var clockX = boardX + boardSize + sqSize * 0.8;
@@ -807,9 +806,6 @@
                     spawnParticles(px, py, Math.floor(energy * 8), GOLD, 15, 40 + energy * 40);
                 }
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Title logic ──
@@ -1058,12 +1054,11 @@
             }
         }
 
-        return {
-            name: 'Graceful Defeat Chess Video',
+        BaseRenderer('graceful-defeat-video', 'Graceful Defeat Chess Video', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

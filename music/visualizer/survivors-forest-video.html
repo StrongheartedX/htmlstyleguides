@@ -39,9 +39,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Survivors: Enchanted Forest Video Renderer ────────────────────
-    window.Renderers['survivors-forest-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -77,7 +78,6 @@
 
         // ── State ──
         var groundY = 0;
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var totalTime = 0;
@@ -849,7 +849,7 @@
 
         function updateCombat(dt, beat, energy) {
             // Attack on beat
-            if (beat !== lastBeat && enemies.length > 0) {
+            if (frameData.beatChanged && enemies.length > 0) {
                 survivorAttacking = true;
                 survivorAttackTimer = 0.15;
 
@@ -978,8 +978,6 @@
             survivorAttackTimer = 0;
             survivorBobPhase = 0;
             survivorWalkPhase = 0;
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             totalTime = 0;
@@ -1021,6 +1019,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             totalTime += dt;
 
@@ -1059,8 +1058,7 @@
             }
 
             // ── Beat events ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Spawn leaves occasionally
                 if (Math.random() > 0.6) spawnLeaf();
@@ -1070,8 +1068,6 @@
                     flashAlpha = Math.max(flashAlpha, 0.08 + energy * 0.06);
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Title ──
@@ -1084,8 +1080,6 @@
             updateCombat(dt, beat, energy);
             updateEffects(dt);
             updateLeaves(dt);
-
-            lastBeat = beat;
 
             // ── Draw scene (back to front) ──
 
@@ -1134,12 +1128,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Survivors: Enchanted Forest',
+        BaseRenderer('survivors-forest-video', 'Survivors: Enchanted Forest', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

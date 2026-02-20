@@ -32,9 +32,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Bioluminescent Video Renderer --
-    window.Renderers['bioluminescent-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -50,7 +51,6 @@
         var BIOME_NAMES = ['coral','open','trench','vents'];
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var sectionMood = 'darkness';
         var currentBiome = 'coral';
@@ -472,7 +472,6 @@
             W = width; H = height;
             analysis = anal;
             globalTime = 0;
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'darkness';
@@ -511,6 +510,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             globalTime += dt;
 
@@ -553,8 +553,7 @@
             }
 
             // -- Beat pulse --
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Bloom on strong beats
                 if (energy > 0.4) {
@@ -589,11 +588,7 @@
                     myceliumGrowTimer++;
                     if (myceliumGrowTimer % 2 === 0) growMycelium();
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-6 * dt);
             bloomAlpha *= Math.exp(-4 * dt);
 
             // -- Title --
@@ -757,12 +752,12 @@
             }
         }
 
-        return {
-            name: 'Bioluminescent Deep Ocean',
+        BaseRenderer('bioluminescent-video', 'Bioluminescent Deep Ocean', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap --

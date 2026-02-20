@@ -36,9 +36,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Photosynthesis Video Renderer ──────────────────────────────────
-    window.Renderers['photosynthesis-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -66,7 +67,6 @@
         var soilY = 0;
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var lastSeqIndex = -1;
         var sectionMood = 'underground';
@@ -914,8 +914,6 @@
             leafGrowth = 0; sunIntensity = 0; flowerBloom = 0; fadeOut = 0;
             seedTarget = 0; rootTarget = 0; stemTarget = 0;
             leafTarget = 0; sunTarget = 0; flowerTarget = 0; fadeTarget = 0;
-
-            lastBeat = -1;
             beatPulse = 0;
             lastSeqIndex = -1;
             sectionMood = 'underground';
@@ -946,6 +944,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             time += dt;
 
@@ -973,11 +972,8 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
-                lastBeat = beat;
+            if (frameData.beatChanged) {
             }
-            beatPulse *= Math.exp(-6 * dt);
 
             // ── Smooth growth ──
             var growSpeed = 2.5;
@@ -1041,12 +1037,12 @@
             drawFade(ctx);
         }
 
-        return {
-            name: 'Photosynthesis',
+        BaseRenderer('photosynthesis-video', 'Photosynthesis', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

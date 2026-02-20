@@ -42,9 +42,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Survivors: Cosmic Void Video Renderer ─────────────────────────
-    window.Renderers['survivors-cosmic-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -62,7 +63,6 @@
         var DEEP_BLACK = '#08041a';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var sectionMood = 'intro';
@@ -796,8 +796,6 @@
             constellationLines = [];
             particles = [];
             bursts = [];
-
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             introFadeIn = 0;
@@ -823,6 +821,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             time += dt;
 
@@ -871,8 +870,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Survivor attacks on beats during chorus/build
                 if (sectionMood === 'chorus' || sectionMood === 'build') {
@@ -909,12 +907,9 @@
                     enemySpawnTimer = 0;
                 }
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             survivorAttackTimer *= Math.exp(-6 * dt);
             survivorShieldPulse *= Math.exp(-4 * dt);
-            lastBeat = beat;
 
             // Return to idle when attack fades
             if (survivorAttackTimer < 0.15) {
@@ -1004,12 +999,11 @@
             drawFlash(ctx);
         }
 
-        return {
-            name: 'Survivors: Cosmic Void',
+        BaseRenderer('survivors-cosmic-video', 'Survivors: Cosmic Void', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

@@ -40,9 +40,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Neon Velocity Video Renderer ──────────────────────────────────
-    window.Renderers['neon-velocity-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -57,7 +58,6 @@
         var YELLOW = '#ffea00';
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var elapsed = 0;
@@ -211,7 +211,6 @@
         function init(ctx, width, height, anal) {
             W = width; H = height;
             analysis = anal;
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             elapsed = 0;
@@ -691,6 +690,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Background
             ctx.fillStyle = BG;
@@ -761,8 +761,7 @@
             speedMultiplier = lerpExp(speedMultiplier, targetSpeed, 4, dt);
 
             // ── Beat sync ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
                 signFlash = 1;
 
                 // Bike weaving on beats
@@ -784,11 +783,7 @@
                 if (sectionMood === 'chorus' && energy > 0.4) {
                     flashAlpha = Math.max(flashAlpha, 0.06 + energy * 0.06);
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
             signFlash *= Math.exp(-6 * dt);
             bikeBoost *= Math.exp(-3 * dt);
@@ -935,12 +930,11 @@
             }
         }
 
-        return {
-            name: 'Neon Velocity Chase',
+        BaseRenderer('neon-velocity-video', 'Neon Velocity Chase', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

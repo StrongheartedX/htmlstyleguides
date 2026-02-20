@@ -37,9 +37,10 @@
     <script src="engine.js"></script>
     <script src="stick-fight-engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // ── Tavern Brawl Crescendo Video Renderer ──────────────────────────
-    window.Renderers['tavern-brawl-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -72,7 +73,6 @@
         var PATRON_COLORS = ['#cc4444', '#4488cc', '#44aa44', '#aa44aa', '#cc8844', '#44aaaa', '#aa8844', '#8844aa'];
 
         // ── State ──
-        var lastBeat = -1;
         var beatPulse = 0;
         var flashAlpha = 0;
         var shakeX = 0, shakeY = 0;
@@ -609,7 +609,6 @@
             flyingObjects = [];
             dustClouds = [];
             impactStars = [];
-            lastBeat = -1;
             beatPulse = 0;
             flashAlpha = 0;
             shakeIntensity = 0;
@@ -638,6 +637,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1/60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
 
             // Update candle flicker
             for (var cf = 0; cf < candleFlicker.length; cf++) {
@@ -676,8 +676,7 @@
             }
 
             // ── Beat pulse ──
-            if (beat !== lastBeat) {
-                beatPulse = 1;
+            if (frameData.beatChanged) {
 
                 // Spawn objects based on section
                 if (sectionMood === 'disturbance' && Math.random() > 0.7) {
@@ -748,11 +747,7 @@
                         }
                     }
                 }
-
-                lastBeat = beat;
             }
-
-            beatPulse *= Math.exp(-8 * dt);
             flashAlpha *= Math.exp(-5 * dt);
 
             // ── Screen shake ──
@@ -967,12 +962,11 @@
             ctx.fillRect(0, 0, W, H);
         }
 
-        return {
-            name: 'Tavern Brawl Crescendo',
+        BaseRenderer('tavern-brawl-video', 'Tavern Brawl Crescendo', {
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // ── Page bootstrap ──

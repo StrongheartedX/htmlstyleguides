@@ -42,9 +42,10 @@
     <script src="../audio-tracker/playback-engine.js"></script>
     <script src="engine.js"></script>
     <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
     <script>
     // -- Ocarina Echoes Video Renderer ----------------------------------------
-    window.Renderers['ocarina-echoes-video'] = (function() {
+    (function() {
         "use strict";
 
         var W = 0, H = 0;
@@ -66,7 +67,6 @@
         var FIREFLY_COL = '#ffe066';
 
         // -- State --
-        var lastBeat = -1;
         var beatPulse = 0;
         var elapsed = 0;
         var sectionMood = 'intro'; // intro, forest, rain, bell, outro
@@ -693,8 +693,6 @@
             initCreatures();
             initRain();
             initGoldenRays();
-
-            lastBeat = -1;
             beatPulse = 0;
             elapsed = 0;
             introFadeIn = 0;
@@ -720,6 +718,7 @@
             var ctx = frameData.ctx;
             var dt = frameData.dt || 1 / 60;
             var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
             var groundY = H * 0.78;
 
             elapsed += dt;
@@ -756,13 +755,9 @@
             introFadeIn = Math.min(1, introFadeIn + dt * 0.5);
 
             // -- Beat detection --
-            if (beat !== lastBeat) {
+            if (frameData.beatChanged) {
                 onBeat(beat, energy);
-                beatPulse = 1;
             }
-            lastBeat = beat;
-
-            beatPulse *= Math.exp(-6 * dt);
             ocarinaPulse *= Math.exp(-4 * dt);
 
             // Character bob
@@ -846,12 +841,12 @@
             ctx.restore();
         }
 
-        return {
-            name: 'Ocarina Echoes Pixel Forest',
+        BaseRenderer('ocarina-echoes-video', 'Ocarina Echoes Pixel Forest', {
+            beatDecay: 6,
             init: init,
             render: render,
             resize: resize
-        };
+        });
     })();
 
     // -- Page bootstrap -------------------------------------------------------
