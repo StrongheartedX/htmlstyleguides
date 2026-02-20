@@ -2214,6 +2214,31 @@
                     secondsPerRow = fd.analysis.secondsPerRow;
                 }
 
+                // ---- Countdown phase (before background/video to avoid spaz) ----
+                if (gameState === 'countdown') {
+                    countdownTime -= fd.dt;
+                    if (countdownTime <= 0) {
+                        gameState = 'playing';
+                        gameStartElapsed = 0;
+                        Visualizer.play();
+                    }
+                    // Draw static background during countdown (no video — cursor
+                    // is null so video renderers freak out)
+                    drawBackground(ctx, null);
+                    drawStaves(ctx, null);
+                    drawClefs(ctx);
+                    // Scroll notes in at the song's actual speed so there's no
+                    // jarring speed change when play starts.
+                    var spr = secondsPerRow || 0.125;
+                    var countdownElapsed = 3.5 - Math.max(0, countdownTime);
+                    var countdownRowFrac = -(3.5 / spr) + (countdownElapsed / spr);
+                    drawNotes(ctx, countdownRowFrac);
+                    drawPlayhead(ctx);
+                    drawKeyLanes(ctx);
+                    drawCountdown(ctx);
+                    return;
+                }
+
                 // ---- Background layer ----
                 if (activeVideoRenderer) {
                     // Init video renderer once
@@ -2243,27 +2268,6 @@
 
                 if (!activeVideoRenderer) {
                     drawBarLines(ctx, currentRowFrac);
-                }
-
-                // ---- Countdown phase ----
-                if (gameState === 'countdown') {
-                    countdownTime -= fd.dt;
-                    if (countdownTime <= 0) {
-                        gameState = 'playing';
-                        gameStartElapsed = 0;
-                        Visualizer.play();
-                    }
-                    // Show notes scrolling in during countdown so the player
-                    // can see what's coming. Compute a negative row position
-                    // that reaches 0 right when play starts.
-                    var spr = secondsPerRow || 0.125;
-                    var leadInRows = (W - cursorX) / PIXELS_PER_ROW;
-                    var countdownRowFrac = -leadInRows * Math.max(0, countdownTime / 3.5);
-                    drawNotes(ctx, countdownRowFrac);
-                    drawPlayhead(ctx);
-                    drawKeyLanes(ctx);
-                    drawCountdown(ctx);
-                    return;
                 }
 
                 // Track time since gameplay started (for key guide fade)
