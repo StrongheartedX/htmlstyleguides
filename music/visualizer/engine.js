@@ -29,6 +29,7 @@ window.Visualizer = (function () {
   var startTime = 0;       // AudioContext time when play() was called
   var rafID = null;
   var lastFrameTime = 0;
+  var frameCallbacks = [];  // secondary renderers subscribing to frame data
 
   // ---- Helpers ----
 
@@ -484,17 +485,24 @@ window.Visualizer = (function () {
 
     canvasCtx.clearRect(0, 0, cssW, cssH);
 
+    var frameData = {
+      ctx: canvasCtx,
+      width: cssW,
+      height: cssH,
+      dt: dt,
+      cursor: cursor,
+      currentNotes: currentNotes,
+      analysis: analysis,
+      song: song
+    };
+
     if (activeRenderer && activeRenderer.render) {
-      activeRenderer.render({
-        ctx: canvasCtx,
-        width: cssW,
-        height: cssH,
-        dt: dt,
-        cursor: cursor,
-        currentNotes: currentNotes,
-        analysis: analysis,
-        song: song
-      });
+      activeRenderer.render(frameData);
+    }
+
+    // Broadcast to secondary frame listeners (e.g. background starfield)
+    for (var fi = 0; fi < frameCallbacks.length; fi++) {
+      frameCallbacks[fi](frameData);
     }
   }
 
@@ -619,6 +627,15 @@ window.Visualizer = (function () {
 
     getSong: function () {
       return song;
+    },
+
+    addFrameCallback: function (fn) {
+      if (frameCallbacks.indexOf(fn) === -1) frameCallbacks.push(fn);
+    },
+
+    removeFrameCallback: function (fn) {
+      var idx = frameCallbacks.indexOf(fn);
+      if (idx !== -1) frameCallbacks.splice(idx, 1);
     }
   };
 

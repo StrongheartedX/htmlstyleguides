@@ -12,6 +12,7 @@ music/visualizer/
     particle-field.js     # Particle bursts from channel quadrants
     waveform-grid.js      # Scrolling note blocks in horizontal lanes
     spectrum-rings.js     # Concentric rotating rings per channel
+    starfield.js          # Music-reactive starfield (also used as landing page bg)
 ```
 
 ### Engine (`engine.js`) — `window.Visualizer`
@@ -28,7 +29,7 @@ Creates an `AudioContext` shared with `ChipPlayer` via `initExternal()`. On song
 
 **Song cursor** mirrors ChipPlayer's deterministic timing (`60 / (bpm * rpb)`) from `AudioContext.currentTime`. Computed every frame with fractional interpolation.
 
-**Public API**: `init(canvas)`, `loadSong(json)`, `setRenderer(name)`, `play()`, `stop()`, `setVolume(v)`, `getRendererList()`, `getAnalysis()`, `getSong()`
+**Public API**: `init(canvas)`, `loadSong(json)`, `setRenderer(name)`, `play()`, `stop()`, `setVolume(v)`, `getRendererList()`, `getAnalysis()`, `getSong()`, `addFrameCallback(fn)`, `removeFrameCallback(fn)`
 
 ### Dependencies (not modified)
 
@@ -311,3 +312,16 @@ Other pages can embed a visualizer background:
     });
 </script>
 ```
+
+### Frame callbacks for secondary canvases
+
+When the Visualizer is bound to one canvas (e.g. a jukebox) but you want a second canvas to also react to the music, use frame callbacks:
+
+```js
+Visualizer.addFrameCallback(function(frameData) {
+  // frameData has same fields as render(): ctx, width, height, dt, cursor, currentNotes, analysis, song
+  // Draw to your own canvas using the music data (ignore frameData.ctx — that's the primary canvas)
+});
+```
+
+The starfield renderer uses this pattern: `initStandalone(canvas)` starts its own animation loop, and `onFrame(frameData)` feeds it music data from the Visualizer's frame callback. See `landing.html` for the integration.

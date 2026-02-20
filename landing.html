@@ -2109,63 +2109,6 @@
        JAVASCRIPT
        ═══════════════════════════════════════════════════ -->
   <script>
-    // ─── STARFIELD ───
-    (function() {
-      const canvas = document.getElementById('starfield');
-      const ctx = canvas.getContext('2d');
-      let stars = [];
-      const STAR_COUNT = 200;
-
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-
-      function createStars() {
-        stars = [];
-        for (let i = 0; i < STAR_COUNT; i++) {
-          stars.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: 0.5 + Math.random() * 1.5,
-            baseBrightness: 0.3 + Math.random() * 0.7,
-            brightness: 0.3 + Math.random() * 0.7,
-            twinkleSpeed: 0.005 + Math.random() * 0.02,
-            twinkleOffset: Math.random() * Math.PI * 2,
-            speed: 0.02 + Math.random() * 0.08
-          });
-        }
-      }
-
-      function draw(time) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const star of stars) {
-          // Drift
-          star.x += star.speed;
-          if (star.x > canvas.width) star.x = 0;
-
-          // Twinkle
-          star.brightness = star.baseBrightness +
-            Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.2;
-          star.brightness = Math.max(0.1, Math.min(1, star.brightness));
-
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(232, 224, 208, ${star.brightness})`;
-          ctx.fill();
-        }
-        requestAnimationFrame(draw);
-      }
-
-      window.addEventListener('resize', () => {
-        resize();
-      });
-
-      resize();
-      createStars();
-      requestAnimationFrame(draw);
-    })();
-
     // ─── MOUSE SPARKLE TRAIL ───
     (function() {
       let lastSparkle = 0;
@@ -2199,6 +2142,16 @@
   <script src="music/audio-tracker/playback-engine.js"></script>
   <script src="music/visualizer/engine.js"></script>
   <script src="music/visualizer/renderers/spectrum-rings.js"></script>
+  <script src="music/visualizer/renderers/starfield.js"></script>
+  <script>
+  // ─── STARFIELD (visualizer-driven) ───
+  (function() {
+    var sfRenderer = window.Renderers['starfield'];
+    var sfCanvas = document.getElementById('starfield');
+    sfRenderer.initStandalone(sfCanvas);
+    // Frame data fed from Visualizer once initialized (see initAudio below)
+  })();
+  </script>
   <script>
 (function () {
   "use strict";
@@ -2381,6 +2334,9 @@
         Visualizer.init(elCanvas);
         Visualizer.setRenderer("spectrum-rings");
         Visualizer.setVolume(parseInt(elVolume.value, 10) / 100);
+        // Feed frame data to background starfield
+        var sfr = window.Renderers['starfield'];
+        if (sfr && sfr.onFrame) Visualizer.addFrameCallback(sfr.onFrame);
         initialized = true;
         resolve();
       } catch (e) {
