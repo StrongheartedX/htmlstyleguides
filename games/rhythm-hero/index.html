@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Hero</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #110e18;
+            --surface: rgba(255,255,255,0.06);
+            --surface-hover: rgba(255,255,255,0.12);
+            --border: rgba(255,255,255,0.1);
+            --text: rgba(255,255,255,0.9);
+            --text-dim: rgba(255,255,255,0.5);
+            --gold: #b8954a;
+            --rose: #c06080;
+            --purple: #9b7ab8;
+            --silver: #cccccc;
+            --font-heading: 'Cinzel', serif;
+            --font-body: 'Crimson Pro', serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+        }
+
+        #game-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+        }
+
+        /* ---- Song Select Screen ---- */
+        #song-select {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow-y: auto;
+            background: var(--bg);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 60px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-family: var(--font-heading);
+            font-size: 42px;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 30px rgba(184,149,74,0.3);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-family: var(--font-body);
+            font-size: 18px;
+            font-weight: 300;
+            color: var(--text-dim);
+            letter-spacing: 0.02em;
+        }
+
+        .key-legend {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .key-legend .key {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        .key-legend .key span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px; height: 28px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .song-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 960px;
+        }
+
+        .category-label {
+            grid-column: 1 / -1;
+            font-family: var(--font-heading);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 16px 0 4px;
+            border-bottom: 1px solid rgba(184,149,74,0.15);
+            margin-bottom: 4px;
+        }
+
+        .song-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .song-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--gold);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(184,149,74,0.1);
+        }
+
+        .song-card .title {
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .song-card .meta {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .song-card .desc {
+            font-size: 13px;
+            color: var(--text-dim);
+            opacity: 0.7;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .song-card .difficulty {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .song-card .difficulty .diff-label {
+            font-family: var(--font-heading);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .song-card .difficulty .star {
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .song-card .difficulty .star.filled {
+            color: var(--gold);
+            text-shadow: 0 0 4px rgba(184,149,74,0.4);
+        }
+
+        .song-card .difficulty .star.empty {
+            color: rgba(255,255,255,0.15);
+        }
+
+        .back-link {
+            position: fixed;
+            top: 16px; left: 16px;
+            z-index: 25;
+            font-family: var(--font-heading);
+            font-size: 12px;
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(17,14,24,0.85);
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+        }
+        .back-link:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+        }
+
+        /* ---- Results Screen ---- */
+        #results-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(17,14,24,0.92);
+            backdrop-filter: blur(12px);
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        #results-screen .grade {
+            font-family: var(--font-heading);
+            font-size: 96px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        #results-screen .final-score {
+            font-family: var(--font-heading);
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        #results-screen .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 32px;
+            font-size: 18px;
+        }
+
+        #results-screen .stats .label {
+            color: var(--text-dim);
+            text-align: right;
+        }
+
+        #results-screen .stats .value {
+            font-weight: 600;
+        }
+
+        #results-screen .accuracy-arc-wrap {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        #results-screen .accuracy-arc-wrap canvas {
+            width: 100px;
+            height: 100px;
+        }
+
+        #results-screen .accuracy-arc-wrap .accuracy-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        #results-screen .grade {
+            transition: none;
+        }
+
+        @keyframes gradeReveal {
+            0% { transform: scale(0.3); opacity: 0; filter: blur(8px); }
+            50% { transform: scale(1.15); opacity: 1; filter: blur(0px); }
+            100% { transform: scale(1); opacity: 1; filter: blur(0px); }
+        }
+
+        @keyframes gradeGlow {
+            0% { text-shadow: none; }
+            50% { text-shadow: 0 0 40px currentColor, 0 0 80px currentColor; }
+            100% { text-shadow: 0 0 20px currentColor; }
+        }
+
+        #results-screen .grade.animate {
+            animation: gradeReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                       gradeGlow 0.8s ease-out 0.3s forwards;
+        }
+
+        #results-screen .buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            font-family: var(--font-heading);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 28px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.04em;
+        }
+        .btn:hover {
+            background: var(--surface-hover);
+            border-color: var(--gold);
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #110e18;
+        }
+        .btn-primary:hover {
+            background: #d4ab5a;
+            box-shadow: 0 0 20px rgba(184,149,74,0.3);
+        }
+
+        /* ---- Loading ---- */
+        #loading-msg {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-heading);
+            font-size: 16px;
+            color: var(--text-dim);
+            z-index: 35;
+            display: none;
+        }
+
+        /* ---- Pause Overlay ---- */
+        #pause-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(17,14,24,0.7);
+            z-index: 28;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        #pause-overlay h2 {
+            font-family: var(--font-heading);
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--gold);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 28px; }
+            .song-grid { grid-template-columns: 1fr; }
+            #results-screen .grade { font-size: 64px; }
+            #results-screen .final-score { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="game-canvas"></canvas>
+
+    <a href="../index.html" class="back-link" id="back-link">&larr; Games</a>
+
+    <div id="song-select">
+        <div class="header">
+            <h1>Rhythm Hero</h1>
+            <p>Hit the keys as notes cross the playhead. Choose a song to begin.</p>
+        </div>
+        <div class="key-legend">
+            <div class="key"><span style="color:var(--gold)">D</span> Gold</div>
+            <div class="key"><span style="color:var(--rose)">F</span> Rose</div>
+            <div class="key"><span style="color:var(--purple)">J</span> Purple</div>
+            <div class="key"><span style="color:var(--silver)">K</span> Silver</div>
+        </div>
+        <div class="song-grid" id="song-grid"></div>
+    </div>
+
+    <div id="results-screen">
+        <div class="grade" id="result-grade">S</div>
+        <div class="final-score" id="result-score">0</div>
+        <div class="accuracy-arc-wrap">
+            <canvas id="accuracy-arc" width="200" height="200"></canvas>
+            <span class="accuracy-label" id="result-accuracy">0%</span>
+        </div>
+        <div class="stats">
+            <span class="label">Max Combo</span><span class="value" id="result-combo">0</span>
+            <span class="label">Perfect</span><span class="value" id="result-perfect" style="color:#ffe066">0</span>
+            <span class="label">Great</span><span class="value" id="result-great" style="color:#66ff88">0</span>
+            <span class="label">Good</span><span class="value" id="result-good" style="color:#66bbff">0</span>
+            <span class="label">Miss</span><span class="value" id="result-miss" style="color:#ff6666">0</span>
+        </div>
+        <div class="buttons">
+            <button class="btn-primary btn" id="btn-retry">Play Again</button>
+            <button class="btn" id="btn-back-select">Song Select</button>
+        </div>
+    </div>
+
+    <div id="pause-overlay">
+        <h2>Paused</h2>
+        <button class="btn-primary btn" id="btn-resume">Resume</button>
+        <button class="btn" id="btn-quit">Quit to Song Select</button>
+    </div>
+
+    <div id="loading-msg">Loading...</div>
+
+    <!-- Dependencies -->
+    <script src="../../music/audio-tracker/playback-engine.js"></script>
+    <script src="../../music/visualizer/engine.js"></script>
+
+    <script>
+    (function () {
+        "use strict";
+
+        // ================================================================
+        // CONSTANTS
+        // ================================================================
+
+        var SONGS_BASE = "../../music/audio-tracker/songs/";
+
+        var CHANNEL_COLORS = ['#b8954a', '#c06080', '#9b7ab8', '#cccccc'];
+        var CHANNEL_COLORS_GLOW = [
+            'rgba(184,149,74,0.5)', 'rgba(192,96,128,0.5)',
+            'rgba(155,122,184,0.5)', 'rgba(204,204,204,0.5)'
+        ];
+        var CHANNEL_COLORS_DIM = [
+            'rgba(184,149,74,0.25)', 'rgba(192,96,128,0.25)',
+            'rgba(155,122,184,0.25)', 'rgba(204,204,204,0.25)'
+        ];
+        var CHANNEL_COLORS_MED = [
+            'rgba(184,149,74,0.6)', 'rgba(192,96,128,0.6)',
+            'rgba(155,122,184,0.6)', 'rgba(204,204,204,0.6)'
+        ];
+
+        var KEY_MAP = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+        var KEY_NAMES = ['D', 'F', 'J', 'K'];
+
+        var BG_COLOR = '#110e18';
+        var STAFF_LINE_COLOR = 'rgba(216,207,192,0.25)';
+        var CURSOR_COLOR = 'rgba(184,149,74,0.7)';
+        var LEDGER_COLOR = 'rgba(216,207,192,0.15)';
+
+        var LINE_SPACING = 10;
+        var STAFF_GAP = 60;
+        var NOTE_HEAD_RX = 6;
+        var NOTE_HEAD_RY = 4.5;
+        var CURSOR_X_FRAC = 0.15;
+        var PIXELS_PER_ROW = 40;
+        var SCROLL_MARGIN = 80;
+
+        // Timing windows (seconds)
+        var WINDOW_PERFECT = 0.05;
+        var WINDOW_GREAT = 0.10;
+        var WINDOW_GOOD = 0.15;
+
+        // Score values
+        var SCORE_PERFECT = 300;
+        var SCORE_GREAT = 200;
+        var SCORE_GOOD = 100;
+
+        // Combo multiplier thresholds
+        var COMBO_THRESHOLDS = [
+            { combo: 50, mult: 4 },
+            { combo: 30, mult: 3 },
+            { combo: 10, mult: 2 },
+            { combo: 0, mult: 1 }
+        ];
+
+        // ================================================================
+        // MIDI -> STAFF
+        // ================================================================
+
+        var DIATONIC_MAP = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6];
+        var IS_SHARP = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+
+        function midiToStaffPos(midi) {
+            var octave = Math.floor(midi / 12) - 1;
+            var semitone = midi % 12;
+            return {
+                pos: (octave - 4) * 7 + DIATONIC_MAP[semitone],
+                sharp: IS_SHARP[semitone]
+            };
+        }
+
+        // ================================================================
+        // STATE
+        // ================================================================
+
+        var canvas = document.getElementById('game-canvas');
+        var songSelectEl = document.getElementById('song-select');
+        var resultsEl = document.getElementById('results-screen');
+        var pauseEl = document.getElementById('pause-overlay');
+        var loadingEl = document.getElementById('loading-msg');
+        var backLink = document.getElementById('back-link');
+
+        var songManifest = [];
+        var currentSongFile = null;
+        var currentSongJSON = null;
+        var gameState = 'menu'; // 'menu' | 'playing' | 'paused' | 'results'
+
+        // Layout (recomputed on resize/each frame)
+        var W = 0, H = 0;
+        var staffTop = 0, trebleBottom = 0, bassTop = 0, bassBottom = 0;
+        var cursorX = 0;
+
+        // Game data
+        var noteTimeline = []; // [{row, midi, channel, duration, staffPos, sharp, hit, missed, rating}]
+        var totalRows = 0;
+        var rpb = 4;
+        var secondsPerRow = 0;
+        var maxNoteDurationRows = 1;
+
+        // Scoring
+        var score = 0;
+        var combo = 0;
+        var maxCombo = 0;
+        var counts = { perfect: 0, great: 0, good: 0, miss: 0 };
+        var totalNotes = 0;
+
+        // Input
+        var keysDown = {};  // channel -> boolean
+        var keyJustPressed = {}; // channel -> boolean (cleared each frame)
+
+        // Effects
+        var effects = []; // [{type, channel, x, y, color, rating, t, maxT, ...}]
+
+        // Particle pool (max 100 active)
+        var MAX_PARTICLES = 100;
+        var particles = []; // [{x, y, vx, vy, color, size, life, maxLife, gravity, drag, type}]
+
+        // Screen flash (brief overlay)
+        var screenFlash = { active: false, color: '', alpha: 0, decay: 0 };
+
+        // Red vignette for miss
+        var missVignette = { alpha: 0 };
+
+        // Combo break animation
+        var comboBreak = { active: false, t: 0, maxT: 0.6, prevCombo: 0 };
+
+        // Lane release ripples
+        var laneRipples = []; // [{channel, t, maxT}]
+
+        // Key was down last frame (for detecting release)
+        var prevKeysDown = {};
+
+        // Song complete tracking
+        var songEnded = false;
+        var songEndTimer = 0;
+
+        // ================================================================
+        // SONG SELECT
+        // ================================================================
+
+        function loadManifest() {
+            loadingEl.style.display = 'block';
+            loadingEl.textContent = 'Loading songs...';
+            fetch(SONGS_BASE + "index.json")
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    songManifest = data.songs;
+                    buildSongGrid();
+                    loadingEl.style.display = 'none';
+                })
+                .catch(function () {
+                    loadingEl.textContent = 'Failed to load songs';
+                });
+        }
+
+        function getDifficultyFromBPM(bpm) {
+            if (bpm < 100) return { stars: 1, label: 'Easy', color: '#66ff88' };
+            if (bpm < 130) return { stars: 2, label: 'Medium', color: '#66bbff' };
+            if (bpm < 160) return { stars: 3, label: 'Hard', color: '#ffe066' };
+            if (bpm < 200) return { stars: 4, label: 'Expert', color: '#ffaa44' };
+            return { stars: 5, label: 'Extreme', color: '#ff4444' };
+        }
+
+        function buildDifficultyHTML(bpm) {
+            var diff = getDifficultyFromBPM(bpm);
+            var html = '<div class="difficulty">';
+            html += '<span class="diff-label" style="color:' + diff.color + '">' + diff.label + '</span>';
+            for (var i = 1; i <= 5; i++) {
+                html += '<span class="star ' + (i <= diff.stars ? 'filled' : 'empty') + '">\u2605</span>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function buildSongGrid() {
+            var grid = document.getElementById('song-grid');
+            grid.innerHTML = '';
+            var groups = {};
+            songManifest.forEach(function (s) {
+                var cat = s.category || 'other';
+                if (!groups[cat]) groups[cat] = [];
+                groups[cat].push(s);
+            });
+            var order = ['classic', 'original', 'cover', 'other'];
+            order.forEach(function (cat) {
+                if (!groups[cat]) return;
+                var label = document.createElement('div');
+                label.className = 'category-label';
+                label.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                grid.appendChild(label);
+                groups[cat].forEach(function (s) {
+                    var card = document.createElement('div');
+                    card.className = 'song-card';
+                    card.innerHTML = '<div class="title">' + escHtml(s.title) + '</div>'
+                        + '<div class="meta">' + s.bpm + ' BPM</div>'
+                        + buildDifficultyHTML(s.bpm)
+                        + '<div class="desc">' + escHtml(s.description || '') + '</div>';
+                    card.addEventListener('click', function () {
+                        startGame(s.file);
+                    });
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        function escHtml(str) {
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // ================================================================
+        // GAME INIT
+        // ================================================================
+
+        var vizInitialized = false;
+
+        function startGame(file) {
+            currentSongFile = file;
+            loadingEl.style.display = 'block';
+            loadingEl.textContent = 'Loading song...';
+            songSelectEl.style.display = 'none';
+            resultsEl.style.display = 'none';
+            pauseEl.style.display = 'none';
+
+            fetch(SONGS_BASE + file)
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    currentSongJSON = json;
+                    loadingEl.style.display = 'none';
+                    canvas.style.display = 'block';
+
+                    if (!vizInitialized) {
+                        Visualizer.init(canvas);
+                        vizInitialized = true;
+                    }
+
+                    // Register our renderer
+                    if (!window.Renderers) window.Renderers = {};
+                    window.Renderers['rhythm-hero'] = rhythmHeroRenderer;
+
+                    Visualizer.loadSong(json);
+                    Visualizer.setRenderer('rhythm-hero');
+                    Visualizer.setVolume(0.7);
+
+                    // Build note timeline from analysis
+                    var analysis = Visualizer.getAnalysis();
+                    buildGameTimeline(analysis);
+                    resetScore();
+
+                    songEnded = false;
+                    songEndTimer = 0;
+                    gameState = 'playing';
+
+                    Visualizer.play();
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    loadingEl.textContent = 'Failed to load song';
+                    setTimeout(function () {
+                        loadingEl.style.display = 'none';
+                        showSongSelect();
+                    }, 2000);
+                });
+        }
+
+        function buildGameTimeline(analysis) {
+            noteTimeline = [];
+            maxNoteDurationRows = 1;
+            if (!analysis || !analysis.timeline) return;
+
+            totalRows = analysis.timeline.length;
+            rpb = analysis.rpb || 4;
+            secondsPerRow = analysis.secondsPerRow;
+            var rows = analysis.timeline;
+            var numCh = Math.min(analysis.numChannels, 4);
+
+            for (var ch = 0; ch < numCh; ch++) {
+                var noteStart = -1;
+                var noteMidi = 0;
+
+                for (var r = 0; r < rows.length; r++) {
+                    var cell = rows[r] ? rows[r][ch] : null;
+                    if (cell && cell.midi > 0) {
+                        if (cell.held && noteStart >= 0 && noteMidi === cell.midi) {
+                            continue;
+                        }
+                        if (noteStart >= 0) {
+                            pushGameNote(noteStart, noteMidi, ch, r - noteStart);
+                        }
+                        noteStart = r;
+                        noteMidi = cell.midi;
+                    } else {
+                        if (noteStart >= 0) {
+                            pushGameNote(noteStart, noteMidi, ch, r - noteStart);
+                            noteStart = -1;
+                        }
+                    }
+                }
+                if (noteStart >= 0) {
+                    pushGameNote(noteStart, noteMidi, ch, rows.length - noteStart);
+                }
+            }
+
+            noteTimeline.sort(function (a, b) {
+                return a.row - b.row || a.channel - b.channel;
+            });
+            totalNotes = noteTimeline.length;
+        }
+
+        function pushGameNote(row, midi, channel, duration) {
+            var dur = Math.max(duration, 1);
+            if (dur > maxNoteDurationRows) maxNoteDurationRows = dur;
+            var sp = midiToStaffPos(midi);
+            noteTimeline.push({
+                row: row,
+                midi: midi,
+                channel: channel,
+                duration: dur,
+                staffPos: sp.pos,
+                sharp: sp.sharp,
+                hit: false,
+                missed: false,
+                rating: null
+            });
+        }
+
+        function resetScore() {
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            counts = { perfect: 0, great: 0, good: 0, miss: 0 };
+            effects = [];
+            particles = [];
+            keysDown = {};
+            keyJustPressed = {};
+            prevKeysDown = {};
+            laneRipples = [];
+            screenFlash = { active: false, color: '', alpha: 0, decay: 0 };
+            missVignette = { alpha: 0 };
+            comboBreak = { active: false, t: 0, maxT: 0.6, prevCombo: 0 };
+        }
+
+        // ================================================================
+        // HIT DETECTION
+        // ================================================================
+
+        function getComboMultiplier() {
+            for (var i = 0; i < COMBO_THRESHOLDS.length; i++) {
+                if (combo >= COMBO_THRESHOLDS[i].combo) return COMBO_THRESHOLDS[i].mult;
+            }
+            return 1;
+        }
+
+        function tryHit(channel, currentRowFrac) {
+            if (gameState !== 'playing') return;
+            var hitWindowRows = WINDOW_GOOD / secondsPerRow;
+            var bestIdx = -1;
+            var bestDist = Infinity;
+
+            for (var i = 0; i < noteTimeline.length; i++) {
+                var note = noteTimeline[i];
+                if (note.channel !== channel) continue;
+                if (note.hit || note.missed) continue;
+                var dist = Math.abs(note.row - currentRowFrac);
+                if (dist <= hitWindowRows && dist < bestDist) {
+                    bestDist = dist;
+                    bestIdx = i;
+                }
+            }
+
+            if (bestIdx < 0) return;
+
+            var note = noteTimeline[bestIdx];
+            var timeDist = bestDist * secondsPerRow;
+            var rating, pts;
+
+            if (timeDist <= WINDOW_PERFECT) {
+                rating = 'perfect'; pts = SCORE_PERFECT;
+            } else if (timeDist <= WINDOW_GREAT) {
+                rating = 'great'; pts = SCORE_GREAT;
+            } else {
+                rating = 'good'; pts = SCORE_GOOD;
+            }
+
+            note.hit = true;
+            note.rating = rating;
+            counts[rating]++;
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            score += pts * getComboMultiplier();
+
+            // Calculate visual position for effect
+            var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
+            var y = staffPosToY(note.staffPos);
+            onHit(channel, rating, x, y);
+        }
+
+        function checkAutoMiss(currentRowFrac) {
+            var missThresholdRows = WINDOW_GOOD / secondsPerRow;
+            for (var i = 0; i < noteTimeline.length; i++) {
+                var note = noteTimeline[i];
+                if (note.hit || note.missed) continue;
+                // Note has passed beyond the hit window
+                if (currentRowFrac - note.row > missThresholdRows) {
+                    note.missed = true;
+                    counts.miss++;
+                    var prevCombo = combo;
+                    combo = 0;
+
+                    var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
+                    var y = staffPosToY(note.staffPos);
+                    onMiss(note.channel, x, y, prevCombo);
+                }
+            }
+        }
+
+        // ================================================================
+        // VISUAL EFFECTS (Phase 2 hooks)
+        // ================================================================
+
+        function spawnParticle(x, y, vx, vy, color, size, life, gravity, drag, type) {
+            if (particles.length >= MAX_PARTICLES) {
+                // Replace oldest particle
+                particles.shift();
+            }
+            particles.push({
+                x: x, y: y, vx: vx, vy: vy,
+                color: color, size: size,
+                life: life, maxLife: life,
+                gravity: gravity || 0, drag: drag || 0.98,
+                type: type || 'circle'
+            });
+        }
+
+        function spawnStarburst(cx, cy, color, count, speed, size, life) {
+            for (var i = 0; i < count; i++) {
+                var angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.3;
+                var spd = speed * (0.7 + Math.random() * 0.6);
+                spawnParticle(
+                    cx, cy,
+                    Math.cos(angle) * spd,
+                    Math.sin(angle) * spd,
+                    color, size * (0.6 + Math.random() * 0.8),
+                    life * (0.7 + Math.random() * 0.4),
+                    20, 0.96, 'circle'
+                );
+            }
+        }
+
+        function spawnShatterFragments(cx, cy, count) {
+            for (var i = 0; i < count; i++) {
+                var angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.5;
+                var spd = 40 + Math.random() * 80;
+                spawnParticle(
+                    cx + (Math.random() - 0.5) * 6,
+                    cy + (Math.random() - 0.5) * 6,
+                    Math.cos(angle) * spd,
+                    Math.sin(angle) * spd,
+                    '#ff4444', 2 + Math.random() * 3,
+                    0.4 + Math.random() * 0.3,
+                    120, 0.94, 'shard'
+                );
+            }
+        }
+
+        function onHit(channel, rating, x, y) {
+            var colors = {
+                perfect: '#ffe066',
+                great: '#66ff88',
+                good: '#66bbff'
+            };
+            var color = colors[rating] || CHANNEL_COLORS[channel];
+            var chColor = CHANNEL_COLORS[channel];
+            var pts = rating === 'perfect' ? SCORE_PERFECT : (rating === 'great' ? SCORE_GREAT : SCORE_GOOD);
+            var mult = getComboMultiplier();
+            var totalPts = pts * mult;
+
+            if (rating === 'perfect') {
+                // Starburst explosion
+                spawnStarburst(cursorX, y, color, 12, 120, 3, 0.5);
+                spawnStarburst(cursorX, y, chColor, 6, 80, 2, 0.4);
+
+                // Expanding ring with glow
+                effects.push({
+                    type: 'ring',
+                    x: cursorX, y: y,
+                    color: color, baseColor: chColor,
+                    t: 0, maxT: 0.6,
+                    startRadius: 8, endRadius: 50,
+                    lineWidth: 3
+                });
+
+                // Second ring (delayed feel via smaller start)
+                effects.push({
+                    type: 'ring',
+                    x: cursorX, y: y,
+                    color: chColor, baseColor: chColor,
+                    t: -0.05, maxT: 0.5,
+                    startRadius: 4, endRadius: 35,
+                    lineWidth: 2
+                });
+
+                // Screen-wide subtle flash
+                screenFlash.active = true;
+                screenFlash.color = color;
+                screenFlash.alpha = 0.08;
+                screenFlash.decay = 6;
+
+            } else if (rating === 'great') {
+                // Smaller particle burst
+                spawnStarburst(cursorX, y, color, 8, 80, 2.5, 0.4);
+
+                // Expanding ring
+                effects.push({
+                    type: 'ring',
+                    x: cursorX, y: y,
+                    color: color, baseColor: chColor,
+                    t: 0, maxT: 0.45,
+                    startRadius: 6, endRadius: 30,
+                    lineWidth: 2
+                });
+
+            } else {
+                // Good: quick flash, minimal particles
+                spawnStarburst(cursorX, y, color, 4, 50, 2, 0.3);
+
+                // Quick flash
+                effects.push({
+                    type: 'flash',
+                    x: cursorX, y: y,
+                    color: color,
+                    t: 0, maxT: 0.2,
+                    radius: 15
+                });
+            }
+
+            // Floating score text for all ratings
+            effects.push({
+                type: 'score-text',
+                x: cursorX, y: y,
+                color: color,
+                rating: rating,
+                points: totalPts,
+                t: 0, maxT: 0.8
+            });
+        }
+
+        function onMiss(channel, x, y, prevCombo) {
+            // Shatter fragments
+            spawnShatterFragments(cursorX, y, 8);
+
+            // Red X effect (keep existing)
+            effects.push({
+                type: 'miss',
+                channel: channel,
+                x: cursorX, y: y,
+                color: '#ff4444',
+                rating: 'miss',
+                t: 0,
+                maxT: 0.4
+            });
+
+            // Red vignette flash on screen edges
+            missVignette.alpha = 0.3;
+
+            // Trigger combo break animation if combo was active
+            var lostCombo = prevCombo || 0;
+            if (lostCombo >= 5) {
+                comboBreak.active = true;
+                comboBreak.t = 0;
+                comboBreak.prevCombo = lostCombo;
+            }
+        }
+
+        // ================================================================
+        // LAYOUT
+        // ================================================================
+
+        function computeLayout(width, height) {
+            W = width;
+            H = height;
+            var totalStaffH = LINE_SPACING * 4 * 2 + STAFF_GAP;
+            staffTop = (H - totalStaffH) / 2;
+            trebleBottom = staffTop + LINE_SPACING * 4;
+            bassTop = trebleBottom + STAFF_GAP;
+            bassBottom = bassTop + LINE_SPACING * 4;
+            cursorX = SCROLL_MARGIN + (W - SCROLL_MARGIN * 2) * CURSOR_X_FRAC;
+        }
+
+        function staffPosToY(pos) {
+            if (pos >= 0) {
+                return trebleBottom - (pos - 2) * (LINE_SPACING / 2);
+            }
+            return bassTop - (pos + 2) * (LINE_SPACING / 2);
+        }
+
+        // Binary search for first note with row >= threshold
+        function findFirst(rowThreshold) {
+            var lo = 0, hi = noteTimeline.length;
+            while (lo < hi) {
+                var mid = (lo + hi) >> 1;
+                if (noteTimeline[mid].row < rowThreshold) lo = mid + 1;
+                else hi = mid;
+            }
+            return lo;
+        }
+
+        // ================================================================
+        // DRAWING
+        // ================================================================
+
+        function drawBackground(ctx, cursor) {
+            ctx.fillStyle = BG_COLOR;
+            ctx.fillRect(0, 0, W, H);
+
+            // Beat pulse - subtle brightness flash on each beat
+            if (cursor && gameState === 'playing') {
+                var beatPhase = (cursor.totalFracRow % rpb) / rpb;
+                // Sharp pulse at start of each beat, quick decay
+                var beatPulseAlpha = Math.pow(Math.max(0, 1 - beatPhase * 4), 2) * 0.04;
+                if (beatPulseAlpha > 0.001) {
+                    ctx.fillStyle = 'rgba(184,149,74,' + beatPulseAlpha + ')';
+                    ctx.fillRect(0, 0, W, H);
+                }
+            }
+
+            // Subtle vignette
+            var vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.8);
+            vg.addColorStop(0, 'rgba(0,0,0,0)');
+            vg.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        function drawStaves(ctx, cursor) {
+            // Calculate downbeat pulse intensity
+            var downbeatPulse = 0;
+            if (cursor && gameState === 'playing') {
+                var rowsPerBar = rpb * 4;
+                var barPhase = (cursor.totalFracRow % rowsPerBar) / rowsPerBar;
+                // Pulse on downbeat (start of bar)
+                downbeatPulse = Math.pow(Math.max(0, 1 - barPhase * 8), 2) * 0.2;
+            }
+
+            var baseAlpha = 0.25 + downbeatPulse;
+            ctx.strokeStyle = 'rgba(216,207,192,' + baseAlpha + ')';
+            ctx.lineWidth = 1 + downbeatPulse * 2;
+            for (var i = 0; i < 5; i++) {
+                var y = staffTop + i * LINE_SPACING;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+            }
+            for (var j = 0; j < 5; j++) {
+                var y2 = bassTop + j * LINE_SPACING;
+                ctx.beginPath(); ctx.moveTo(0, y2); ctx.lineTo(W, y2); ctx.stroke();
+            }
+            // Brace
+            ctx.strokeStyle = 'rgba(216,207,192,0.12)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(SCROLL_MARGIN - 20, staffTop);
+            ctx.lineTo(SCROLL_MARGIN - 20, bassBottom);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        function drawClefs(ctx) {
+            ctx.fillStyle = 'rgba(216,207,192,0.4)';
+            // Treble clef
+            drawTrebleClef(ctx, SCROLL_MARGIN - 8, staffTop + LINE_SPACING * 2);
+            // Bass clef
+            drawBassClef(ctx, SCROLL_MARGIN - 8, bassTop + LINE_SPACING);
+        }
+
+        function drawTrebleClef(ctx, cx, cy) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(216,207,192,0.35)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + 2, cy + LINE_SPACING * 2.5);
+            ctx.bezierCurveTo(cx - 8, cy + LINE_SPACING * 1.5, cx - 8, cy - LINE_SPACING, cx + 2, cy - LINE_SPACING * 0.5);
+            ctx.bezierCurveTo(cx + 10, cy, cx + 10, cy + LINE_SPACING * 1.2, cx, cy + LINE_SPACING * 1.5);
+            ctx.bezierCurveTo(cx - 6, cy + LINE_SPACING * 1.8, cx - 4, cy + LINE_SPACING * 2.2, cx + 2, cy + LINE_SPACING * 2.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + 2, cy - LINE_SPACING * 2);
+            ctx.lineTo(cx + 2, cy + LINE_SPACING * 2.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx + 2, cy + LINE_SPACING * 2.8, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawBassClef(ctx, cx, cy) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(216,207,192,0.35)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, LINE_SPACING * 1.2, -Math.PI * 0.8, Math.PI * 0.4);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx + 2, cy - LINE_SPACING * 0.3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + LINE_SPACING * 1.5, cy - LINE_SPACING * 0.5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + LINE_SPACING * 1.5, cy + LINE_SPACING * 0.5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPlayhead(ctx) {
+            // Glow behind
+            var glowW = 40;
+            var grad = ctx.createLinearGradient(cursorX - glowW, 0, cursorX + glowW, 0);
+            grad.addColorStop(0, 'rgba(184,149,74,0)');
+            grad.addColorStop(0.5, 'rgba(184,149,74,0.08)');
+            grad.addColorStop(1, 'rgba(184,149,74,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(cursorX - glowW, staffTop - 20, glowW * 2, bassBottom - staffTop + 40);
+
+            // Main line
+            ctx.strokeStyle = CURSOR_COLOR;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(cursorX, staffTop - 20);
+            ctx.lineTo(cursorX, bassBottom + 20);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
+
+        function drawBarLines(ctx, currentRowFrac) {
+            if (totalRows === 0) return;
+            var rowsPerBar = rpb * 4;
+            ctx.strokeStyle = 'rgba(216,207,192,0.08)';
+            ctx.lineWidth = 1;
+            for (var bar = 0; bar <= Math.ceil(totalRows / rowsPerBar); bar++) {
+                var barRow = bar * rowsPerBar;
+                var x = cursorX + (barRow - currentRowFrac) * PIXELS_PER_ROW;
+                if (x < -10 || x > W + 10) continue;
+                ctx.beginPath(); ctx.moveTo(x, staffTop); ctx.lineTo(x, trebleBottom); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x, bassTop); ctx.lineTo(x, bassBottom); ctx.stroke();
+            }
+        }
+
+        function drawLedgerLine(ctx, x, ly, lw) {
+            ctx.beginPath(); ctx.moveTo(x - lw / 2, ly); ctx.lineTo(x + lw / 2, ly); ctx.stroke();
+        }
+
+        function drawLedgerLines(ctx, x, y, staffPos) {
+            ctx.strokeStyle = LEDGER_COLOR;
+            ctx.lineWidth = 1;
+            var lw = NOTE_HEAD_RX * 2 + 8;
+            if (staffPos >= 0) {
+                // Middle C and below (pos 0 and below for treble)
+                if (staffPos <= 0) {
+                    for (var p = 0; p >= staffPos; p -= 2) drawLedgerLine(ctx, x, staffPosToY(p), lw);
+                }
+                // Above treble staff
+                if (staffPos >= 12) {
+                    for (var p2 = 12; p2 <= staffPos; p2 += 2) drawLedgerLine(ctx, x, staffPosToY(p2), lw);
+                }
+            } else {
+                // Above bass staff meeting middle C
+                if (staffPos >= -2) {
+                    for (var p3 = 0; p3 >= staffPos; p3 -= 2) drawLedgerLine(ctx, x, staffPosToY(p3), lw);
+                }
+                // Below bass staff
+                if (staffPos <= -12) {
+                    for (var p4 = -12; p4 >= staffPos; p4 -= 2) drawLedgerLine(ctx, x, staffPosToY(p4), lw);
+                }
+            }
+        }
+
+        function drawNotes(ctx, currentRowFrac) {
+            if (noteTimeline.length === 0) return;
+
+            var leftRow = currentRowFrac - (cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
+            var rightRow = currentRowFrac + (W - cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
+            var startIdx = findFirst(leftRow - maxNoteDurationRows);
+
+            for (var i = startIdx; i < noteTimeline.length; i++) {
+                var note = noteTimeline[i];
+                var noteEnd = note.row + note.duration;
+                if (noteEnd < leftRow) continue;
+                if (note.row > rightRow) break;
+
+                var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
+                var y = staffPosToY(note.staffPos);
+                var ch = note.channel % 4;
+
+                var noteColor;
+                if (note.hit) {
+                    // Hit notes fade to dim with a brief bright flash handled by effects
+                    noteColor = CHANNEL_COLORS_DIM[ch];
+                } else if (note.missed) {
+                    noteColor = 'rgba(255,68,68,0.3)';
+                } else {
+                    // Upcoming notes: brighter as they approach
+                    var distToPlayhead = note.row - currentRowFrac;
+                    if (distToPlayhead <= 0) {
+                        // Past playhead but not yet auto-missed
+                        noteColor = CHANNEL_COLORS[ch];
+                    } else {
+                        noteColor = CHANNEL_COLORS_MED[ch];
+                    }
+                }
+
+                // Duration beam
+                var noteW = note.duration * PIXELS_PER_ROW;
+                var beamH = 4;
+                var beamW = Math.max(1, noteW - NOTE_HEAD_RX);
+                ctx.fillStyle = noteColor;
+                ctx.fillRect(x + NOTE_HEAD_RX, y - beamH / 2, beamW, beamH);
+
+                // Ledger lines
+                drawLedgerLines(ctx, x, y, note.staffPos);
+
+                // Accidental
+                if (note.sharp) {
+                    ctx.fillStyle = noteColor;
+                    ctx.font = '14px serif';
+                    ctx.fillText('#', x - NOTE_HEAD_RX - 12, y + 5);
+                }
+
+                // Notehead
+                ctx.fillStyle = noteColor;
+                ctx.beginPath();
+                ctx.ellipse(x, y, NOTE_HEAD_RX, NOTE_HEAD_RY, -0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Enhanced approach glow - notes glow brighter within ~5 rows
+                if (!note.hit && !note.missed) {
+                    var rowDist2 = Math.abs(note.row - currentRowFrac);
+                    var approachRows = 5; // glow within 5 rows
+                    if (rowDist2 < approachRows) {
+                        var glowIntensity = 1 - (rowDist2 / approachRows);
+                        glowIntensity = glowIntensity * glowIntensity; // quadratic ease
+                        ctx.save();
+                        ctx.shadowColor = CHANNEL_COLORS[ch];
+                        ctx.shadowBlur = 6 + 18 * glowIntensity;
+                        ctx.fillStyle = CHANNEL_COLORS[ch];
+                        ctx.globalAlpha = glowIntensity * 0.7;
+                        ctx.beginPath();
+                        ctx.ellipse(x, y, NOTE_HEAD_RX + 2 + glowIntensity * 3, NOTE_HEAD_RY + 2 + glowIntensity * 2, -0.2, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Perfect-timing shimmer: pulse when very close
+                        var hitWindowRows = WINDOW_PERFECT / secondsPerRow;
+                        if (rowDist2 < hitWindowRows * 3) {
+                            var shimmer = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(Date.now() * 0.015));
+                            ctx.globalAlpha = shimmer * 0.5;
+                            ctx.shadowBlur = 25;
+                            ctx.beginPath();
+                            ctx.ellipse(x, y, NOTE_HEAD_RX + 5, NOTE_HEAD_RY + 4, -0.2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                // Stem
+                var stemH = LINE_SPACING * 3.5;
+                ctx.strokeStyle = noteColor;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                if (note.staffPos >= 0) {
+                    ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
+                    ctx.lineTo(x + NOTE_HEAD_RX - 1, y + stemH);
+                } else {
+                    ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
+                    ctx.lineTo(x + NOTE_HEAD_RX - 1, y - stemH);
+                }
+                ctx.stroke();
+                ctx.lineWidth = 1;
+            }
+        }
+
+        function drawKeyLanes(ctx) {
+            // Draw 4 subtle lane indicators at the playhead showing where each key maps
+            var laneYs = computeLaneYs();
+
+            // Detect key releases for ripple effects
+            for (var rch = 0; rch < 4; rch++) {
+                if (prevKeysDown[rch] && !keysDown[rch]) {
+                    // Key just released - spawn ripple
+                    laneRipples.push({ channel: rch, t: 0, maxT: 0.35 });
+                }
+                prevKeysDown[rch] = keysDown[rch];
+            }
+
+            for (var ch = 0; ch < 4; ch++) {
+                var y = laneYs[ch];
+                var isDown = keysDown[ch];
+
+                ctx.save();
+
+                if (isDown) {
+                    // Bright flash at hit zone when key held
+                    // Bright column flash
+                    var flashGrad = ctx.createRadialGradient(cursorX, y, 0, cursorX, y, 35);
+                    flashGrad.addColorStop(0, CHANNEL_COLORS_GLOW[ch]);
+                    flashGrad.addColorStop(0.5, CHANNEL_COLORS_DIM[ch]);
+                    flashGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = flashGrad;
+                    ctx.fillRect(cursorX - 35, y - 35, 70, 70);
+
+                    // Bright lane strip
+                    ctx.fillStyle = CHANNEL_COLORS_GLOW[ch];
+                    ctx.fillRect(cursorX - 18, y - 14, 36, 28);
+
+                    // Extra glow
+                    ctx.shadowColor = CHANNEL_COLORS[ch];
+                    ctx.shadowBlur = 20;
+                }
+
+                // Key label
+                ctx.font = 'bold 13px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = isDown ? CHANNEL_COLORS[ch] : CHANNEL_COLORS_DIM[ch];
+                ctx.fillText(KEY_NAMES[ch], cursorX, y);
+
+                ctx.restore();
+            }
+        }
+
+        function computeLaneYs() {
+            // Place key lanes at vertical positions spanning the staff region
+            // Channel 0 (gold) - high treble area
+            // Channel 1 (rose) - low treble area
+            // Channel 2 (purple) - high bass area
+            // Channel 3 (silver) - low bass area
+            var trebleMid = staffTop + LINE_SPACING * 2;
+            var bassMid = bassTop + LINE_SPACING * 2;
+            return [
+                trebleMid - LINE_SPACING * 1.5,
+                trebleMid + LINE_SPACING * 1.5,
+                bassMid - LINE_SPACING * 1.5,
+                bassMid + LINE_SPACING * 1.5
+            ];
+        }
+
+        function updateAndDrawParticles(ctx, dt) {
+            for (var i = particles.length - 1; i >= 0; i--) {
+                var p = particles[i];
+                p.life -= dt;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                // Physics
+                p.vy += p.gravity * dt;
+                p.vx *= p.drag;
+                p.vy *= p.drag;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                var lifeRatio = p.life / p.maxLife;
+                var alpha = lifeRatio;
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+
+                if (p.type === 'shard') {
+                    // Angular shard fragment
+                    ctx.fillStyle = p.color;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.vx * 0.03 + p.life * 8);
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                } else if (p.type === 'flame') {
+                    // Flame particle (gradient from orange to transparent)
+                    var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+                    var innerColor = lifeRatio > 0.5 ? '#ffe066' : '#ff8844';
+                    grad.addColorStop(0, innerColor);
+                    grad.addColorStop(0.6, p.color);
+                    grad.addColorStop(1, 'rgba(255,68,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (0.5 + lifeRatio * 0.5), 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Default circle particle with glow
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = p.size * 2;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * lifeRatio, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawScreenFlash(ctx, dt) {
+            if (!screenFlash.active) return;
+            screenFlash.alpha -= screenFlash.decay * dt;
+            if (screenFlash.alpha <= 0) {
+                screenFlash.active = false;
+                screenFlash.alpha = 0;
+                return;
+            }
+            ctx.save();
+            ctx.globalAlpha = screenFlash.alpha;
+            ctx.fillStyle = screenFlash.color;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        function drawMissVignette(ctx, dt) {
+            if (missVignette.alpha <= 0) return;
+            missVignette.alpha -= dt * 1.5;
+            if (missVignette.alpha <= 0) { missVignette.alpha = 0; return; }
+
+            ctx.save();
+            // Red vignette on edges
+            var vgSize = 80;
+            ctx.globalAlpha = missVignette.alpha;
+
+            // Top edge
+            var gt = ctx.createLinearGradient(0, 0, 0, vgSize);
+            gt.addColorStop(0, 'rgba(255,40,40,0.6)');
+            gt.addColorStop(1, 'rgba(255,40,40,0)');
+            ctx.fillStyle = gt;
+            ctx.fillRect(0, 0, W, vgSize);
+
+            // Bottom edge
+            var gb = ctx.createLinearGradient(0, H, 0, H - vgSize);
+            gb.addColorStop(0, 'rgba(255,40,40,0.6)');
+            gb.addColorStop(1, 'rgba(255,40,40,0)');
+            ctx.fillStyle = gb;
+            ctx.fillRect(0, H - vgSize, W, vgSize);
+
+            // Left edge
+            var gl = ctx.createLinearGradient(0, 0, vgSize, 0);
+            gl.addColorStop(0, 'rgba(255,40,40,0.4)');
+            gl.addColorStop(1, 'rgba(255,40,40,0)');
+            ctx.fillStyle = gl;
+            ctx.fillRect(0, 0, vgSize, H);
+
+            // Right edge
+            var gr = ctx.createLinearGradient(W, 0, W - vgSize, 0);
+            gr.addColorStop(0, 'rgba(255,40,40,0.4)');
+            gr.addColorStop(1, 'rgba(255,40,40,0)');
+            ctx.fillStyle = gr;
+            ctx.fillRect(W - vgSize, 0, vgSize, H);
+
+            ctx.restore();
+        }
+
+        function drawComboFire(ctx, cursor) {
+            if (combo < 10 || !cursor) return;
+
+            var beatPhase = (cursor.totalFracRow % rpb) / rpb;
+            var beatPulse = 0.7 + 0.3 * Math.pow(Math.cos(beatPhase * Math.PI * 2), 2);
+
+            ctx.save();
+
+            if (combo >= 10) {
+                // Subtle glow around playhead
+                var glowIntensity = Math.min(1, (combo - 10) / 20) * beatPulse;
+                var glowW = 30 + combo * 0.5;
+                var grad = ctx.createLinearGradient(cursorX - glowW, 0, cursorX + glowW, 0);
+                grad.addColorStop(0, 'rgba(184,149,74,0)');
+                grad.addColorStop(0.5, 'rgba(184,149,74,' + (0.15 * glowIntensity) + ')');
+                grad.addColorStop(1, 'rgba(184,149,74,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(cursorX - glowW, staffTop - 30, glowW * 2, bassBottom - staffTop + 60);
+            }
+
+            if (combo >= 30) {
+                // Flame particles rising from playhead
+                var flameRate = combo >= 50 ? 0.6 : 0.3;
+                if (Math.random() < flameRate) {
+                    var flameY = staffTop + Math.random() * (bassBottom - staffTop);
+                    spawnParticle(
+                        cursorX + (Math.random() - 0.5) * 16,
+                        flameY,
+                        (Math.random() - 0.5) * 20,
+                        -30 - Math.random() * 50,
+                        combo >= 50 ? '#ff6633' : '#ffaa44',
+                        3 + Math.random() * 4,
+                        0.4 + Math.random() * 0.3,
+                        -40, 0.97, 'flame'
+                    );
+                }
+            }
+
+            if (combo >= 50) {
+                // Intense screen edge glow with channel colors
+                var edgeAlpha = Math.min(0.15, (combo - 50) * 0.003) * beatPulse;
+                for (var ch = 0; ch < 4; ch++) {
+                    var edgeGrad;
+                    if (ch === 0) {
+                        edgeGrad = ctx.createLinearGradient(0, 0, 0, 60);
+                    } else if (ch === 1) {
+                        edgeGrad = ctx.createLinearGradient(W, 0, W - 60, 0);
+                    } else if (ch === 2) {
+                        edgeGrad = ctx.createLinearGradient(0, H, 0, H - 60);
+                    } else {
+                        edgeGrad = ctx.createLinearGradient(0, 0, 60, 0);
+                    }
+                    var c = CHANNEL_COLORS[ch];
+                    edgeGrad.addColorStop(0, c);
+                    edgeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.globalAlpha = edgeAlpha;
+                    ctx.fillStyle = edgeGrad;
+                    if (ch === 0) ctx.fillRect(0, 0, W, 60);
+                    else if (ch === 1) ctx.fillRect(W - 60, 0, 60, H);
+                    else if (ch === 2) ctx.fillRect(0, H - 60, W, 60);
+                    else ctx.fillRect(0, 0, 60, H);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawEffects(ctx, dt) {
+            // Update combo break timer
+            if (comboBreak.active) {
+                comboBreak.t += dt;
+                if (comboBreak.t >= comboBreak.maxT) comboBreak.active = false;
+            }
+
+            // Draw lane release ripples
+            for (var ri = laneRipples.length - 1; ri >= 0; ri--) {
+                var rip = laneRipples[ri];
+                rip.t += dt;
+                if (rip.t >= rip.maxT) {
+                    laneRipples.splice(ri, 1);
+                    continue;
+                }
+                var rProg = rip.t / rip.maxT;
+                var rAlpha = (1 - rProg) * 0.4;
+                var rRadius = 15 + rProg * 25;
+                var lYs = computeLaneYs();
+                ctx.save();
+                ctx.globalAlpha = rAlpha;
+                ctx.strokeStyle = CHANNEL_COLORS[rip.channel];
+                ctx.lineWidth = 1.5 * (1 - rProg);
+                ctx.beginPath();
+                ctx.arc(cursorX, lYs[rip.channel], rRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Structured effects
+            for (var i = effects.length - 1; i >= 0; i--) {
+                var fx = effects[i];
+                fx.t += dt;
+                if (fx.t >= fx.maxT) {
+                    effects.splice(i, 1);
+                    continue;
+                }
+                // Skip effects with negative t (delay)
+                if (fx.t < 0) continue;
+
+                var progress = fx.t / fx.maxT;
+                var alpha = 1 - progress;
+
+                if (fx.type === 'ring') {
+                    // Expanding ring with glow
+                    var radius = fx.startRadius + progress * (fx.endRadius - fx.startRadius);
+                    ctx.save();
+                    ctx.shadowColor = fx.color;
+                    ctx.shadowBlur = 12 * (1 - progress);
+                    ctx.strokeStyle = fx.color;
+                    ctx.lineWidth = fx.lineWidth * (1 - progress);
+                    ctx.globalAlpha = alpha * 0.8;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                } else if (fx.type === 'flash') {
+                    // Quick bright flash
+                    var flashAlpha = (1 - progress) * 0.6;
+                    ctx.save();
+                    ctx.globalAlpha = flashAlpha;
+                    ctx.shadowColor = fx.color;
+                    ctx.shadowBlur = 16;
+                    ctx.fillStyle = fx.color;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, fx.radius * (1 - progress * 0.5), 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
+                } else if (fx.type === 'score-text') {
+                    // Floating score text: "+300 PERFECT"
+                    var textProgress = progress;
+                    var textAlpha2;
+                    if (textProgress < 0.2) {
+                        textAlpha2 = textProgress / 0.2; // Fade in
+                    } else if (textProgress > 0.6) {
+                        textAlpha2 = 1 - (textProgress - 0.6) / 0.4; // Fade out
+                    } else {
+                        textAlpha2 = 1;
+                    }
+                    // Scale pop on entry
+                    var textScale = textProgress < 0.1 ? 0.5 + (textProgress / 0.1) * 0.5 : 1;
+                    if (fx.rating === 'perfect') textScale *= 1.15;
+
+                    var floatY = fx.y - 25 - textProgress * 40;
+                    var label2 = '+' + fx.points + ' ' + fx.rating.toUpperCase();
+                    var fontSize2 = fx.rating === 'perfect' ? 16 : (fx.rating === 'great' ? 14 : 12);
+
+                    ctx.save();
+                    ctx.globalAlpha = textAlpha2;
+                    ctx.font = 'bold ' + Math.round(fontSize2 * textScale) + 'px "Cinzel", serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    // Text shadow/glow
+                    ctx.shadowColor = fx.color;
+                    ctx.shadowBlur = 8;
+                    ctx.fillStyle = fx.color;
+                    ctx.fillText(label2, fx.x, floatY);
+                    ctx.restore();
+
+                } else if (fx.type === 'miss') {
+                    // Red X fading out + shake
+                    var shakeX = (1 - progress) * (Math.random() - 0.5) * 6;
+                    ctx.save();
+                    ctx.globalAlpha = alpha * 0.7;
+                    ctx.strokeStyle = '#ff4444';
+                    ctx.lineWidth = 2.5;
+                    var sz = 8 + progress * 4;
+                    ctx.beginPath();
+                    ctx.moveTo(fx.x - sz + shakeX, fx.y - sz);
+                    ctx.lineTo(fx.x + sz + shakeX, fx.y + sz);
+                    ctx.moveTo(fx.x + sz + shakeX, fx.y - sz);
+                    ctx.lineTo(fx.x - sz + shakeX, fx.y + sz);
+                    ctx.stroke();
+
+                    // "MISS" text floating
+                    if (progress < 0.5) {
+                        ctx.globalAlpha = (1 - progress * 2) * 0.6;
+                        ctx.font = 'bold 13px "Cinzel", serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = '#ff4444';
+                        ctx.fillText('MISS', fx.x, fx.y - 18 - progress * 20);
+                    }
+                    ctx.restore();
+                }
+            }
+
+            // Particles
+            updateAndDrawParticles(ctx, dt);
+
+            // Screen flash overlay
+            drawScreenFlash(ctx, dt);
+
+            // Miss vignette
+            drawMissVignette(ctx, dt);
+        }
+
+        function drawHUD(ctx, cursor) {
+            // Score (top-right)
+            ctx.save();
+            ctx.font = 'bold 28px "Cinzel", serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText(score.toLocaleString(), W - 24, 20);
+
+            // Multiplier
+            var mult = getComboMultiplier();
+            if (mult > 1) {
+                ctx.font = '16px "Cinzel", serif';
+                ctx.fillStyle = 'rgba(184,149,74,0.8)';
+                ctx.fillText(mult + 'x', W - 24, 54);
+            }
+            ctx.restore();
+
+            // Combo (top center)
+            if (combo >= 5 || (comboBreak.active && comboBreak.prevCombo >= 5)) {
+                ctx.save();
+
+                // Combo break animation - shake and flash red
+                var shakeOffsetX = 0, shakeOffsetY = 0;
+                var comboColor = 'rgba(184,149,74,';
+                if (comboBreak.active && combo < 5) {
+                    var breakProgress = comboBreak.t / comboBreak.maxT;
+                    var shakeIntensity = (1 - breakProgress) * 8;
+                    shakeOffsetX = Math.sin(comboBreak.t * 60) * shakeIntensity;
+                    shakeOffsetY = Math.cos(comboBreak.t * 45) * shakeIntensity * 0.5;
+                    // Flash red, then fade
+                    var redMix = 1 - breakProgress;
+                    comboColor = 'rgba(' + Math.round(184 + 71 * redMix) + ',' + Math.round(149 * (1 - redMix) + 68 * redMix) + ',' + Math.round(74 * (1 - redMix) + 68 * redMix) + ',';
+                }
+
+                var displayCombo = combo >= 5 ? combo : comboBreak.prevCombo;
+                var comboScale = Math.min(1.5, 1 + displayCombo * 0.005);
+                var baseSize = 24;
+                ctx.font = 'bold ' + Math.round(baseSize * comboScale) + 'px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                var comboAlpha = comboBreak.active && combo < 5 ? (1 - comboBreak.t / comboBreak.maxT) : Math.min(1, 0.5 + displayCombo * 0.01);
+                ctx.fillStyle = comboColor + comboAlpha + ')';
+                ctx.fillText((comboBreak.active && combo < 5 ? 'BREAK!' : displayCombo + 'x COMBO'), W / 2 + shakeOffsetX, 20 + shakeOffsetY);
+
+                // Streak bar
+                var barW = 120;
+                var barH = 3;
+                var barX = W / 2 - barW / 2;
+                var barY = 22 + Math.round(baseSize * comboScale) + 4;
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillRect(barX, barY, barW, barH);
+
+                // Fill based on next multiplier threshold
+                var nextThreshold = 10;
+                for (var t = COMBO_THRESHOLDS.length - 1; t >= 0; t--) {
+                    if (combo < COMBO_THRESHOLDS[t].combo) {
+                        nextThreshold = COMBO_THRESHOLDS[t].combo;
+                    }
+                }
+                var prevThreshold = 0;
+                for (var t2 = 0; t2 < COMBO_THRESHOLDS.length; t2++) {
+                    if (COMBO_THRESHOLDS[t2].combo < nextThreshold && COMBO_THRESHOLDS[t2].combo <= combo) {
+                        prevThreshold = COMBO_THRESHOLDS[t2].combo;
+                        break;
+                    }
+                }
+                var fillPct = (combo - prevThreshold) / Math.max(1, nextThreshold - prevThreshold);
+                fillPct = Math.min(1, fillPct);
+                ctx.fillStyle = 'rgba(184,149,74,0.5)';
+                ctx.fillRect(barX, barY, barW * fillPct, barH);
+
+                ctx.restore();
+            }
+
+            // Progress bar (bottom)
+            if (cursor) {
+                var progress = cursor.totalFracRow / totalRows;
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fillRect(0, H - 3, W, 3);
+                ctx.fillStyle = 'rgba(184,149,74,0.4)';
+                ctx.fillRect(0, H - 3, W * progress, 3);
+            }
+
+            // Song title (top-left, subtle)
+            if (currentSongJSON) {
+                ctx.save();
+                ctx.font = '14px "Crimson Pro", serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                ctx.fillText(currentSongJSON.title || '', 20, 20);
+                ctx.restore();
+            }
+
+            // Pause hint (bottom-right)
+            ctx.save();
+            ctx.font = '11px "Crimson Pro", serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fillText('ESC to pause', W - 16, H - 10);
+            ctx.restore();
+        }
+
+        // ================================================================
+        // SONG END CHECK
+        // ================================================================
+
+        function checkSongEnd(cursor) {
+            if (songEnded) return;
+            if (!cursor) return;
+            // Check if all notes have been judged (hit or missed)
+            // This handles looping songs where totalFracRow wraps around
+            var allJudged = true;
+            for (var i = 0; i < noteTimeline.length; i++) {
+                if (!noteTimeline[i].hit && !noteTimeline[i].missed) {
+                    allJudged = false;
+                    break;
+                }
+            }
+            if (allJudged && noteTimeline.length > 0) {
+                songEnded = true;
+                songEndTimer = 1.5;
+            }
+            // Also trigger if cursor passed all rows (non-looping songs)
+            if (cursor.totalFracRow >= totalRows + 2) {
+                songEnded = true;
+                songEndTimer = 1.5;
+            }
+        }
+
+        function updateSongEndTimer(dt) {
+            if (!songEnded) return;
+            songEndTimer -= dt;
+            if (songEndTimer <= 0) {
+                showResults();
+            }
+        }
+
+        // ================================================================
+        // RESULTS
+        // ================================================================
+
+        function showResults() {
+            gameState = 'results';
+            Visualizer.stop();
+
+            var totalHits = counts.perfect + counts.great + counts.good;
+            var totalJudged = totalHits + counts.miss;
+            var accuracy = totalJudged > 0 ? (totalHits / totalJudged * 100) : 0;
+
+            // Letter grade with color coding: S=gold, A=green, B=blue, C=yellow, D=orange, F=red
+            var grade, gradeColor;
+            if (accuracy >= 98 && counts.miss === 0) {
+                grade = 'S'; gradeColor = '#ffe066';
+            } else if (accuracy >= 90) {
+                grade = 'A'; gradeColor = '#66ff88';
+            } else if (accuracy >= 75) {
+                grade = 'B'; gradeColor = '#66bbff';
+            } else if (accuracy >= 60) {
+                grade = 'C'; gradeColor = '#ffee44';
+            } else if (accuracy >= 40) {
+                grade = 'D'; gradeColor = '#ff8844';
+            } else {
+                grade = 'F'; gradeColor = '#ff4444';
+            }
+
+            // Set initial state for animation
+            var gradeEl = document.getElementById('result-grade');
+            var scoreEl = document.getElementById('result-score');
+            var accLabel = document.getElementById('result-accuracy');
+
+            gradeEl.textContent = grade;
+            gradeEl.style.color = gradeColor;
+            gradeEl.classList.remove('animate');
+
+            // Start score at 0 for count-up
+            scoreEl.textContent = '0';
+            accLabel.textContent = '0%';
+
+            // Set stat values immediately (they appear below the animated parts)
+            document.getElementById('result-combo').textContent = maxCombo;
+            document.getElementById('result-perfect').textContent = counts.perfect;
+            document.getElementById('result-great').textContent = counts.great;
+            document.getElementById('result-good').textContent = counts.good;
+            document.getElementById('result-miss').textContent = counts.miss;
+
+            resultsEl.style.display = 'flex';
+
+            // Trigger grade animation after a tiny delay for layout
+            requestAnimationFrame(function () {
+                gradeEl.classList.add('animate');
+            });
+
+            // Animate score counting up
+            var scoreDuration = 1500; // ms
+            var scoreStart = performance.now();
+            var finalScore = score;
+            var finalAccuracy = accuracy;
+
+            function animateScore(now) {
+                var elapsed = now - scoreStart;
+                var t = Math.min(1, elapsed / scoreDuration);
+                // Ease out cubic
+                var eased = 1 - Math.pow(1 - t, 3);
+
+                var currentScore = Math.round(finalScore * eased);
+                scoreEl.textContent = currentScore.toLocaleString();
+
+                var currentAcc = finalAccuracy * eased;
+                accLabel.textContent = currentAcc.toFixed(1) + '%';
+
+                // Draw accuracy arc
+                drawAccuracyArc(currentAcc / 100, gradeColor);
+
+                if (t < 1) {
+                    requestAnimationFrame(animateScore);
+                }
+            }
+            requestAnimationFrame(animateScore);
+        }
+
+        function drawAccuracyArc(fraction, color) {
+            var arcCanvas = document.getElementById('accuracy-arc');
+            if (!arcCanvas) return;
+            var actx = arcCanvas.getContext('2d');
+            var size = 200;
+            var cx = size / 2, cy = size / 2;
+            var radius = 80;
+            var lineW = 10;
+
+            actx.clearRect(0, 0, size, size);
+
+            // Background circle
+            actx.beginPath();
+            actx.arc(cx, cy, radius, 0, Math.PI * 2);
+            actx.strokeStyle = 'rgba(255,255,255,0.08)';
+            actx.lineWidth = lineW;
+            actx.lineCap = 'round';
+            actx.stroke();
+
+            // Filled arc
+            if (fraction > 0) {
+                var startAngle = -Math.PI / 2;
+                var endAngle = startAngle + Math.PI * 2 * fraction;
+
+                actx.beginPath();
+                actx.arc(cx, cy, radius, startAngle, endAngle);
+                actx.strokeStyle = color;
+                actx.lineWidth = lineW;
+                actx.lineCap = 'round';
+
+                // Glow effect
+                actx.shadowColor = color;
+                actx.shadowBlur = 12;
+                actx.stroke();
+                actx.shadowBlur = 0;
+            }
+        }
+
+        function showSongSelect() {
+            gameState = 'menu';
+            if (Visualizer.isPlaying()) Visualizer.stop();
+            canvas.style.display = 'none';
+            resultsEl.style.display = 'none';
+            pauseEl.style.display = 'none';
+            songSelectEl.style.display = 'flex';
+        }
+
+        // ================================================================
+        // RENDERER (registered on window.Renderers)
+        // ================================================================
+
+        var rhythmHeroRenderer = {
+            name: 'Rhythm Hero',
+
+            init: function (ctx, width, height, analysis) {
+                computeLayout(width, height);
+                if (analysis) {
+                    totalRows = analysis.totalRows;
+                    rpb = analysis.rpb || 4;
+                    secondsPerRow = analysis.secondsPerRow;
+                }
+            },
+
+            resize: function (width, height) {
+                computeLayout(width, height);
+            },
+
+            render: function (fd) {
+                var ctx = fd.ctx;
+                W = fd.width;
+                H = fd.height;
+
+                // Update layout
+                var totalStaffH = LINE_SPACING * 4 * 2 + STAFF_GAP;
+                staffTop = (H - totalStaffH) / 2;
+                trebleBottom = staffTop + LINE_SPACING * 4;
+                bassTop = trebleBottom + STAFF_GAP;
+                bassBottom = bassTop + LINE_SPACING * 4;
+                cursorX = SCROLL_MARGIN + (W - SCROLL_MARGIN * 2) * CURSOR_X_FRAC;
+
+                if (fd.analysis) {
+                    secondsPerRow = fd.analysis.secondsPerRow;
+                }
+
+                drawBackground(ctx, fd.cursor);
+                drawStaves(ctx, fd.cursor);
+                drawClefs(ctx);
+
+                var currentRowFrac = fd.cursor ? fd.cursor.totalFracRow : -2;
+
+                drawBarLines(ctx, currentRowFrac);
+                drawNotes(ctx, currentRowFrac);
+                drawComboFire(ctx, fd.cursor);
+                drawPlayhead(ctx);
+                drawKeyLanes(ctx);
+
+                // Process key presses for hit detection (skip during pause)
+                if (fd.cursor && gameState === 'playing' && !songEnded) {
+                    for (var ch = 0; ch < 4; ch++) {
+                        if (keyJustPressed[ch]) {
+                            tryHit(ch, currentRowFrac);
+                        }
+                    }
+                    // Clear just-pressed flags after processing
+                    keyJustPressed = {};
+
+                    // Auto-miss notes that passed
+                    checkAutoMiss(currentRowFrac);
+
+                    // Check song end
+                    checkSongEnd(fd.cursor);
+                }
+                if (gameState === 'playing') {
+                    updateSongEndTimer(fd.dt);
+                }
+                // Clear stale key presses if not playing
+                if (gameState !== 'playing') {
+                    keyJustPressed = {};
+                }
+
+                // Draw effects
+                drawEffects(ctx, fd.dt);
+
+                // HUD
+                if (gameState === 'playing' || gameState === 'paused') {
+                    drawHUD(ctx, fd.cursor);
+                }
+
+                // Idle state message
+                if (!fd.cursor && gameState !== 'playing') {
+                    ctx.fillStyle = 'rgba(216,207,192,0.15)';
+                    ctx.font = '16px "Crimson Pro", serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Loading...', W / 2, bassBottom + 50);
+                    ctx.textAlign = 'start';
+                }
+            },
+
+            destroy: function () {
+                // Cleanup
+            }
+        };
+
+        // Register renderer globally
+        if (!window.Renderers) window.Renderers = {};
+        window.Renderers['rhythm-hero'] = rhythmHeroRenderer;
+
+        // ================================================================
+        // INPUT
+        // ================================================================
+
+        document.addEventListener('keydown', function (e) {
+            // Ignore if typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            var key = e.key.toLowerCase();
+
+            // Game keys
+            if (gameState === 'playing' && KEY_MAP.hasOwnProperty(key)) {
+                e.preventDefault();
+                var ch = KEY_MAP[key];
+                if (!keysDown[ch]) {
+                    keysDown[ch] = true;
+                    keyJustPressed[ch] = true;
+                }
+                return;
+            }
+
+            // Escape - pause/unpause
+            if (e.code === 'Escape') {
+                e.preventDefault();
+                if (gameState === 'playing') {
+                    gameState = 'paused';
+                    // Mute instead of stopping (stop resets the song)
+                    Visualizer.setVolume(0);
+                    pauseEl.style.display = 'flex';
+                } else if (gameState === 'paused') {
+                    resumeGame();
+                }
+                return;
+            }
+        });
+
+        document.addEventListener('keyup', function (e) {
+            var key = e.key.toLowerCase();
+            if (KEY_MAP.hasOwnProperty(key)) {
+                keysDown[KEY_MAP[key]] = false;
+            }
+        });
+
+        // Lose focus -> release all keys
+        window.addEventListener('blur', function () {
+            keysDown = {};
+        });
+
+        // ================================================================
+        // PAUSE/RESUME
+        // ================================================================
+
+        function resumeGame() {
+            gameState = 'playing';
+            pauseEl.style.display = 'none';
+            Visualizer.setVolume(0.7);
+        }
+
+        document.getElementById('btn-resume').addEventListener('click', function () {
+            resumeGame();
+        });
+
+        document.getElementById('btn-quit').addEventListener('click', function () {
+            showSongSelect();
+        });
+
+        // ================================================================
+        // RESULTS BUTTONS
+        // ================================================================
+
+        document.getElementById('btn-retry').addEventListener('click', function () {
+            resultsEl.style.display = 'none';
+            startGame(currentSongFile);
+        });
+
+        document.getElementById('btn-back-select').addEventListener('click', function () {
+            showSongSelect();
+        });
+
+        // ================================================================
+        // INIT
+        // ================================================================
+
+        loadManifest();
+
+    })();
+    </script>
+</body>
+</html>
