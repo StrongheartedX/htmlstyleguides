@@ -2511,10 +2511,26 @@
     updateCount();
   });
 
+  function sendVolumeToVideo(val) {
+    if (currentVideoUrl && elVideoFrame.contentWindow) {
+      elVideoFrame.contentWindow.postMessage({ type: 'jukebox-volume', volume: val }, '*');
+    }
+  }
+
+  // Sync volume when video iframe finishes loading
+  elVideoFrame.addEventListener("load", function () {
+    if (currentVideoUrl) {
+      sendVolumeToVideo(parseInt(elVolume.value, 10) / 100);
+    }
+  });
+
   elVolume.addEventListener("input", function () {
     var val = parseInt(this.value, 10) / 100;
-    // Only set audio volume when not playing a video (video has its own audio)
-    if (initialized && !currentVideoUrl) Visualizer.setVolume(val);
+    if (currentVideoUrl) {
+      sendVolumeToVideo(val);
+    } else if (initialized) {
+      Visualizer.setVolume(val);
+    }
     updateVolumeIcon();
   });
 

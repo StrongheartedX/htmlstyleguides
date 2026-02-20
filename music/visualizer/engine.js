@@ -652,3 +652,10 @@ if (!window.Renderers) window.Renderers = {};
     if (link) link.style.display = 'none';
   }
 })();
+
+// Listen for volume commands from parent (jukebox iframe embedding)
+window.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'jukebox-volume' && typeof e.data.volume === 'number') {
+    Visualizer.setVolume(e.data.volume);
+  }
+});
