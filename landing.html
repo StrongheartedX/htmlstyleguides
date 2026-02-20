@@ -1619,7 +1619,7 @@
       transform: rotateY(-90deg);
     }
 
-    /* Center content (title + enter prompt) */
+    /* Center content (enter prompt) */
     .intro-content {
       position: relative;
       z-index: 2;
@@ -1627,53 +1627,7 @@
       padding: 2rem;
     }
 
-    .intro-title-text {
-      font-family: 'UnifrakturMaguntia', cursive;
-      font-size: clamp(2rem, 5vw, 4rem);
-      font-weight: 400;
-      color: var(--gold);
-      text-shadow:
-        0 0 15px rgba(201, 168, 76, 0.6),
-        0 0 30px rgba(201, 168, 76, 0.3),
-        0 0 60px rgba(201, 168, 76, 0.15),
-        0 2px 4px rgba(0, 0, 0, 0.8);
-      opacity: 0;
-      transform: scale(0.9);
-      transition: opacity 1.5s ease, transform 1.5s ease, text-shadow 2s ease;
-      line-height: 1.3;
-    }
-
-    .intro-title-text.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .intro-title-text.blazing {
-      text-shadow:
-        0 0 20px rgba(201, 168, 76, 0.8),
-        0 0 40px rgba(201, 168, 76, 0.5),
-        0 0 80px rgba(201, 168, 76, 0.3),
-        0 0 120px rgba(201, 168, 76, 0.15),
-        0 2px 4px rgba(0, 0, 0, 0.8);
-    }
-
-    .intro-subtitle-text {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(0.9rem, 2vw, 1.3rem);
-      font-style: italic;
-      color: var(--text-secondary);
-      letter-spacing: 3px;
-      margin-top: 0.75rem;
-      opacity: 0;
-      transition: opacity 1s ease 0.5s;
-    }
-
-    .intro-subtitle-text.visible {
-      opacity: 1;
-    }
-
     .intro-enter {
-      margin-top: 2.5rem;
       font-family: 'Cormorant Garamond', serif;
       font-size: 1.1rem;
       font-weight: 600;
@@ -1823,8 +1777,6 @@
       <div class="intro-light-spill" id="intro-light-spill"></div>
     </div>
     <div class="intro-content">
-      <div class="intro-title-text" id="intro-title">The Compendium<br>of Digital Curiosities</div>
-      <div class="intro-subtitle-text" id="intro-subtitle">An Encyclop&aelig;dia of Synthetic Wonders</div>
       <button class="intro-enter" id="intro-enter">Enter the Compendium</button>
     </div>
   </div>
@@ -2554,8 +2506,6 @@
 
     var overlay = document.getElementById("intro-overlay");
     var enterBtn = document.getElementById("intro-enter");
-    var titleEl = document.getElementById("intro-title");
-    var subtitleEl = document.getElementById("intro-subtitle");
     var doorLeft = document.getElementById("intro-door-left");
     var doorRight = document.getElementById("intro-door-right");
     var lightSpill = document.getElementById("intro-light-spill");
@@ -2575,14 +2525,6 @@
       // Hide button
       enterBtn.classList.add("hidden");
 
-      // Show title immediately
-      titleEl.classList.add("visible");
-
-      // Show subtitle after a beat
-      setTimeout(function () {
-        subtitleEl.classList.add("visible");
-      }, 600);
-
       // Load and play the fanfare
       ChipPlayer.init();
       ChipPlayer.setVolume(0.6);
@@ -2593,33 +2535,28 @@
           ChipPlayer.load(songJSON);
           ChipPlayer.play();
 
-          // At ~5s: title starts glowing brighter
-          setTimeout(function () {
-            titleEl.classList.add("blazing");
-          }, 5000);
-
-          // At ~6.5s: light spill appears through the door crack
+          // At ~2s: light spill appears through the door crack
           setTimeout(function () {
             lightSpill.classList.add("active");
-          }, 6500);
+          }, 2000);
 
-          // At ~7s: doors swing open (2.5s transition in CSS)
+          // At ~2.5s: doors swing open (2.5s CSS transition) revealing the site
           setTimeout(function () {
             doorLeft.classList.add("opening");
             doorRight.classList.add("opening");
-          }, 7000);
+          }, 2500);
 
-          // At ~10s: fade out overlay, stop fanfare
+          // At ~5.5s: fade out overlay, stop fanfare
           setTimeout(function () {
             overlay.classList.add("fade-out");
             ChipPlayer.stop();
             sessionStorage.setItem("intro-seen", "1");
-          }, 10000);
+          }, 5500);
 
-          // At ~11s: remove overlay from DOM
+          // At ~6.5s: remove overlay from DOM
           setTimeout(function () {
             overlay.remove();
-          }, 11000);
+          }, 6500);
         })
         .catch(function (err) {
           console.error("Intro: failed to load fanfare", err);
@@ -2627,8 +2564,6 @@
           doorLeft.classList.add("opening");
           doorRight.classList.add("opening");
           lightSpill.classList.add("active");
-          titleEl.classList.add("visible");
-          titleEl.classList.add("blazing");
           setTimeout(function () {
             overlay.classList.add("fade-out");
             sessionStorage.setItem("intro-seen", "1");
