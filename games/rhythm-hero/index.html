@@ -641,6 +641,8 @@
         // Video renderer state
         var activeVideoRenderer = null;
         var videoRendererInited = false;
+        var videoLastW = 0;
+        var videoLastH = 0;
 
         // Countdown state
         var countdownTime = 0;
@@ -2247,9 +2249,15 @@
                             activeVideoRenderer.init(fd.ctx, fd.width, fd.height, fd.analysis);
                         }
                         videoRendererInited = true;
+                        videoLastW = fd.width;
+                        videoLastH = fd.height;
                     }
-                    if (activeVideoRenderer.resize) {
+                    // Only call resize when dimensions actually change —
+                    // many video renderers randomize positions in resize()
+                    if (activeVideoRenderer.resize && (fd.width !== videoLastW || fd.height !== videoLastH)) {
                         activeVideoRenderer.resize(fd.width, fd.height);
+                        videoLastW = fd.width;
+                        videoLastH = fd.height;
                     }
                     // Draw video background
                     activeVideoRenderer.render(fd);
