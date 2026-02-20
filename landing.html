@@ -1946,6 +1946,7 @@
   var playStartTime = 0;
   var initialized = false;
   var isPlaying = false;
+  var shuffleOn = true;
   var advanceTimer = null;
   var progressRAF = null;
 
@@ -2182,8 +2183,8 @@
     elVideoFrame.src = "";
     queuePos++;
     if (queuePos >= queue.length) {
-      reshuffleRemaining();
       queuePos = 0;
+      if (shuffleOn) reshuffleRemaining();
     }
     loadAndPlay(queuePos);
   }
@@ -2269,9 +2270,18 @@
   });
 
   elShuffle.addEventListener("click", function () {
-    reshuffleRemaining();
-    elShuffle.classList.add("active");
-    setTimeout(function () { elShuffle.classList.remove("active"); }, 600);
+    shuffleOn = !shuffleOn;
+    if (shuffleOn) {
+      elShuffle.classList.add("active");
+      reshuffleRemaining();
+    } else {
+      elShuffle.classList.remove("active");
+      // Rebuild queue in manifest order, keeping current song
+      var currentManifestIdx = queue[queuePos];
+      queue = [];
+      for (var i = 0; i < manifest.length; i++) queue.push(i);
+      queuePos = currentManifestIdx;
+    }
   });
 
   elVolume.addEventListener("input", function () {
@@ -2290,6 +2300,7 @@
         return;
       }
       buildQueue("bonus-stage-bounce.json");
+      elShuffle.classList.add("active");
       updateCount();
       var first = manifest[queue[0]];
       if (first) updateTitle(first.title);
