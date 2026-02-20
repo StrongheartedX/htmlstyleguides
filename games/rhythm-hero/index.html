@@ -433,6 +433,7 @@
     <!-- Dependencies -->
     <script src="../../music/audio-tracker/playback-engine.js"></script>
     <script src="../../music/visualizer/engine.js"></script>
+    <script src="../../music/visualizer/stick-fight-engine.js"></script>
 
     <script>
     (function () {
@@ -493,6 +494,70 @@
         ];
 
         // ================================================================
+        // VIDEO SONGS — songs with music video renderers
+        // Maps song filename → { videoFile, rendererKey }
+        // ================================================================
+
+        var VIDEO_SONGS = {
+            'abyssal-waltz.json': { videoFile: 'abyssal-waltz-video.html', rendererKey: 'abyssal-waltz-video' },
+            'bazaar-of-the-midnight-sun.json': { videoFile: 'bazaar-of-the-midnight-sun-video.html', rendererKey: 'bazaar-midnight-sun-video' },
+            'bioluminescent.json': { videoFile: 'bioluminescent-video.html', rendererKey: 'bioluminescent-video' },
+            'bonus-stage-bounce.json': { videoFile: 'bonus-stage-bounce-video.html', rendererKey: 'bonus-stage-bounce-video' },
+            'bowser-on-steroids.json': { videoFile: 'bowser-on-steroids-video.html', rendererKey: 'bowser-on-steroids-video' },
+            'caravan-of-the-sirocco.json': { videoFile: 'caravan-of-the-sirocco-video.html', rendererKey: 'caravan-sirocco-video' },
+            'cathedral-of-collapse.json': { videoFile: 'cathedral-of-collapse-video.html', rendererKey: 'cathedral-collapse-video' },
+            'cathedral-vigil.json': { videoFile: 'cathedral-vigil-video.html', rendererKey: 'cathedral-vigil-video' },
+            'classical-runner-overture.json': { videoFile: 'classical-runner-overture-video.html', rendererKey: 'classical-runner-video' },
+            'clockwork-requiem.json': { videoFile: 'clockwork-requiem-video.html', rendererKey: 'clockwork-requiem-video' },
+            'cradle-of-the-colossus.json': { videoFile: 'cradle-of-the-colossus-video.html', rendererKey: 'cradle-colossus-video' },
+            'cyber-cathedral-requiem.json': { videoFile: 'cyber-cathedral-requiem-video.html', rendererKey: 'cyber-cathedral-video' },
+            'dialectic-of-the-ramen.json': { videoFile: 'dialectic-of-the-ramen-video.html', rendererKey: 'dialectic-ramen-video' },
+            'elevator-to-the-final-floor.json': { videoFile: 'elevator-to-the-final-floor-video.html', rendererKey: 'elevator-final-floor-video' },
+            'fencing-match-in-a-thunderstorm.json': { videoFile: 'fencing-match-in-a-thunderstorm-video.html', rendererKey: 'fencing-thunderstorm-video' },
+            'ghosts-of-the-arcade.json': { videoFile: 'ghosts-of-the-arcade-video.html', rendererKey: 'ghosts-arcade-video' },
+            'glitch-dimension.json': { videoFile: 'glitch-dimension-video.html', rendererKey: 'glitch-dimension-video' },
+            'graceful-defeat.json': { videoFile: 'graceful-defeat-video.html', rendererKey: 'graceful-defeat-video' },
+            'hacking-the-mainframe.json': { videoFile: 'hacking-the-mainframe-video.html', rendererKey: 'hacking-mainframe-video' },
+            'hollow-choir-ascendant.json': { videoFile: 'hollow-choir-ascendant-video.html', rendererKey: 'hollow-choir-video' },
+            'kitchen-timer-fugue.json': { videoFile: 'kitchen-timer-fugue-video.html', rendererKey: 'kitchen-timer-fugue-video' },
+            'last-transmission-from-voyager.json': { videoFile: 'last-transmission-from-voyager-video.html', rendererKey: 'last-transmission-video' },
+            'long-december.json': { videoFile: 'long-december-video.html', rendererKey: 'long-december-video' },
+            'monastery-of-the-morning-mist.json': { videoFile: 'monastery-morning-mist-video.html', rendererKey: 'monastery-morning-mist-video' },
+            'neon-jackpot.json': { videoFile: 'neon-jackpot-video.html', rendererKey: 'neon-jackpot-video' },
+            'neon-velocity.json': { videoFile: 'neon-velocity-video.html', rendererKey: 'neon-velocity-video' },
+            'oasis-of-the-forgotten-king.json': { videoFile: 'oasis-forgotten-king-video.html', rendererKey: 'oasis-forgotten-king-video' },
+            'ocarina-echoes.json': { videoFile: 'ocarina-echoes-video.html', rendererKey: 'ocarina-echoes-video' },
+            'orbital-lounge.json': { videoFile: 'orbital-lounge-video.html', rendererKey: 'orbital-lounge-video' },
+            'photosynthesis.json': { videoFile: 'photosynthesis-video.html', rendererKey: 'photosynthesis-video' },
+            'recursive-disagreement.json': { videoFile: 'recursive-disagreement-video.html', rendererKey: 'recursive-disagreement-video' },
+            'requiem-in-stone.json': { videoFile: 'requiem-in-stone-video.html', rendererKey: 'requiem-in-stone-video' },
+            'romantic-dissonance.json': { videoFile: 'romantic-dissonance-video.html', rendererKey: 'romantic-dissonance-video' },
+            'save-corrupted.json': { videoFile: 'save-corrupted-video.html', rendererKey: 'save-corrupted-video' },
+            'segfault-uprising.json': { videoFile: 'segfault-uprising-video.html', rendererKey: 'segfault-uprising-video' },
+            'sonata-in-c-dissolving.json': { videoFile: 'sonata-in-c-dissolving-video.html', rendererKey: 'sonata-dissolving' },
+            'speedrun-any-percent.json': { videoFile: 'speedrun-any-percent-video.html', rendererKey: 'speedrun-any-percent-video' },
+            'survivors-campfire.json': { videoFile: 'survivors-campfire-video.html', rendererKey: 'campfire-video' },
+            'survivors-cosmic.json': { videoFile: 'survivors-cosmic-video.html', rendererKey: 'survivors-cosmic-video' },
+            'survivors-cyberpunk.json': { videoFile: 'survivors-neon-district-video.html', rendererKey: 'survivors-neon-district' },
+            'survivors-forest.json': { videoFile: 'survivors-forest-video.html', rendererKey: 'survivors-forest-video' },
+            'survivors-gothic.json': { videoFile: 'survivors-gothic-video.html', rendererKey: 'survivors-gothic-video' },
+            'system-infection.json': { videoFile: 'system-infection-video.html', rendererKey: 'system-infection-video' },
+            'tavern-brawl-crescendo.json': { videoFile: 'tavern-brawl-crescendo-video.html', rendererKey: 'tavern-brawl-video' },
+            'the-coins-journey.json': { videoFile: 'the-coins-journey-video.html', rendererKey: 'coins-journey-video' },
+            'the-divas-aria.json': { videoFile: 'the-divas-aria-video.html', rendererKey: 'divas-aria-video' },
+            'the-duel-at-worlds-end.json': { videoFile: 'the-duel-at-worlds-end-video.html', rendererKey: 'duel-video' },
+            'the-lighthouse-keeper.json': { videoFile: 'the-lighthouse-keeper-video.html', rendererKey: 'lighthouse-keeper-video' },
+            'the-password-was-wrong.json': { videoFile: 'the-password-was-wrong-video.html', rendererKey: 'password-wrong-video' },
+            'through-the-fire-and-flames.json': { videoFile: 'through-the-fire-and-flames-video.html', rendererKey: 'ttfaf-video' },
+            'tidepool-at-the-edge-of-the-world.json': { videoFile: 'tidepool-edge-video.html', rendererKey: 'tidepool-edge-video' },
+            'voyage-of-the-paper-lantern.json': { videoFile: 'voyage-paper-lantern-video.html', rendererKey: 'voyage-paper-lantern-video' },
+            'wireless-access-protocol.json': { videoFile: 'wap-video.html', rendererKey: 'wap-video' },
+            'white-pony-rom.json': { videoFile: 'white-pony-rom-video.html', rendererKey: 'white-pony-rom-video' }
+        };
+
+        var VIDEO_BASE = '../../music/visualizer/';
+
+        // ================================================================
         // MIDI -> STAFF
         // ================================================================
 
@@ -522,7 +587,7 @@
         var songManifest = [];
         var currentSongFile = null;
         var currentSongJSON = null;
-        var gameState = 'menu'; // 'menu' | 'playing' | 'paused' | 'results'
+        var gameState = 'menu'; // 'menu' | 'countdown' | 'playing' | 'paused' | 'results'
 
         // Layout (recomputed on resize/each frame)
         var W = 0, H = 0;
@@ -573,6 +638,14 @@
         var songEnded = false;
         var songEndTimer = 0;
 
+        // Video renderer state
+        var activeVideoRenderer = null;
+        var videoRendererInited = false;
+
+        // Countdown state
+        var countdownTime = 0;
+        var gameStartElapsed = 0; // seconds since gameplay started (for key guide fade)
+
         // ================================================================
         // SONG SELECT
         // ================================================================
@@ -583,7 +656,10 @@
             fetch(SONGS_BASE + "index.json")
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    songManifest = data.songs;
+                    // Filter to only songs that have music videos
+                    songManifest = data.songs.filter(function (s) {
+                        return VIDEO_SONGS.hasOwnProperty(s.file);
+                    });
                     buildSongGrid();
                     loadingEl.style.display = 'none';
                 })
@@ -614,31 +690,17 @@
         function buildSongGrid() {
             var grid = document.getElementById('song-grid');
             grid.innerHTML = '';
-            var groups = {};
             songManifest.forEach(function (s) {
-                var cat = s.category || 'other';
-                if (!groups[cat]) groups[cat] = [];
-                groups[cat].push(s);
-            });
-            var order = ['classic', 'original', 'cover', 'other'];
-            order.forEach(function (cat) {
-                if (!groups[cat]) return;
-                var label = document.createElement('div');
-                label.className = 'category-label';
-                label.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
-                grid.appendChild(label);
-                groups[cat].forEach(function (s) {
-                    var card = document.createElement('div');
-                    card.className = 'song-card';
-                    card.innerHTML = '<div class="title">' + escHtml(s.title) + '</div>'
-                        + '<div class="meta">' + s.bpm + ' BPM</div>'
-                        + buildDifficultyHTML(s.bpm)
-                        + '<div class="desc">' + escHtml(s.description || '') + '</div>';
-                    card.addEventListener('click', function () {
-                        startGame(s.file);
-                    });
-                    grid.appendChild(card);
+                var card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML = '<div class="title">' + escHtml(s.title) + '</div>'
+                    + '<div class="meta">' + s.bpm + ' BPM</div>'
+                    + buildDifficultyHTML(s.bpm)
+                    + '<div class="desc">' + escHtml(s.description || '') + '</div>';
+                card.addEventListener('click', function () {
+                    startGame(s.file);
                 });
+                grid.appendChild(card);
             });
         }
 
@@ -654,20 +716,60 @@
 
         var vizInitialized = false;
 
+        function loadVideoRenderer(videoInfo, callback) {
+            fetch(VIDEO_BASE + videoInfo.videoFile)
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    // Extract inline <script> blocks (no src attribute)
+                    var scripts = html.match(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/gi) || [];
+                    var inlineScripts = scripts.filter(function (s) { return !s.match(/\bsrc\s*=/i); });
+                    if (inlineScripts.length === 0) { callback(null); return; }
+                    var lastScript = inlineScripts[inlineScripts.length - 1];
+                    var code = lastScript.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '');
+
+                    // Stub Visualizer methods to prevent bootstrap side effects
+                    var stubs = ['init', 'setRenderer', 'loadSong', 'play', 'stop', 'isPlaying'];
+                    var originals = {};
+                    stubs.forEach(function (m) { originals[m] = Visualizer[m]; });
+                    Visualizer.init = function () {};
+                    Visualizer.setRenderer = function () {};
+                    Visualizer.loadSong = function () {};
+                    Visualizer.play = function () {};
+                    Visualizer.stop = function () {};
+                    Visualizer.isPlaying = function () { return false; };
+
+                    try {
+                        new Function(code)();
+                    } catch (e) {
+                        // Bootstrap code may fail on missing DOM elements — that's OK,
+                        // the renderer IIFE has already registered on window.Renderers
+                    }
+
+                    // Restore Visualizer methods
+                    stubs.forEach(function (m) { Visualizer[m] = originals[m]; });
+
+                    callback(window.Renderers[videoInfo.rendererKey] || null);
+                })
+                .catch(function (err) {
+                    console.error('Failed to load video renderer:', err);
+                    callback(null);
+                });
+        }
+
         function startGame(file) {
             currentSongFile = file;
             loadingEl.style.display = 'block';
-            loadingEl.textContent = 'Loading song...';
+            loadingEl.textContent = 'Loading song & video...';
             songSelectEl.style.display = 'none';
             resultsEl.style.display = 'none';
             pauseEl.style.display = 'none';
+
+            var videoInfo = VIDEO_SONGS[file];
 
             fetch(SONGS_BASE + file)
                 .then(function (r) { return r.json(); })
                 .then(function (json) {
                     currentSongJSON = json;
-                    loadingEl.style.display = 'none';
-                    canvas.style.display = 'block';
 
                     if (!vizInitialized) {
                         Visualizer.init(canvas);
@@ -689,9 +791,29 @@
 
                     songEnded = false;
                     songEndTimer = 0;
-                    gameState = 'playing';
 
-                    Visualizer.play();
+                    // Load video renderer if available
+                    if (videoInfo) {
+                        loadVideoRenderer(videoInfo, function (renderer) {
+                            activeVideoRenderer = renderer;
+                            videoRendererInited = false;
+                            loadingEl.style.display = 'none';
+                            canvas.style.display = 'block';
+                            // Start countdown
+                            countdownTime = 3.5;
+                            gameStartElapsed = 0;
+                            gameState = 'countdown';
+                        });
+                    } else {
+                        // No video — start with countdown anyway
+                        activeVideoRenderer = null;
+                        videoRendererInited = false;
+                        loadingEl.style.display = 'none';
+                        canvas.style.display = 'block';
+                        countdownTime = 3.5;
+                        gameStartElapsed = 0;
+                        gameState = 'countdown';
+                    }
                 })
                 .catch(function (err) {
                     console.error(err);
@@ -764,6 +886,13 @@
             });
         }
 
+        function getNoteY(note) {
+            if (activeVideoRenderer) {
+                return computeLaneYs()[note.channel % 4];
+            }
+            return staffPosToY(note.staffPos);
+        }
+
         function resetScore() {
             score = 0;
             combo = 0;
@@ -831,7 +960,7 @@
 
             // Calculate visual position for effect
             var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
-            var y = staffPosToY(note.staffPos);
+            var y = getNoteY(note);
             onHit(channel, rating, x, y);
         }
 
@@ -848,7 +977,7 @@
                     combo = 0;
 
                     var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
-                    var y = staffPosToY(note.staffPos);
+                    var y = getNoteY(note);
                     onMiss(note.channel, x, y, prevCombo);
                 }
             }
@@ -1151,6 +1280,10 @@
         }
 
         function drawPlayhead(ctx) {
+            var laneYs = computeLaneYs();
+            var lineTop = (activeVideoRenderer ? laneYs[0] : staffTop) - 20;
+            var lineBot = (activeVideoRenderer ? laneYs[3] : bassBottom) + 20;
+
             // Glow behind
             var glowW = 40;
             var grad = ctx.createLinearGradient(cursorX - glowW, 0, cursorX + glowW, 0);
@@ -1158,14 +1291,14 @@
             grad.addColorStop(0.5, 'rgba(184,149,74,0.08)');
             grad.addColorStop(1, 'rgba(184,149,74,0)');
             ctx.fillStyle = grad;
-            ctx.fillRect(cursorX - glowW, staffTop - 20, glowW * 2, bassBottom - staffTop + 40);
+            ctx.fillRect(cursorX - glowW, lineTop, glowW * 2, lineBot - lineTop);
 
             // Main line
             ctx.strokeStyle = CURSOR_COLOR;
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.moveTo(cursorX, staffTop - 20);
-            ctx.lineTo(cursorX, bassBottom + 20);
+            ctx.moveTo(cursorX, lineTop);
+            ctx.lineTo(cursorX, lineBot);
             ctx.stroke();
             ctx.lineWidth = 1;
         }
@@ -1213,12 +1346,60 @@
             }
         }
 
+        function drawLaneGuides(ctx) {
+            var laneYs = computeLaneYs();
+            for (var ch = 0; ch < 4; ch++) {
+                ctx.strokeStyle = CHANNEL_COLORS_DIM[ch];
+                ctx.lineWidth = 1;
+                ctx.setLineDash([8, 12]);
+                ctx.beginPath();
+                ctx.moveTo(cursorX + 20, laneYs[ch]);
+                ctx.lineTo(W, laneYs[ch]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawCountdown(ctx) {
+            if (gameState !== 'countdown') return;
+
+            var num = Math.ceil(countdownTime);
+            var text, textColor;
+            if (num > 3) {
+                // Brief pause at start
+                return;
+            } else if (num >= 1) {
+                text = '' + num;
+                textColor = '#b8954a';
+            } else {
+                text = 'GO!';
+                textColor = '#ffe066';
+            }
+
+            // Beat-pulse scale
+            var frac = countdownTime - Math.floor(countdownTime);
+            var scale = 1 + Math.pow(frac, 0.5) * 0.3;
+            var alpha = num >= 1 ? Math.min(1, frac * 4) : Math.max(0, countdownTime * 2);
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold ' + Math.round(120 * scale) + 'px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = textColor;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = textColor;
+            ctx.fillText(text, W / 2, H * 0.45);
+            ctx.restore();
+        }
+
         function drawNotes(ctx, currentRowFrac) {
             if (noteTimeline.length === 0) return;
 
             var leftRow = currentRowFrac - (cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
             var rightRow = currentRowFrac + (W - cursorX + SCROLL_MARGIN) / PIXELS_PER_ROW;
             var startIdx = findFirst(leftRow - maxNoteDurationRows);
+            var isVideo = !!activeVideoRenderer;
 
             for (var i = startIdx; i < noteTimeline.length; i++) {
                 var note = noteTimeline[i];
@@ -1227,107 +1408,118 @@
                 if (note.row > rightRow) break;
 
                 var x = cursorX + (note.row - currentRowFrac) * PIXELS_PER_ROW;
-                var y = staffPosToY(note.staffPos);
+                var y = getNoteY(note);
                 var ch = note.channel % 4;
 
                 var noteColor;
                 if (note.hit) {
-                    // Hit notes fade to dim with a brief bright flash handled by effects
                     noteColor = CHANNEL_COLORS_DIM[ch];
                 } else if (note.missed) {
                     noteColor = 'rgba(255,68,68,0.3)';
                 } else {
-                    // Upcoming notes: brighter as they approach
                     var distToPlayhead = note.row - currentRowFrac;
                     if (distToPlayhead <= 0) {
-                        // Past playhead but not yet auto-missed
                         noteColor = CHANNEL_COLORS[ch];
                     } else {
                         noteColor = CHANNEL_COLORS_MED[ch];
                     }
                 }
 
-                // Duration beam
-                var noteW = note.duration * PIXELS_PER_ROW;
-                var beamH = 4;
-                var beamW = Math.max(1, noteW - NOTE_HEAD_RX);
-                ctx.fillStyle = noteColor;
-                ctx.fillRect(x + NOTE_HEAD_RX, y - beamH / 2, beamW, beamH);
-
-                // Ledger lines
-                drawLedgerLines(ctx, x, y, note.staffPos);
-
-                // Accidental
-                if (note.sharp) {
+                if (isVideo) {
+                    // Video mode: simple circles + horizontal duration bars
+                    var noteW = note.duration * PIXELS_PER_ROW;
+                    var barH = 6;
+                    var barW = Math.max(1, noteW - 7);
                     ctx.fillStyle = noteColor;
-                    ctx.font = '14px serif';
-                    ctx.fillText('#', x - NOTE_HEAD_RX - 12, y + 5);
+                    ctx.fillRect(x + 7, y - barH / 2, barW, barH);
+
+                    // Circle notehead
+                    ctx.beginPath();
+                    ctx.arc(x, y, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Staff mode: ellipse noteheads with stems, ledger lines, accidentals
+                    var noteW2 = note.duration * PIXELS_PER_ROW;
+                    var beamH = 4;
+                    var beamW = Math.max(1, noteW2 - NOTE_HEAD_RX);
+                    ctx.fillStyle = noteColor;
+                    ctx.fillRect(x + NOTE_HEAD_RX, y - beamH / 2, beamW, beamH);
+                    drawLedgerLines(ctx, x, y, note.staffPos);
+                    if (note.sharp) {
+                        ctx.fillStyle = noteColor;
+                        ctx.font = '14px serif';
+                        ctx.fillText('#', x - NOTE_HEAD_RX - 12, y + 5);
+                    }
+                    ctx.fillStyle = noteColor;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, NOTE_HEAD_RX, NOTE_HEAD_RY, -0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    var stemH = LINE_SPACING * 3.5;
+                    ctx.strokeStyle = noteColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    if (note.staffPos >= 0) {
+                        ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
+                        ctx.lineTo(x + NOTE_HEAD_RX - 1, y + stemH);
+                    } else {
+                        ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
+                        ctx.lineTo(x + NOTE_HEAD_RX - 1, y - stemH);
+                    }
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
                 }
 
-                // Notehead
-                ctx.fillStyle = noteColor;
-                ctx.beginPath();
-                ctx.ellipse(x, y, NOTE_HEAD_RX, NOTE_HEAD_RY, -0.2, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Enhanced approach glow - notes glow brighter within ~5 rows
+                // Enhanced approach glow
                 if (!note.hit && !note.missed) {
                     var rowDist2 = Math.abs(note.row - currentRowFrac);
-                    var approachRows = 5; // glow within 5 rows
+                    var approachRows = 5;
                     if (rowDist2 < approachRows) {
                         var glowIntensity = 1 - (rowDist2 / approachRows);
-                        glowIntensity = glowIntensity * glowIntensity; // quadratic ease
+                        glowIntensity = glowIntensity * glowIntensity;
+                        var noteR = isVideo ? 7 : NOTE_HEAD_RX;
                         ctx.save();
                         ctx.shadowColor = CHANNEL_COLORS[ch];
                         ctx.shadowBlur = 6 + 18 * glowIntensity;
                         ctx.fillStyle = CHANNEL_COLORS[ch];
                         ctx.globalAlpha = glowIntensity * 0.7;
                         ctx.beginPath();
-                        ctx.ellipse(x, y, NOTE_HEAD_RX + 2 + glowIntensity * 3, NOTE_HEAD_RY + 2 + glowIntensity * 2, -0.2, 0, Math.PI * 2);
+                        ctx.arc(x, y, noteR + 2 + glowIntensity * 3, 0, Math.PI * 2);
                         ctx.fill();
 
-                        // Perfect-timing shimmer: pulse when very close
-                        var hitWindowRows = WINDOW_PERFECT / secondsPerRow;
-                        if (rowDist2 < hitWindowRows * 3) {
-                            var shimmer = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(Date.now() * 0.015));
-                            ctx.globalAlpha = shimmer * 0.5;
-                            ctx.shadowBlur = 25;
-                            ctx.beginPath();
-                            ctx.ellipse(x, y, NOTE_HEAD_RX + 5, NOTE_HEAD_RY + 4, -0.2, 0, Math.PI * 2);
-                            ctx.fill();
+                        if (secondsPerRow > 0) {
+                            var hitWindowRows = WINDOW_PERFECT / secondsPerRow;
+                            if (rowDist2 < hitWindowRows * 3) {
+                                var shimmer = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(Date.now() * 0.015));
+                                ctx.globalAlpha = shimmer * 0.5;
+                                ctx.shadowBlur = 25;
+                                ctx.beginPath();
+                                ctx.arc(x, y, noteR + 5, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
                         }
                         ctx.restore();
                     }
                 }
-
-                // Stem
-                var stemH = LINE_SPACING * 3.5;
-                ctx.strokeStyle = noteColor;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                if (note.staffPos >= 0) {
-                    ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
-                    ctx.lineTo(x + NOTE_HEAD_RX - 1, y + stemH);
-                } else {
-                    ctx.moveTo(x + NOTE_HEAD_RX - 1, y);
-                    ctx.lineTo(x + NOTE_HEAD_RX - 1, y - stemH);
-                }
-                ctx.stroke();
-                ctx.lineWidth = 1;
             }
         }
 
         function drawKeyLanes(ctx) {
-            // Draw 4 subtle lane indicators at the playhead showing where each key maps
             var laneYs = computeLaneYs();
 
             // Detect key releases for ripple effects
             for (var rch = 0; rch < 4; rch++) {
                 if (prevKeysDown[rch] && !keysDown[rch]) {
-                    // Key just released - spawn ripple
                     laneRipples.push({ channel: rch, t: 0, maxT: 0.35 });
                 }
                 prevKeysDown[rch] = keysDown[rch];
+            }
+
+            // Enhanced visibility during countdown and first 5 seconds
+            var earlyBoost = 0;
+            if (gameState === 'countdown') {
+                earlyBoost = 1;
+            } else if (gameStartElapsed < 5) {
+                earlyBoost = 1 - (gameStartElapsed / 5);
             }
 
             for (var ch = 0; ch < 4; ch++) {
@@ -1337,8 +1529,6 @@
                 ctx.save();
 
                 if (isDown) {
-                    // Bright flash at hit zone when key held
-                    // Bright column flash
                     var flashGrad = ctx.createRadialGradient(cursorX, y, 0, cursorX, y, 35);
                     flashGrad.addColorStop(0, CHANNEL_COLORS_GLOW[ch]);
                     flashGrad.addColorStop(0.5, CHANNEL_COLORS_DIM[ch]);
@@ -1346,20 +1536,31 @@
                     ctx.fillStyle = flashGrad;
                     ctx.fillRect(cursorX - 35, y - 35, 70, 70);
 
-                    // Bright lane strip
                     ctx.fillStyle = CHANNEL_COLORS_GLOW[ch];
                     ctx.fillRect(cursorX - 18, y - 14, 36, 28);
 
-                    // Extra glow
                     ctx.shadowColor = CHANNEL_COLORS[ch];
                     ctx.shadowBlur = 20;
                 }
 
-                // Key label
-                ctx.font = 'bold 13px "Cinzel", serif';
+                // Key label — larger and brighter during early phase
+                var baseFontSize = 13 + earlyBoost * 7;
+                ctx.font = 'bold ' + Math.round(baseFontSize) + 'px "Cinzel", serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = isDown ? CHANNEL_COLORS[ch] : CHANNEL_COLORS_DIM[ch];
+
+                if (isDown) {
+                    ctx.fillStyle = CHANNEL_COLORS[ch];
+                } else if (earlyBoost > 0) {
+                    // Brighter during early phase
+                    var baseAlpha = 0.25 + earlyBoost * 0.55;
+                    ctx.fillStyle = CHANNEL_COLORS[ch];
+                    ctx.globalAlpha = baseAlpha;
+                    ctx.shadowColor = CHANNEL_COLORS[ch];
+                    ctx.shadowBlur = 8 * earlyBoost;
+                } else {
+                    ctx.fillStyle = CHANNEL_COLORS_DIM[ch];
+                }
                 ctx.fillText(KEY_NAMES[ch], cursorX, y);
 
                 ctx.restore();
@@ -1367,11 +1568,14 @@
         }
 
         function computeLaneYs() {
-            // Place key lanes at vertical positions spanning the staff region
-            // Channel 0 (gold) - high treble area
-            // Channel 1 (rose) - low treble area
-            // Channel 2 (purple) - high bass area
-            // Channel 3 (silver) - low bass area
+            if (activeVideoRenderer) {
+                // Video mode: 4 evenly-spaced lanes in the lower-center area
+                var top = H * 0.30;
+                var bottom = H * 0.78;
+                var gap = (bottom - top) / 3;
+                return [top, top + gap, top + gap * 2, bottom];
+            }
+            // Staff mode: lanes at treble/bass staff positions
             var trebleMid = staffTop + LINE_SPACING * 2;
             var bassMid = bassTop + LINE_SPACING * 2;
             return [
@@ -1494,13 +1698,16 @@
         function drawComboFire(ctx, cursor) {
             if (combo < 10 || !cursor) return;
 
+            var laneYs = computeLaneYs();
+            var regionTop = laneYs[0] - 20;
+            var regionBot = laneYs[3] + 20;
+
             var beatPhase = (cursor.totalFracRow % rpb) / rpb;
             var beatPulse = 0.7 + 0.3 * Math.pow(Math.cos(beatPhase * Math.PI * 2), 2);
 
             ctx.save();
 
             if (combo >= 10) {
-                // Subtle glow around playhead
                 var glowIntensity = Math.min(1, (combo - 10) / 20) * beatPulse;
                 var glowW = 30 + combo * 0.5;
                 var grad = ctx.createLinearGradient(cursorX - glowW, 0, cursorX + glowW, 0);
@@ -1508,14 +1715,13 @@
                 grad.addColorStop(0.5, 'rgba(184,149,74,' + (0.15 * glowIntensity) + ')');
                 grad.addColorStop(1, 'rgba(184,149,74,0)');
                 ctx.fillStyle = grad;
-                ctx.fillRect(cursorX - glowW, staffTop - 30, glowW * 2, bassBottom - staffTop + 60);
+                ctx.fillRect(cursorX - glowW, regionTop - 10, glowW * 2, regionBot - regionTop + 20);
             }
 
             if (combo >= 30) {
-                // Flame particles rising from playhead
                 var flameRate = combo >= 50 ? 0.6 : 0.3;
                 if (Math.random() < flameRate) {
-                    var flameY = staffTop + Math.random() * (bassBottom - staffTop);
+                    var flameY = regionTop + Math.random() * (regionBot - regionTop);
                     spawnParticle(
                         cursorX + (Math.random() - 0.5) * 16,
                         flameY,
@@ -1960,6 +2166,8 @@
         function showSongSelect() {
             gameState = 'menu';
             if (Visualizer.isPlaying()) Visualizer.stop();
+            activeVideoRenderer = null;
+            videoRendererInited = false;
             canvas.style.display = 'none';
             resultsEl.style.display = 'none';
             pauseEl.style.display = 'none';
@@ -1992,24 +2200,62 @@
                 H = fd.height;
 
                 // Update layout
-                var totalStaffH = LINE_SPACING * 4 * 2 + STAFF_GAP;
-                staffTop = (H - totalStaffH) / 2;
-                trebleBottom = staffTop + LINE_SPACING * 4;
-                bassTop = trebleBottom + STAFF_GAP;
-                bassBottom = bassTop + LINE_SPACING * 4;
-                cursorX = SCROLL_MARGIN + (W - SCROLL_MARGIN * 2) * CURSOR_X_FRAC;
+                computeLayout(W, H);
 
                 if (fd.analysis) {
                     secondsPerRow = fd.analysis.secondsPerRow;
                 }
 
-                drawBackground(ctx, fd.cursor);
-                drawStaves(ctx, fd.cursor);
-                drawClefs(ctx);
+                // ---- Background layer ----
+                if (activeVideoRenderer) {
+                    // Init video renderer once
+                    if (!videoRendererInited) {
+                        if (activeVideoRenderer.init) {
+                            activeVideoRenderer.init(fd.ctx, fd.width, fd.height, fd.analysis);
+                        }
+                        videoRendererInited = true;
+                    }
+                    if (activeVideoRenderer.resize) {
+                        activeVideoRenderer.resize(fd.width, fd.height);
+                    }
+                    // Draw video background
+                    activeVideoRenderer.render(fd);
+                    // Semi-transparent overlay to dim video for readability
+                    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                    ctx.fillRect(0, 0, W, H);
+                    // Draw lane guides
+                    drawLaneGuides(ctx);
+                } else {
+                    drawBackground(ctx, fd.cursor);
+                    drawStaves(ctx, fd.cursor);
+                    drawClefs(ctx);
+                }
 
                 var currentRowFrac = fd.cursor ? fd.cursor.totalFracRow : -2;
 
-                drawBarLines(ctx, currentRowFrac);
+                if (!activeVideoRenderer) {
+                    drawBarLines(ctx, currentRowFrac);
+                }
+
+                // ---- Countdown phase ----
+                if (gameState === 'countdown') {
+                    countdownTime -= fd.dt;
+                    if (countdownTime <= 0) {
+                        gameState = 'playing';
+                        gameStartElapsed = 0;
+                        Visualizer.play();
+                    }
+                    drawPlayhead(ctx);
+                    drawKeyLanes(ctx);
+                    drawCountdown(ctx);
+                    return;
+                }
+
+                // Track time since gameplay started (for key guide fade)
+                if (gameState === 'playing') {
+                    gameStartElapsed += fd.dt;
+                }
+
                 drawNotes(ctx, currentRowFrac);
                 drawComboFire(ctx, fd.cursor);
                 drawPlayhead(ctx);
@@ -2022,19 +2268,13 @@
                             tryHit(ch, currentRowFrac);
                         }
                     }
-                    // Clear just-pressed flags after processing
                     keyJustPressed = {};
-
-                    // Auto-miss notes that passed
                     checkAutoMiss(currentRowFrac);
-
-                    // Check song end
                     checkSongEnd(fd.cursor);
                 }
                 if (gameState === 'playing') {
                     updateSongEndTimer(fd.dt);
                 }
-                // Clear stale key presses if not playing
                 if (gameState !== 'playing') {
                     keyJustPressed = {};
                 }
@@ -2048,11 +2288,11 @@
                 }
 
                 // Idle state message
-                if (!fd.cursor && gameState !== 'playing') {
+                if (!fd.cursor && gameState !== 'playing' && gameState !== 'countdown') {
                     ctx.fillStyle = 'rgba(216,207,192,0.15)';
                     ctx.font = '16px "Crimson Pro", serif';
                     ctx.textAlign = 'center';
-                    ctx.fillText('Loading...', W / 2, bassBottom + 50);
+                    ctx.fillText('Loading...', W / 2, H * 0.6);
                     ctx.textAlign = 'start';
                 }
             },
@@ -2076,8 +2316,8 @@
 
             var key = e.key.toLowerCase();
 
-            // Game keys
-            if (gameState === 'playing' && KEY_MAP.hasOwnProperty(key)) {
+            // Game keys (also allow during countdown for visual feedback)
+            if ((gameState === 'playing' || gameState === 'countdown') && KEY_MAP.hasOwnProperty(key)) {
                 e.preventDefault();
                 var ch = KEY_MAP[key];
                 if (!keysDown[ch]) {
