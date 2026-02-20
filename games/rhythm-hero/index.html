@@ -803,6 +803,7 @@
                             countdownTime = 3.5;
                             gameStartElapsed = 0;
                             gameState = 'countdown';
+                            startGameLoop();
                         });
                     } else {
                         // No video — start with countdown anyway
@@ -813,6 +814,7 @@
                         countdownTime = 3.5;
                         gameStartElapsed = 0;
                         gameState = 'countdown';
+                        startGameLoop();
                     }
                 })
                 .catch(function (err) {
@@ -2384,6 +2386,66 @@
         document.getElementById('btn-back-select').addEventListener('click', function () {
             showSongSelect();
         });
+
+        // ================================================================
+        // STANDALONE GAME LOOP
+        // When the Visualizer isn't playing (countdown, paused), we need
+        // our own rAF loop to keep rendering.
+        // ================================================================
+
+        var gameRafId = 0;
+        var gameLastTime = 0;
+
+        function gameLoop(timestamp) {
+            gameRafId = requestAnimationFrame(gameLoop);
+
+            // If Visualizer is playing, it drives rendering — skip to avoid double draws
+            if (Visualizer.isPlaying()) return;
+
+            // Stop the loop if we're back at the menu
+            if (gameState === 'menu') {
+                cancelAnimationFrame(gameRafId);
+                gameRafId = 0;
+                return;
+            }
+
+            var now = timestamp / 1000;
+            var dt = gameLastTime ? now - gameLastTime : 1 / 60;
+            gameLastTime = now;
+            if (dt > 0.1) dt = 1 / 60;
+
+            // Size the canvas properly (may have been display:none during init)
+            var cw = canvas.clientWidth;
+            var ch = canvas.clientHeight;
+            if (cw > 0 && ch > 0) {
+                var dpr = window.devicePixelRatio || 1;
+                if (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr)) {
+                    canvas.width = Math.round(cw * dpr);
+                    canvas.height = Math.round(ch * dpr);
+                }
+                var ctx2d = canvas.getContext('2d');
+                ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx2d.clearRect(0, 0, cw, ch);
+
+                var fd = {
+                    ctx: ctx2d,
+                    width: cw,
+                    height: ch,
+                    dt: dt,
+                    cursor: null,
+                    currentNotes: [null, null, null, null],
+                    analysis: Visualizer.getAnalysis(),
+                    song: Visualizer.getSong()
+                };
+                rhythmHeroRenderer.render(fd);
+            }
+        }
+
+        function startGameLoop() {
+            if (gameRafId) return; // already running
+            gameLastTime = 0;
+            gameRafId = requestAnimationFrame(gameLoop);
+        }
 
         // ================================================================
         // INIT
