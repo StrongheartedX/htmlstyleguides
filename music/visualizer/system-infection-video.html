@@ -202,6 +202,7 @@
         // Boss ref
         var boss = null;
         var bossDefeated = false;
+        var finalChorusBeats = 0;
 
         // Intro animation
         var introDropY = -200;
@@ -886,9 +887,10 @@
             if (section === 'final_chorus') {
                 spotlightTarget = 1;
                 keyChangeBlend = 0;
+                finalChorusBeats = 0;
                 // Spawn boss
                 if (!boss || boss.hp <= 0) {
-                    boss = spawnEnemy(300, true, 1.5, true);
+                    boss = spawnEnemy(150, true, 1.5, true);
                     bossDefeated = false;
                 }
             }
@@ -986,6 +988,9 @@
                 // Key change blend
                 keyChangeBlend = lerpExp(keyChangeBlend, 1, 3, 1 / 60);
 
+                // Track beats in final_chorus for failsafe
+                finalChorusBeats++;
+
                 // Every beat — all-out, override any pauses
                 heroAttackCooldown = 0;
                 heroState = 'attacking';
@@ -1005,6 +1010,20 @@
                     StickFight.spawnBlood(boss.x, boss.y - boss.figH * 0.4,
                         30, hero.facing * 300, -250);
                     shakeIntensity = 10;
+                }
+
+                // Failsafe: force-kill boss before outro if still alive
+                // final_chorus spans seqIndex 23-24; kill near the end
+                if (boss && boss.hp > 0 && !bossDefeated && seqIdx === 24 && finalChorusBeats >= 48) {
+                    boss.hp = 0;
+                    bossDefeated = true;
+                    slowMoFactor = 0.15;
+                    slowMoTimer = 1.8;
+                    StickFight.applyDeath(boss, 'dramatic', groundY);
+                    StickFight.spawnBlood(boss.x, boss.y - boss.figH * 0.4,
+                        35, hero.facing * 350, -300);
+                    StickFight.detachLimb(boss, 'armR', groundY);
+                    shakeIntensity = 15;
                 }
             }
 
@@ -1079,6 +1098,7 @@
             enemyTimers = [];
             boss = null;
             bossDefeated = false;
+            finalChorusBeats = 0;
 
             lastBeat = -1;
             beatPulse = 0;

@@ -51,8 +51,8 @@
         },
         guard: {
             bounce: -0.05, lean: 0.1,
-            armLAngle: -0.6, armRAngle: -0.7,
-            elbowLBend: 0.75, elbowRBend: 0.8,
+            armLAngle: -1.0, armRAngle: -1.0,
+            elbowLBend: 0.8, elbowRBend: 0.85,
             legSpread: 0.3, kneeL: -0.1, kneeR: 0
         },
         lunge: {
@@ -75,8 +75,8 @@
         },
         block: {
             bounce: -0.08, lean: -0.15,
-            armLAngle: -0.6, armRAngle: -0.5,
-            elbowLBend: 0.7, elbowRBend: 0.6,
+            armLAngle: -1.1, armRAngle: -1.1,
+            elbowLBend: 0.85, elbowRBend: 0.85,
             legSpread: 0.25, kneeL: 0, kneeR: 0.05
         },
         recoil: {
@@ -618,8 +618,8 @@
         block: {
             duration: 0.40,
             keyframes: [
-                { t: 0.0, pose: { lean: -0.1, armLAngle: -0.6, armRAngle: -0.5, elbowLBend: 0.7, elbowRBend: 0.6 } },
-                { t: 0.3, pose: { lean: -0.15, armLAngle: -0.6, armRAngle: -0.5, elbowLBend: 0.7, elbowRBend: 0.6 } },
+                { t: 0.0, pose: { lean: -0.1, armLAngle: -1.1, armRAngle: -1.1, elbowLBend: 0.85, elbowRBend: 0.85 } },
+                { t: 0.3, pose: { lean: -0.15, armLAngle: -1.1, armRAngle: -1.1, elbowLBend: 0.85, elbowRBend: 0.85 } },
                 { t: 1.0, pose: { lean: 0, armLAngle: 0.4, armRAngle: 0.4, elbowLBend: 0.3, elbowRBend: 0.3 } }
             ]
         },
