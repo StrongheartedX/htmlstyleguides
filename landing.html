@@ -1483,6 +1483,257 @@
 
 
     /* ═══════════════════════════════════════════════════
+       INTRO OVERLAY & STONE DOORS
+       ═══════════════════════════════════════════════════ */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #06060a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s ease;
+    }
+
+    .intro-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* The archway container */
+    .intro-archway {
+      position: absolute;
+      inset: 0;
+      perspective: 1200px;
+      overflow: hidden;
+    }
+
+    /* Stone door panels */
+    .intro-door {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      background:
+        /* Stone grain texture */
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          rgba(80, 70, 60, 0.03) 1px,
+          transparent 2px,
+          transparent 8px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          rgba(60, 50, 40, 0.04) 1px,
+          transparent 2px,
+          transparent 6px
+        ),
+        /* Base stone color */
+        linear-gradient(
+          180deg,
+          #2a2520 0%,
+          #1e1a16 30%,
+          #15120f 60%,
+          #1a1714 100%
+        );
+      transition: transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+    }
+
+    .intro-door-left {
+      left: 0;
+      transform-origin: left center;
+      border-right: 2px solid #0a0908;
+      box-shadow:
+        inset -20px 0 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .intro-door-right {
+      right: 0;
+      transform-origin: right center;
+      border-left: 2px solid #0a0908;
+      box-shadow:
+        inset 20px 0 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 60px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Iron bands across the doors */
+    .intro-door::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background:
+        linear-gradient(180deg,
+          transparent 14%,
+          rgba(40, 35, 30, 0.7) 14.5%, rgba(50, 45, 38, 0.9) 15%, rgba(60, 55, 48, 0.8) 15.5%, rgba(40, 35, 30, 0.6) 16%, transparent 16.5%,
+          transparent 34%,
+          rgba(40, 35, 30, 0.7) 34.5%, rgba(50, 45, 38, 0.9) 35%, rgba(60, 55, 48, 0.8) 35.5%, rgba(40, 35, 30, 0.6) 36%, transparent 36.5%,
+          transparent 54%,
+          rgba(40, 35, 30, 0.7) 54.5%, rgba(50, 45, 38, 0.9) 55%, rgba(60, 55, 48, 0.8) 55.5%, rgba(40, 35, 30, 0.6) 56%, transparent 56.5%,
+          transparent 74%,
+          rgba(40, 35, 30, 0.7) 74.5%, rgba(50, 45, 38, 0.9) 75%, rgba(60, 55, 48, 0.8) 75.5%, rgba(40, 35, 30, 0.6) 76%, transparent 76.5%,
+          transparent 100%
+        );
+      pointer-events: none;
+    }
+
+    /* Iron studs */
+    .intro-door::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        /* Row 1 studs */
+        radial-gradient(circle at 20% 15%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 50% 15%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 80% 15%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        /* Row 2 */
+        radial-gradient(circle at 20% 35%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 50% 35%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 80% 35%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        /* Row 3 */
+        radial-gradient(circle at 20% 55%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 50% 55%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 80% 55%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        /* Row 4 */
+        radial-gradient(circle at 20% 75%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 50% 75%, rgba(90, 80, 65, 0.8) 3px, transparent 4px),
+        radial-gradient(circle at 80% 75%, rgba(90, 80, 65, 0.8) 3px, transparent 4px);
+      pointer-events: none;
+    }
+
+    /* Door opening animation */
+    .intro-door-left.opening {
+      transform: rotateY(90deg);
+    }
+
+    .intro-door-right.opening {
+      transform: rotateY(-90deg);
+    }
+
+    /* Center content (title + enter prompt) */
+    .intro-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .intro-title-text {
+      font-family: 'UnifrakturMaguntia', cursive;
+      font-size: clamp(2rem, 5vw, 4rem);
+      font-weight: 400;
+      color: var(--gold);
+      text-shadow:
+        0 0 15px rgba(201, 168, 76, 0.6),
+        0 0 30px rgba(201, 168, 76, 0.3),
+        0 0 60px rgba(201, 168, 76, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 1.5s ease, transform 1.5s ease, text-shadow 2s ease;
+      line-height: 1.3;
+    }
+
+    .intro-title-text.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .intro-title-text.blazing {
+      text-shadow:
+        0 0 20px rgba(201, 168, 76, 0.8),
+        0 0 40px rgba(201, 168, 76, 0.5),
+        0 0 80px rgba(201, 168, 76, 0.3),
+        0 0 120px rgba(201, 168, 76, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .intro-subtitle-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.9rem, 2vw, 1.3rem);
+      font-style: italic;
+      color: var(--text-secondary);
+      letter-spacing: 3px;
+      margin-top: 0.75rem;
+      opacity: 0;
+      transition: opacity 1s ease 0.5s;
+    }
+
+    .intro-subtitle-text.visible {
+      opacity: 1;
+    }
+
+    .intro-enter {
+      margin-top: 2.5rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: transparent;
+      border: 1px solid var(--gold-dim);
+      border-radius: 4px;
+      padding: 0.75rem 2.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: enter-pulse 2s ease-in-out infinite;
+    }
+
+    .intro-enter:hover {
+      background: rgba(201, 168, 76, 0.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+    }
+
+    .intro-enter.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    @keyframes enter-pulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(201, 168, 76, 0.1); }
+      50% { box-shadow: 0 0 20px rgba(201, 168, 76, 0.25); }
+    }
+
+    /* Light spill from behind doors when opening */
+    .intro-light-spill {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(
+        180deg,
+        transparent 5%,
+        rgba(201, 168, 76, 0.15) 20%,
+        rgba(232, 200, 76, 0.3) 50%,
+        rgba(201, 168, 76, 0.15) 80%,
+        transparent 95%
+      );
+      opacity: 0;
+      transition: opacity 0.5s ease, width 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .intro-light-spill.active {
+      opacity: 1;
+      width: 100%;
+    }
+
+    /* ═══════════════════════════════════════════════════
        RESPONSIVE
        ═══════════════════════════════════════════════════ */
     @media (max-width: 768px) {
@@ -1561,6 +1812,22 @@
   </style>
 </head>
 <body>
+
+  <!-- ═══════════════════════════════════════════════════
+       INTRO OVERLAY
+       ═══════════════════════════════════════════════════ -->
+  <div class="intro-overlay" id="intro-overlay">
+    <div class="intro-archway">
+      <div class="intro-door intro-door-left" id="intro-door-left"></div>
+      <div class="intro-door intro-door-right" id="intro-door-right"></div>
+      <div class="intro-light-spill" id="intro-light-spill"></div>
+    </div>
+    <div class="intro-content">
+      <div class="intro-title-text" id="intro-title">The Compendium<br>of Digital Curiosities</div>
+      <div class="intro-subtitle-text" id="intro-subtitle">An Encyclop&aelig;dia of Synthetic Wonders</div>
+      <button class="intro-enter" id="intro-enter">Enter the Compendium</button>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════
        MARQUEE TICKER
@@ -2312,6 +2579,100 @@
     });
 
 })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════
+       INTRO SEQUENCE
+       ═══════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    "use strict";
+
+    var overlay = document.getElementById("intro-overlay");
+    var enterBtn = document.getElementById("intro-enter");
+    var titleEl = document.getElementById("intro-title");
+    var subtitleEl = document.getElementById("intro-subtitle");
+    var doorLeft = document.getElementById("intro-door-left");
+    var doorRight = document.getElementById("intro-door-right");
+    var lightSpill = document.getElementById("intro-light-spill");
+
+    // Skip intro if already seen this session
+    if (sessionStorage.getItem("intro-seen")) {
+      overlay.remove();
+      return;
+    }
+
+    var introPlayed = false;
+
+    enterBtn.addEventListener("click", function () {
+      if (introPlayed) return;
+      introPlayed = true;
+
+      // Hide button
+      enterBtn.classList.add("hidden");
+
+      // Show title immediately
+      titleEl.classList.add("visible");
+
+      // Show subtitle after a beat
+      setTimeout(function () {
+        subtitleEl.classList.add("visible");
+      }, 600);
+
+      // Load and play the fanfare
+      ChipPlayer.init();
+      ChipPlayer.setVolume(0.6);
+
+      fetch("music/audio-tracker/songs/compendium-fanfare.json")
+        .then(function (r) { return r.json(); })
+        .then(function (songJSON) {
+          ChipPlayer.load(songJSON);
+          ChipPlayer.play();
+
+          // At ~5s: title starts glowing brighter
+          setTimeout(function () {
+            titleEl.classList.add("blazing");
+          }, 5000);
+
+          // At ~6.5s: light spill appears through the door crack
+          setTimeout(function () {
+            lightSpill.classList.add("active");
+          }, 6500);
+
+          // At ~7s: doors swing open (2.5s transition in CSS)
+          setTimeout(function () {
+            doorLeft.classList.add("opening");
+            doorRight.classList.add("opening");
+          }, 7000);
+
+          // At ~10s: fade out overlay, stop fanfare
+          setTimeout(function () {
+            overlay.classList.add("fade-out");
+            ChipPlayer.stop();
+            sessionStorage.setItem("intro-seen", "1");
+          }, 10000);
+
+          // At ~11s: remove overlay from DOM
+          setTimeout(function () {
+            overlay.remove();
+          }, 11000);
+        })
+        .catch(function (err) {
+          console.error("Intro: failed to load fanfare", err);
+          // Fallback: just open the doors without music
+          doorLeft.classList.add("opening");
+          doorRight.classList.add("opening");
+          lightSpill.classList.add("active");
+          titleEl.classList.add("visible");
+          titleEl.classList.add("blazing");
+          setTimeout(function () {
+            overlay.classList.add("fade-out");
+            sessionStorage.setItem("intro-seen", "1");
+          }, 3000);
+          setTimeout(function () { overlay.remove(); }, 4000);
+        });
+    });
+  })();
   </script>
 
 </body>
