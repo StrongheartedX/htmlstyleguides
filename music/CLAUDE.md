@@ -21,10 +21,13 @@ music/
     index.html            # Visualizer UI (full-viewport canvas + overlay)
     engine.js             # Core engine (audio, cursor, analysis, renderer dispatch)
     stick-fight-engine.js # Stick-figure skeleton/pose/ragdoll toolkit
+    video-utils.js        # Shared helpers (lerp, rand, hexToRgb, rgba, etc.)
+    video-base-styles.css # Shared video CSS (resets, canvas, play overlay)
+    base-renderer.js      # Factory (beat detection, beatPulse decay, registration)
     renderers/            # Pluggable renderer modules
-    music-videos/         # Beat-synced stick-figure music videos
+    music-videos/         # Beat-synced music videos
       index.html          # VHS tape deck video browser
-      *-video.html        # Individual video files (53 videos)
+      *-video.html        # Individual video files (54 videos)
 ```
 
 ## Hub Page (index.html)

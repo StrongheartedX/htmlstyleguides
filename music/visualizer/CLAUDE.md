@@ -8,11 +8,18 @@ Canvas-based music visualizer synced to the chiptune song library (57 songs). Pl
 music/visualizer/
   index.html              # Hub: full-viewport canvas + overlay UI
   engine.js               # Core: audio, cursor, analysis, canvas, renderer dispatch
+  stick-fight-engine.js   # Stick-figure skeleton/pose/ragdoll toolkit
+  video-utils.js          # Shared helpers: lerp, clamp01, rand, hexToRgb, rgba, etc.
+  video-base-styles.css   # Shared video CSS: resets, canvas, play overlay, back-link
+  base-renderer.js        # Factory: beat detection, beatPulse decay, renderer registration
   renderers/
     particle-field.js     # Particle bursts from channel quadrants
     waveform-grid.js      # Scrolling note blocks in horizontal lanes
     spectrum-rings.js     # Concentric rotating rings per channel
     starfield.js          # Music-reactive starfield (also used as landing page bg)
+  music-videos/
+    index.html            # VHS tape deck video browser
+    *-video.html          # 54 individual beat-synced music videos
 ```
 
 ### Engine (`engine.js`) — `window.Visualizer`
@@ -78,6 +85,13 @@ window.Renderers['my-renderer'] = {
 
 `cursor` is `null` when stopped. `currentNotes[i].normalized` is 0.0–1.0 within the song's pitch range.
 
+The factory also patches these onto `frameData`:
+
+| Field | Type | Description |
+|---|---|---|
+| `beatPulse` | number | 0-1, set to 1 on beat change, auto-decayed by factory |
+| `beatChanged` | boolean | `true` on the frame a new beat arrives |
+
 ### Renderer rules
 
 - Never touch DOM or manage audio — just draw on the provided `ctx`
@@ -92,6 +106,149 @@ window.Renderers['my-renderer'] = {
 2. Add a `<script>` tag in `index.html` before the inline `<script>` block
 3. It auto-appears in the renderer dropdown
 
+## Shared Video Modules
+
+Music videos use three shared modules that eliminate boilerplate. All 54 existing videos use this pattern.
+
+### `video-utils.js` — Utility Functions
+
+Window globals (no namespace):
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `lerp` | `(a, b, t)` | Linear interpolation |
+| `lerpExp` | `(current, target, speed, dt)` | Exponential smoothing |
+| `clamp01` | `(v)` | Clamp to 0-1 |
+| `rand` | `(min, max)` | Random float in range |
+| `randInt` | `(min, max)` | Random integer in range (inclusive) |
+| `pickRandom` | `(arr)` | Random array element |
+| `hexToRgb` | `(hex)` | Returns `{ r, g, b }` |
+| `rgba` | `(hex, a)` | Returns `"rgba(r,g,b,a)"` string |
+
+### `video-base-styles.css` — Shared CSS
+
+Provides structural styling for all video pages via CSS custom properties. Each video sets theme values in a small inline `:root` block:
+
+```css
+:root {
+    --vid-bg: #020810;           /* page background */
+    --vid-bg-rgb: 2,8,16;       /* RGB components for rgba() */
+    --vid-font: 'Cinzel', serif; /* display font */
+    --vid-accent: #00e5cc;       /* accent color */
+    --vid-accent-r: 0;           /* accent RGB components */
+    --vid-accent-g: 229;
+    --vid-accent-b: 204;
+}
+```
+
+Covers: CSS resets, canvas positioning, play overlay, play button with pulse animation, back-link. Each video keeps only renderer-specific CSS inline.
+
+### `base-renderer.js` — Renderer Factory
+
+`BaseRenderer(slug, displayName, config)` handles renderer registration on `window.Renderers`, beat detection (lastBeat tracking), and beatPulse decay. Config options:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `beatDecay` | `8` | Exponential decay rate for beatPulse |
+| `expDecay` | `true` | `false` for frame-based decay (`*= rate`) |
+| `init` | required | `function(ctx, w, h, analysis)` |
+| `render` | required | `function(frameData)` — factory patches `frameData.beatPulse` and `frameData.beatChanged` |
+| `resize` | optional | `function(w, h)` |
+| `destroy` | optional | `function()` |
+
+## Writing a New Music Video
+
+### HTML Template
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Name — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=YourFont&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="video-base-styles.css">
+    <style>
+        :root {
+            --vid-bg: #020810;
+            --vid-bg-rgb: 2,8,16;
+            --vid-font: 'Cinzel', serif;
+            --vid-accent: #00e5cc;
+            --vid-accent-r: 0;
+            --vid-accent-g: 229;
+            --vid-accent-b: 204;
+        }
+        /* renderer-specific CSS only */
+    </style>
+</head>
+<body>
+    <a href="music-videos/index.html" class="back-link">&larr; Music Videos</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">Song Name</div>
+        <div class="play-sub">a short description</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script src="stick-fight-engine.js"></script>  <!-- only if using stick figures -->
+    <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
+    <script>
+    (function() {
+        "use strict";
+        var W = 0, H = 0, analysis = null;
+        var beatPulse = 0, flashAlpha = 0;
+
+        function init(ctx, w, h, anal) {
+            W = w; H = h; analysis = anal;
+            beatPulse = 0; flashAlpha = 0;
+            // ... setup scene ...
+        }
+
+        function resize(w, h) { W = w; H = h; }
+
+        function render(frameData) {
+            var ctx = frameData.ctx, dt = frameData.dt || 1/60;
+            var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;  // sync from factory
+
+            if (!cursor) { /* draw idle state */ return; }
+
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            if (frameData.beatChanged) {
+                // spawn effects, trigger animations
+            }
+            flashAlpha *= Math.exp(-5 * dt);  // renderer manages own flash
+
+            // ... draw scene ...
+        }
+
+        BaseRenderer('my-song-video', 'My Song Name', {
+            beatDecay: 8,
+            init: init, render: render, resize: resize
+        });
+    })();
+
+    // ── Page bootstrap (same for all videos) ──
+    (function() { /* ... see any existing video for the full bootstrap ... */ })();
+    </script>
+</body>
+</html>
+```
+
+### Key Patterns
+
+- **Beat sync**: Use `frameData.beatChanged` for one-shot effects (particle bursts, scene changes). Use `beatPulse` (0-1 decaying) for continuous pulsing (glow, size oscillation).
+- **Flash**: Manage `flashAlpha` in your closure. Set it on events, decay each frame, draw a full-screen overlay with `ctx.globalAlpha = flashAlpha`.
+- **Sections**: Use `analysis.sectionChanges` and `cursor.seqIndex` to map song structure to visual scenes.
+- **Energy**: `analysis.energy[cursor.timelineIndex]` gives 0-1 intensity for the current moment.
+
 ## Stick Fight Engine (`stick-fight-engine.js`)
 
 Shared stick-figure skeleton, pose, and ragdoll toolkit. Not a renderer — a module that video renderers call into. ES5 IIFE exposing `window.StickFight`.
@@ -104,8 +261,10 @@ Add the script tag **after** `engine.js` and **before** the inline renderer:
 <script src="../audio-tracker/playback-engine.js"></script>
 <script src="engine.js"></script>
 <script src="stick-fight-engine.js"></script>
+<script src="video-utils.js"></script>
+<script src="base-renderer.js"></script>
 <script>
-window.Renderers['my-video'] = (function() { ... })();
+// Renderer code here (see "Writing a New Music Video" below)
 </script>
 ```
 

@@ -33,8 +33,13 @@ A collection of CSS design system showcases, interactive educational stories, st
 │   ├── index.html          # Hub page — song browser + tool links
 │   ├── audio-tracker/      # FamiTracker-inspired sequencer + organ
 │   └── visualizer/         # Canvas visualizer + music videos
-│       └── CLAUDE.md       # How to build renderers
+│       ├── CLAUDE.md       # How to build renderers & videos
+│       ├── video-utils.js  # Shared helpers (lerp, rand, rgba, etc.)
+│       ├── video-base-styles.css  # Shared video CSS with CSS vars
+│       └── base-renderer.js      # Video renderer factory
 └── games/                  # Browser games (modular JS)
+    ├── casino-audio-engine.js  # Shared CasinoAudio for casino games
+    ├── casino-theme.css        # Shared Vegas palette for casino games
     └── survivors/          # Survivors roguelike (arena + shop + themes)
 ```
 
@@ -51,6 +56,21 @@ A collection of CSS design system showcases, interactive educational stories, st
 - Stories and games can use multiple files (shared JS, theme configs, JSON data, media assets).
 - The only hard rule: it must work on GitHub Pages with no build step.
 - Stories may embed YouTube iframes and link to external resources (Wikipedia, etc.).
+
+## Shared Modules
+
+### Music Videos (`music/visualizer/`)
+New music videos should use the shared modules instead of inline boilerplate:
+- **`video-utils.js`** — Global helpers: `lerp`, `lerpExp`, `clamp01`, `rand`, `randInt`, `pickRandom`, `hexToRgb`, `rgba`
+- **`video-base-styles.css`** — Structural CSS with CSS custom properties (`--vid-bg`, `--vid-accent`, `--vid-font`, etc.)
+- **`base-renderer.js`** — `BaseRenderer(slug, name, config)` factory handles `window.Renderers` registration, beat detection, and `beatPulse` decay
+
+See `music/visualizer/CLAUDE.md` for the full video template and API docs.
+
+### Casino Games (`games/`)
+The 3 casino games share:
+- **`casino-audio-engine.js`** — `window.CasinoAudio` IIFE with `init()`, `play(type)`, `register(name, fn)` + 7 built-in sounds (flip, deal, place, click, buttonClick, win, fanfare, coin). Each game registers its unique sounds via `CasinoAudio.register()`.
+- **`casino-theme.css`** — 23 shared `:root` variables for the Vegas aesthetic (`--felt-green`, `--gold`, `--neon-pink`, `--chrome`, font stacks, gradients, glows). Each game adds only its unique variables inline.
 
 ## Cross-Cutting Patterns
 
