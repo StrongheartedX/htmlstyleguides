@@ -3456,7 +3456,13 @@ npx @modelcontextprotocol/inspector
             const activeLink = document.querySelector(`.jump-nav a[href="#${topSection.id}"]`);
             if (activeLink) {
                 activeLink.classList.add('active');
-                activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+                const nav = activeLink.closest('.jump-nav');
+                if (nav) {
+                    const navRect = nav.getBoundingClientRect();
+                    const linkRect = activeLink.getBoundingClientRect();
+                    const scrollLeft = nav.scrollLeft + linkRect.left - navRect.left - navRect.width / 2 + linkRect.width / 2;
+                    nav.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
             }
         }, {
             rootMargin: '-48px 0px -50% 0px',
