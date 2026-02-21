@@ -915,20 +915,41 @@
             // ── Idle state ──
             if (!cursor) {
                 drawSky(ctx);
+                drawStars(ctx, 0.6);
                 drawMountains(ctx, 0);
                 drawGround(ctx);
-                drawStars(ctx, 0.6);
                 drawVignette(ctx, 0.5);
 
-                // Dim idle runner
-                ctx.save();
-                ctx.globalAlpha = 0.5;
+                // Dim idle runner with torch glow
                 if (runnerFig) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.5;
                     StickFight.setPose(runnerFig, 'idle');
+                    StickFight.setTarget(runnerFig, 'armRAngle', -0.8);
+                    StickFight.setTarget(runnerFig, 'elbowRBend', 0.6);
                     StickFight.updateFigure(runnerFig, dt);
-                    StickFight.drawFigure(ctx, runnerFig);
+                    var idleJoints = StickFight.computeJoints(runnerFig);
+                    var idleHandX = runnerFig.x + idleJoints.handR.x + 2;
+                    var idleHandY = runnerFig.y + idleJoints.handR.y - runnerFig.figH * 0.12;
+                    // Torch glow
+                    ctx.globalAlpha = 0.4;
+                    var idleGlow = ctx.createRadialGradient(idleHandX, idleHandY, 0, idleHandX, idleHandY, 40);
+                    idleGlow.addColorStop(0, 'rgba(255,170,68,0.35)');
+                    idleGlow.addColorStop(0.5, 'rgba(255,136,48,0.12)');
+                    idleGlow.addColorStop(1, 'rgba(255,100,20,0)');
+                    ctx.fillStyle = idleGlow;
+                    ctx.fillRect(idleHandX - 40, idleHandY - 40, 80, 80);
+                    // Core flame
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillStyle = 'rgba(255,224,128,0.6)';
+                    ctx.beginPath();
+                    ctx.ellipse(idleHandX, idleHandY - 4, 3, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Draw figure
+                    ctx.globalAlpha = 0.5;
+                    StickFight.drawFigure(ctx, runnerFig, idleJoints);
+                    ctx.restore();
                 }
-                ctx.restore();
                 return;
             }
 
