@@ -1689,24 +1689,28 @@
                 skyBot: [180, 160, 200],   // soft lavender
                 surfaceMul: 0.92,
                 textLighten: 0,
+                accentLighten: 0,
             },
             day: {
                 skyTop: null,              // use season default
                 skyBot: null,
                 surfaceMul: 1.0,
                 textLighten: 0,
+                accentLighten: 0,
             },
             dusk: {
                 skyTop: [200, 120, 60],    // amber gold
                 skyBot: [120, 70, 100],    // deep purple
                 surfaceMul: 0.88,
                 textLighten: 0.05,
+                accentLighten: 0,
             },
             night: {
                 skyTop: [20, 22, 45],      // deep navy
                 skyBot: [35, 30, 55],      // dark indigo
                 surfaceMul: 0.65,
-                textLighten: 0.35,
+                textLighten: 0.7,
+                accentLighten: 0.4,
             },
         };
 
@@ -1932,11 +1936,23 @@
                     currentColors[key] = adjusted;
                     root.style.setProperty(CSS_MAP[key], colorToRgb(adjusted));
                 } else {
-                    currentColors[key] = blended;
-                    if (HAS_ALPHA.has(key)) {
-                        root.style.setProperty(CSS_MAP[key], colorToRgba(blended));
+                    // Lighten accent/button/highlight/line colors at night
+                    let accentLighten = 0;
+                    for (let t = 0; t < 4; t++) {
+                        accentLighten += TIME_PHASES[TIME_ORDER[t]].accentLighten * timeWeights[t];
+                    }
+                    if (accentLighten > 0.01) {
+                        const adjusted = [
+                            blended[0] + (255 - blended[0]) * accentLighten,
+                            blended[1] + (255 - blended[1]) * accentLighten,
+                            blended[2] + (255 - blended[2]) * accentLighten,
+                        ];
+                        if (blended.length > 3) adjusted.push(blended[3]);
+                        currentColors[key] = adjusted;
+                        root.style.setProperty(CSS_MAP[key], HAS_ALPHA.has(key) ? colorToRgba(adjusted) : colorToRgb(adjusted));
                     } else {
-                        root.style.setProperty(CSS_MAP[key], colorToRgb(blended));
+                        currentColors[key] = blended;
+                        root.style.setProperty(CSS_MAP[key], HAS_ALPHA.has(key) ? colorToRgba(blended) : colorToRgb(blended));
                     }
                 }
             }
