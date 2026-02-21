@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Tide Clock — Music Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="video-base-styles.css">
+    <style>
+        :root {
+            --vid-bg: #0a1020;
+            --vid-bg-rgb: 10,16,32;
+            --vid-font: 'Playfair Display', serif;
+            --vid-accent: #c9a84c;
+            --vid-accent-r: 201;
+            --vid-accent-g: 168;
+            --vid-accent-b: 76;
+            --vid-overlay-alpha: 0.92;
+            --vid-title-min: 20px;
+            --vid-title-max: 48px;
+            --vid-title-spacing: 0.06em;
+        }
+        .play-sub { letter-spacing: 0.1em; font-style: italic; }
+    </style>
+</head>
+<body>
+    <a href="music-videos/index.html" class="back-link">&larr; Music Videos</a>
+    <canvas id="viz-canvas"></canvas>
+    <div class="play-overlay" id="play-overlay">
+        <div class="play-title">The Tide Clock</div>
+        <div class="play-sub">seasons pass, tides remember</div>
+        <div class="play-btn"></div>
+    </div>
+
+    <script src="../audio-tracker/playback-engine.js"></script>
+    <script src="engine.js"></script>
+    <script src="video-utils.js"></script>
+    <script src="base-renderer.js"></script>
+    <script>
+    // ── The Tide Clock — Video Renderer ──────────────────────────────────
+    (function() {
+        "use strict";
+
+        var W = 0, H = 0;
+        var analysis = null;
+
+        // ── Season color palettes (RGB arrays) ──
+        var SPRING_SKY_TOP = [135, 206, 235];
+        var SPRING_SKY_BOT = [200, 230, 255];
+        var SPRING_WATER   = [60, 120, 180];
+
+        var SUMMER_SKY_TOP = [255, 200, 80];
+        var SUMMER_SKY_BOT = [255, 235, 180];
+        var SUMMER_WATER   = [70, 150, 200];
+
+        var AUTUMN_SKY_TOP = [180, 100, 50];
+        var AUTUMN_SKY_BOT = [220, 160, 80];
+        var AUTUMN_WATER   = [100, 80, 60];
+
+        var WINTER_SKY_TOP = [60, 65, 80];
+        var WINTER_SKY_BOT = [90, 95, 110];
+        var WINTER_WATER   = [40, 50, 70];
+
+        var INTRO_SKY_TOP  = [20, 25, 45];
+        var INTRO_SKY_BOT  = [40, 50, 75];
+        var INTRO_WATER    = [30, 40, 65];
+
+        var RESOLVE_SKY_TOP = [100, 170, 220];
+        var RESOLVE_SKY_BOT = [180, 215, 240];
+        var RESOLVE_WATER   = [55, 110, 170];
+
+        var GRAND_SKY_TOP  = [170, 200, 230];
+        var GRAND_SKY_BOT  = [220, 230, 245];
+        var GRAND_WATER    = [80, 140, 200];
+
+        var FINAL_SKY_TOP  = [30, 35, 55];
+        var FINAL_SKY_BOT  = [60, 70, 95];
+        var FINAL_WATER    = [35, 45, 70];
+
+        var BRASS_COLOR    = [201, 168, 76];
+        var BRASS_DARK     = [140, 110, 50];
+        var BRASS_LIGHT    = [230, 200, 120];
+        var CLOCK_RIM      = [80, 65, 35];
+        var GEAR_COLOR     = [160, 135, 75];
+
+        // ── State ──
+        var beatPulse = 0;
+        var flashAlpha = 0;
+        var lastSeqIndex = -1;
+        var scene = 'intro_pendulum';
+
+        // Smooth transition values
+        var skyTop = INTRO_SKY_TOP.slice(), skyBot = INTRO_SKY_BOT.slice();
+        var waterColor = INTRO_WATER.slice();
+        var skyTopTarget = INTRO_SKY_TOP, skyBotTarget = INTRO_SKY_BOT;
+        var waterTarget = INTRO_WATER;
+
+        var stormIntensity = 0, stormTarget = 0;
+        var waterLevel = 0.75, waterLevelTarget = 0.75;
+        var waveTime = 0;
+        var waveAmplitude = 0.3, waveAmplitudeTarget = 0.3;
+        var pendulumAngle = 0;
+        var gearVisible = 0, gearTarget = 0;
+        var gearRotation = 0;
+        var titleAlpha = 0, titleTarget = 0;
+        var subtitleText = '';
+        var outroFade = 1;
+        var clockGlow = 0;
+        var villageAlpha = 1, villageAlphaTarget = 1;
+
+        // Granddaughter scene
+        var grandVisible = 0, grandTarget = 0;
+        var oldFigureAlpha = 1, oldFigureTarget = 1;
+
+        // Particles
+        var particles = [];
+        var MAX_PARTICLES = 120;
+        var particleType = 'none'; // 'petals', 'sparkles', 'leaves', 'snow'
+
+        // Stars
+        var stars = [];
+        var NUM_STARS = 80;
+        var starAlpha = 0, starTarget = 0;
+
+        // Village buildings
+        var buildings = [];
+        var NUM_BUILDINGS = 12;
+
+        // Lightning (winter storm)
+        var lightningBolts = [];
+
+        // ── Local color helpers (RGB arrays) ──
+        function lc(c1, c2, t) {
+            return [
+                Math.round(lerp(c1[0], c2[0], t)),
+                Math.round(lerp(c1[1], c2[1], t)),
+                Math.round(lerp(c1[2], c2[2], t))
+            ];
+        }
+        function rgbStr(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+        function rgbaC(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+        function lerpColor(cur, target, speed, dt) {
+            var t = 1 - Math.exp(-speed * dt);
+            return [
+                Math.round(cur[0] + (target[0] - cur[0]) * t),
+                Math.round(cur[1] + (target[1] - cur[1]) * t),
+                Math.round(cur[2] + (target[2] - cur[2]) * t)
+            ];
+        }
+
+        // ── Scene mapping (32 seq entries, 0-31) ──
+        function mapScene(seqIndex) {
+            if (seqIndex <= 1) return 'intro_pendulum';
+            if (seqIndex <= 3) return 'intro_melody';
+            if (seqIndex <= 7) return 'spring';
+            if (seqIndex <= 11) return 'summer';
+            if (seqIndex <= 15) return 'autumn';
+            if (seqIndex <= 21) return 'winter';
+            if (seqIndex <= 25) return 'resolution';
+            if (seqIndex <= 29) return 'granddaughter';
+            return 'final_tide';
+        }
+
+        // ── Init ──
+        function init(ctx, width, height, anal) {
+            W = width; H = height;
+            analysis = anal;
+
+            beatPulse = 0; flashAlpha = 0;
+            lastSeqIndex = -1;
+            scene = 'intro_pendulum';
+
+            skyTop = INTRO_SKY_TOP.slice();
+            skyBot = INTRO_SKY_BOT.slice();
+            waterColor = INTRO_WATER.slice();
+            skyTopTarget = INTRO_SKY_TOP;
+            skyBotTarget = INTRO_SKY_BOT;
+            waterTarget = INTRO_WATER;
+
+            stormIntensity = 0; stormTarget = 0;
+            waterLevel = 0.75; waterLevelTarget = 0.75;
+            waveTime = 0;
+            waveAmplitude = 0.3; waveAmplitudeTarget = 0.3;
+            pendulumAngle = 0;
+            gearVisible = 0; gearTarget = 0;
+            gearRotation = 0;
+            titleAlpha = 0; titleTarget = 0;
+            subtitleText = '';
+            outroFade = 1;
+            clockGlow = 0;
+            villageAlpha = 1; villageAlphaTarget = 1;
+            grandVisible = 0; grandTarget = 0;
+            oldFigureAlpha = 1; oldFigureTarget = 1;
+            particleType = 'none';
+            starAlpha = 0; starTarget = 0;
+            lightningBolts = [];
+
+            initParticles();
+            initStars();
+            initBuildings();
+        }
+
+        function initParticles() {
+            particles = [];
+            for (var i = 0; i < MAX_PARTICLES; i++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function createParticle() {
+            return {
+                x: Math.random() * (W || 800),
+                y: Math.random() * (H || 600),
+                vx: (Math.random() - 0.5) * 30,
+                vy: 20 + Math.random() * 40,
+                size: 2 + Math.random() * 5,
+                alpha: 0.3 + Math.random() * 0.7,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 3,
+                life: Math.random()
+            };
+        }
+
+        function initStars() {
+            stars = [];
+            for (var i = 0; i < NUM_STARS; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random() * 0.5,
+                    size: 0.5 + Math.random() * 2,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: 1 + Math.random() * 3
+                });
+            }
+        }
+
+        function initBuildings() {
+            buildings = [];
+            for (var i = 0; i < NUM_BUILDINGS; i++) {
+                var t = i / (NUM_BUILDINGS - 1);
+                buildings.push({
+                    x: 0.08 + t * 0.84,
+                    width: 0.025 + Math.random() * 0.03,
+                    height: 0.06 + Math.random() * 0.1,
+                    roofPeak: 0.02 + Math.random() * 0.03,
+                    hasChimney: Math.random() > 0.5,
+                    windowRows: 1 + Math.floor(Math.random() * 3)
+                });
+            }
+        }
+
+        function resize(width, height) {
+            W = width; H = height;
+        }
+
+        // ── Drawing functions ──
+
+        function drawSky(ctx) {
+            var grad = ctx.createLinearGradient(0, 0, 0, H * 0.65);
+            grad.addColorStop(0, rgbStr(skyTop));
+            grad.addColorStop(1, rgbStr(skyBot));
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        function drawStars(ctx, dt) {
+            if (starAlpha < 0.01) return;
+            ctx.save();
+            for (var i = 0; i < stars.length; i++) {
+                var s = stars[i];
+                s.twinkle += s.speed * dt;
+                var tw = 0.3 + Math.sin(s.twinkle) * 0.7;
+                ctx.globalAlpha = starAlpha * tw * 0.6;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(s.x * W, s.y * H, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawSun(ctx) {
+            // Only during spring/summer/autumn/resolution
+            if (scene === 'winter' || scene === 'intro_pendulum' || scene === 'intro_melody' || scene === 'final_tide') return;
+            if (stormIntensity > 0.5) return;
+
+            var sunX, sunY, sunR, sunAlpha;
+            if (scene === 'spring' || scene === 'resolution') {
+                sunX = W * 0.78; sunY = H * 0.18;
+                sunR = W * 0.035;
+                sunAlpha = 0.7 * (1 - stormIntensity);
+            } else if (scene === 'summer') {
+                sunX = W * 0.72; sunY = H * 0.1;
+                sunR = W * 0.045;
+                sunAlpha = 0.9;
+            } else if (scene === 'autumn') {
+                sunX = W * 0.82; sunY = H * 0.25;
+                sunR = W * 0.04;
+                sunAlpha = 0.5;
+            } else if (scene === 'granddaughter') {
+                sunX = W * 0.75; sunY = H * 0.15;
+                sunR = W * 0.03;
+                sunAlpha = 0.6;
+            } else {
+                return;
+            }
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Glow
+            var glowGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 5);
+            glowGrad.addColorStop(0, rgbaC([255, 240, 180], sunAlpha * 0.3));
+            glowGrad.addColorStop(0.3, rgbaC([255, 200, 100], sunAlpha * 0.1));
+            glowGrad.addColorStop(1, rgbaC([255, 180, 60], 0));
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Disc
+            var discGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR);
+            discGrad.addColorStop(0, rgbaC([255, 250, 220], sunAlpha));
+            discGrad.addColorStop(0.7, rgbaC([255, 220, 140], sunAlpha * 0.8));
+            discGrad.addColorStop(1, rgbaC([255, 200, 80], 0));
+            ctx.fillStyle = discGrad;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawClouds(ctx) {
+            if (stormIntensity < 0.1) return;
+            ctx.save();
+            ctx.globalAlpha = stormIntensity * 0.35;
+            var cloudY = H * 0.06;
+            for (var i = 0; i < 8; i++) {
+                var cx = ((waveTime * 10 + i * W * 0.18) % (W * 1.4)) - W * 0.2;
+                var cy = cloudY + Math.sin(i * 2.1) * H * 0.04;
+                var cw = W * 0.12 + i * W * 0.02;
+                ctx.fillStyle = rgbaC([50, 55, 65], stormIntensity * 0.5);
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, cw, H * 0.022, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawWater(ctx, dt, energy) {
+            var seaY = waterLevel * H;
+
+            var wCol = waterColor;
+            var oceanAlpha = 1;
+
+            // Back wave layer
+            ctx.save();
+            ctx.globalAlpha = oceanAlpha;
+            ctx.fillStyle = rgbaC(wCol, 0.85);
+            ctx.beginPath();
+            ctx.moveTo(0, H);
+            for (var x = 0; x <= W; x += 4) {
+                var t = x / W;
+                var wH = waveAmplitude * H * 0.06;
+                var y = seaY + Math.sin(t * Math.PI * 3 + waveTime * 0.7) * wH
+                    + Math.sin(t * Math.PI * 7 + waveTime * 1.2) * wH * 0.3
+                    + Math.sin(t * Math.PI * 1.5 + waveTime * 0.35) * wH * 0.5;
+                // Storm adds energy offset
+                y -= energy * 0.05 * H * stormIntensity;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(W, H);
+            ctx.closePath();
+            ctx.fill();
+
+            // Mid wave layer
+            var midCol = lc(wCol, [80, 120, 160], 0.15);
+            ctx.fillStyle = rgbaC(midCol, 0.9);
+            ctx.beginPath();
+            ctx.moveTo(0, H);
+            for (var x2 = 0; x2 <= W; x2 += 4) {
+                var t2 = x2 / W;
+                var wH2 = waveAmplitude * H * 0.045;
+                var y2 = seaY + H * 0.03
+                    + Math.sin(t2 * Math.PI * 4 + waveTime * 1.0 + 1) * wH2
+                    + Math.sin(t2 * Math.PI * 9 + waveTime * 1.6) * wH2 * 0.25;
+                y2 -= energy * 0.03 * H * stormIntensity;
+                ctx.lineTo(x2, y2);
+            }
+            ctx.lineTo(W, H);
+            ctx.closePath();
+            ctx.fill();
+
+            // Front wave layer
+            var frontCol = lc(wCol, [100, 150, 190], 0.1);
+            ctx.fillStyle = rgbaC(frontCol, 1);
+            ctx.beginPath();
+            ctx.moveTo(0, H);
+            for (var x3 = 0; x3 <= W; x3 += 3) {
+                var t3 = x3 / W;
+                var wH3 = waveAmplitude * H * 0.03;
+                var y3 = seaY + H * 0.07
+                    + Math.sin(t3 * Math.PI * 5 + waveTime * 1.4 + 2) * wH3
+                    + Math.sin(t3 * Math.PI * 11 + waveTime * 2.0) * wH3 * 0.2;
+                ctx.lineTo(x3, y3);
+            }
+            ctx.lineTo(W, H);
+            ctx.closePath();
+            ctx.fill();
+
+            // Foam during storms
+            if (stormIntensity > 0.3) {
+                ctx.strokeStyle = 'rgba(200,220,240,' + (stormIntensity * 0.15) + ')';
+                ctx.lineWidth = 1.5;
+                for (var x4 = 0; x4 < W; x4 += 4) {
+                    var t4 = x4 / W;
+                    var wH4 = waveAmplitude * H * 0.06;
+                    var slope = Math.cos(t4 * Math.PI * 3 + waveTime * 0.7);
+                    if (slope > 0.5) {
+                        var fy = seaY + Math.sin(t4 * Math.PI * 3 + waveTime * 0.7) * wH4;
+                        ctx.globalAlpha = (slope - 0.5) * 2 * stormIntensity * 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(x4, fy);
+                        ctx.lineTo(x4 + 3, fy + Math.random() * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawVillageSilhouette(ctx) {
+            if (villageAlpha < 0.01) return;
+            var baseY = waterLevel * H - H * 0.02;
+
+            ctx.save();
+            ctx.globalAlpha = villageAlpha * 0.85;
+
+            // Shoreline ground strip
+            ctx.fillStyle = rgbaC([25, 30, 40], 0.9);
+            ctx.beginPath();
+            ctx.moveTo(0, baseY + H * 0.01);
+            for (var gx = 0; gx <= W; gx += 6) {
+                var gt = gx / W;
+                var gy = baseY + Math.sin(gt * Math.PI * 2 + 0.5) * H * 0.008;
+                ctx.lineTo(gx, gy);
+            }
+            ctx.lineTo(W, baseY + H * 0.04);
+            ctx.lineTo(0, baseY + H * 0.04);
+            ctx.closePath();
+            ctx.fill();
+
+            // Buildings
+            for (var i = 0; i < buildings.length; i++) {
+                var b = buildings[i];
+                var bx = b.x * W;
+                var bw = b.width * W;
+                var bh = b.height * H;
+                var by = baseY - bh;
+
+                // Wall
+                ctx.fillStyle = rgbaC([20, 25, 38], 0.95);
+                ctx.fillRect(bx - bw / 2, by, bw, bh);
+
+                // Roof
+                ctx.beginPath();
+                ctx.moveTo(bx - bw / 2 - bw * 0.1, by);
+                ctx.lineTo(bx, by - b.roofPeak * H);
+                ctx.lineTo(bx + bw / 2 + bw * 0.1, by);
+                ctx.closePath();
+                ctx.fill();
+
+                // Chimney
+                if (b.hasChimney) {
+                    var chimW = bw * 0.15;
+                    var chimH = bh * 0.25;
+                    ctx.fillRect(bx + bw * 0.2, by - b.roofPeak * H * 0.5 - chimH, chimW, chimH);
+                }
+
+                // Warm windows (tiny yellow rectangles)
+                var winSize = Math.max(2, bw * 0.15);
+                for (var row = 0; row < b.windowRows; row++) {
+                    var wy = by + bh * 0.2 + row * bh * 0.28;
+                    for (var col = 0; col < 2; col++) {
+                        var wx = bx - bw * 0.2 + col * bw * 0.4;
+                        ctx.fillStyle = rgbaC([255, 210, 100], 0.5 + beatPulse * 0.15);
+                        ctx.fillRect(wx - winSize / 2, wy, winSize, winSize * 0.8);
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+
+        // ── Clock face ──
+        function drawClockFace(ctx, dt, energy) {
+            var cx = W * 0.5;
+            var cy = H * 0.28;
+            var radius = Math.min(W, H) * 0.16;
+
+            ctx.save();
+
+            // Outer brass ring
+            var rimGrad = ctx.createRadialGradient(cx, cy, radius * 0.88, cx, cy, radius * 1.05);
+            rimGrad.addColorStop(0, rgbaC(BRASS_DARK, 0.9));
+            rimGrad.addColorStop(0.4, rgbaC(BRASS_COLOR, 0.95));
+            rimGrad.addColorStop(0.7, rgbaC(BRASS_LIGHT, 0.9));
+            rimGrad.addColorStop(1, rgbaC(BRASS_DARK, 0.8));
+            ctx.fillStyle = rimGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 1.05, 0, Math.PI * 2);
+            ctx.arc(cx, cy, radius * 0.88, 0, Math.PI * 2, true);
+            ctx.fill();
+
+            // Glass face — semi-transparent so village shows through
+            var faceGrad = ctx.createRadialGradient(cx, cy - radius * 0.2, 0, cx, cy, radius * 0.88);
+            faceGrad.addColorStop(0, 'rgba(220,230,240,0.12)');
+            faceGrad.addColorStop(0.5, 'rgba(180,200,220,0.08)');
+            faceGrad.addColorStop(1, 'rgba(140,160,180,0.15)');
+            ctx.fillStyle = faceGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.88, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Beat glow on clock
+            if (clockGlow > 0.01) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+                glowGrad.addColorStop(0, rgbaC(BRASS_LIGHT, clockGlow * 0.15));
+                glowGrad.addColorStop(0.5, rgbaC(BRASS_COLOR, clockGlow * 0.06));
+                glowGrad.addColorStop(1, rgbaC(BRASS_COLOR, 0));
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Roman numerals
+            var numerals = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+            var fontSize = Math.max(8, radius * 0.13);
+            ctx.font = '700 ' + fontSize + 'px "Playfair Display", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = rgbaC(BRASS_COLOR, 0.7);
+
+            for (var n = 0; n < 12; n++) {
+                var angle = (n / 12) * Math.PI * 2 - Math.PI / 2;
+                var nx = cx + Math.cos(angle) * radius * 0.73;
+                var ny = cy + Math.sin(angle) * radius * 0.73;
+                ctx.fillText(numerals[n], nx, ny);
+            }
+
+            // Hour tick marks
+            for (var tick = 0; tick < 60; tick++) {
+                var ta = (tick / 60) * Math.PI * 2 - Math.PI / 2;
+                var innerR = tick % 5 === 0 ? radius * 0.82 : radius * 0.85;
+                var outerR = radius * 0.88;
+                ctx.strokeStyle = rgbaC(BRASS_COLOR, tick % 5 === 0 ? 0.6 : 0.25);
+                ctx.lineWidth = tick % 5 === 0 ? 2 : 1;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(ta) * innerR, cy + Math.sin(ta) * innerR);
+                ctx.lineTo(cx + Math.cos(ta) * outerR, cy + Math.sin(ta) * outerR);
+                ctx.stroke();
+            }
+
+            // "HIGH TIDE" and "LOW TIDE" labels
+            ctx.font = '400 ' + Math.max(6, radius * 0.07) + 'px "Playfair Display", serif';
+            ctx.fillStyle = rgbaC(BRASS_COLOR, 0.4);
+            ctx.fillText('HIGH TIDE', cx, cy - radius * 0.45);
+            ctx.fillText('LOW TIDE', cx, cy + radius * 0.45);
+
+            // Center hub
+            ctx.fillStyle = rgbaC(BRASS_COLOR, 0.8);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.04, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Clock hand — tide indicator (slowly rotates with elapsed time)
+            ctx.save();
+            ctx.translate(cx, cy);
+            var handAngle = waveTime * 0.08 - Math.PI / 2;
+            ctx.rotate(handAngle);
+            ctx.strokeStyle = rgbaC(BRASS_LIGHT, 0.7);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(radius * 0.6, 0);
+            ctx.stroke();
+            // Arrow tip
+            ctx.fillStyle = rgbaC(BRASS_LIGHT, 0.7);
+            ctx.beginPath();
+            ctx.moveTo(radius * 0.6, -3);
+            ctx.lineTo(radius * 0.65, 0);
+            ctx.lineTo(radius * 0.6, 3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // ── Pendulum ──
+        function drawPendulum(ctx, dt) {
+            var cx = W * 0.5;
+            var pivotY = H * 0.28;
+            var pendLen = H * 0.32;
+            var bobRadius = Math.min(W, H) * 0.035;
+
+            // Pendulum swings synced to BPM tick — every 2 beats
+            // angle = sin(elapsed * PI * BPM/60 / 2) — one full swing per 2 beats
+            var maxAngle = 0.25; // radians
+            var angle = Math.sin(pendulumAngle) * maxAngle;
+
+            // Final tide: slow down the pendulum
+            if (scene === 'final_tide') {
+                angle *= outroFade;
+            }
+
+            var bobX = cx + Math.sin(angle) * pendLen;
+            var bobY = pivotY + Math.cos(angle) * pendLen;
+
+            ctx.save();
+
+            // Rod
+            ctx.strokeStyle = rgbaC(BRASS_DARK, 0.7);
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, pivotY + Math.min(W, H) * 0.16 * 0.88);
+            ctx.lineTo(bobX, bobY);
+            ctx.stroke();
+
+            // Bob — brass disc with highlight
+            var bobGrad = ctx.createRadialGradient(
+                bobX - bobRadius * 0.3, bobY - bobRadius * 0.3, 0,
+                bobX, bobY, bobRadius
+            );
+            bobGrad.addColorStop(0, rgbaC(BRASS_LIGHT, 0.95));
+            bobGrad.addColorStop(0.5, rgbaC(BRASS_COLOR, 0.9));
+            bobGrad.addColorStop(1, rgbaC(BRASS_DARK, 0.85));
+            ctx.fillStyle = bobGrad;
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, bobRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bob edge ring
+            ctx.strokeStyle = rgbaC(BRASS_DARK, 0.5);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Decorative line on bob
+            ctx.strokeStyle = rgbaC(BRASS_LIGHT, 0.3);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, bobRadius * 0.65, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Beat pulse glow on bob
+            if (beatPulse > 0.05) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                var pulseGrad = ctx.createRadialGradient(bobX, bobY, 0, bobX, bobY, bobRadius * 2.5);
+                pulseGrad.addColorStop(0, rgbaC(BRASS_LIGHT, beatPulse * 0.2));
+                pulseGrad.addColorStop(0.5, rgbaC(BRASS_COLOR, beatPulse * 0.08));
+                pulseGrad.addColorStop(1, rgbaC(BRASS_COLOR, 0));
+                ctx.fillStyle = pulseGrad;
+                ctx.beginPath();
+                ctx.arc(bobX, bobY, bobRadius * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Gear mechanism (visible during intro) ──
+        function drawGears(ctx, dt, energy) {
+            if (gearVisible < 0.01) return;
+
+            var cx = W * 0.5;
+            var cy = H * 0.28;
+            var baseR = Math.min(W, H) * 0.16;
+
+            gearRotation += dt * (0.4 + energy * 0.3 + beatPulse * 0.15);
+
+            var gears = [
+                { x: cx - baseR * 0.55, y: cy + baseR * 0.4, r: baseR * 0.22, teeth: 10, dir: 1 },
+                { x: cx + baseR * 0.55, y: cy + baseR * 0.4, r: baseR * 0.22, teeth: 10, dir: -1 },
+                { x: cx - baseR * 0.35, y: cy - baseR * 0.2, r: baseR * 0.15, teeth: 8, dir: -1 },
+                { x: cx + baseR * 0.35, y: cy - baseR * 0.2, r: baseR * 0.15, teeth: 8, dir: 1 },
+                { x: cx, y: cy + baseR * 0.7, r: baseR * 0.18, teeth: 9, dir: 1 }
+            ];
+
+            ctx.save();
+            ctx.globalAlpha = gearVisible * 0.45;
+
+            for (var i = 0; i < gears.length; i++) {
+                var g = gears[i];
+                var rot = gearRotation * g.dir * (10 / g.teeth);
+
+                ctx.save();
+                ctx.translate(g.x, g.y);
+                ctx.rotate(rot);
+
+                ctx.strokeStyle = rgbaC(GEAR_COLOR, 0.65);
+                ctx.lineWidth = 1.5;
+
+                // Gear teeth
+                ctx.beginPath();
+                var toothH = g.r * 0.15;
+                for (var t = 0; t < g.teeth; t++) {
+                    var a1 = (t / g.teeth) * Math.PI * 2;
+                    var a2 = ((t + 0.3) / g.teeth) * Math.PI * 2;
+                    var a3 = ((t + 0.7) / g.teeth) * Math.PI * 2;
+                    var a4 = ((t + 1) / g.teeth) * Math.PI * 2;
+                    var ri = g.r - toothH;
+                    var ro = g.r + toothH;
+                    if (t === 0) ctx.moveTo(Math.cos(a1) * ri, Math.sin(a1) * ri);
+                    ctx.lineTo(Math.cos(a2) * ro, Math.sin(a2) * ro);
+                    ctx.lineTo(Math.cos(a3) * ro, Math.sin(a3) * ro);
+                    ctx.lineTo(Math.cos(a4) * ri, Math.sin(a4) * ri);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                // Hub
+                ctx.beginPath();
+                ctx.arc(0, 0, g.r * 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Spokes
+                for (var sp = 0; sp < 4; sp++) {
+                    var sa = (sp / 4) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(sa) * g.r * 0.2, Math.sin(sa) * g.r * 0.2);
+                    ctx.lineTo(Math.cos(sa) * g.r * 0.7, Math.sin(sa) * g.r * 0.7);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Seasonal particles ──
+        function updateAndDrawParticles(ctx, dt) {
+            if (particleType === 'none') return;
+
+            var activeCount = Math.min(MAX_PARTICLES, scene === 'winter' ? 100 : 50);
+
+            ctx.save();
+            for (var i = 0; i < activeCount; i++) {
+                var p = particles[i];
+
+                // Movement based on type
+                switch (particleType) {
+                    case 'petals':
+                        p.x += (Math.sin(waveTime + i) * 15 + 10) * dt;
+                        p.y += (15 + Math.sin(waveTime * 0.7 + i * 0.5) * 10) * dt;
+                        p.rotation += p.rotSpeed * dt;
+                        break;
+                    case 'sparkles':
+                        p.x += p.vx * 0.3 * dt;
+                        p.y += (Math.sin(waveTime + i * 0.3) * 8 - 5) * dt;
+                        p.alpha = Math.max(0, 0.3 + Math.sin(waveTime * 3 + i) * 0.5);
+                        break;
+                    case 'leaves':
+                        p.x += (Math.sin(waveTime * 0.8 + i) * 25 + 20) * dt;
+                        p.y += (30 + Math.sin(waveTime * 0.5 + i * 0.7) * 15) * dt;
+                        p.rotation += p.rotSpeed * dt * 1.5;
+                        break;
+                    case 'snow':
+                        p.x += Math.sin(waveTime * 0.5 + i * 0.4) * 12 * dt;
+                        p.y += (25 + p.size * 5) * dt;
+                        break;
+                    case 'rain':
+                        p.x += -40 * dt;
+                        p.y += (300 + p.size * 60) * dt;
+                        break;
+                }
+
+                // Wrap around
+                if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+                if (p.y < -30) { p.y = H + 10; p.x = Math.random() * W; }
+                if (p.x > W + 30) { p.x = -20; p.y = Math.random() * H; }
+                if (p.x < -30) { p.x = W + 20; p.y = Math.random() * H; }
+
+                // Draw based on type
+                ctx.globalAlpha = clamp01(p.alpha * 0.8);
+
+                switch (particleType) {
+                    case 'petals':
+                        // Pink/white flower petals
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.rotation);
+                        ctx.fillStyle = i % 3 === 0 ? 'rgba(255,220,230,0.7)' : 'rgba(255,180,200,0.6)';
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, p.size * 0.8, p.size * 0.4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                        break;
+
+                    case 'sparkles':
+                        // Golden sparkles/fireflies
+                        ctx.fillStyle = rgbaC([255, 230, 120], p.alpha);
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Glow
+                        if (p.alpha > 0.5) {
+                            ctx.save();
+                            ctx.globalCompositeOperation = 'lighter';
+                            ctx.globalAlpha = (p.alpha - 0.5) * 0.4;
+                            ctx.fillStyle = rgbaC([255, 210, 80], 1);
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                        break;
+
+                    case 'leaves':
+                        // Orange/brown autumn leaves
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.rotation);
+                        var leafColors = ['rgba(200,120,40,0.7)', 'rgba(180,80,30,0.6)', 'rgba(160,100,20,0.65)', 'rgba(220,150,50,0.6)'];
+                        ctx.fillStyle = leafColors[i % leafColors.length];
+                        // Leaf shape
+                        ctx.beginPath();
+                        ctx.moveTo(0, -p.size);
+                        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.3, p.size * 0.3, p.size * 0.5);
+                        ctx.quadraticCurveTo(0, p.size * 0.3, -p.size * 0.3, p.size * 0.5);
+                        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.3, 0, -p.size);
+                        ctx.fill();
+                        ctx.restore();
+                        break;
+
+                    case 'snow':
+                        ctx.fillStyle = 'rgba(220,230,245,' + (p.alpha * 0.7) + ')';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'rain':
+                        ctx.strokeStyle = 'rgba(180,200,220,' + (p.alpha * 0.5) + ')';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p.x - 4, p.y + p.size * 3);
+                        ctx.stroke();
+                        break;
+                }
+            }
+            ctx.restore();
+        }
+
+        // ── Lightning (winter storm) ──
+        function spawnLightning() {
+            var startX = W * 0.2 + Math.random() * W * 0.6;
+            var endY = H * 0.3 + Math.random() * H * 0.2;
+            var segments = 6 + Math.floor(Math.random() * 5);
+            var points = [{ x: startX, y: 0 }];
+            var lx = startX, ly = 0;
+            for (var s = 1; s <= segments; s++) {
+                var t = s / segments;
+                lx += (Math.random() - 0.5) * W * 0.07;
+                ly = lerp(0, endY, t);
+                points.push({ x: lx, y: ly });
+            }
+            lightningBolts.push({
+                points: points,
+                life: 0.12 + Math.random() * 0.08,
+                thickness: 1 + Math.random() * 1.5
+            });
+            flashAlpha = Math.max(flashAlpha, 0.15 + Math.random() * 0.2);
+        }
+
+        function drawLightning(ctx, dt) {
+            for (var i = lightningBolts.length - 1; i >= 0; i--) {
+                lightningBolts[i].life -= dt;
+                if (lightningBolts[i].life <= 0) lightningBolts.splice(i, 1);
+            }
+            if (lightningBolts.length === 0) return;
+
+            ctx.save();
+            for (var b = 0; b < lightningBolts.length; b++) {
+                var bolt = lightningBolts[b];
+                var alpha = Math.min(1, bolt.life / 0.04);
+
+                ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
+                ctx.lineWidth = 2 + bolt.thickness;
+                ctx.shadowColor = 'rgba(200,200,255,0.7)';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.moveTo(bolt.points[0].x, bolt.points[0].y);
+                for (var p = 1; p < bolt.points.length; p++) {
+                    ctx.lineTo(bolt.points[p].x, bolt.points[p].y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            ctx.restore();
+        }
+
+        // ── Granddaughter and old clockmaker figures ──
+        function drawFigures(ctx, dt) {
+            var baseY = waterLevel * H - H * 0.04;
+
+            // Old clockmaker
+            if (oldFigureAlpha > 0.01) {
+                drawSilhouetteFigure(ctx, W * 0.44, baseY, H * 0.09, oldFigureAlpha, true);
+            }
+
+            // Granddaughter
+            if (grandVisible > 0.01) {
+                drawSilhouetteFigure(ctx, W * 0.56, baseY, H * 0.065, grandVisible, false);
+            }
+        }
+
+        function drawSilhouetteFigure(ctx, x, groundY, figH, alpha, isOld) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+
+            var color = rgbaC([15, 18, 30], 0.9);
+
+            // Head
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, groundY - figH * 0.87, figH * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(x - figH * 0.1, groundY - figH * 0.72);
+            ctx.lineTo(x + figH * 0.1, groundY - figH * 0.72);
+            ctx.lineTo(x + figH * 0.08, groundY - figH * 0.32);
+            ctx.lineTo(x - figH * 0.08, groundY - figH * 0.32);
+            ctx.closePath();
+            ctx.fill();
+
+            // Legs
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x - figH * 0.04, groundY - figH * 0.32);
+            ctx.lineTo(x - figH * 0.06, groundY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + figH * 0.04, groundY - figH * 0.32);
+            ctx.lineTo(x + figH * 0.06, groundY);
+            ctx.stroke();
+
+            // Arms
+            ctx.lineWidth = 2;
+            if (isOld) {
+                // Old man with slightly hunched posture, arm reaching toward granddaughter
+                ctx.beginPath();
+                ctx.moveTo(x + figH * 0.1, groundY - figH * 0.68);
+                ctx.lineTo(x + figH * 0.22, groundY - figH * 0.5);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x - figH * 0.1, groundY - figH * 0.68);
+                ctx.lineTo(x - figH * 0.15, groundY - figH * 0.48);
+                ctx.stroke();
+                // Walking stick
+                ctx.strokeStyle = rgbaC([60, 50, 35], alpha);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x - figH * 0.15, groundY - figH * 0.48);
+                ctx.lineTo(x - figH * 0.18, groundY + figH * 0.02);
+                ctx.stroke();
+            } else {
+                // Young girl with arms slightly out
+                ctx.beginPath();
+                ctx.moveTo(x - figH * 0.1, groundY - figH * 0.68);
+                ctx.lineTo(x - figH * 0.2, groundY - figH * 0.52);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + figH * 0.1, groundY - figH * 0.68);
+                ctx.lineTo(x + figH * 0.18, groundY - figH * 0.5);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ── Title and subtitle ──
+        function drawTitle(ctx) {
+            if (titleAlpha < 0.01) return;
+            ctx.save();
+            var fontSize = Math.max(14, Math.min(W * 0.035, 46));
+            ctx.font = '700 ' + fontSize + 'px "Playfair Display", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = rgbaC(BRASS_COLOR, titleAlpha);
+            ctx.shadowColor = rgbaC(BRASS_COLOR, 0.5);
+            ctx.shadowBlur = 25;
+            ctx.fillText('The Tide Clock', W * 0.5, H * 0.88);
+
+            if (subtitleText) {
+                ctx.font = '400 ' + Math.floor(fontSize * 0.42) + 'px "Playfair Display", serif';
+                ctx.fillStyle = 'rgba(220,200,160,' + (titleAlpha * 0.65) + ')';
+                ctx.shadowBlur = 12;
+                ctx.fillText(subtitleText, W * 0.5, H * 0.88 + fontSize * 0.7);
+            }
+            ctx.restore();
+        }
+
+        // ── Vignette ──
+        function drawVignette(ctx) {
+            ctx.save();
+            var vigR = Math.max(W, H) * 0.72;
+            var vig = ctx.createRadialGradient(W * 0.5, H * 0.5, vigR * 0.35, W * 0.5, H * 0.5, vigR);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, 'rgba(0,0,0,' + (0.3 + stormIntensity * 0.2) + ')');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Flash overlay ──
+        function drawFlash(ctx) {
+            if (flashAlpha < 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Outro fade ──
+        function drawOutroFade(ctx) {
+            if (outroFade > 0.99) return;
+            ctx.save();
+            ctx.globalAlpha = 1 - outroFade;
+            ctx.fillStyle = '#060a18';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // ── Shoreline reflections ──
+        function drawReflections(ctx) {
+            var seaY = waterLevel * H + H * 0.02;
+            // Faint shimmer lines on water surface
+            ctx.save();
+            ctx.globalAlpha = 0.06 + beatPulse * 0.03;
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 0; i < 6; i++) {
+                var rx = W * 0.2 + Math.sin(waveTime * 0.4 + i * 1.7) * W * 0.25;
+                var ry = seaY + i * H * 0.03;
+                var rw = W * 0.04 + Math.sin(waveTime + i) * W * 0.015;
+                ctx.strokeStyle = rgbaC([200, 210, 230], 0.5);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(rx - rw, ry);
+                ctx.lineTo(rx + rw, ry);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ── Main render ──
+        function render(frameData) {
+            var ctx = frameData.ctx;
+            var dt = frameData.dt || 1 / 60;
+            var cursor = frameData.cursor;
+            beatPulse = frameData.beatPulse;
+
+            // ── Idle state ──
+            if (!cursor) {
+                waveTime += dt;
+                pendulumAngle += dt * Math.PI * 84 / 60 / 2;
+                skyTop = lerpColor(skyTop, INTRO_SKY_TOP, 1.5, dt);
+                skyBot = lerpColor(skyBot, INTRO_SKY_BOT, 1.5, dt);
+                waterColor = lerpColor(waterColor, INTRO_WATER, 1.5, dt);
+                waterLevel = lerpExp(waterLevel, 0.75, 2, dt);
+                waveAmplitude = lerpExp(waveAmplitude, 0.25, 2, dt);
+                stormIntensity = lerpExp(stormIntensity, 0, 2, dt);
+                clockGlow = lerpExp(clockGlow, 0, 3, dt);
+
+                drawSky(ctx);
+                drawStars(ctx, dt);
+                drawSun(ctx);
+                drawWater(ctx, dt, 0);
+                drawVillageSilhouette(ctx);
+                drawClockFace(ctx, dt, 0);
+                drawPendulum(ctx, dt);
+                drawVignette(ctx);
+                return;
+            }
+
+            var seqIdx = cursor.seqIndex;
+            var energy = analysis ? (analysis.energy[cursor.timelineIndex] || 0) : 0;
+
+            // Pendulum always ticking synced to BPM
+            pendulumAngle = cursor.elapsed * Math.PI * 84 / 60 / 2;
+
+            // ── Scene transitions ──
+            var newScene = mapScene(seqIdx);
+            if (seqIdx !== lastSeqIndex) {
+                scene = newScene;
+                lastSeqIndex = seqIdx;
+            }
+
+            // ── Scene-driven targets ──
+            switch (scene) {
+                case 'intro_pendulum':
+                    skyTopTarget = INTRO_SKY_TOP;
+                    skyBotTarget = INTRO_SKY_BOT;
+                    waterTarget = INTRO_WATER;
+                    stormTarget = 0;
+                    waterLevelTarget = 0.76;
+                    waveAmplitudeTarget = 0.15;
+                    gearTarget = 0.8;
+                    titleTarget = 0.8;
+                    subtitleText = 'the pendulum awakens';
+                    villageAlphaTarget = 0.3;
+                    grandTarget = 0;
+                    oldFigureTarget = 0;
+                    particleType = 'none';
+                    starTarget = 0.5;
+                    break;
+
+                case 'intro_melody':
+                    skyTopTarget = lc(INTRO_SKY_TOP, SPRING_SKY_TOP, 0.3);
+                    skyBotTarget = lc(INTRO_SKY_BOT, SPRING_SKY_BOT, 0.3);
+                    waterTarget = lc(INTRO_WATER, SPRING_WATER, 0.3);
+                    stormTarget = 0;
+                    waterLevelTarget = 0.75;
+                    waveAmplitudeTarget = 0.2;
+                    gearTarget = 0.5;
+                    titleTarget = 0.6;
+                    subtitleText = 'C — E — G — E';
+                    villageAlphaTarget = 0.5;
+                    grandTarget = 0;
+                    oldFigureTarget = 0;
+                    particleType = 'none';
+                    starTarget = 0.3;
+                    break;
+
+                case 'spring':
+                    skyTopTarget = SPRING_SKY_TOP;
+                    skyBotTarget = SPRING_SKY_BOT;
+                    waterTarget = SPRING_WATER;
+                    stormTarget = 0;
+                    waterLevelTarget = 0.74;
+                    waveAmplitudeTarget = 0.25;
+                    gearTarget = 0;
+                    titleTarget = 0.5;
+                    subtitleText = 'spring — the boats return';
+                    villageAlphaTarget = 0.9;
+                    grandTarget = 0;
+                    oldFigureTarget = 0.6;
+                    particleType = 'petals';
+                    starTarget = 0;
+                    break;
+
+                case 'summer':
+                    skyTopTarget = SUMMER_SKY_TOP;
+                    skyBotTarget = SUMMER_SKY_BOT;
+                    waterTarget = SUMMER_WATER;
+                    stormTarget = 0;
+                    waterLevelTarget = 0.73;
+                    waveAmplitudeTarget = 0.2;
+                    gearTarget = 0;
+                    titleTarget = 0.4;
+                    subtitleText = 'summer — golden days';
+                    villageAlphaTarget = 1;
+                    grandTarget = 0;
+                    oldFigureTarget = 0.5;
+                    particleType = 'sparkles';
+                    starTarget = 0;
+                    break;
+
+                case 'autumn':
+                    skyTopTarget = AUTUMN_SKY_TOP;
+                    skyBotTarget = AUTUMN_SKY_BOT;
+                    waterTarget = AUTUMN_WATER;
+                    stormTarget = 0.05;
+                    waterLevelTarget = 0.73;
+                    waveAmplitudeTarget = 0.3;
+                    gearTarget = 0;
+                    titleTarget = 0.4;
+                    subtitleText = 'autumn — what the tide brings';
+                    villageAlphaTarget = 0.85;
+                    grandTarget = 0;
+                    oldFigureTarget = 0.5;
+                    particleType = 'leaves';
+                    starTarget = 0;
+                    break;
+
+                case 'winter':
+                    skyTopTarget = WINTER_SKY_TOP;
+                    skyBotTarget = WINTER_SKY_BOT;
+                    waterTarget = WINTER_WATER;
+                    stormTarget = 0.4 + energy * 0.5;
+                    waterLevelTarget = 0.68 - energy * 0.05;
+                    waveAmplitudeTarget = 0.5 + energy * 0.3;
+                    gearTarget = 0;
+                    if (seqIdx <= 17) {
+                        titleTarget = 0.3;
+                        subtitleText = 'winter — the storm gathers';
+                    } else if (seqIdx <= 19) {
+                        titleTarget = 0.2;
+                        subtitleText = 'the flood rises';
+                    } else {
+                        titleTarget = 0.15;
+                        subtitleText = 'crisis';
+                    }
+                    villageAlphaTarget = 0.7;
+                    grandTarget = 0;
+                    oldFigureTarget = 0.3;
+                    particleType = seqIdx >= 18 ? 'rain' : 'snow';
+                    starTarget = 0;
+                    break;
+
+                case 'resolution':
+                    skyTopTarget = RESOLVE_SKY_TOP;
+                    skyBotTarget = RESOLVE_SKY_BOT;
+                    waterTarget = RESOLVE_WATER;
+                    stormTarget = Math.max(0, 0.3 - (seqIdx - 22) * 0.1);
+                    waterLevelTarget = 0.74;
+                    waveAmplitudeTarget = 0.25;
+                    gearTarget = 0;
+                    titleTarget = 0.5;
+                    subtitleText = 'the storm breaks — spring returns';
+                    villageAlphaTarget = 1;
+                    grandTarget = 0;
+                    oldFigureTarget = 0.6;
+                    particleType = seqIdx >= 24 ? 'petals' : 'snow';
+                    starTarget = 0;
+                    break;
+
+                case 'granddaughter':
+                    skyTopTarget = GRAND_SKY_TOP;
+                    skyBotTarget = GRAND_SKY_BOT;
+                    waterTarget = GRAND_WATER;
+                    stormTarget = 0;
+                    waterLevelTarget = 0.75;
+                    waveAmplitudeTarget = 0.18;
+                    gearTarget = 0;
+                    titleTarget = 0.5;
+                    subtitleText = 'the granddaughter';
+                    villageAlphaTarget = 0.9;
+                    grandTarget = Math.min(1, (seqIdx - 26) * 0.35 + 0.3);
+                    oldFigureTarget = Math.max(0.2, 1 - (seqIdx - 26) * 0.25);
+                    particleType = 'sparkles';
+                    starTarget = 0;
+                    break;
+
+                case 'final_tide':
+                    skyTopTarget = FINAL_SKY_TOP;
+                    skyBotTarget = FINAL_SKY_BOT;
+                    waterTarget = FINAL_WATER;
+                    stormTarget = 0;
+                    waterLevelTarget = 0.76;
+                    waveAmplitudeTarget = 0.12;
+                    gearTarget = 0;
+                    titleTarget = 0.6;
+                    subtitleText = 'the pendulum slows';
+                    villageAlphaTarget = 0.5;
+                    grandTarget = 0.4;
+                    oldFigureTarget = 0;
+                    particleType = 'none';
+                    starTarget = 0.4;
+                    outroFade = Math.max(0.1, outroFade - dt * 0.08);
+                    break;
+            }
+
+            // ── Smooth transitions ──
+            var tSpeed = 1.5;
+            skyTop = lerpColor(skyTop, skyTopTarget, tSpeed, dt);
+            skyBot = lerpColor(skyBot, skyBotTarget, tSpeed, dt);
+            waterColor = lerpColor(waterColor, waterTarget, tSpeed, dt);
+
+            stormIntensity = lerpExp(stormIntensity, stormTarget, tSpeed, dt);
+            waterLevel = lerpExp(waterLevel, waterLevelTarget, tSpeed, dt);
+            waveAmplitude = lerpExp(waveAmplitude, waveAmplitudeTarget, tSpeed, dt);
+            gearVisible = lerpExp(gearVisible, gearTarget, 2.5, dt);
+            titleAlpha = lerpExp(titleAlpha, titleTarget, 3, dt);
+            villageAlpha = lerpExp(villageAlpha, villageAlphaTarget, 2, dt);
+            grandVisible = lerpExp(grandVisible, grandTarget, 2, dt);
+            oldFigureAlpha = lerpExp(oldFigureAlpha, oldFigureTarget, 2, dt);
+            starAlpha = lerpExp(starAlpha, starTarget, 2, dt);
+
+            clockGlow = beatPulse * 0.6;
+            flashAlpha *= Math.exp(-6 * dt);
+
+            // ── Beat effects ──
+            if (frameData.beatChanged) {
+                // Lightning during winter storm
+                if (scene === 'winter' && energy > 0.4) {
+                    if (Math.random() < energy * 0.35) spawnLightning();
+                }
+                // Spawn extra particles on beats
+                if (particleType !== 'none' && particleType !== 'rain') {
+                    for (var sp = 0; sp < 3; sp++) {
+                        var idx = Math.floor(Math.random() * particles.length);
+                        particles[idx].x = Math.random() * W;
+                        particles[idx].y = -10;
+                        particles[idx].alpha = 0.6 + Math.random() * 0.4;
+                    }
+                }
+                // Flash effects
+                if (scene === 'resolution' && seqIdx === 22) {
+                    flashAlpha = Math.max(flashAlpha, 0.3);
+                }
+            }
+
+            waveTime += dt;
+
+            // ── Draw scene (back to front) ──
+
+            // 1. Sky
+            drawSky(ctx);
+
+            // 2. Stars (intro, winter, final)
+            drawStars(ctx, dt);
+
+            // 3. Sun
+            drawSun(ctx);
+
+            // 4. Storm clouds
+            drawClouds(ctx);
+
+            // 5. Lightning
+            drawLightning(ctx, dt);
+
+            // 6. Water
+            drawWater(ctx, dt, energy);
+
+            // 7. Water reflections
+            drawReflections(ctx);
+
+            // 8. Village silhouette
+            drawVillageSilhouette(ctx);
+
+            // 9. Figures (clockmaker + granddaughter)
+            drawFigures(ctx, dt);
+
+            // 10. Gears (behind clock face, inside mechanism)
+            drawGears(ctx, dt, energy);
+
+            // 11. Clock face
+            drawClockFace(ctx, dt, energy);
+
+            // 12. Pendulum
+            drawPendulum(ctx, dt);
+
+            // 13. Seasonal particles
+            updateAndDrawParticles(ctx, dt);
+
+            // 14. Flash overlay
+            drawFlash(ctx);
+
+            // 15. Vignette
+            drawVignette(ctx);
+
+            // 16. Title
+            drawTitle(ctx);
+
+            // 17. Outro fade
+            drawOutroFade(ctx);
+        }
+
+        BaseRenderer('the-tide-clock-video', 'The Tide Clock', {
+            beatDecay: 8,
+            init: init,
+            render: render,
+            resize: resize
+        });
+    })();
+
+    // ── Page bootstrap ──────────────────────────────────────────────────
+    (function() {
+        var canvas = document.getElementById('viz-canvas');
+        var overlay = document.getElementById('play-overlay');
+
+        Visualizer.init(canvas);
+        Visualizer.setRenderer('the-tide-clock-video');
+
+        function loadAndPlay(json) {
+            Visualizer.loadSong(json);
+            Visualizer.play();
+        }
+
+        function fetchSong() {
+            var url = '../audio-tracker/songs/the-tide-clock.json';
+            if (window.fetch && location.protocol !== 'file:') {
+                return fetch(url).then(function(r) { return r.json(); });
+            }
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        reject(new Error('XHR failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() { reject(new Error('XHR error')); };
+                xhr.send();
+            });
+        }
+
+        overlay.addEventListener('click', function() {
+            overlay.classList.add('hidden');
+            fetchSong().then(loadAndPlay).catch(function(err) {
+                console.error('Failed to load song:', err);
+                overlay.classList.remove('hidden');
+            });
+        });
+
+        if (new URLSearchParams(window.location.search).get('autoplay') === '1') {
+            overlay.click();
+        }
+
+        canvas.addEventListener('click', function() {
+            if (overlay.classList.contains('hidden')) {
+                if (Visualizer.isPlaying()) {
+                    Visualizer.stop();
+                } else {
+                    Visualizer.play();
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
