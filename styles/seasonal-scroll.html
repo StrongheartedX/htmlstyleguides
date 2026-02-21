@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seasonal Scroll — HTML Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           Seasonal Scroll — Design System Style Guide
+           A scroll-driven, season-shifting design system.
+           ============================================ */
+
+        :root {
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body: 'Source Sans 3', system-ui, sans-serif;
+
+            /* Season colors — updated by JS */
+            --season-sky-top: rgb(135, 206, 235);
+            --season-sky-bot: rgb(200, 230, 255);
+            --season-accent: rgb(79, 138, 110);
+            --season-surface: rgb(240, 248, 244);
+            --season-surface-alt: rgb(225, 240, 232);
+            --season-text: rgb(30, 60, 45);
+            --season-text-soft: rgb(70, 100, 85);
+            --season-highlight: rgb(245, 160, 184);
+            --season-line: rgba(79, 138, 110, 0.18);
+            --season-btn-primary: rgb(79, 138, 110);
+            --season-btn-secondary: rgb(111, 167, 164);
+
+            /* Static spacing tokens */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 32px;
+            --space-xl: 64px;
+
+            /* Static radii */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+
+            /* Transitions */
+            --ease-soft: cubic-bezier(0.17, 0.76, 0.28, 1);
+            --dur-base: 300ms;
+        }
+
+        /* ── Reset ── */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--season-text);
+            background: linear-gradient(180deg, var(--season-sky-top), var(--season-sky-bot));
+            background-attachment: fixed;
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: color 0.1s;
+        }
+
+        /* ── Particle Canvas ── */
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Season Indicator Badge ── */
+        .season-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            padding: 8px 18px;
+            border-radius: 999px;
+            background: var(--season-surface);
+            color: var(--season-accent);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border: 2px solid var(--season-accent);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.4s;
+        }
+
+        /* ── Page Container ── */
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-xl) var(--space-lg) 120px;
+        }
+
+        /* ── Back Link ── */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--season-text-soft);
+            text-decoration: none;
+            margin-bottom: var(--space-lg);
+            transition: color var(--dur-base);
+        }
+
+        .back-link:hover {
+            color: var(--season-accent);
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── Typography ── */
+        h1, h2, h3, h4 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.15;
+            color: var(--season-text);
+        }
+
+        h1 {
+            font-size: clamp(2.8rem, 7vw, 5rem);
+        }
+
+        h2 {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            margin-bottom: var(--space-md);
+        }
+
+        h3 {
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+
+        p {
+            color: var(--season-text-soft);
+            max-width: 65ch;
+        }
+
+        /* ── Section Cards ── */
+        .section {
+            background: var(--season-surface);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl) var(--space-lg);
+            margin-bottom: var(--space-xl);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+            transition: background 0.1s, border-color 0.1s;
+        }
+
+        .section-head {
+            margin-bottom: var(--space-lg);
+        }
+
+        .section-head .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            font-size: 0.72rem;
+            color: var(--season-accent);
+            margin-bottom: var(--space-sm);
+            font-weight: 600;
+        }
+
+        .section-head p {
+            margin-top: var(--space-sm);
+            font-size: 1.05rem;
+            line-height: 1.65;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 80px 0 60px;
+            margin-bottom: var(--space-xl);
+        }
+
+        .hero h1 {
+            margin-bottom: var(--space-md);
+        }
+
+        .hero .tagline {
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+            color: var(--season-accent);
+            margin-bottom: var(--space-lg);
+        }
+
+        .hero .lead {
+            font-size: 1.1rem;
+            color: var(--season-text-soft);
+            max-width: 60ch;
+            margin-bottom: var(--space-lg);
+            line-height: 1.7;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            border: 1px solid var(--season-line);
+            background: var(--season-surface);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--season-accent);
+        }
+
+        /* ── Color Swatches ── */
+        .swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .swatch {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--season-line);
+            background: var(--season-surface-alt);
+        }
+
+        .swatch-color {
+            height: 100px;
+            transition: background-color 0.1s;
+        }
+
+        .swatch-info {
+            padding: 12px 16px;
+        }
+
+        .swatch-name {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--season-text);
+            margin-bottom: 2px;
+        }
+
+        .swatch-value {
+            font-family: 'Source Sans 3', monospace;
+            font-size: 0.8rem;
+            color: var(--season-text-soft);
+            letter-spacing: 0.02em;
+        }
+
+        /* ── Typography Specimens ── */
+        .type-specimens {
+            display: grid;
+            gap: var(--space-md);
+        }
+
+        .type-card {
+            background: var(--season-surface-alt);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+        }
+
+        .type-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--season-accent);
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+        }
+
+        .type-sample-display {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 700;
+            color: var(--season-text);
+            line-height: 1.2;
+            margin-bottom: var(--space-xs);
+        }
+
+        .type-sample-heading {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--season-text);
+            line-height: 1.25;
+            margin-bottom: var(--space-xs);
+        }
+
+        .type-sample-subheading {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--season-text);
+            line-height: 1.35;
+            margin-bottom: var(--space-xs);
+        }
+
+        .type-sample-body {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--season-text-soft);
+            line-height: 1.65;
+            margin-bottom: var(--space-xs);
+        }
+
+        .type-sample-caption {
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 300;
+            color: var(--season-text-soft);
+            line-height: 1.5;
+        }
+
+        .type-meta {
+            font-size: 0.75rem;
+            color: var(--season-text-soft);
+            margin-top: var(--space-sm);
+            opacity: 0.7;
+        }
+
+        /* ── Buttons ── */
+        .button-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+
+        .button-group-label {
+            width: 100%;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--season-accent);
+            font-weight: 600;
+            margin-bottom: -4px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--dur-base) var(--ease-soft);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        /* Sizes */
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 0.8rem;
+        }
+
+        .btn-md {
+            padding: 10px 24px;
+            font-size: 0.9rem;
+        }
+
+        .btn-lg {
+            padding: 14px 32px;
+            font-size: 1rem;
+        }
+
+        /* Primary */
+        .btn-primary {
+            background: var(--season-btn-primary);
+            color: #fff;
+            border-color: var(--season-btn-primary);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Secondary */
+        .btn-secondary {
+            background: var(--season-btn-secondary);
+            color: #fff;
+            border-color: var(--season-btn-secondary);
+        }
+
+        .btn-secondary:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Ghost */
+        .btn-ghost {
+            background: transparent;
+            color: var(--season-accent);
+            border-color: var(--season-accent);
+        }
+
+        .btn-ghost:hover {
+            background: var(--season-accent);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        /* Disabled */
+        .btn-disabled {
+            background: var(--season-surface-alt);
+            color: var(--season-text-soft);
+            border-color: var(--season-line);
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Button display cards */
+        .btn-card {
+            background: var(--season-surface-alt);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+        }
+
+        .btn-card-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--season-accent);
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: var(--space-md);
+        }
+
+        /* ── Cards & Surfaces ── */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+
+        .surface-card {
+            background: var(--season-surface-alt);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            transition: transform var(--dur-base) var(--ease-soft),
+                        box-shadow var(--dur-base) var(--ease-soft);
+        }
+
+        .surface-card h3 {
+            margin-bottom: var(--space-sm);
+        }
+
+        .surface-card p {
+            font-size: 0.95rem;
+        }
+
+        .surface-card--basic {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .surface-card--elevated {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .surface-card--elevated:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+        }
+
+        .surface-card--stat {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-number {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--season-accent);
+            line-height: 1;
+            margin-bottom: var(--space-xs);
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: var(--season-text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+        }
+
+        .progress-track {
+            height: 8px;
+            background: var(--season-surface);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--season-accent);
+            border-radius: 999px;
+            transition: width 0.6s var(--ease-soft);
+        }
+
+        .surface-card--media {
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .media-placeholder {
+            height: 160px;
+            background: linear-gradient(135deg, var(--season-accent), var(--season-highlight));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            opacity: 0.85;
+        }
+
+        .media-body {
+            padding: var(--space-md) var(--space-lg);
+        }
+
+        .media-body h3 {
+            margin-bottom: var(--space-xs);
+        }
+
+        .media-body p {
+            font-size: 0.9rem;
+        }
+
+        /* ── Form Elements ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-md);
+        }
+
+        .form-label {
+            display: block;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--season-text);
+            margin-bottom: var(--space-xs);
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            display: block;
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            padding: 10px 14px;
+            background: var(--season-surface-alt);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-sm);
+            color: var(--season-text);
+            transition: border-color var(--dur-base), box-shadow var(--dur-base);
+            outline: none;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--season-text-soft);
+            opacity: 0.5;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            border-color: var(--season-accent);
+            box-shadow: 0 0 0 3px rgba(var(--season-accent), 0.15);
+            box-shadow: 0 0 0 3px var(--season-line);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        /* Custom checkbox + radio */
+        .check-group,
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .check-label,
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.95rem;
+            color: var(--season-text);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .check-label input[type="checkbox"],
+        .radio-label input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--season-line);
+            background: var(--season-surface-alt);
+            cursor: pointer;
+            transition: all var(--dur-base);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .check-label input[type="checkbox"] {
+            border-radius: 4px;
+        }
+
+        .radio-label input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .check-label input[type="checkbox"]:checked {
+            background: var(--season-accent);
+            border-color: var(--season-accent);
+        }
+
+        .check-label input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 6px;
+            height: 11px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .radio-label input[type="radio"]:checked {
+            border-color: var(--season-accent);
+            background: var(--season-surface-alt);
+        }
+
+        .radio-label input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--season-accent);
+        }
+
+        .check-label input:focus,
+        .radio-label input:focus {
+            box-shadow: 0 0 0 3px var(--season-line);
+        }
+
+        /* ── Data Display ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--space-lg);
+            font-size: 0.92rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--season-line);
+        }
+
+        .data-table thead th {
+            background: var(--season-surface-alt);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--season-text);
+        }
+
+        .data-table thead th:first-child {
+            border-radius: var(--radius-sm) 0 0 0;
+        }
+
+        .data-table thead th:last-child {
+            border-radius: 0 var(--radius-sm) 0 0;
+        }
+
+        .data-table tbody tr {
+            transition: background var(--dur-base);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--season-surface-alt);
+        }
+
+        .data-table td {
+            color: var(--season-text-soft);
+        }
+
+        .table-progress {
+            display: inline-block;
+            width: 80px;
+            height: 6px;
+            background: var(--season-surface-alt);
+            border-radius: 999px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        .table-progress-fill {
+            height: 100%;
+            background: var(--season-accent);
+            border-radius: 999px;
+        }
+
+        /* Badges */
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .badge--filled {
+            background: var(--season-accent);
+            color: #fff;
+        }
+
+        .badge--outlined {
+            background: transparent;
+            border: 1.5px solid var(--season-accent);
+            color: var(--season-accent);
+        }
+
+        .badge--muted {
+            background: var(--season-surface-alt);
+            color: var(--season-text-soft);
+        }
+
+        .badge--success {
+            background: #3a9e6e;
+            color: #fff;
+        }
+
+        .badge--warning {
+            background: var(--season-highlight);
+            color: var(--season-text);
+        }
+
+        .badge--error {
+            background: #c44;
+            color: #fff;
+        }
+
+        /* Progress bars (standalone) */
+        .progress-set {
+            display: grid;
+            gap: var(--space-md);
+        }
+
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .progress-item-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--season-text-soft);
+            width: 40px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .progress-item .progress-track {
+            flex: 1;
+        }
+
+        /* ── Alerts & Principles ── */
+        .alert {
+            display: flex;
+            gap: var(--space-md);
+            border-radius: var(--radius-md);
+            padding: var(--space-md) var(--space-lg);
+            margin-bottom: var(--space-md);
+            border-left: 4px solid var(--season-accent);
+            background: var(--season-surface-alt);
+        }
+
+        .alert-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            line-height: 1.4;
+        }
+
+        .alert-content h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+            color: var(--season-text);
+        }
+
+        .alert-content p {
+            font-size: 0.9rem;
+            color: var(--season-text-soft);
+            line-height: 1.55;
+        }
+
+        .alert--info {
+            border-left-color: var(--season-accent);
+        }
+
+        .alert--success {
+            border-left-color: #3a9e6e;
+        }
+
+        .alert--warning {
+            border-left-color: var(--season-highlight);
+        }
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .principle-card {
+            background: var(--season-surface-alt);
+            border: 1px solid var(--season-line);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+        }
+
+        .principle-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--season-accent);
+            margin-bottom: var(--space-sm);
+        }
+
+        .principle-card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--season-text-soft);
+        }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: var(--space-xl) 0 var(--space-lg);
+            color: var(--season-text-soft);
+            font-size: 0.85rem;
+        }
+
+        .footer-line {
+            width: 100%;
+            height: 1px;
+            background: var(--season-line);
+            margin-bottom: var(--space-lg);
+        }
+
+        footer h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            color: var(--season-text);
+            margin-bottom: var(--space-sm);
+        }
+
+        footer .footer-sub {
+            font-size: 0.9rem;
+            color: var(--season-text-soft);
+            margin-bottom: var(--space-xs);
+        }
+
+        footer .footer-inspired {
+            font-size: 0.8rem;
+            font-style: italic;
+            color: var(--season-text-soft);
+            opacity: 0.7;
+            margin-bottom: var(--space-md);
+        }
+
+        footer a {
+            color: var(--season-accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .page {
+                padding: var(--space-lg) var(--space-md) 80px;
+            }
+
+            .section {
+                padding: var(--space-lg) var(--space-md);
+                border-radius: var(--radius-md);
+            }
+
+            .hero {
+                padding: 40px 0 30px;
+            }
+
+            .swatch-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .swatch-color {
+                height: 70px;
+            }
+
+            .btn-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .season-badge {
+                top: 12px;
+                right: 12px;
+                font-size: 0.75rem;
+                padding: 6px 14px;
+            }
+
+            .type-sample-display {
+                font-size: 1.8rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .data-table {
+                font-size: 0.82rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 10px;
+            }
+
+            .table-progress {
+                width: 50px;
+            }
+
+            .badge-row {
+                gap: 6px;
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .media-placeholder {
+                height: 120px;
+            }
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle canvas (behind content) -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Season indicator -->
+    <div class="season-badge" id="season-badge">Spring</div>
+
+    <div class="page">
+        <!-- Back link -->
+        <a href="/styles/" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Back to Style Guides
+        </a>
+
+        <!-- ============================================
+             Section 01: Hero / Title (Spring zone)
+             ============================================ -->
+        <section class="hero">
+            <h1>Seasonal Scroll</h1>
+            <p class="tagline">A design system that breathes with the seasons</p>
+            <p class="lead">
+                As you scroll through this page, every color, every surface, and every
+                particle shifts in harmony with the turning of the year. From the fresh
+                greens and cherry blossoms of spring, through golden summer heat, into
+                amber autumn decay, and finally the quiet stillness of winter. This is
+                a living design system, driven entirely by scroll position.
+            </p>
+            <div class="hero-meta">
+                <span class="pill">Scroll-driven</span>
+                <span class="pill">Four seasons</span>
+                <span class="pill">Living tokens</span>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 02: Color Palette (Spring -> Summer zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">02 / Palette</div>
+                <h2>Color Palette</h2>
+                <p>
+                    Every color shifts as you scroll. These swatches show the current
+                    season's palette in real-time. Watch them transform from spring greens
+                    through summer golds, autumn rusts, and winter blues.
+                </p>
+            </div>
+
+            <div class="swatch-grid">
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-accent);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Accent</div>
+                        <div class="swatch-value" data-swatch="accent">--season-accent</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-surface);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Surface</div>
+                        <div class="swatch-value" data-swatch="surface">--season-surface</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-surface-alt);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Surface Alt</div>
+                        <div class="swatch-value" data-swatch="surfaceAlt">--season-surface-alt</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-text);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Text</div>
+                        <div class="swatch-value" data-swatch="text">--season-text</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-highlight);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Highlight</div>
+                        <div class="swatch-value" data-swatch="highlight">--season-highlight</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-btn-primary);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Button Primary</div>
+                        <div class="swatch-value" data-swatch="btnPrimary">--season-btn-primary</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-btn-secondary);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Button Secondary</div>
+                        <div class="swatch-value" data-swatch="btnSecondary">--season-btn-secondary</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: var(--season-sky-top);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-name">Sky</div>
+                        <div class="swatch-value" data-swatch="skyTop">--season-sky-top</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 03: Typography (Summer zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">03 / Typography</div>
+                <h2>Typography</h2>
+                <p>
+                    Playfair Display brings editorial elegance to headings, while
+                    Source Sans 3 delivers clean readability for body text. The
+                    colors shift, but the type remains steadfast.
+                </p>
+            </div>
+
+            <div class="type-specimens">
+                <div class="type-card">
+                    <div class="type-label">Display / Playfair Display 700</div>
+                    <div class="type-sample-display">The rhythm of the year</div>
+                    <div class="type-meta">clamp(2rem, 4vw, 3.2rem) &middot; font-weight: 700 &middot; line-height: 1.2</div>
+                </div>
+
+                <div class="type-card">
+                    <div class="type-label">Heading / Playfair Display 600</div>
+                    <div class="type-sample-heading">Seasons turn in silence</div>
+                    <div class="type-meta">1.8rem &middot; font-weight: 600 &middot; line-height: 1.25</div>
+                </div>
+
+                <div class="type-card">
+                    <div class="type-label">Subheading / Playfair Display Italic 400</div>
+                    <div class="type-sample-subheading">Each scroll reveals a new palette drawn from the natural world</div>
+                    <div class="type-meta">1.3rem &middot; font-weight: 400 &middot; font-style: italic &middot; line-height: 1.35</div>
+                </div>
+
+                <div class="type-card">
+                    <div class="type-label">Body / Source Sans 3 Regular 400</div>
+                    <div class="type-sample-body">
+                        The forest canopy shifts from tender chartreuse to deep emerald,
+                        then blazes amber and rust before surrendering its leaves to the
+                        quiet geometry of bare branches against a pewter sky. Each season
+                        carries its own tempo, its own light, its own story written in
+                        color and temperature.
+                    </div>
+                    <div class="type-meta">1rem &middot; font-weight: 400 &middot; line-height: 1.65</div>
+                </div>
+
+                <div class="type-card">
+                    <div class="type-label">Caption / Source Sans 3 Light 300</div>
+                    <div class="type-sample-caption">
+                        Tokens update continuously via CSS custom properties. No page reload required.
+                        The scroll position maps directly to seasonal palette interpolation.
+                    </div>
+                    <div class="type-meta">0.82rem &middot; font-weight: 300 &middot; line-height: 1.5</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 04: Buttons & Controls (Summer -> Autumn zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">04 / Controls</div>
+                <h2>Buttons &amp; Controls</h2>
+                <p>
+                    Interactive elements that shift hue with the seasons. Primary buttons
+                    follow the accent color, secondaries complement, and ghost buttons
+                    trace the outline of the current palette.
+                </p>
+            </div>
+
+            <div class="btn-grid">
+                <div class="btn-card">
+                    <div class="btn-card-label">Primary</div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary btn-sm">Small</button>
+                        <button class="btn btn-primary btn-md">Medium</button>
+                        <button class="btn btn-primary btn-lg">Large</button>
+                    </div>
+                </div>
+
+                <div class="btn-card">
+                    <div class="btn-card-label">Secondary</div>
+                    <div class="btn-row">
+                        <button class="btn btn-secondary btn-sm">Small</button>
+                        <button class="btn btn-secondary btn-md">Medium</button>
+                        <button class="btn btn-secondary btn-lg">Large</button>
+                    </div>
+                </div>
+
+                <div class="btn-card">
+                    <div class="btn-card-label">Ghost / Outline</div>
+                    <div class="btn-row">
+                        <button class="btn btn-ghost btn-sm">Small</button>
+                        <button class="btn btn-ghost btn-md">Medium</button>
+                        <button class="btn btn-ghost btn-lg">Large</button>
+                    </div>
+                </div>
+
+                <div class="btn-card">
+                    <div class="btn-card-label">Disabled</div>
+                    <div class="btn-row">
+                        <button class="btn btn-disabled btn-sm" disabled>Small</button>
+                        <button class="btn btn-disabled btn-md" disabled>Medium</button>
+                        <button class="btn btn-disabled btn-lg" disabled>Large</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 05: Cards & Surfaces (Autumn zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">05 / Surfaces</div>
+                <h2>Cards &amp; Surfaces</h2>
+                <p>
+                    Content containers that shift with the seasons. From subtle shadows
+                    to elevated panels, every surface breathes the same palette. Watch
+                    the card backgrounds, borders, and accent bars transform as you scroll
+                    through the year.
+                </p>
+            </div>
+
+            <div class="card-grid">
+                <div class="surface-card surface-card--basic">
+                    <h3>Basic Card</h3>
+                    <p>
+                        A quiet container with a subtle shadow. Good for secondary
+                        content that should sit comfortably without demanding attention.
+                        Borders dissolve into the seasonal palette.
+                    </p>
+                </div>
+
+                <div class="surface-card surface-card--elevated">
+                    <h3>Elevated Card</h3>
+                    <p>
+                        A stronger shadow and a hover-lift effect signal interactivity.
+                        Use for primary content cards, feature highlights, or anything
+                        the user should engage with directly.
+                    </p>
+                </div>
+
+                <div class="surface-card surface-card--stat">
+                    <div class="stat-number">4,096</div>
+                    <div class="stat-label">Design Tokens Updated</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: 72%;"></div>
+                    </div>
+                </div>
+
+                <div class="surface-card surface-card--media">
+                    <div class="media-placeholder">Season Gradient</div>
+                    <div class="media-body">
+                        <h3>Media Card</h3>
+                        <p>
+                            The gradient header pulls directly from the current accent
+                            and highlight colors, creating a living preview of the palette.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 06: Form Elements (Autumn -> Winter zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">06 / Forms</div>
+                <h2>Form Elements</h2>
+                <p>
+                    Inputs, selects, checkboxes, and radios that adapt to the seasonal
+                    palette. Focus rings glow with the current accent, and placeholder
+                    text fades softly into the background of each season.
+                </p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-column">
+                    <div class="form-group">
+                        <label class="form-label" for="demo-name">Full Name</label>
+                        <input type="text" id="demo-name" class="form-input" placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="demo-email">Email Address</label>
+                        <input type="email" id="demo-email" class="form-input" placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="demo-message">Message</label>
+                        <textarea id="demo-message" class="form-textarea" placeholder="Describe the season you feel..."></textarea>
+                    </div>
+                </div>
+                <div class="form-column">
+                    <div class="form-group">
+                        <label class="form-label" for="demo-season">Favorite Season</label>
+                        <select id="demo-season" class="form-select">
+                            <option value="">Choose a season</option>
+                            <option value="spring">Spring</option>
+                            <option value="summer">Summer</option>
+                            <option value="autumn">Autumn</option>
+                            <option value="winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Preferred Tokens</label>
+                        <div class="check-group">
+                            <label class="check-label">
+                                <input type="checkbox" checked> Color palette
+                            </label>
+                            <label class="check-label">
+                                <input type="checkbox"> Typography scale
+                            </label>
+                            <label class="check-label">
+                                <input type="checkbox" checked> Spacing system
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Transition Style</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="transition" checked> Continuous blend
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="transition"> Step function
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="transition"> Snap on scroll
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 07: Data Display (Winter zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">07 / Data</div>
+                <h2>Data Display</h2>
+                <p>
+                    Tables, badges, and progress indicators styled with seasonal tokens.
+                    Even structured data feels alive when the palette shifts beneath it.
+                </p>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Season</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cherry Blossom</td>
+                        <td>Spring</td>
+                        <td>Active</td>
+                        <td>
+                            <span class="table-progress"><span class="table-progress-fill" style="width: 85%;"></span></span>
+                            85%
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Sunflower Field</td>
+                        <td>Summer</td>
+                        <td>Blooming</td>
+                        <td>
+                            <span class="table-progress"><span class="table-progress-fill" style="width: 100%;"></span></span>
+                            100%
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Amber Canopy</td>
+                        <td>Autumn</td>
+                        <td>Fading</td>
+                        <td>
+                            <span class="table-progress"><span class="table-progress-fill" style="width: 52%;"></span></span>
+                            52%
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>First Frost</td>
+                        <td>Winter</td>
+                        <td>Dormant</td>
+                        <td>
+                            <span class="table-progress"><span class="table-progress-fill" style="width: 20%;"></span></span>
+                            20%
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="badge-row">
+                <span class="badge badge--filled">Accent</span>
+                <span class="badge badge--outlined">Outlined</span>
+                <span class="badge badge--muted">Muted</span>
+                <span class="badge badge--success">Success</span>
+                <span class="badge badge--warning">Warning</span>
+                <span class="badge badge--error">Error</span>
+            </div>
+
+            <div class="progress-set">
+                <div class="progress-item">
+                    <span class="progress-item-label">25%</span>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: 25%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">60%</span>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: 60%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">90%</span>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: 90%;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             Section 08: Alerts & Principles (Winter zone)
+             ============================================ -->
+        <section class="section">
+            <div class="section-head">
+                <div class="eyebrow">08 / Feedback</div>
+                <h2>Alerts &amp; Principles</h2>
+                <p>
+                    Feedback messages and the design philosophy behind this living system.
+                    Alerts use seasonal accent colors for their left-border emphasis, keeping
+                    every notification rooted in the current palette.
+                </p>
+            </div>
+
+            <div class="alert alert--info">
+                <div class="alert-icon">&#8505;</div>
+                <div class="alert-content">
+                    <h4>Seasonal Shift Detected</h4>
+                    <p>
+                        The design tokens have updated based on your scroll position. All
+                        surfaces, text, and interactive elements now reflect the current
+                        season's palette.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert--success">
+                <div class="alert-icon">&#10003;</div>
+                <div class="alert-content">
+                    <h4>Palette Applied</h4>
+                    <p>
+                        All components are rendering with the interpolated color values.
+                        No hard transitions — every hue blends smoothly between seasonal
+                        endpoints.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert--warning">
+                <div class="alert-icon">&#9888;</div>
+                <div class="alert-content">
+                    <h4>Scroll Boundary Near</h4>
+                    <p>
+                        You are approaching the end of the seasonal cycle. The tokens will
+                        hold steady at their winter values until you scroll back toward
+                        spring.
+                    </p>
+                </div>
+            </div>
+
+            <div class="principles-grid">
+                <div class="principle-card">
+                    <h3>Continuous Flow</h3>
+                    <p>
+                        Design tokens shift without jumps or hard cuts. Every property
+                        is interpolated through smooth mathematical curves, so the
+                        transition between seasons feels as natural as the turning of
+                        the year itself.
+                    </p>
+                </div>
+                <div class="principle-card">
+                    <h3>Seasonal Harmony</h3>
+                    <p>
+                        At any scroll position, all colors belong to the same palette.
+                        Accent, surface, text, and highlight are always in harmony —
+                        derived from the same seasonal source, never mixed arbitrarily.
+                    </p>
+                </div>
+                <div class="principle-card">
+                    <h3>Living System</h3>
+                    <p>
+                        This is not a static style guide with fixed swatches. It is a
+                        scroll-driven design system where the tokens themselves are alive,
+                        responding to user interaction in real time via CSS custom properties.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-line"></div>
+            <h2>Seasonal Scroll</h2>
+            <p class="footer-sub">Built with CSS custom properties and vanilla JavaScript</p>
+            <p class="footer-inspired">Inspired by The Tide Clock and The Cartographer of Drowned Cities music videos</p>
+            <p><a href="/styles/">&larr; Back to Style Guides</a></p>
+        </footer>
+    </div>
+
+    <!-- ============================================
+         JS: Scroll Engine, Season Interpolation,
+         Canvas Particles, Season Badge
+         ============================================ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Season Palettes ── */
+        const PALETTES = {
+            spring: {
+                skyTop: [135, 206, 235],
+                skyBot: [200, 230, 255],
+                accent: [79, 138, 110],
+                surface: [240, 248, 244],
+                surfaceAlt: [225, 240, 232],
+                text: [30, 60, 45],
+                textSoft: [70, 100, 85],
+                highlight: [245, 160, 184],
+                line: [79, 138, 110, 0.18],
+                btnPrimary: [79, 138, 110],
+                btnSecondary: [111, 167, 164],
+            },
+            summer: {
+                skyTop: [255, 200, 80],
+                skyBot: [255, 235, 180],
+                accent: [212, 162, 78],
+                surface: [254, 250, 237],
+                surfaceAlt: [250, 240, 215],
+                text: [60, 40, 10],
+                textSoft: [100, 80, 40],
+                highlight: [255, 224, 102],
+                line: [212, 162, 78, 0.2],
+                btnPrimary: [212, 162, 78],
+                btnSecondary: [180, 140, 60],
+            },
+            autumn: {
+                skyTop: [180, 100, 50],
+                skyBot: [220, 160, 80],
+                accent: [196, 93, 44],
+                surface: [245, 235, 224],
+                surfaceAlt: [235, 220, 200],
+                text: [80, 35, 10],
+                textSoft: [120, 70, 35],
+                highlight: [232, 130, 10],
+                line: [196, 93, 44, 0.18],
+                btnPrimary: [196, 93, 44],
+                btnSecondary: [160, 80, 30],
+            },
+            winter: {
+                skyTop: [60, 65, 80],
+                skyBot: [90, 95, 110],
+                accent: [122, 184, 212],
+                surface: [232, 237, 242],
+                surfaceAlt: [215, 225, 235],
+                text: [30, 40, 60],
+                textSoft: [70, 85, 110],
+                highlight: [208, 221, 232],
+                line: [122, 184, 212, 0.2],
+                btnPrimary: [122, 184, 212],
+                btnSecondary: [80, 130, 170],
+            },
+        };
+
+        const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
+        const SEASON_LABELS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+
+        /* ── Helpers ── */
+        function smoothstep(edge0, edge1, x) {
+            const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+            return t * t * (3 - 2 * t);
+        }
+
+        function lerpColor(a, b, t) {
+            const out = [];
+            for (let i = 0; i < a.length; i++) {
+                out.push(a[i] + (b[i] - a[i]) * t);
+            }
+            return out;
+        }
+
+        function colorToRgb(arr) {
+            const r = Math.round(arr[0]);
+            const g = Math.round(arr[1]);
+            const b = Math.round(arr[2]);
+            return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        }
+
+        function colorToRgba(arr) {
+            const r = Math.round(arr[0]);
+            const g = Math.round(arr[1]);
+            const b = Math.round(arr[2]);
+            const a = arr.length > 3 ? arr[3] : 1;
+            return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+        }
+
+        function rgbToHex(arr) {
+            const r = Math.round(arr[0]);
+            const g = Math.round(arr[1]);
+            const b = Math.round(arr[2]);
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        /* ── Scroll State ── */
+        let scrollMax = 1;
+        let progress = 0;
+        let ticking = false;
+
+        function cacheScrollMax() {
+            scrollMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        }
+
+        /* ── CSS Property Mapping ── */
+        const CSS_MAP = {
+            skyTop:       '--season-sky-top',
+            skyBot:       '--season-sky-bot',
+            accent:       '--season-accent',
+            surface:      '--season-surface',
+            surfaceAlt:   '--season-surface-alt',
+            text:         '--season-text',
+            textSoft:     '--season-text-soft',
+            highlight:    '--season-highlight',
+            line:         '--season-line',
+            btnPrimary:   '--season-btn-primary',
+            btnSecondary: '--season-btn-secondary',
+        };
+
+        const HAS_ALPHA = new Set(['line']);
+
+        /* ── Season Badge ── */
+        const badge = document.getElementById('season-badge');
+
+        /* ── Swatch hex labels ── */
+        const swatchEls = document.querySelectorAll('[data-swatch]');
+
+        /* ── Interpolation Engine ── */
+        let currentColors = {}; // cache for particle system
+
+        function updateSeason() {
+            progress = window.scrollY / scrollMax;
+
+            // Map progress to season zones (each season = 0.25 of scroll)
+            // Blend region = 0.08 around each boundary
+            const blend = 0.08;
+            const zoneSize = 0.25;
+
+            // Calculate weight for each season
+            const weights = [];
+            for (let i = 0; i < 4; i++) {
+                const center = (i + 0.5) * zoneSize;
+                const start = i * zoneSize;
+                const end = (i + 1) * zoneSize;
+
+                // Smoothstep fade in / fade out at boundaries
+                let w;
+                if (i === 0) {
+                    w = 1 - smoothstep(end - blend, end + blend, progress);
+                } else if (i === 3) {
+                    w = smoothstep(start - blend, start + blend, progress);
+                } else {
+                    w = smoothstep(start - blend, start + blend, progress)
+                      * (1 - smoothstep(end - blend, end + blend, progress));
+                }
+                weights.push(w);
+            }
+
+            // Normalize weights
+            let sum = 0;
+            for (let i = 0; i < 4; i++) sum += weights[i];
+            if (sum < 0.001) sum = 1;
+            for (let i = 0; i < 4; i++) weights[i] /= sum;
+
+            // Find dominant season for badge
+            let maxW = 0, dominantIdx = 0;
+            for (let i = 0; i < 4; i++) {
+                if (weights[i] > maxW) {
+                    maxW = weights[i];
+                    dominantIdx = i;
+                }
+            }
+            badge.textContent = SEASON_LABELS[dominantIdx];
+
+            // Interpolate each color channel
+            const palettes = SEASON_ORDER.map(s => PALETTES[s]);
+            const root = document.documentElement;
+
+            for (const key in CSS_MAP) {
+                const channels = palettes[0][key].length;
+                const blended = new Array(channels).fill(0);
+
+                for (let i = 0; i < 4; i++) {
+                    const src = palettes[i][key];
+                    for (let c = 0; c < channels; c++) {
+                        blended[c] += src[c] * weights[i];
+                    }
+                }
+
+                currentColors[key] = blended;
+
+                if (HAS_ALPHA.has(key)) {
+                    root.style.setProperty(CSS_MAP[key], colorToRgba(blended));
+                } else {
+                    root.style.setProperty(CSS_MAP[key], colorToRgb(blended));
+                }
+            }
+
+            // Update swatch hex values
+            swatchEls.forEach(el => {
+                const key = el.getAttribute('data-swatch');
+                if (currentColors[key]) {
+                    el.textContent = rgbToHex(currentColors[key]);
+                }
+            });
+
+            // Store particle weights for blending
+            particleWeights = weights.slice();
+        }
+
+        /* ── Scroll Listener ── */
+        window.addEventListener('scroll', function () {
+            if (!ticking) {
+                ticking = true;
+                requestAnimationFrame(function () {
+                    updateSeason();
+                    ticking = false;
+                });
+            }
+        }, { passive: true });
+
+        window.addEventListener('resize', function () {
+            cacheScrollMax();
+            resizeCanvas();
+        });
+
+        /* ── Canvas Particle System ── */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particleWeights = [1, 0, 0, 0];
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // Particle types
+        const PARTICLE_COUNT = 45;
+        const particles = [];
+
+        function createParticle(i) {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 3 + Math.random() * 6,
+                speedY: 0.3 + Math.random() * 0.8,
+                speedX: (Math.random() - 0.5) * 0.4,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.03,
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.01 + Math.random() * 0.02,
+                wobbleAmp: 0.3 + Math.random() * 0.8,
+                twinklePhase: Math.random() * Math.PI * 2,
+                twinkleSpeed: 0.02 + Math.random() * 0.04,
+                opacity: 0.4 + Math.random() * 0.4,
+            };
+        }
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push(createParticle(i));
+        }
+
+        // Season-specific particle renderers
+        function drawPetal(p, alpha) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            ctx.globalAlpha = alpha * p.opacity;
+            ctx.fillStyle = 'rgba(245, 160, 184, 0.7)';
+            ctx.beginPath();
+            // Petal shape: two overlapping ellipses
+            ctx.ellipse(0, 0, p.size * 0.6, p.size, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(p.size * 0.3, 0, p.size * 0.5, p.size * 0.7, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawSparkle(p, alpha) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(p.twinklePhase));
+            ctx.globalAlpha = alpha * twinkle * p.opacity;
+            ctx.fillStyle = 'rgba(255, 224, 102, 0.8)';
+            // 4-pointed star
+            const s = p.size * 0.6;
+            ctx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                const angle = (i * Math.PI) / 2;
+                const outerR = s;
+                const innerR = s * 0.25;
+                ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR);
+                const midAngle = angle + Math.PI / 4;
+                ctx.lineTo(Math.cos(midAngle) * innerR, Math.sin(midAngle) * innerR);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawLeaf(p, alpha) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            ctx.globalAlpha = alpha * p.opacity;
+            // Vary leaf color
+            const r = 180 + Math.round(p.wobbleAmp * 40);
+            const g = 100 + Math.round(p.wobbleAmp * 30);
+            ctx.fillStyle = 'rgba(' + r + ', ' + g + ', 40, 0.75)';
+            ctx.beginPath();
+            // Leaf shape using quadratic curves
+            const s = p.size;
+            ctx.moveTo(0, -s);
+            ctx.quadraticCurveTo(s * 0.8, -s * 0.3, 0, s);
+            ctx.quadraticCurveTo(-s * 0.8, -s * 0.3, 0, -s);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawSnowflake(p, alpha) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.globalAlpha = alpha * p.opacity;
+            ctx.fillStyle = 'rgba(220, 235, 255, 0.85)';
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            // Add subtle glow
+            ctx.globalAlpha = alpha * p.opacity * 0.3;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const drawFns = [drawPetal, drawSparkle, drawLeaf, drawSnowflake];
+
+        // Physics per season type
+        // [0]=spring petals, [1]=summer sparkles, [2]=autumn leaves, [3]=winter snow
+        function updateParticle(p, dt) {
+            // Determine dominant type from weights
+            // Each season applies some drift
+            let dy = 0, dx = 0;
+            // Spring: gentle fall with side drift
+            dy += particleWeights[0] * p.speedY * 0.6;
+            dx += particleWeights[0] * Math.sin(p.wobblePhase) * p.wobbleAmp * 0.5;
+            // Summer: mostly stationary, twinkle in place
+            dy += particleWeights[1] * p.speedY * 0.05;
+            // Autumn: faster fall with wind
+            dy += particleWeights[2] * p.speedY * 1.0;
+            dx += particleWeights[2] * (Math.sin(p.wobblePhase) * p.wobbleAmp + 0.3);
+            // Winter: slow fall with slight wobble
+            dy += particleWeights[3] * p.speedY * 0.35;
+            dx += particleWeights[3] * Math.sin(p.wobblePhase) * p.wobbleAmp * 0.3;
+
+            p.x += dx;
+            p.y += dy;
+            p.rotation += p.rotSpeed * (particleWeights[0] + particleWeights[2] * 2 + particleWeights[3] * 0.3);
+            p.wobblePhase += p.wobbleSpeed;
+            p.twinklePhase += p.twinkleSpeed;
+
+            // Wrap around edges
+            if (p.y > canvas.height + p.size * 2) {
+                p.y = -p.size * 2;
+                p.x = Math.random() * canvas.width;
+            }
+            if (p.x > canvas.width + 20) p.x = -20;
+            if (p.x < -20) p.x = canvas.width + 20;
+        }
+
+        function renderParticles() {
+            if (reducedMotion) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                updateParticle(p);
+
+                // Draw each seasonal type with its weight as alpha
+                for (let s = 0; s < 4; s++) {
+                    if (particleWeights[s] > 0.01) {
+                        drawFns[s](p, particleWeights[s]);
+                    }
+                }
+            }
+
+            requestAnimationFrame(renderParticles);
+        }
+
+        /* ── Init ── */
+        cacheScrollMax();
+        resizeCanvas();
+        updateSeason();
+
+        if (!reducedMotion) {
+            requestAnimationFrame(renderParticles);
+        }
+    })();
+    </script>
+</body>
+</html>

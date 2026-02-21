@@ -116,3 +116,4 @@ Master mapping of all 105 style guides and their usage across tech guides and st
 | windows31 | PowerShell | |
 | wireframe | | |
 | y2k | | |
+| seasonal-scroll | | |
