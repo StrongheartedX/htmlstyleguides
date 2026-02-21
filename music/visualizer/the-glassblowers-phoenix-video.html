@@ -821,8 +821,8 @@
                     f.y += f.vy * dt;
                     f.vy += 280 * dt; // gravity
                     f.rot += f.rotV * dt;
-                    f.glow *= Math.exp(-1.5 * dt);
-                    f.alpha *= Math.exp(-0.3 * dt);
+                    f.glow *= Math.exp(-1.0 * dt);
+                    f.alpha *= Math.exp(-0.12 * dt);
 
                     if (f.y > groundY) {
                         f.y = groundY;
@@ -832,8 +832,8 @@
                         if (Math.abs(f.vy) < 10) f.settled = true;
                     }
                 } else {
-                    f.alpha *= Math.exp(-0.15 * dt);
-                    f.glow *= Math.exp(-2 * dt);
+                    f.alpha *= Math.exp(-0.06 * dt);
+                    f.glow *= Math.exp(-0.8 * dt);
                 }
 
                 if (f.alpha < 0.01) { f.active = false; continue; }
@@ -1097,7 +1097,7 @@
 
                     // Transition effects (fire only on actual scene boundary)
                     if (scene === 'shatter' && oldScene !== 'shatter') {
-                        flashAlpha = 1.0;
+                        flashAlpha = 0.85;
                         flashColor = '#ffffff';
                         shatterTriggered = false;
                     }
@@ -1209,10 +1209,13 @@
                 shakeIntensity = energySmooth * 2;
 
             } else if (scene === 'shatter') {
-                bgBrightness        = lerpExp(bgBrightness, shatterTriggered ? 0.05 : 0.95, shatterTriggered ? 3 : 2, dt);
+                // After shatter: dim gradually, not instantly — keep forge embers visible
+                var shatterDimTarget = shatterTriggered ? (sceneAge < 3 ? 0.35 : 0.12) : 0.95;
+                var shatterDimRate   = shatterTriggered ? 1.5 : 2;
+                bgBrightness        = lerpExp(bgBrightness, shatterDimTarget, shatterDimRate, dt);
                 glassOrbRTarget     = shatterTriggered ? 0 : H * 0.15;
                 glassColorTTarget   = 0.8;
-                bgColdTTarget       = shatterTriggered ? 0.35 : 0;
+                bgColdTTarget       = shatterTriggered ? (sceneAge < 2 ? 0.15 : 0.35) : 0;
                 skyOpenTTarget      = 0;
                 starAlphaTarget     = 0;
                 titleTarget         = 0;
@@ -1224,8 +1227,8 @@
                 rayAlphaTarget      = 0;
                 ghostAlphaTarget    = 0;
                 shakeIntensity      = shatterTriggered ? 0 : (flashAlpha * 8);
-                shatterGlowFade     = lerpExp(shatterGlowFade, 0, 0.8, dt);
-                vignetteIntensity   = lerpExp(vignetteIntensity, 0.9, 3, dt);
+                shatterGlowFade     = lerpExp(shatterGlowFade, 0, 0.3, dt);
+                vignetteIntensity   = lerpExp(vignetteIntensity, 0.75, 1.5, dt);
                 phoenixAlphaTarget  = 0;
 
             } else if (scene === 'grief') {
