@@ -1047,6 +1047,33 @@
             }
         }
 
+        /* ── Frost Effect (Winter) ── */
+        .frost-active .section {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06),
+                        inset 0 0 30px rgba(180, 210, 240, 0.15);
+            border-color: rgba(160, 200, 235, 0.35);
+        }
+
+        .frost-active .section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(
+                135deg,
+                rgba(200, 225, 255, 0.08) 0%,
+                transparent 40%,
+                transparent 60%,
+                rgba(200, 225, 255, 0.06) 100%
+            );
+            z-index: 0;
+        }
+
+        .section {
+            position: relative;
+        }
+
         /* ── Reduced motion ── */
         @media (prefers-reduced-motion: reduce) {
             * {
@@ -1648,11 +1675,55 @@
 
         const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
         const SEASON_LABELS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+        const TIME_LABELS = ['Dawn', '', 'Dusk', 'Night']; // '' = Day (no suffix)
+
+        /* ── Day/Night Phase Tints ── */
+        // Each phase modifies the season's base colors
+        // Format: { skyTop, skyBot, surfaceMul, textShift }
+        // skyTop/skyBot override the sky gradient (blended by phase weight)
+        // surfaceMul darkens/lightens surfaces (1 = no change)
+        // textShift adjusts text toward lighter (for dark backgrounds)
+        const TIME_PHASES = {
+            dawn: {
+                skyTop: [220, 150, 130],   // warm peach
+                skyBot: [180, 160, 200],   // soft lavender
+                surfaceMul: 0.92,
+                textLighten: 0,
+            },
+            day: {
+                skyTop: null,              // use season default
+                skyBot: null,
+                surfaceMul: 1.0,
+                textLighten: 0,
+            },
+            dusk: {
+                skyTop: [200, 120, 60],    // amber gold
+                skyBot: [120, 70, 100],    // deep purple
+                surfaceMul: 0.88,
+                textLighten: 0.05,
+            },
+            night: {
+                skyTop: [20, 22, 45],      // deep navy
+                skyBot: [35, 30, 55],      // dark indigo
+                surfaceMul: 0.65,
+                textLighten: 0.35,
+            },
+        };
+
+        const TIME_ORDER = ['dawn', 'day', 'dusk', 'night'];
 
         /* ── Helpers ── */
         function smoothstep(edge0, edge1, x) {
             const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
             return t * t * (3 - 2 * t);
+        }
+
+        function clamp(v, lo, hi) {
+            return v < lo ? lo : v > hi ? hi : v;
+        }
+
+        function lerpVal(a, b, t) {
+            return a + (b - a) * t;
         }
 
         function lerpColor(a, b, t) {
@@ -1664,24 +1735,24 @@
         }
 
         function colorToRgb(arr) {
-            const r = Math.round(arr[0]);
-            const g = Math.round(arr[1]);
-            const b = Math.round(arr[2]);
+            const r = Math.round(clamp(arr[0], 0, 255));
+            const g = Math.round(clamp(arr[1], 0, 255));
+            const b = Math.round(clamp(arr[2], 0, 255));
             return 'rgb(' + r + ', ' + g + ', ' + b + ')';
         }
 
         function colorToRgba(arr) {
-            const r = Math.round(arr[0]);
-            const g = Math.round(arr[1]);
-            const b = Math.round(arr[2]);
+            const r = Math.round(clamp(arr[0], 0, 255));
+            const g = Math.round(clamp(arr[1], 0, 255));
+            const b = Math.round(clamp(arr[2], 0, 255));
             const a = arr.length > 3 ? arr[3] : 1;
             return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
         }
 
         function rgbToHex(arr) {
-            const r = Math.round(arr[0]);
-            const g = Math.round(arr[1]);
-            const b = Math.round(arr[2]);
+            const r = Math.round(clamp(arr[0], 0, 255));
+            const g = Math.round(clamp(arr[1], 0, 255));
+            const b = Math.round(clamp(arr[2], 0, 255));
             return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
         }
 
@@ -1718,24 +1789,21 @@
         const swatchEls = document.querySelectorAll('[data-swatch]');
 
         /* ── Interpolation Engine ── */
-        let currentColors = {}; // cache for particle system
+        let currentColors = {};
+        let nightWeight = 0; // exposed for star rendering
+        let duskWeight = 0;
 
         function updateSeason() {
             progress = window.scrollY / scrollMax;
 
-            // Map progress to season zones (each season = 0.25 of scroll)
-            // Blend region = 0.08 around each boundary
+            // --- Season weights (each season = 0.25 of scroll) ---
             const blend = 0.08;
             const zoneSize = 0.25;
 
-            // Calculate weight for each season
             const weights = [];
             for (let i = 0; i < 4; i++) {
-                const center = (i + 0.5) * zoneSize;
                 const start = i * zoneSize;
                 const end = (i + 1) * zoneSize;
-
-                // Smoothstep fade in / fade out at boundaries
                 let w;
                 if (i === 0) {
                     w = 1 - smoothstep(end - blend, end + blend, progress);
@@ -1748,13 +1816,13 @@
                 weights.push(w);
             }
 
-            // Normalize weights
+            // Normalize season weights
             let sum = 0;
             for (let i = 0; i < 4; i++) sum += weights[i];
             if (sum < 0.001) sum = 1;
             for (let i = 0; i < 4; i++) weights[i] /= sum;
 
-            // Find dominant season for badge
+            // Find dominant season
             let maxW = 0, dominantIdx = 0;
             for (let i = 0; i < 4; i++) {
                 if (weights[i] > maxW) {
@@ -1762,9 +1830,55 @@
                     dominantIdx = i;
                 }
             }
-            badge.textContent = SEASON_LABELS[dominantIdx];
 
-            // Interpolate each color channel
+            // --- Day/Night sub-cycle ---
+            // Within the dominant season's zone, calculate time-of-day
+            // Each season zone (0.25) is split into 4 time phases
+            const seasonStart = dominantIdx * zoneSize;
+            const localProgress = clamp((progress - seasonStart) / zoneSize, 0, 1);
+            const timeBlend = 0.08; // blend region between time phases
+            const timeZoneSize = 0.25;
+
+            const timeWeights = [];
+            for (let i = 0; i < 4; i++) {
+                const start = i * timeZoneSize;
+                const end = (i + 1) * timeZoneSize;
+                let w;
+                if (i === 0) {
+                    w = 1 - smoothstep(end - timeBlend, end + timeBlend, localProgress);
+                } else if (i === 3) {
+                    w = smoothstep(start - timeBlend, start + timeBlend, localProgress);
+                } else {
+                    w = smoothstep(start - timeBlend, start + timeBlend, localProgress)
+                      * (1 - smoothstep(end - timeBlend, end + timeBlend, localProgress));
+                }
+                timeWeights.push(w);
+            }
+
+            // Normalize time weights
+            let timeSum = 0;
+            for (let i = 0; i < 4; i++) timeSum += timeWeights[i];
+            if (timeSum < 0.001) timeSum = 1;
+            for (let i = 0; i < 4; i++) timeWeights[i] /= timeSum;
+
+            // Find dominant time phase for badge
+            let maxTW = 0, dominantTimeIdx = 0;
+            for (let i = 0; i < 4; i++) {
+                if (timeWeights[i] > maxTW) {
+                    maxTW = timeWeights[i];
+                    dominantTimeIdx = i;
+                }
+            }
+
+            // Expose night/dusk weight for stars
+            nightWeight = timeWeights[3];
+            duskWeight = timeWeights[2];
+
+            // Update badge with season + time
+            const timeLabel = TIME_LABELS[dominantTimeIdx];
+            badge.textContent = SEASON_LABELS[dominantIdx] + (timeLabel ? ' ' + timeLabel : '');
+
+            // --- Interpolate season colors ---
             const palettes = SEASON_ORDER.map(s => PALETTES[s]);
             const root = document.documentElement;
 
@@ -1779,22 +1893,68 @@
                     }
                 }
 
-                currentColors[key] = blended;
-
-                if (HAS_ALPHA.has(key)) {
-                    root.style.setProperty(CSS_MAP[key], colorToRgba(blended));
+                // --- Apply day/night post-processing ---
+                if (key === 'skyTop' || key === 'skyBot') {
+                    // Blend sky toward time-of-day tint colors
+                    const phases = TIME_ORDER.map(t => TIME_PHASES[t]);
+                    let tinted = [blended[0], blended[1], blended[2]];
+                    for (let t = 0; t < 4; t++) {
+                        const phaseColor = phases[t][key];
+                        if (phaseColor && timeWeights[t] > 0.01) {
+                            tinted[0] = lerpVal(tinted[0], phaseColor[0], timeWeights[t] * 0.8);
+                            tinted[1] = lerpVal(tinted[1], phaseColor[1], timeWeights[t] * 0.8);
+                            tinted[2] = lerpVal(tinted[2], phaseColor[2], timeWeights[t] * 0.8);
+                        }
+                    }
+                    currentColors[key] = tinted;
+                    root.style.setProperty(CSS_MAP[key], colorToRgb(tinted));
+                } else if (key === 'surface' || key === 'surfaceAlt') {
+                    // Darken surfaces based on time phase
+                    let mul = 0;
+                    for (let t = 0; t < 4; t++) {
+                        mul += TIME_PHASES[TIME_ORDER[t]].surfaceMul * timeWeights[t];
+                    }
+                    const adjusted = [blended[0] * mul, blended[1] * mul, blended[2] * mul];
+                    if (blended.length > 3) adjusted.push(blended[3]);
+                    currentColors[key] = adjusted;
+                    root.style.setProperty(CSS_MAP[key], HAS_ALPHA.has(key) ? colorToRgba(adjusted) : colorToRgb(adjusted));
+                } else if (key === 'text' || key === 'textSoft') {
+                    // Lighten text for dark backgrounds at night
+                    let lighten = 0;
+                    for (let t = 0; t < 4; t++) {
+                        lighten += TIME_PHASES[TIME_ORDER[t]].textLighten * timeWeights[t];
+                    }
+                    const adjusted = [
+                        blended[0] + (255 - blended[0]) * lighten,
+                        blended[1] + (255 - blended[1]) * lighten,
+                        blended[2] + (255 - blended[2]) * lighten,
+                    ];
+                    currentColors[key] = adjusted;
+                    root.style.setProperty(CSS_MAP[key], colorToRgb(adjusted));
                 } else {
-                    root.style.setProperty(CSS_MAP[key], colorToRgb(blended));
+                    currentColors[key] = blended;
+                    if (HAS_ALPHA.has(key)) {
+                        root.style.setProperty(CSS_MAP[key], colorToRgba(blended));
+                    } else {
+                        root.style.setProperty(CSS_MAP[key], colorToRgb(blended));
+                    }
                 }
             }
 
             // Update swatch hex values
-            swatchEls.forEach(el => {
+            swatchEls.forEach(function (el) {
                 const key = el.getAttribute('data-swatch');
                 if (currentColors[key]) {
                     el.textContent = rgbToHex(currentColors[key]);
                 }
             });
+
+            // Frost effect toggle
+            if (weights[3] > 0.55) {
+                document.body.classList.add('frost-active');
+            } else {
+                document.body.classList.remove('frost-active');
+            }
 
             // Store particle weights for blending
             particleWeights = weights.slice();
@@ -1825,13 +1985,15 @@
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // Regenerate star positions on resize
+            generateStars();
         }
 
-        // Particle types
+        /* ── Decorative Particles (petals, sparkles, leaves, snow) ── */
         const PARTICLE_COUNT = 45;
         const particles = [];
 
-        function createParticle(i) {
+        function createParticle() {
             return {
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
@@ -1850,7 +2012,7 @@
         }
 
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            particles.push(createParticle(i));
+            particles.push(createParticle());
         }
 
         // Season-specific particle renderers
@@ -1861,7 +2023,6 @@
             ctx.globalAlpha = alpha * p.opacity;
             ctx.fillStyle = 'rgba(245, 160, 184, 0.7)';
             ctx.beginPath();
-            // Petal shape: two overlapping ellipses
             ctx.ellipse(0, 0, p.size * 0.6, p.size, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
@@ -1876,7 +2037,6 @@
             const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(p.twinklePhase));
             ctx.globalAlpha = alpha * twinkle * p.opacity;
             ctx.fillStyle = 'rgba(255, 224, 102, 0.8)';
-            // 4-pointed star
             const s = p.size * 0.6;
             ctx.beginPath();
             for (let i = 0; i < 4; i++) {
@@ -1897,12 +2057,10 @@
             ctx.translate(p.x, p.y);
             ctx.rotate(p.rotation);
             ctx.globalAlpha = alpha * p.opacity;
-            // Vary leaf color
             const r = 180 + Math.round(p.wobbleAmp * 40);
             const g = 100 + Math.round(p.wobbleAmp * 30);
             ctx.fillStyle = 'rgba(' + r + ', ' + g + ', 40, 0.75)';
             ctx.beginPath();
-            // Leaf shape using quadratic curves
             const s = p.size;
             ctx.moveTo(0, -s);
             ctx.quadraticCurveTo(s * 0.8, -s * 0.3, 0, s);
@@ -1919,7 +2077,6 @@
             ctx.beginPath();
             ctx.arc(0, 0, p.size * 0.45, 0, Math.PI * 2);
             ctx.fill();
-            // Add subtle glow
             ctx.globalAlpha = alpha * p.opacity * 0.3;
             ctx.beginPath();
             ctx.arc(0, 0, p.size * 0.8, 0, Math.PI * 2);
@@ -1929,21 +2086,13 @@
 
         const drawFns = [drawPetal, drawSparkle, drawLeaf, drawSnowflake];
 
-        // Physics per season type
-        // [0]=spring petals, [1]=summer sparkles, [2]=autumn leaves, [3]=winter snow
-        function updateParticle(p, dt) {
-            // Determine dominant type from weights
-            // Each season applies some drift
+        function updateParticle(p) {
             let dy = 0, dx = 0;
-            // Spring: gentle fall with side drift
             dy += particleWeights[0] * p.speedY * 0.6;
             dx += particleWeights[0] * Math.sin(p.wobblePhase) * p.wobbleAmp * 0.5;
-            // Summer: mostly stationary, twinkle in place
             dy += particleWeights[1] * p.speedY * 0.05;
-            // Autumn: faster fall with wind
             dy += particleWeights[2] * p.speedY * 1.0;
             dx += particleWeights[2] * (Math.sin(p.wobblePhase) * p.wobbleAmp + 0.3);
-            // Winter: slow fall with slight wobble
             dy += particleWeights[3] * p.speedY * 0.35;
             dx += particleWeights[3] * Math.sin(p.wobblePhase) * p.wobbleAmp * 0.3;
 
@@ -1953,7 +2102,6 @@
             p.wobblePhase += p.wobbleSpeed;
             p.twinklePhase += p.twinkleSpeed;
 
-            // Wrap around edges
             if (p.y > canvas.height + p.size * 2) {
                 p.y = -p.size * 2;
                 p.x = Math.random() * canvas.width;
@@ -1962,20 +2110,189 @@
             if (p.x < -20) p.x = canvas.width + 20;
         }
 
+        /* ── Weather Particles ── */
+        const WEATHER_COUNT = 30;
+        const weatherParticles = [];
+
+        function createWeatherParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                speed: 2 + Math.random() * 4,
+                length: 12 + Math.random() * 20,
+                opacity: 0.15 + Math.random() * 0.25,
+                // Fog properties
+                fogSize: 60 + Math.random() * 120,
+                fogDrift: (Math.random() - 0.5) * 0.3,
+                fogPhase: Math.random() * Math.PI * 2,
+                // Shimmer properties
+                shimmerY: Math.random() * canvas.height,
+                shimmerPhase: Math.random() * Math.PI * 2,
+                shimmerSpeed: 0.015 + Math.random() * 0.03,
+            };
+        }
+
+        for (let i = 0; i < WEATHER_COUNT; i++) {
+            weatherParticles.push(createWeatherParticle());
+        }
+
+        // Spring rain
+        function drawRain(wp, alpha) {
+            if (alpha < 0.02) return;
+            ctx.save();
+            ctx.globalAlpha = alpha * wp.opacity * 0.6;
+            ctx.strokeStyle = 'rgba(180, 200, 230, 0.7)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(wp.x, wp.y);
+            ctx.lineTo(wp.x - 2, wp.y + wp.length);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function updateRain(wp) {
+            wp.y += wp.speed * 2.5;
+            wp.x -= 0.5;
+            if (wp.y > canvas.height + wp.length) {
+                wp.y = -wp.length;
+                wp.x = Math.random() * (canvas.width + 40);
+            }
+            if (wp.x < -20) wp.x = canvas.width + 20;
+        }
+
+        // Summer heat shimmer
+        function drawShimmer(wp, alpha) {
+            if (alpha < 0.02) return;
+            ctx.save();
+            const y = canvas.height * 0.5 + wp.shimmerY * 0.5;
+            ctx.globalAlpha = alpha * 0.06;
+            ctx.strokeStyle = 'rgba(255, 230, 150, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x += 4) {
+                const wave = Math.sin(x * 0.02 + wp.shimmerPhase) * 3;
+                if (x === 0) ctx.moveTo(x, y + wave);
+                else ctx.lineTo(x, y + wave);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function updateShimmer(wp) {
+            wp.shimmerPhase += wp.shimmerSpeed;
+        }
+
+        // Autumn fog
+        function drawFog(wp, alpha) {
+            if (alpha < 0.02) return;
+            ctx.save();
+            const pulse = 0.5 + 0.5 * Math.sin(wp.fogPhase);
+            ctx.globalAlpha = alpha * wp.opacity * 0.15 * pulse;
+            const grad = ctx.createRadialGradient(wp.x, wp.y, 0, wp.x, wp.y, wp.fogSize);
+            grad.addColorStop(0, 'rgba(200, 180, 160, 0.3)');
+            grad.addColorStop(1, 'rgba(200, 180, 160, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(wp.x, wp.y, wp.fogSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function updateFog(wp) {
+            wp.x += wp.fogDrift;
+            wp.fogPhase += 0.008;
+            if (wp.x > canvas.width + wp.fogSize) wp.x = -wp.fogSize;
+            if (wp.x < -wp.fogSize) wp.x = canvas.width + wp.fogSize;
+        }
+
+        /* ── Night Sky Stars ── */
+        const STAR_COUNT = 40;
+        let stars = [];
+
+        function generateStars() {
+            stars = [];
+            // Use a seeded-ish approach for consistent placement
+            const seed = 42;
+            for (let i = 0; i < STAR_COUNT; i++) {
+                const hash = Math.sin(seed + i * 127.1) * 43758.5453;
+                const hx = hash - Math.floor(hash);
+                const hash2 = Math.sin(seed + i * 269.5) * 19283.7432;
+                const hy = hash2 - Math.floor(hash2);
+                stars.push({
+                    x: hx * canvas.width,
+                    y: hy * canvas.height * 0.7,
+                    size: 0.8 + hx * 2,
+                    twinklePhase: i * 0.7,
+                    twinkleSpeed: 0.015 + hy * 0.03,
+                });
+            }
+        }
+
+        function renderStars() {
+            // Stars visible during night and partially during dusk
+            const starAlpha = nightWeight * 0.9 + duskWeight * 0.25;
+            if (starAlpha < 0.03) return;
+
+            for (let i = 0; i < stars.length; i++) {
+                const s = stars[i];
+                s.twinklePhase += s.twinkleSpeed;
+                const twinkle = 0.4 + 0.6 * Math.abs(Math.sin(s.twinklePhase));
+
+                ctx.save();
+                ctx.globalAlpha = starAlpha * twinkle * 0.8;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+                // Subtle glow
+                ctx.globalAlpha = starAlpha * twinkle * 0.15;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size * 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        /* ── Main Render Loop ── */
         function renderParticles() {
             if (reducedMotion) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Stars (behind everything)
+            renderStars();
+
+            // Decorative particles (petals, sparkles, leaves, snow)
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 updateParticle(p);
-
-                // Draw each seasonal type with its weight as alpha
                 for (let s = 0; s < 4; s++) {
                     if (particleWeights[s] > 0.01) {
                         drawFns[s](p, particleWeights[s]);
                     }
+                }
+            }
+
+            // Weather particles
+            for (let i = 0; i < weatherParticles.length; i++) {
+                const wp = weatherParticles[i];
+
+                // Spring rain
+                if (particleWeights[0] > 0.1) {
+                    updateRain(wp);
+                    drawRain(wp, particleWeights[0]);
+                }
+
+                // Summer shimmer (only draw a few horizontal lines)
+                if (particleWeights[1] > 0.1 && i < 6) {
+                    updateShimmer(wp);
+                    drawShimmer(wp, particleWeights[1]);
+                }
+
+                // Autumn fog (only draw a few large blobs)
+                if (particleWeights[2] > 0.1 && i < 8) {
+                    updateFog(wp);
+                    drawFog(wp, particleWeights[2]);
                 }
             }
 
