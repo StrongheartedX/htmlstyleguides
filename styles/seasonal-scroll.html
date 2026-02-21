@@ -1687,30 +1687,34 @@
             dawn: {
                 skyTop: [220, 150, 130],   // warm peach
                 skyBot: [180, 160, 200],   // soft lavender
-                surfaceMul: 0.92,
+                surfaceTarget: null,       // no blend, use season default
+                surfaceBlend: 0,
                 textLighten: 0,
                 accentLighten: 0,
             },
             day: {
                 skyTop: null,              // use season default
                 skyBot: null,
-                surfaceMul: 1.0,
+                surfaceTarget: null,
+                surfaceBlend: 0,
                 textLighten: 0,
                 accentLighten: 0,
             },
             dusk: {
                 skyTop: [200, 120, 60],    // amber gold
                 skyBot: [120, 70, 100],    // deep purple
-                surfaceMul: 0.88,
-                textLighten: 0.05,
-                accentLighten: 0,
+                surfaceTarget: [55, 45, 50],  // warm dark
+                surfaceBlend: 0.5,
+                textLighten: 0.3,
+                accentLighten: 0.1,
             },
             night: {
                 skyTop: [20, 22, 45],      // deep navy
                 skyBot: [35, 30, 55],      // dark indigo
-                surfaceMul: 0.65,
-                textLighten: 0.7,
-                accentLighten: 0.4,
+                surfaceTarget: [25, 27, 40],  // deep indigo-gray
+                surfaceBlend: 0.88,
+                textLighten: 0.9,
+                accentLighten: 0.45,
             },
         };
 
@@ -1913,12 +1917,38 @@
                     currentColors[key] = tinted;
                     root.style.setProperty(CSS_MAP[key], colorToRgb(tinted));
                 } else if (key === 'surface' || key === 'surfaceAlt') {
-                    // Darken surfaces based on time phase
-                    let mul = 0;
+                    // Blend surfaces toward dark target for night/dusk
+                    let blendAmount = 0;
+                    const blendTarget = [0, 0, 0];
+                    let hasTarget = false;
                     for (let t = 0; t < 4; t++) {
-                        mul += TIME_PHASES[TIME_ORDER[t]].surfaceMul * timeWeights[t];
+                        const phase = TIME_PHASES[TIME_ORDER[t]];
+                        if (phase.surfaceTarget && timeWeights[t] > 0.01) {
+                            const w = phase.surfaceBlend * timeWeights[t];
+                            blendAmount += w;
+                            blendTarget[0] += phase.surfaceTarget[0] * w;
+                            blendTarget[1] += phase.surfaceTarget[1] * w;
+                            blendTarget[2] += phase.surfaceTarget[2] * w;
+                            hasTarget = true;
+                        }
                     }
-                    const adjusted = [blended[0] * mul, blended[1] * mul, blended[2] * mul];
+                    let adjusted;
+                    if (hasTarget && blendAmount > 0.01) {
+                        // Normalize target, then lerp toward it
+                        const t0 = blendTarget[0] / blendAmount;
+                        const t1 = blendTarget[1] / blendAmount;
+                        const t2 = blendTarget[2] / blendAmount;
+                        const amt = Math.min(blendAmount, 1);
+                        // surfaceAlt blends slightly less to preserve hierarchy
+                        const famt = key === 'surfaceAlt' ? amt * 0.92 : amt;
+                        adjusted = [
+                            lerpVal(blended[0], t0, famt),
+                            lerpVal(blended[1], t1, famt),
+                            lerpVal(blended[2], t2, famt),
+                        ];
+                    } else {
+                        adjusted = [blended[0], blended[1], blended[2]];
+                    }
                     if (blended.length > 3) adjusted.push(blended[3]);
                     currentColors[key] = adjusted;
                     root.style.setProperty(CSS_MAP[key], HAS_ALPHA.has(key) ? colorToRgba(adjusted) : colorToRgb(adjusted));
@@ -1947,7 +1977,11 @@
                             blended[1] + (255 - blended[1]) * accentLighten,
                             blended[2] + (255 - blended[2]) * accentLighten,
                         ];
-                        if (blended.length > 3) adjusted.push(blended[3]);
+                        if (blended.length > 3) {
+                            // Boost line opacity at night for visible borders on dark surfaces
+                            const boosted = blended[3] + (0.45 - blended[3]) * accentLighten;
+                            adjusted.push(boosted);
+                        }
                         currentColors[key] = adjusted;
                         root.style.setProperty(CSS_MAP[key], HAS_ALPHA.has(key) ? colorToRgba(adjusted) : colorToRgb(adjusted));
                     } else {
