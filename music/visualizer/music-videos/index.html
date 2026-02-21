@@ -5356,6 +5356,131 @@
     window.addEventListener('resize', draw);
 })();
 
+// The Lighthouse Keeper's Last Night — lighthouse at dawn with golden beam, ships, and walking keeper
+(function() {
+    var canvas = document.getElementById('lighthouse-last-night-preview');
+    if (!canvas) return;
+    function draw() {
+        var w = canvas.clientWidth;
+        var h = canvas.clientHeight;
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        var ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // Dawn sky gradient
+        var skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+        skyGrad.addColorStop(0, '#1e1232');
+        skyGrad.addColorStop(0.5, '#3c2332');
+        skyGrad.addColorStop(1, '#ff8f00');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+        // Dawn glow on right
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        var glowGrad = ctx.createRadialGradient(w * 0.75, h * 0.5, 0, w * 0.75, h * 0.5, w * 0.4);
+        glowGrad.addColorStop(0, 'rgba(255,180,60,0.2)');
+        glowGrad.addColorStop(0.5, 'rgba(255,143,50,0.08)');
+        glowGrad.addColorStop(1, 'rgba(255,100,60,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+        // Stars (faded by dawn)
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        for (var s = 0; s < 12; s++) {
+            var sx = (s * 31 + 7) % w;
+            var sy = (s * 17 + 3) % (h * 0.35);
+            ctx.beginPath(); ctx.arc(sx, sy, 0.8, 0, Math.PI * 2); ctx.fill();
+        }
+        // Ocean
+        var seaY = h * 0.55;
+        var seaGrad = ctx.createLinearGradient(0, seaY, 0, h);
+        seaGrad.addColorStop(0, '#1e3850');
+        seaGrad.addColorStop(1, '#0c1e30');
+        ctx.fillStyle = seaGrad;
+        ctx.fillRect(0, seaY, w, h - seaY);
+        // Wave lines
+        ctx.strokeStyle = 'rgba(80,120,160,0.25)';
+        ctx.lineWidth = 1;
+        for (var wv = 0; wv < 3; wv++) {
+            var wy = seaY + 8 + wv * 12;
+            ctx.beginPath();
+            for (var wx = 0; wx <= w; wx += 4) {
+                var yoff = Math.sin(wx * 0.05 + wv * 2) * (2 + wv);
+                if (wx === 0) ctx.moveTo(wx, wy + yoff);
+                else ctx.lineTo(wx, wy + yoff);
+            }
+            ctx.stroke();
+        }
+        // Ships on horizon
+        ctx.fillStyle = '#0a0a1e';
+        for (var sh = 0; sh < 2; sh++) {
+            var shx = w * (0.6 + sh * 0.18);
+            var shy = seaY - 2;
+            var sc = 0.7 - sh * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(shx - 8 * sc, shy); ctx.lineTo(shx + 10 * sc, shy);
+            ctx.lineTo(shx + 7 * sc, shy + 3 * sc); ctx.lineTo(shx - 6 * sc, shy + 3 * sc);
+            ctx.closePath(); ctx.fill();
+            ctx.fillRect(shx - 1, shy - 12 * sc, 1.5, 12 * sc);
+        }
+        // Rocky island
+        ctx.fillStyle = '#121a2e';
+        ctx.beginPath();
+        ctx.moveTo(w * 0.15, h); ctx.lineTo(w * 0.18, seaY + 4);
+        ctx.lineTo(w * 0.24, seaY - 4); ctx.lineTo(w * 0.32, seaY - 6);
+        ctx.lineTo(w * 0.38, seaY - 2); ctx.lineTo(w * 0.42, seaY + 6);
+        ctx.lineTo(w * 0.44, h); ctx.closePath(); ctx.fill();
+        // Lighthouse tower
+        var lx = w * 0.30, lBase = seaY - 4, lTop = h * 0.12, lw = 6;
+        ctx.fillStyle = '#c0c0cc';
+        ctx.beginPath();
+        ctx.moveTo(lx - lw, lBase); ctx.lineTo(lx - lw * 0.6, lTop + 6);
+        ctx.lineTo(lx + lw * 0.6, lTop + 6); ctx.lineTo(lx + lw, lBase);
+        ctx.closePath(); ctx.fill();
+        // Red stripe
+        ctx.fillStyle = '#8b2525';
+        ctx.fillRect(lx - lw * 0.85, lBase - (lBase - lTop) * 0.5, lw * 1.7, (lBase - lTop) * 0.12);
+        // Lamp housing
+        ctx.fillStyle = '#252535';
+        ctx.fillRect(lx - lw * 0.7, lTop + 1, lw * 1.4, 6);
+        // Beam
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#ffd54f';
+        ctx.beginPath();
+        ctx.moveTo(lx, lTop + 4);
+        ctx.lineTo(w * 0.85, lTop - 8);
+        ctx.lineTo(w * 0.9, lTop + 16);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        // Lamp glow
+        ctx.fillStyle = '#ffd54f';
+        ctx.shadowColor = '#ffd54f';
+        ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(lx, lTop + 4, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        // Walking keeper silhouette (small, on the path to the right)
+        var kx = w * 0.50, ky = seaY + 16;
+        ctx.fillStyle = '#0a0a14';
+        ctx.beginPath(); ctx.arc(kx, ky - 7, 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(kx - 1.5, ky - 5, 3, 4);
+        ctx.strokeStyle = '#0a0a14'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(kx - 1, ky - 1); ctx.lineTo(kx - 2.5, ky + 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(kx + 1, ky - 1); ctx.lineTo(kx + 2.5, ky + 2); ctx.stroke();
+        // Path from lighthouse
+        ctx.strokeStyle = 'rgba(80,75,65,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.33, seaY + 14);
+        ctx.quadraticCurveTo(w * 0.42, seaY + 16, w * 0.55, seaY + 18);
+        ctx.quadraticCurveTo(w * 0.65, seaY + 17, w * 0.78, seaY + 19);
+        ctx.stroke();
+    }
+    draw();
+    window.addEventListener('resize', draw);
+})();
+
 // ── The Password Was Wrong ──────────────────────────────────────
 (function() {
     var canvas = document.getElementById('password-preview');
